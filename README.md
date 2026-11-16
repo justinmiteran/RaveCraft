@@ -118,4 +118,9 @@ Procédure complète : [docs/RELEASING.md](docs/RELEASING.md).
 
 ## Licence
 
-Voir [LICENSE](LICENSE).
+| Partie | Licence | Fichier |
+|---|---|---|
+| Code (Java, build, outils, données générées) | **LGPL-3.0-only** | [LICENSE](LICENSE), avec le texte de la GPL-3.0 dans [COPYING](COPYING) |
+| Assets (textures, icône, sons, modèles faits main, `art/`) | **CC BY-NC-SA 4.0** | [LICENSE-ASSETS.md](LICENSE-ASSETS.md) |
+
+En bref : on peut utiliser le code et faire des addons, mais une version modifiée de RaveCraft doit rester open source sous la même licence. Les assets peuvent être réutilisés en citant RaveCraft, sans usage commercial et sous la même licence.

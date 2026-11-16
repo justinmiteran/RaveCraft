@@ -99,7 +99,7 @@ jar {
 	def projectName = project.name
 	inputs.property "projectName", projectName
 
-	from("LICENSE") {
+	from(["LICENSE", "COPYING", "LICENSE-ASSETS.md"]) {
 		rename { "${it}_$projectName"}
 	}
 }

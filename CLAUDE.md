@@ -187,5 +187,7 @@ Conventions :
 - Messages de commit en anglais, à l'impératif.
 - **Aucune attribution à Claude** : pas de ligne `Co-Authored-By: Claude …` dans les commits, pas de « Generated with Claude Code » dans les pull requests ni les releases.
 - Ignorés : `build/`, `.gradle/`, `.idea/`, `run/`, `logs/`, `node_modules/`. Ne pas committer `src/main/generated` modifié à la main ; le régénérer.
-- Dépôt privé `justinmiteran/RaveCraft`. La CI GitHub (`.github/workflows/build.yml`) lance `./gradlew build` sur chaque push et publie le rapport des tests JUnit et des GameTests (check « Test results »). Les GameTests écrivent leur XML dans `build/test-results/gameTest/` (propriété `fabric-api.gametest.report-file` dans `build.gradle`).
+- Dépôt **public** `justinmiteran/RaveCraft`. Code sous LGPL-3.0-only (`LICENSE`, `COPYING`), assets sous CC BY-NC-SA 4.0 (`LICENSE-ASSETS.md`).
+- `main` est protégée sur GitHub : CI `build` verte obligatoire, pull request requise (l'admin peut pousser directement les petits changements), force-push et suppression interdits, conversations résolues avant fusion. Seul le squash merge est autorisé ; les branches fusionnées sont supprimées automatiquement.
+- La CI GitHub (`.github/workflows/build.yml`) lance `./gradlew build` sur chaque push et publie le rapport des tests JUnit et des GameTests (check « Test results »). Les GameTests écrivent leur XML dans `build/test-results/gameTest/` (propriété `fabric-api.gametest.report-file` dans `build.gradle`).
 - Versions : `mod_version` dans `gradle.properties`, publiées en poussant un tag `vX.Y.Z` (workflow `release.yml`). Procédure dans [docs/RELEASING.md](docs/RELEASING.md), vue d'ensemble de la CI/CD dans [README.md](README.md).

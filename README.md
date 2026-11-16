@@ -103,8 +103,11 @@ Procédure complète : [docs/RELEASING.md](docs/RELEASING.md).
 ### Pas encore en place
 
 - publication sur Modrinth et CurseForge (il faudra un jeton API dans les secrets du dépôt) ;
-- GameTests côté client (désactivés) ;
-- protection de la branche `main`.
+- GameTests côté client (désactivés).
+
+### Protection de `main`
+
+CI `build` verte obligatoire, pull request requise, force-push et suppression interdits, squash merge uniquement, branches supprimées après fusion.
 
 ---
 

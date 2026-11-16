@@ -153,7 +153,38 @@ Conventions :
 
 ## Git
 
-- Branche `main`. Messages de commit en anglais, à l'impératif.
+### Règles absolues
+
+- **Toujours demander avant de pousser.** Aucun `git push` (branche, tag, force-push) sans l'accord explicite de l'utilisateur pour ce push-là. Committer en local est permis ; pousser, non. Même règle pour ouvrir, fusionner ou fermer une pull request, et pour créer une release.
+- **Toute fonctionnalité passe par une branche et une pull request.** On ne committe jamais une fonctionnalité directement sur `main`.
+
+### Branches
+
+- Partir d'un `main` à jour : `git switch main && git pull`, puis `git switch -c <type>/<sujet>`.
+- Nom : `<type>/<sujet-en-kebab-case>`, en anglais, court. Types :
+
+  | Type | Pour |
+  |---|---|
+  | `feat/` | une fonctionnalité ou un contenu de jeu (`feat/portable-speaker`) |
+  | `fix/` | une correction de bug (`fix/speaker-volume-reset`) |
+  | `docs/` | documentation, spec, plan (`docs/audio-core-spec`) |
+  | `ci/` | workflows GitHub, build Gradle (`ci/modrinth-publish`) |
+  | `refactor/` | restructuration sans changement de comportement |
+  | `chore/` | outillage, dépendances, versions |
+
+- Une branche = un sujet. Un sous-projet de la SPEC peut être découpé en plusieurs branches successives.
+- Seuls les petits changements de documentation ou de config peuvent aller directement sur `main`, et toujours après accord de l'utilisateur.
+
+### Pull requests
+
+- Titre : en anglais, à l'impératif, comme un message de commit (`Add portable speaker`).
+- Description : en français, suivant le modèle [.github/pull_request_template.md](.github/pull_request_template.md) : résumé, changements, tests, vérification en jeu, liens vers la spec et le plan, checklist.
+- Avant de demander la fusion : `./gradlew build` vert en local, CI verte, `runDatagen` relancé si du contenu a changé, `docs/SPEC.md` à jour.
+- Fusion : **squash merge** (un commit par PR sur `main`, titre de la PR comme message), puis suppression de la branche. La fusion est faite par l'utilisateur, ou par Claude seulement sur sa demande explicite.
+
+### Commits et dépôt
+
+- Messages de commit en anglais, à l'impératif.
 - **Aucune attribution à Claude** : pas de ligne `Co-Authored-By: Claude …` dans les commits, pas de « Generated with Claude Code » dans les pull requests ni les releases.
 - Ignorés : `build/`, `.gradle/`, `.idea/`, `run/`, `logs/`, `node_modules/`. Ne pas committer `src/main/generated` modifié à la main ; le régénérer.
 - Dépôt privé `justinmiteran/RaveCraft`. La CI GitHub (`.github/workflows/build.yml`) lance `./gradlew build` sur chaque push et publie le rapport des tests JUnit et des GameTests (check « Test results »). Les GameTests écrivent leur XML dans `build/test-results/gameTest/` (propriété `fabric-api.gametest.report-file` dans `build.gradle`).

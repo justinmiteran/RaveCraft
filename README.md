@@ -108,6 +108,14 @@ Procédure complète : [docs/RELEASING.md](docs/RELEASING.md).
 
 ---
 
+## Contribuer
+
+- Toute fonctionnalité passe par une branche `<type>/<sujet>` (`feat/`, `fix/`, `docs/`, `ci/`, `refactor/`, `chore/`) et une pull request.
+- Les PR suivent le modèle [.github/pull_request_template.md](.github/pull_request_template.md) et sont fusionnées en **squash merge** une fois la CI verte.
+- Règles complètes : section Git de [CLAUDE.md](CLAUDE.md).
+
+---
+
 ## Licence
 
 Voir [LICENSE](LICENSE).

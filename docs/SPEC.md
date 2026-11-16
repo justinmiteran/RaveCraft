@@ -56,7 +56,27 @@ Le joueur commence avec une simple enceinte portable qui lit sa musique, puis il
 ### 3.5 Connexions et câblage
 - 💡 Câbles pour relier les éléments entre eux, comme une vraie chaîne : source → table de mixage → amplis → enceintes, et console → projecteurs.
 
-### 3.6 Matériaux et composants
+### 3.6 Consoles de mix et de lumière : physiques ou logicielles
+
+✅ Les consoles de mix (DJ) et les consoles lumière peuvent être pilotées de plusieurs façons, au choix du joueur :
+
+| Mode | Description | Statut |
+|---|---|---|
+| **Console physique en jeu** | Un bloc avec lequel on interagit directement dans le monde : faders, boutons, potards sur le bloc lui-même | ✅ |
+| **Logiciel en jeu (le nôtre)** | Une interface logicielle propre au mod, ouverte en jeu (par exemple sur un ordinateur ou une tablette en jeu), qui imite un vrai logiciel de mix ou de lumière | ✅ |
+| **Logiciel réel existant** | Piloter le matériel en jeu depuis un vrai logiciel installé sur le PC : logiciel DJ pour le mix, logiciel d'éclairage pour la lumière | ✅ 🤔 faisabilité à étudier |
+| **Matériel réel** | Une vraie platine ou console branchée sur le PC (voir 3.2 et section 6) | ✅ ⏳ |
+
+🤔 **À étudier** pour les logiciels réels, avant toute décision :
+- le **fonctionnement technique réel** de ces logiciels : comment ils communiquent avec le matériel dans la réalité, ce qu'ils envoient et reçoivent ;
+- la **possibilité technique** de les relier au jeu, et à quel niveau (commandes seulement, ou aussi le son et l'état des lumières) ;
+- 💡 pistes à regarder : les protocoles standards du métier, MIDI et HID pour les contrôleurs DJ, DMX sur réseau (Art-Net, sACN) pour la lumière, OSC pour le pilotage à distance, synchronisation de tempo entre logiciels ;
+- 💡 logiciels à regarder : côté DJ, des logiciels gratuits ou open source comme Mixxx, et les logiciels du commerce les plus répandus ; côté lumière, QLC+ (open source) et les versions PC des consoles professionnelles ;
+- les conditions de licence et d'utilisation de chaque logiciel.
+
+Objectif : qu'un DJ ou un éclairagiste puisse utiliser **les mêmes outils et réflexes qu'en vrai**, tout en gardant des consoles **100 % en jeu** pour les joueurs qui n'ont rien d'autre que Minecraft.
+
+### 3.7 Matériaux et composants
 - ✅ Nouveaux matériaux ajoutés par le mod et utilisés dans les recettes.
 - 💡 Matières premières (nouveaux minerais ou matériaux transformés) et composants électroniques intermédiaires (circuits, haut-parleurs, membranes, LED…), pour donner de la profondeur à la progression.
 
@@ -92,6 +112,7 @@ Chaque palier demande des matériaux et composants plus avancés que le précéd
 - ✅ Lire la musique du PC (clé USB, playlists).
 - ✅ Se connecter aux plateformes de streaming (Spotify, Deezer…).
 - ✅ Brancher une vraie platine DJ sur le PC et l'utiliser en jeu.
+- ✅ Piloter le mix et la lumière depuis de vrais logiciels existants (logiciel DJ, logiciel d'éclairage), selon la faisabilité. Voir 3.6.
 
 ## 7. Fonctionnalités complémentaires
 
@@ -131,6 +152,7 @@ Chaque palier demande des matériaux et composants plus avancés que le précéd
 - ❓ **Streaming** : les conditions d'utilisation des API de Spotify, Deezer… autorisent-elles la lecture dans un jeu ? À vérifier avant de s'engager.
 - ❓ **Énergie** : le matériel doit-il être alimenté (électricité, groupe électrogène, redstone) ? Voir 7.2 et 7.4.
 - ❓ **Surcharge** : quel niveau de punition, et quelle option pour la désactiver ? Voir 7.2.
+- ❓ **Logiciels réels** : quels logiciels DJ et lumière peut-on relier au jeu, par quel moyen, et sous quelles licences ? Voir 3.6.
 - ❓ **Synchronisation son ↔ lumière** : les lumières réagissent-elles automatiquement à la musique (BPM, basses) ?
 - ❓ **Niveau de réalisme** : jusqu'où pousser la simulation (atténuation avec la distance, obstacles, saturation, phase entre enceintes…) ?
 - ❓ **Obtention des matériaux** : nouveaux minerais dans le monde, transformation de matériaux vanilla, ou les deux ?
@@ -150,6 +172,8 @@ Chaque sous-projet aura sa propre spec, son plan et sa réalisation. L'ordre res
 | Synchronisation son ↔ lumière | Les lumières réagissent à la musique |
 | Streaming | Connexion aux plateformes |
 | Platine physique | Contrôleur DJ réel branché sur le PC |
+| Logiciels en jeu | Nos propres interfaces de mix et de lumière, ouvertes en jeu |
+| Logiciels réels | Étude puis liaison avec de vrais logiciels DJ et lumière |
 | Effets et structures de scène | Fumée, confettis, CO2, pyrotechnie, truss, praticables, scènes modulaires |
 | Micro et casque DJ | Voix dans la sono, pré-écoute (cue) |
 | Progrès et livre-guide | Advancements et guide qui suivent les paliers |

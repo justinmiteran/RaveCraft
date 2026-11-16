@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "E": "ravecraft:example_item",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "III",
+    "IEI",
+    "III"
+  ],
+  "result": {
+    "id": "ravecraft:example_block"
+  }
+}

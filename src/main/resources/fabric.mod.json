@@ -1,0 +1,30 @@
+{
+	"schemaVersion": 1,
+	"id": "ravecraft",
+	"version": "${version}",
+	"name": "RaveCraft",
+	"description": "Describe your mod here.",
+	"authors": [
+		"Me"
+	],
+	"license": "CC0-1.0",
+	"icon": "assets/ravecraft/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.ravecraft.mod.RaveCraft"
+		],
+		"client": [
+			"com.ravecraft.mod.client.RaveCraftClient"
+		],
+		"fabric-datagen": [
+			"com.ravecraft.mod.datagen.RaveCraftDataGenerator"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

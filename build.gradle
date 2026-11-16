@@ -46,6 +46,15 @@ fabricApi {
 	}
 }
 
+// Write GameTest results as JUnit XML next to the JUnit ones, so CI can report both.
+loom {
+	runs {
+		gameTest {
+			property("fabric-api.gametest.report-file", file("build/test-results/gameTest/TEST-gametest.xml").absolutePath)
+		}
+	}
+}
+
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"

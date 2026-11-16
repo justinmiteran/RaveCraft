@@ -1,10 +1,12 @@
-# Automatically build the project and run any configured tests for every push
-# and submitted pull request. This can help catch issues that only occur on
-# certain platforms or Java versions, and provides a first line of defence
-# against bad commits.
+# Build the mod and run JUnit tests + GameTests on every push and pull request.
+# Test results are published as a check ("Test results") with a summary on the run page.
 
 name: build
 on: [pull_request, push]
+
+permissions:
+  contents: read
+  checks: write        # publish the test report check
 
 jobs:
   build:
@@ -18,11 +20,28 @@ jobs:
         uses: actions/setup-java@v5
         with:
           java-version: '25'
-          distribution: 'microsoft'
+          distribution: 'temurin'
+      - name: setup gradle (cache)
+        uses: gradle/actions/setup-gradle@v6
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
-      - name: build
+      - name: build (compile, JUnit, GameTests, jar)
         run: ./gradlew build
+      - name: publish test report
+        if: ${{ !cancelled() }}
+        uses: mikepenz/action-junit-report@v6
+        with:
+          check_name: Test results
+          report_paths: 'build/test-results/**/TEST-*.xml'
+          detailed_summary: true
+          include_passed: true
+          require_tests: true
+      - name: upload HTML test report on failure
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: build/reports/tests/
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:

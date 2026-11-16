@@ -1,0 +1,49 @@
+# Publish a GitHub release when a version tag is pushed (vX.Y.Z, see docs/RELEASING.md).
+# The tag must match mod_version in gradle.properties; the release gets the mod jar.
+
+name: release
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write      # create the release
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+      - name: check tag matches mod_version
+        id: version
+        run: |
+          version=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match mod_version=$version in gradle.properties"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v6
+      - name: make gradle wrapper executable
+        run: chmod +x ./gradlew
+      - name: build (compile, JUnit, GameTests, jar)
+        run: ./gradlew build
+      - name: create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          prerelease=""
+          case "$VERSION" in 0.*|*-*) prerelease="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" "build/libs/ravecraft-$VERSION.jar" \
+            --title "RaveCraft $VERSION (Minecraft 26.3)" \
+            --generate-notes $prerelease

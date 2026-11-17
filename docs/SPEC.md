@@ -183,4 +183,9 @@ Chaque sous-projet aura sa propre spec, son plan et sa réalisation. L'ordre res
 
 - [x] Vision et structure du mod (ce document)
 - [x] Initialisation du projet (`ravecraft`, package `com.ravecraft.mod`)
-- [ ] Choisir le premier sous-projet et écrire sa spec
+- [x] Choisir le premier sous-projet : **Socle audio** (enceinte portable)
+- [ ] Socle audio : spec ([2026-11-17-audio-core-design.md](superpowers/specs/2026-11-17-audio-core-design.md)), plan, réalisation, release `v0.1.0`
+
+### Prévu plus tard (décidé pendant le socle audio)
+- Contrôle des appareils par **propriétaire + invités + verrou** (pour l'instant, contrôle ouvert à tous).
+- Recette définitive de l'enceinte portable avec les matériaux du mod (pour l'instant, recette provisoire vanilla).

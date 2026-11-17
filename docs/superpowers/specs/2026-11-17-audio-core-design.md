@@ -32,9 +32,9 @@ Ce sous-projet pose les fondations réutilisées par tout le matériel futur : l
 | D7 | **Contrôle ouvert à tous** pour l'instant | Propriétaire et invités, avec verrou : **prévu plus tard** |
 | D8 | Transport : **relais par le serveur Minecraft**, audio compressé en **Opus** | Canal UDP séparé ; envoi du fichier entier |
 | D9 | Recette **provisoire en vanilla** | Recette définitive avec des matériaux du mod (sous-projet « Matériaux ») |
-| D10 | **File partagée** : chaque morceau est diffusé depuis le PC de **celui qui l'a ajouté** | Une seule source par enceinte |
-| D11 | Morceau dont le propriétaire est **absent** : **sauté** quand on arrive dessus, mais **conservé** dans la file | Retrait ; remise en tête de file |
-| D12 | Fichier **illisible ou introuvable** : sauté et **retiré** de la file. Seul son propriétaire est prévenu, par une **notification discrète hors chat**, désactivable | Message dans le chat pour tous |
+| D10 | **File partagée** : chaque morceau est diffusé depuis le PC de **celui qui l'a ajouté** (réalisé, étape 3b) | Une seule source par enceinte |
+| D11 | Morceau dont le propriétaire est **absent** : **sauté** quand on arrive dessus, mais **conservé** dans la file (réalisé, étape 3b) | Retrait ; remise en tête de file |
+| D12 | Fichier **illisible ou introuvable** : sauté et **retiré** de la file. Seul son propriétaire est prévenu, par une **notification discrète hors chat**, désactivable (réalisé, étape 3b ; l’option de désactivation arrive à l’étape 5) | Message dans le chat pour tous |
 | D13 | **Casser l'enceinte ne l'éteint pas** : elle redevient un objet et continue de jouer | Arrêt à la casse |
 | D14 | Sources audibles simultanées : **8 par défaut, réglable**, les plus proches en priorité | Pas de limite |
 

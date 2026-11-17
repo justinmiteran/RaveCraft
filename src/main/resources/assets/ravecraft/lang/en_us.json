@@ -20,5 +20,9 @@
   "screen.ravecraft.speaker_browser.queue": "Queue (%s)",
   "screen.ravecraft.speaker_browser.absent": "%s (away)",
   "screen.ravecraft.speaker_browser.paused": "Paused: %s (%s) %s",
-  "screen.ravecraft.speaker_browser.queue_empty": "Queue empty: pick music and press Add"
+  "screen.ravecraft.speaker_browser.queue_empty": "Queue empty: pick music and press Add",
+  "options.ravecraft.volume": "RaveCraft",
+  "options.ravecraft.maxSources": "Simultaneous speakers",
+  "options.ravecraft.acousticEffects": "Acoustic effects",
+  "options.ravecraft.acousticEffects.tooltip": "Air absorption filter. Turn off if your audio driver has trouble."
 }

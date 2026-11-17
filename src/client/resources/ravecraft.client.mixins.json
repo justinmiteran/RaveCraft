@@ -3,7 +3,9 @@
 	"package": "com.ravecraft.mod.client.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
-		"CreativeModeInventoryScreenMixin"
+		"CreativeModeInventoryScreenMixin",
+		"OptionsMixin",
+		"SoundOptionsScreenMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -20,5 +20,9 @@
   "screen.ravecraft.speaker_browser.queue": "File d’attente (%s)",
   "screen.ravecraft.speaker_browser.absent": "%s (absent)",
   "screen.ravecraft.speaker_browser.paused": "En pause : %s (%s) %s",
-  "screen.ravecraft.speaker_browser.queue_empty": "File vide : choisissez de la musique puis Ajouter"
+  "screen.ravecraft.speaker_browser.queue_empty": "File vide : choisissez de la musique puis Ajouter",
+  "options.ravecraft.volume": "RaveCraft",
+  "options.ravecraft.maxSources": "Enceintes simultanées",
+  "options.ravecraft.acousticEffects": "Effets acoustiques",
+  "options.ravecraft.acousticEffects.tooltip": "Filtre d'absorption de l'air. À désactiver si ton pilote audio pose problème."
 }

@@ -5,18 +5,29 @@ import com.ravecraft.mod.block.PortableSpeakerBlock;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.registry.ModBlockEntities;
 import com.ravecraft.mod.registry.ModDataComponents;
+import java.util.Objects;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponentGetter;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.world.item.component.DyedItemColor;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import org.jspecify.annotations.Nullable;
 
 public class PortableSpeakerBlockEntity extends BlockEntity {
 	private static final String KEY = "speaker";
+	private static final String COLOR_KEY = "color";
 
 	private SpeakerData data = SpeakerData.create();
+	/** Dye applied to the fabric, or null when undyed ({@link PortableSpeakerBlock#DEFAULT_COLOR}). */
+	private @Nullable DyedItemColor color;
 
 	public PortableSpeakerBlockEntity(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.PORTABLE_SPEAKER, pos, state);
@@ -29,6 +40,23 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 	public void setData(SpeakerData data) {
 		this.data = data;
 		setChanged();
+	}
+
+	public @Nullable DyedItemColor dyedColor() {
+		return color;
+	}
+
+	/** RGB colour of the fabric, as tinted by the client. */
+	public int fabricColor() {
+		return color != null ? color.rgb() : PortableSpeakerBlock.DEFAULT_COLOR;
+	}
+
+	public void setDyedColor(@Nullable DyedItemColor color) {
+		this.color = color;
+		setChanged();
+		if (level != null && !level.isClientSide()) {
+			level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+		}
 	}
 
 	/** Flips the power state, keeping the block's POWERED property in sync. */
@@ -44,6 +72,7 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 	protected void saveAdditional(ValueOutput output) {
 		super.saveAdditional(output);
 		output.store(KEY, SpeakerData.CODEC, data);
+		output.storeNullable(COLOR_KEY, DyedItemColor.CODEC, color);
 	}
 
 	@Override
@@ -55,6 +84,12 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 				RaveCraft.LOGGER.warn("Portable speaker at {} has undecodable data, using a fresh identity", worldPosition);
 			}
 		});
+		DyedItemColor previous = color;
+		color = input.read(COLOR_KEY, DyedItemColor.CODEC).orElse(null);
+		// The fabric tint is baked into the chunk mesh: rebuild it when the server sends a new colour.
+		if (level != null && level.isClientSide() && !Objects.equals(previous, color)) {
+			level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_IMMEDIATE);
+		}
 	}
 
 	@Override
@@ -64,16 +99,32 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 		if (fromItem != null) {
 			data = fromItem;
 		}
+		color = components.get(DataComponents.DYED_COLOR);
 	}
 
 	@Override
 	protected void collectImplicitComponents(DataComponentMap.Builder components) {
 		super.collectImplicitComponents(components);
 		components.set(ModDataComponents.SPEAKER, data);
+		if (color != null) {
+			components.set(DataComponents.DYED_COLOR, color);
+		}
 	}
 
 	@Override
 	public void removeComponentsFromTag(ValueOutput output) {
 		output.discard(KEY);
+		output.discard(COLOR_KEY);
+	}
+
+	/** The client needs the colour to tint the fabric. */
+	@Override
+	public ClientboundBlockEntityDataPacket getUpdatePacket() {
+		return ClientboundBlockEntityDataPacket.create(this);
+	}
+
+	@Override
+	public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+		return saveCustomOnly(registries);
 	}
 }

@@ -11,7 +11,8 @@
           "modifier": {
             "type": "minecraft:copy_components",
             "include": [
-              "ravecraft:speaker"
+              "ravecraft:speaker",
+              "minecraft:dyed_color"
             ],
             "source": "block_entity"
           },

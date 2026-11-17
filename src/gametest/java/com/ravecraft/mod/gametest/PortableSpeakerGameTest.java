@@ -6,10 +6,12 @@ import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModDataComponents;
+import java.util.List;
 import java.util.UUID;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
@@ -18,7 +20,12 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.DyedItemColor;
+import net.minecraft.world.item.crafting.CraftingInput;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
@@ -155,6 +162,55 @@ public class PortableSpeakerGameTest {
 		stack.use(h.getLevel(), player, InteractionHand.MAIN_HAND);
 		SpeakerData data = player.getMainHandItem().get(ModDataComponents.SPEAKER);
 		h.assertTrue(data != null && data.settings().powered(), "identity assigned and powered on");
+		h.succeed();
+	}
+
+	@GameTest
+	public void dyeRecipeColoursSpeakerAndKeepsData(GameTestHelper h) {
+		SpeakerData data = new SpeakerData(UUID.randomUUID(), new SpeakerSettings(true, 40));
+		ItemStack speaker = new ItemStack(ModBlocks.PORTABLE_SPEAKER);
+		speaker.set(ModDataComponents.SPEAKER, data);
+		CraftingInput input = CraftingInput.of(2, 1, List.of(speaker, new ItemStack(Items.DYE.red())));
+		var recipe = h.getLevel().recipeAccess().getRecipeFor(RecipeType.CRAFTING, input, h.getLevel());
+		h.assertTrue(recipe.isPresent(), "speaker + dye matches a recipe");
+		ItemStack result = recipe.get().value().assemble(input);
+		h.assertTrue(result.is(ModBlocks.PORTABLE_SPEAKER.asItem()), "result is a speaker");
+		h.assertValueEqual(result.get(DataComponents.DYED_COLOR), DyedItemColor.applyDyes((DyedItemColor) null, List.of(DyeColor.RED)), "dyed red");
+		h.assertValueEqual(result.get(ModDataComponents.SPEAKER), data, "identity and settings kept");
+		h.succeed();
+	}
+
+	@GameTest
+	public void undyedSpeakerUsesDefaultColour(GameTestHelper h) {
+		BlockPos pos = new BlockPos(1, 1, 1);
+		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
+		PortableSpeakerBlockEntity speaker = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class);
+		h.assertTrue(speaker.dyedColor() == null, "not dyed");
+		h.assertValueEqual(speaker.fabricColor(), PortableSpeakerBlock.DEFAULT_COLOR, "default fabric colour");
+		h.succeed();
+	}
+
+	@GameTest
+	public void dyedColourSurvivesPlaceBreakAndSave(GameTestHelper h) {
+		DyedItemColor blue = new DyedItemColor(0x3AB3DA);
+		ItemStack stack = new ItemStack(ModBlocks.PORTABLE_SPEAKER);
+		stack.set(DataComponents.DYED_COLOR, blue);
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		BlockPos pos = new BlockPos(1, 1, 1);
+		player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+		h.placeAt(player, stack, pos.below(), Direction.UP);
+		PortableSpeakerBlockEntity speaker = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class);
+		h.assertValueEqual(speaker.dyedColor(), blue, "placed colour");
+		h.assertValueEqual(speaker.fabricColor(), 0x3AB3DA, "fabric colour");
+
+		var access = h.getLevel().registryAccess();
+		BlockEntity loaded = BlockEntity.loadStatic(h.absolutePos(pos), speaker.getBlockState(), speaker.saveWithFullMetadata(access), access);
+		h.assertValueEqual(((PortableSpeakerBlockEntity) loaded).dyedColor(), blue, "saved colour");
+
+		h.getLevel().destroyBlock(h.absolutePos(pos), true);
+		var drops = h.getEntities(EntityTypes.ITEM, pos, 2);
+		h.assertTrue(!drops.isEmpty(), "speaker dropped");
+		h.assertValueEqual(drops.getFirst().getItem().get(DataComponents.DYED_COLOR), blue, "dropped colour");
 		h.succeed();
 	}
 

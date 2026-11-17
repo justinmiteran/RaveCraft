@@ -6,7 +6,9 @@ import net.fabricmc.fabric.api.client.datagen.v1.provider.FabricModelProvider;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
+import net.minecraft.client.color.item.Dye;
 import net.minecraft.client.data.models.blockstates.MultiVariantGenerator;
+import net.minecraft.client.data.models.model.ItemModelUtils;
 import net.minecraft.client.data.models.model.ModelLocationUtils;
 import net.minecraft.resources.Identifier;
 
@@ -29,7 +31,9 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 				.with(BlockModelGenerators.createBooleanModelDispatch(PortableSpeakerBlock.POWERED,
 						BlockModelGenerators.plainVariant(on), BlockModelGenerators.plainVariant(off)))
 				.with(BlockModelGenerators.ROTATION_HORIZONTAL_FACING));
-		generators.registerSimpleItemModel(ModBlocks.PORTABLE_SPEAKER, off);
+		// The fabric faces use tintindex 0: tint them with the item's dye colour, like leather armour.
+		generators.itemModelOutput.accept(ModBlocks.PORTABLE_SPEAKER.asItem(),
+				ItemModelUtils.tintedModel(off, new Dye(PortableSpeakerBlock.DEFAULT_COLOR)));
 	}
 
 	@Override

@@ -1,6 +1,12 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "ravecraft:block/portable_speaker"
+    "model": "ravecraft:block/portable_speaker",
+    "tints": [
+      {
+        "type": "minecraft:dye",
+        "default": 3947588
+      }
+    ]
   }
 }

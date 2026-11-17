@@ -34,9 +34,13 @@ public class PortableSpeakerBlock extends BaseEntityBlock {
 	public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
 	public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
-	// Body (y 0..8) plus the carry handle (posts and bar, up to y 11) from models/block/portable_speaker.json.
-	private static final VoxelShape SHAPE_NORTH_SOUTH = Shapes.or(Block.box(3, 0, 5, 13, 8, 11), Block.box(5, 8, 7.5, 11, 11, 8.5));
-	private static final VoxelShape SHAPE_EAST_WEST = Shapes.or(Block.box(5, 0, 3, 11, 8, 13), Block.box(7.5, 8, 5, 8.5, 11, 11));
+	/** Fabric colour of an undyed speaker (charcoal black), also the item model's default tint. */
+	public static final int DEFAULT_COLOR = 0x3C3C44;
+
+	// Barrel body (x 1..15, y 0..9, z 3.5..12.5) plus the carry handle (x 4..12, up to y 13.5), from
+	// models/block/portable_speaker.json; the long axis follows X when facing north or south.
+	private static final VoxelShape SHAPE_NORTH_SOUTH = Shapes.or(Block.box(1, 0, 3.5, 15, 9, 12.5), Block.box(4, 9, 7, 12, 13.5, 9));
+	private static final VoxelShape SHAPE_EAST_WEST = Shapes.or(Block.box(3.5, 0, 1, 12.5, 9, 15), Block.box(7, 9, 4, 9, 13.5, 12));
 
 	public PortableSpeakerBlock(BlockBehaviour.Properties properties) {
 		super(properties);

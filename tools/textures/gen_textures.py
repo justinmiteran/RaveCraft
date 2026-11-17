@@ -2,7 +2,7 @@
 
 Usage (from repo root):
     python tools/textures/gen_textures.py                 # write every texture + art/textures/preview.png
-    python tools/textures/gen_textures.py --only portable_speaker_front
+    python tools/textures/gen_textures.py --only portable_speaker_fabric
 
 Add a texture: write a function returning a 16x16 RGBA Image, then register it in BLOCKS, ANIMATED
 (frames + frametime, writes the .png.mcmeta) or ITEMS. A texture retouched by hand (Blockbench, Aseprite...)
@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import random
 from pathlib import Path
 
@@ -97,98 +98,85 @@ def inset(img, x0, y0, x1, y1, fill):
 # ---------------------------------------------------------------- textures
 
 
-# Portable speaker: the model maps each face pixel-exactly onto a region of its 16x16 texture
-# (front 10x8 at (3,4), side 6x8 at (5,4), top 10x6 at (3,5)); the rest of the tile is plain casing so the
-# texture still reads well as a particle or in the preview.
+# Portable speaker (barrel shape, models/block/portable_speaker.json). The fabric is a light grey weave tinted in
+# game by the dye colour (tintindex 0), so it stays bright and low-contrast; rubber, radiator and the copper logo
+# are never tinted. The details texture is a transparent overlay (cutout): equaliser logo at (0,0)-(8,5), top
+# controls row at v=9.
+RUBBER = [(26, 27, 32), (38, 40, 47), (52, 55, 64), (72, 76, 88)]
+COPPER, COPPER_L = (214, 132, 72), (240, 172, 112)
+LED_OFF, LED_ON = (70, 40, 40), (90, 240, 255)
+EQ_LOGO = ["....#...",
+           "..#.#...",
+           "..#.#.#.",
+           "#.#.#.#.",
+           "........"]
 
 
-def panel(img, x0, y0, w, h):
-    """Small bevelled casing panel (outline, top-left highlight, bottom-right shadow) inside a region."""
-    x1, y1 = x0 + w - 1, y0 + h - 1
-    rect(img, x0, y0, x1, y1, C["case"])
-    for x in range(x0, x1 + 1):
-        px(img, x, y0, C["out"]); px(img, x, y1, C["out"])
-    for y in range(y0, y1 + 1):
-        px(img, x0, y, C["out"]); px(img, x1, y, C["out"])
-    for x in range(x0 + 1, x1):
-        px(img, x, y0 + 1, C["case_h"]); px(img, x, y1 - 1, C["case_d"])
-    for y in range(y0 + 1, y1):
-        px(img, x0 + 1, y, C["case_h"]); px(img, x1 - 1, y, C["case_d"])
-
-
-def speaker_front(on):
-    img = casing(20)
-    x0, y0 = 3, 4                       # 10x8 face
-    panel(img, x0, y0, 10, 8)
-    # Grille: dark field with a dotted mesh.
-    rect(img, x0 + 1, y0 + 1, x0 + 8, y0 + 6, C["out"])
-    for y in range(y0 + 1, y0 + 7):
-        for x in range(x0 + 1, x0 + 9):
-            if (x + y) % 2 == 0:
-                px(img, x, y, C["case_d"])
-    # Round cone (6x6) on the left: lit rim top-left, shadowed bottom-right, dust cap in the middle.
-    cx, cy = x0 + 2, y0 + 1
-    cone = ["  aa  ",
-            " abbc ",
-            "abddbc",
-            "abdebc",
-            " bccc ",
-            "  cc  "]
-    cols = {"a": C["case_h"], "b": C["case"], "c": C["case_d"], "d": C["rivet"], "e": C["case_l"]}
-    for j, row in enumerate(cone):
-        for i, ch in enumerate(row):
-            if ch != " ":
-                px(img, cx + i, cy + j, cols[ch])
-    px(img, cx + 2, cy + 2, C["case_h"])
-    # Status LED, top right of the grille.
-    lx, ly = x0 + 8, y0 + 1
-    if on:
-        px(img, lx, ly, C["accent_l"]); px(img, lx, ly + 1, C["accent"])
-    else:
-        px(img, lx, ly, C["accent_d"]); px(img, lx, ly + 1, C["out"])
+def portable_speaker_fabric():
+    rnd = random.Random(11)
+    img = new()
+    for y in range(S):
+        for x in range(S):
+            v = 236 if (x + y) % 2 else 206
+            if (x + 2 * y) % 7 == 0:
+                v -= 16
+            v += rnd.randint(-6, 6)
+            px(img, x, y, (v, v, v))
     return img
 
 
-def portable_speaker_front():
-    return speaker_front(False)
-
-
-def portable_speaker_front_on():
-    return speaker_front(True)
-
-
-def portable_speaker_side():
-    img = casing(21)
-    x0, y0 = 5, 4                       # 6x8 face
-    panel(img, x0, y0, 6, 8)
-    # Three vent slots.
-    for y in (y0 + 2, y0 + 4):
-        for x in range(x0 + 2, x0 + 4):
-            px(img, x, y, C["out"])
-        px(img, x0 + 2, y + 1, C["case_l"]); px(img, x0 + 3, y + 1, C["case_l"])
+def portable_speaker_rubber():
+    rnd = random.Random(5)
+    img = new()
+    for y in range(S):
+        for x in range(S):
+            px(img, x, y, RUBBER[1] if rnd.random() > 0.18 else RUBBER[2])
     return img
 
 
-def portable_speaker_top():
-    img = casing(22)
-    x0, y0 = 3, 5                       # 10x6 face
-    panel(img, x0, y0, 10, 6)
-    # Handle mounts (where the carry handle posts sit) and a recessed groove between them.
-    for x in (x0 + 2, x0 + 7):
-        rect(img, x, y0 + 2, x, y0 + 3, C["out"])
-    for x in range(x0 + 3, x0 + 7):
-        px(img, x, y0 + 2, C["case_d"]); px(img, x, y0 + 3, C["case_l"])
-    # Handle swatch (sampled by the model's handle element): grip top and grip sides.
-    rect(img, 3, 13, 12, 13, C["case_h"])
-    rect(img, 3, 14, 12, 14, C["case_l"])
+def portable_speaker_radiator():
+    """End cap: rubber rim and a recessed passive radiator centred on (8, 8)."""
+    img = portable_speaker_rubber()
+    for y in range(S):
+        for x in range(S):
+            d = math.hypot(x + 0.5 - 8, y + 0.5 - 8)
+            if 3.1 < d <= 3.9:
+                px(img, x, y, RUBBER[3] if x + y < 15 else RUBBER[0])
+            elif 2.0 < d <= 3.1:
+                px(img, x, y, (16, 17, 21))
+            elif d <= 2.0:
+                px(img, x, y, RUBBER[2] if x + y < 15 else RUBBER[1])
+    px(img, 7, 7, RUBBER[3])
     return img
+
+
+def speaker_details(on):
+    img = new()
+    for y, row in enumerate(EQ_LOGO):
+        for x, ch in enumerate(row):
+            if ch == "#":
+                px(img, x, y, COPPER_L if y == 0 or EQ_LOGO[y - 1][x] != "#" else COPPER)
+    px(img, 2, 9, RUBBER[3])                 # volume down
+    px(img, 4, 9, COPPER)                    # play
+    px(img, 6, 9, RUBBER[3])                 # volume up
+    px(img, 7, 9, LED_ON if on else LED_OFF)  # power LED
+    return img
+
+
+def portable_speaker_details():
+    return speaker_details(False)
+
+
+def portable_speaker_details_on():
+    return speaker_details(True)
 
 
 BLOCKS = {
-    "portable_speaker_front": portable_speaker_front,
-    "portable_speaker_front_on": portable_speaker_front_on,
-    "portable_speaker_side": portable_speaker_side,
-    "portable_speaker_top": portable_speaker_top,
+    "portable_speaker_radiator": portable_speaker_radiator,
+    "portable_speaker_fabric": portable_speaker_fabric,
+    "portable_speaker_rubber": portable_speaker_rubber,
+    "portable_speaker_details": portable_speaker_details,
+    "portable_speaker_details_on": portable_speaker_details_on,
 }
 ANIMATED = {}  # name -> (frames fn, frametime ticks)
 ITEMS = {}  # name -> fn (flat item textures)

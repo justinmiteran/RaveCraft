@@ -6,6 +6,7 @@ import java.util.concurrent.CompletableFuture;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricBlockLootSubProvider;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.level.storage.loot.LootPool;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
@@ -20,12 +21,13 @@ public class RaveCraftBlockLootProvider extends FabricBlockLootSubProvider {
 
 	@Override
 	public void generate() {
-		// Like vanilla shulker boxes: the dropped item keeps the speaker's identity and settings.
+		// Like vanilla shulker boxes: the dropped item keeps the speaker's identity, settings and dye colour.
 		add(ModBlocks.PORTABLE_SPEAKER, LootTable.lootTable()
 				.withPool(applyExplosionCondition(ModBlocks.PORTABLE_SPEAKER, LootPool.lootPool()
 						.setRolls(ContextIntProviders.exactly(1))
 						.add(LootItem.lootTableItem(ModBlocks.PORTABLE_SPEAKER)
 								.apply(CopyComponentsFunction.copyComponentsFromBlockEntity(LootContextParams.BLOCK_ENTITY)
-										.include(ModDataComponents.SPEAKER))))));
+										.include(ModDataComponents.SPEAKER)
+										.include(DataComponents.DYED_COLOR))))));
 	}
 }

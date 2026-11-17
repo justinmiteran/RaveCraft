@@ -33,6 +33,8 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 						.pattern("FFF")
 						.unlockedBy("has_note_block", has(Items.NOTE_BLOCK))
 						.save(output);
+				// Dyeable like leather armour: the speaker plus any dyes, colours mixed, other components kept.
+				dyedItem(ModBlocks.PORTABLE_SPEAKER.asItem(), "portable_speaker_dye");
 			}
 		};
 	}

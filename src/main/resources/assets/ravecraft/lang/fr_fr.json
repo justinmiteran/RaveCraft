@@ -11,5 +11,7 @@
   "screen.ravecraft.speaker_browser.off_hint": "L’enceinte est éteinte : accroupi + clic droit pour l’allumer",
   "screen.ravecraft.speaker_browser.loading": "Chargement…",
   "screen.ravecraft.speaker_browser.error": "Impossible d’ouvrir ce dossier",
-  "screen.ravecraft.speaker_browser.empty": "Aucune musique ici"
+  "screen.ravecraft.speaker_browser.empty": "Aucune musique ici",
+  "toast.ravecraft.track_removed.title": "Morceau retiré",
+  "toast.ravecraft.track_removed.message": "%s est introuvable ou illisible"
 }

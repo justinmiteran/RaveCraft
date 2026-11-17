@@ -7,6 +7,7 @@ import com.ravecraft.mod.core.audio.decode.PcmDecoder;
 import com.ravecraft.mod.core.audio.decode.PcmFormat;
 import com.ravecraft.mod.core.audio.opus.OpusMonoEncoder;
 import com.ravecraft.mod.core.audio.stream.EmitterPacer;
+import com.ravecraft.mod.core.audio.stream.FrameSkipper;
 import com.ravecraft.mod.core.audio.stream.LinearResampler;
 import com.ravecraft.mod.core.audio.stream.MonoFramer;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
@@ -68,6 +69,7 @@ public final class StreamEmitter {
 			MonoFramer framer = new MonoFramer();
 			OpusMonoEncoder encoder = new OpusMonoEncoder();
 			EmitterPacer pacer = new EmitterPacer(StreamFormat.LEAD_MS);
+			FrameSkipper skipper = new FrameSkipper(startMs);
 			byte[] buffer = new byte[format.frameBytes() * 4096];
 			List<byte[]> chunk = new ArrayList<>(StreamFormat.FRAMES_PER_CHUNK);
 			int seq = 0;
@@ -80,6 +82,9 @@ public final class StreamEmitter {
 				short[] samples = resampler.process(Pcm16.toShorts(mono, mono.length), mono.length / 2);
 				framer.push(samples, samples.length);
 				for (short[] frame = framer.poll(); frame != null; frame = framer.poll()) {
+					if (skipper.skip()) {
+						continue;
+					}
 					chunk.add(encoder.encode(frame));
 					if (chunk.size() == StreamFormat.FRAMES_PER_CHUNK) {
 						send(seq++, chunk, pacer, start);
@@ -88,7 +93,7 @@ public final class StreamEmitter {
 				}
 			}
 			short[] tail = framer.flush();
-			if (tail != null) {
+			if (tail != null && !skipper.skip()) {
 				chunk.add(encoder.encode(tail));
 			}
 			if (!chunk.isEmpty() && !cancelled) {

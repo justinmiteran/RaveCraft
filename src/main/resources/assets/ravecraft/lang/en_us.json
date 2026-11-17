@@ -11,5 +11,7 @@
   "screen.ravecraft.speaker_browser.off_hint": "The speaker is off: sneak + right-click it to switch it on",
   "screen.ravecraft.speaker_browser.loading": "Loading…",
   "screen.ravecraft.speaker_browser.error": "Cannot open this folder",
-  "screen.ravecraft.speaker_browser.empty": "No music here"
+  "screen.ravecraft.speaker_browser.empty": "No music here",
+  "toast.ravecraft.track_removed.title": "Track removed",
+  "toast.ravecraft.track_removed.message": "%s could not be read"
 }

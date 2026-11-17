@@ -4,7 +4,11 @@ import com.ravecraft.mod.client.audio.LocalPlayback;
 import com.ravecraft.mod.network.payload.RelayedChunkPayload;
 import com.ravecraft.mod.network.payload.SessionEndPayload;
 import com.ravecraft.mod.network.payload.StreamOrderPayload;
+import com.ravecraft.mod.network.payload.TrackRemovedPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
+import net.minecraft.network.chat.Component;
 
 /** Client receivers of the audio relay. Fabric runs them on the client thread. */
 public final class ClientRelay {
@@ -19,5 +23,9 @@ public final class ClientRelay {
 				(payload, context) -> ReceivedStreams.end(payload.sessionId(), payload.drain()));
 		ClientPlayNetworking.registerGlobalReceiver(StreamOrderPayload.TYPE,
 				(payload, context) -> LocalPlayback.onOrder(payload));
+		ClientPlayNetworking.registerGlobalReceiver(TrackRemovedPayload.TYPE, (payload, context) ->
+				SystemToast.add(Minecraft.getInstance().gui.toastManager(), SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+						Component.translatable("toast.ravecraft.track_removed.title"),
+						Component.translatable("toast.ravecraft.track_removed.message", payload.title())));
 	}
 }

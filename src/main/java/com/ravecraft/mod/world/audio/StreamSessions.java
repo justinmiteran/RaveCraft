@@ -95,7 +95,7 @@ public final class StreamSessions {
 		if (tellOwner && entryId != null) {
 			ServerPlayer owner = server.getPlayerList().getPlayer(session.owner());
 			if (owner != null) {
-				Net.send(owner, new StreamOrderPayload(session.id(), session.key().pos(), false, entryId, 0));
+				Net.send(owner, new StreamOrderPayload(session.id(), session.key().dimension(), session.key().pos(), false, entryId, 0));
 			}
 		}
 		ServerLevel level = server.getLevel(session.key().dimension());

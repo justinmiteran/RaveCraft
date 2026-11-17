@@ -10,8 +10,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.VarInt;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import org.junit.jupiter.api.Test;
 
 class QueuePayloadsTest {
@@ -71,8 +74,12 @@ class QueuePayloadsTest {
 
 	@Test
 	void streamOrderRoundTrips() {
-		StreamOrderPayload payload = new StreamOrderPayload(12, POS, true, UUID.randomUUID(), 61_250L);
-		assertEquals(payload, roundTrip(StreamOrderPayload.CODEC, payload));
+		// The dimension travels with the order: the owner's client must not loop its stream back elsewhere.
+		var nether = ResourceKey.create(Registries.DIMENSION, Identifier.withDefaultNamespace("the_nether"));
+		StreamOrderPayload payload = new StreamOrderPayload(12, nether, POS, true, UUID.randomUUID(), 61_250L);
+		StreamOrderPayload read = roundTrip(StreamOrderPayload.CODEC, payload);
+		assertEquals(payload, read);
+		assertEquals(nether, read.dimension());
 	}
 
 	@Test

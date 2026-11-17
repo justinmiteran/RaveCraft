@@ -113,8 +113,12 @@ public class PortableSpeakerBlock extends BaseEntityBlock {
 
 	@Override
 	protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-		if (!level.isClientSide() && level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) {
-			speaker.togglePower();
+		if (player.isSecondaryUseActive()) {
+			if (!level.isClientSide() && level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) {
+				speaker.togglePower();
+			}
+		} else if (level.isClientSide()) {
+			SpeakerScreenOpener.open(pos);
 		}
 		return InteractionResult.SUCCESS;
 	}

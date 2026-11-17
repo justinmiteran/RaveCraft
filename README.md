@@ -125,5 +125,6 @@ CI `build` verte obligatoire, pull request requise, force-push et suppression in
 |---|---|---|
 | Code (Java, build, outils, données générées) | **LGPL-3.0-only** | [LICENSE](LICENSE), avec le texte de la GPL-3.0 dans [COPYING](COPYING) |
 | Assets (textures, icône, sons, modèles faits main, `art/`) | **CC BY-NC-SA 4.0** | [LICENSE-ASSETS.md](LICENSE-ASSETS.md) |
+| Bibliothèques embarquées (décodeurs MP3 et FLAC) | **LGPL** (leurs propres licences) | [LICENSE-THIRD-PARTY.md](LICENSE-THIRD-PARTY.md) |
 
 En bref : on peut utiliser le code et faire des addons, mais une version modifiée de RaveCraft doit rester open source sous la même licence. Les assets peuvent être réutilisés en citant RaveCraft, sans usage commercial et sous la même licence.

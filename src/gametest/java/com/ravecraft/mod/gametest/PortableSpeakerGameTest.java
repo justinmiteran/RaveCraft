@@ -38,6 +38,13 @@ public class PortableSpeakerGameTest {
 		return player;
 	}
 
+	/** Sneak + use toggles power; a plain use opens the music screen instead. */
+	private static void powerOn(GameTestHelper h, BlockPos pos) {
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		player.setShiftKeyDown(true);
+		h.useBlock(pos, player);
+	}
+
 	@GameTest
 	public void speakerDataCodecRoundTrip(GameTestHelper helper) {
 		SpeakerData data = new SpeakerData(UUID.randomUUID(), new SpeakerSettings(true, 42));
@@ -61,12 +68,21 @@ public class PortableSpeakerGameTest {
 	}
 
 	@GameTest
-	public void usingBlockTogglesPower(GameTestHelper h) {
+	public void sneakUseTogglesPower(GameTestHelper h) {
 		BlockPos pos = new BlockPos(1, 1, 1);
 		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
-		h.useBlock(pos);
+		powerOn(h, pos);
 		h.assertBlockProperty(pos, PortableSpeakerBlock.POWERED, true);
 		h.assertTrue(h.getBlockEntity(pos, PortableSpeakerBlockEntity.class).data().settings().powered(), "data powered");
+		h.succeed();
+	}
+
+	@GameTest
+	public void plainUseDoesNotTogglePower(GameTestHelper h) {
+		BlockPos pos = new BlockPos(1, 1, 1);
+		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
+		h.useBlock(pos, h.makeMockPlayer(GameType.SURVIVAL));
+		h.assertBlockProperty(pos, PortableSpeakerBlock.POWERED, false);
 		h.succeed();
 	}
 
@@ -74,7 +90,7 @@ public class PortableSpeakerGameTest {
 	public void breakingDropsItemWithSameData(GameTestHelper h) {
 		BlockPos pos = new BlockPos(1, 1, 1);
 		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
-		h.useBlock(pos);
+		powerOn(h, pos);
 		SpeakerData before = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class).data();
 		h.getLevel().destroyBlock(h.absolutePos(pos), true);   // drops, unlike helper.destroyBlock
 		var drops = h.getEntities(EntityTypes.ITEM, pos, 2);
@@ -150,7 +166,7 @@ public class PortableSpeakerGameTest {
 	public void blockEntitySaveLoadRoundTrip(GameTestHelper h) {
 		BlockPos pos = new BlockPos(1, 1, 1);
 		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
-		h.useBlock(pos); // powered on, so the data is not the default
+		powerOn(h, pos); // powered on, so the data is not the default
 		PortableSpeakerBlockEntity original = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class);
 		var access = h.getLevel().registryAccess();
 		CompoundTag tag = original.saveWithFullMetadata(access);
@@ -243,7 +259,7 @@ public class PortableSpeakerGameTest {
 		BlockPos pos = support.above();
 		h.setBlock(support, Blocks.STONE);
 		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
-		h.useBlock(pos);
+		powerOn(h, pos);
 		SpeakerData before = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class).data();
 		h.getLevel().destroyBlock(h.absolutePos(support), false);
 		h.assertBlockNotPresent(ModBlocks.PORTABLE_SPEAKER, pos);

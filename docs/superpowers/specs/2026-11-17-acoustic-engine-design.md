@@ -26,9 +26,9 @@ Remplacer le rendu provisoire des étapes 3a et 3b (une `SoundInstance` vanilla 
 | # | Décision |
 |---|---|
 | A1 | Rendu **le plus réaliste** : loi physique, pas de courbe « jeu vidéo » adoucie (adoucissable par réglage serveur). |
-| A2 | **Portée du profil** : 32 blocs pour l'enceinte portable à volume maximal. Le rayon de relais serveur suit cette portée. Remplace la portée « ~16 blocs » de la spec parente (§4.1). |
+| A2 | **Portée calculée depuis la puissance** : un profil d'appareil se décrit par sa fiche technique (puissance en W, sensibilité en dB SPL à 1 W / 1 m). La portée est la distance où le niveau tombe sous un seuil d'audibilité réglé par le serveur (68 dB par défaut), plafonnée par `maxRange` (256 blocs par défaut). Enceinte portable : 20 W, 85 dB → ≈ 32 blocs à volume maximal. Le rayon de relais serveur suit cette portée. Remplace la portée « ~16 blocs » de la spec parente (§4.1). |
 | A3 | **Sources OpenAL dédiées** (approche A), gérées par RaveCraft dans le contexte OpenAL de Minecraft, et non des `SoundInstance` vanilla : la réserve vanilla de 2 à 8 canaux de streaming est partagée avec la musique et les juke-box, et ne donne pas accès aux filtres EFX par source. |
-| A4 | Modèle acoustique dans **`config/ravecraft-server.json`**, envoyé aux joueurs à la connexion. |
+| A4 | Modèle acoustique dans **`config/ravecraft-server.json5`**, commenté (chaque réglage est expliqué dans le fichier), envoyé aux joueurs à la connexion. |
 | A5 | Réglages personnels dans les **options de Minecraft** (écran Musique et sons, fichier `options.txt`), pas dans un fichier du mod. Remplace, pour ces réglages, le `ravecraft-client.json` de la spec parente (§5.4). |
 
 ## 3. Architecture (4a)
@@ -43,22 +43,23 @@ LocalPlayback (boucle locale) ───────►      │                 
 ```
 
 ### 3.1 `core.acoustics` (Java pur, testé en JUnit)
-- **`DeviceProfile`** (record) : `range` (blocs, à volume maximal), `bassCutDb`, `bassCutHz`, `Directivity`. Profil `PORTABLE` : 32 blocs, −6 dB, 150 Hz, omnidirectionnel.
+- **`DeviceProfile`** (record) : `powerWatts`, `sensitivityDb` (dB SPL à 1 W / 1 m), `bassCutDb`, `bassCutHz`, `Directivity`. Profil `PORTABLE` : 20 W, 85 dB, −6 dB, 150 Hz, omnidirectionnel.
 - **`Directivity`** : `OMNI`, ou cône `(halfAngleDeg, rearGainDb)`. `gain(cosAngle)` vaut 1 dans le demi-angle, décroît ensuite en cosinus jusqu'à `rearGainDb` à l'arrière (180°). Seul `OMNI` est utilisé en 4a ; le cône est codé et testé pour les futures sonos.
 - **`Propagation`** : fonctions pures de la distance `d` et du volume `v` (0 à 1) :
-  - `range(profile, v) = profile.range × v` ;
+  - `levelAt1m(profile) = sensitivityDb + 10·log₁₀(powerWatts)` (dB SPL à volume maximal) ;
+  - `range(settings, profile, v) = min(maxRange, 10^((levelAt1m + 20·log₁₀ v − audibilityThresholdDb) / (20 × rolloff)))`, 0 si `v` = 0. Avec `rolloff` 1, la portée est proportionnelle à `v` ;
   - `distanceGain(d) = 1 / max(d, 1)^rolloff` ;
   - `fade(d, range)` : 1 jusqu'à `(1 − fadeFraction) × range`, puis demi-cosinus jusqu'à 0 exactement à `range`, 0 au-delà ;
   - `gain(d, v, profile, cosAngle) = v × distanceGain(d) × fade(d, range) × directivity.gain(cosAngle)` ;
   - `highFrequencyGain(d) = 10^(−airAbsorptionDbPerBlock × d / 20)`, borné à [0,05 ; 1].
 - **`Equalizer`** : filtre en plateau grave (biquad, formules RBJ, Q = 0,707) appliqué au PCM mono avant OpenAL. Garde son état d'une trame à l'autre ; à gain 0 dB, il laisse le signal intact. Le signal de sortie est borné à [−1, 1].
 - **`SourceSelector`** : à partir des gains calculés (avant volumes du joueur), choisit les `N` flux à gain non nul les plus forts. Égalité tranchée par identifiant de session, pour un résultat stable. Un flux déjà actif garde sa source tant qu'un autre ne le dépasse pas de plus de 1 dB (hystérésis anti-va-et-vient).
-- **`AcousticSettings`** (record) : `rolloff` [0,25 ; 3] défaut 1, `fadeFraction` [0,05 ; 0,5] défaut 0,2, `airAbsorptionDbPerBlock` [0 ; 1] défaut 0,05, et le profil `portable` (`range` [4 ; 128] défaut 32, `bassCutDb` [−24 ; 0] défaut −6, `bassCutHz` [40 ; 500] défaut 150). Lecture et écriture JSON (Gson), valeurs hors bornes ramenées dans les bornes avec avertissement, fichier illisible → valeurs par défaut.
+- **`AcousticSettings`** (record) : `rolloff` [0,25 ; 3] défaut 1, `fadeFraction` [0,05 ; 0,5] défaut 0,2, `airAbsorptionDbPerBlock` [0 ; 1] défaut 0,05, `audibilityThresholdDb` [30 ; 100] défaut 68, `maxRange` [16 ; 512] défaut 256, et le profil `portable` (`powerWatts` [0,1 ; 100 000] défaut 20, `sensitivityDb` [70 ; 115] défaut 85, `bassCutDb` [−24 ; 0] défaut −6, `bassCutHz` [40 ; 500] défaut 150). Lecture JSON5 tolérante (Gson, commentaires `//` acceptés) ; le fichier par défaut est écrit avec un commentaire par réglage. Valeurs hors bornes ramenées dans les bornes avec avertissement, fichier illisible → valeurs par défaut. Le client borne aussi les réglages reçus.
 
 ### 3.2 Côté serveur
-- **`AcousticConfig`** : charge `config/ravecraft-server.json` au démarrage du serveur (le crée avec les valeurs par défaut s'il manque) et garde l'`AcousticSettings` en mémoire. Pas de rechargement à chaud.
+- **`AcousticConfig`** : charge `config/ravecraft-server.json5` au démarrage du serveur (le crée avec les valeurs par défaut s'il manque) et garde l'`AcousticSettings` en mémoire. Pas de rechargement à chaud.
 - **`AcousticSettingsPayload`** : envoyé à chaque joueur à la connexion (`ServerPlayConnectionEvents.JOIN`).
-- **Rayon de relais** : `AudioRelay` remplace la constante `StreamFormat.RELAY_RANGE` (24) par `range(portable, v) + 8` blocs de marge (mouvements entre deux paquets), calculé à chaque paquet relayé avec le volume actuel de l'enceinte. À volume 0, personne ne reçoit le flux.
+- **Rayon de relais** : `AudioRelay` remplace la constante `StreamFormat.RELAY_RANGE` (24) par `range(settings, portable, v) + 8` blocs de marge (mouvements entre deux paquets), calculé à chaque paquet relayé avec le volume actuel de l'enceinte. À volume 0, personne ne reçoit le flux.
 
 ### 3.3 Côté client (`client.audio.render`)
 - **`AcousticRenderer`** : seul point de sortie audio des enceintes.
@@ -86,21 +87,21 @@ LocalPlayback (boucle locale) ───────►      │                 
 | Plus de flux que de sources | Flux en trop virtuels (§3.3). |
 | Autre dimension | Seuls les flux de la dimension du joueur sont rendus (inchangé). |
 | Enceinte éteinte, cassée ou déchargée | Le flux s'arrête comme aujourd'hui ; sa source est libérée. |
-| `ravecraft-server.json` invalide | Valeurs ramenées dans leurs bornes ou valeurs par défaut, avertissement dans le log, pas de plantage. |
+| `ravecraft-server.json5` invalide | Valeurs ramenées dans leurs bornes ou valeurs par défaut, avertissement dans le log, pas de plantage. |
 
 ## 5. Tests (4a)
 
 **JUnit (`core.acoustics`)**
-- `PropagationTest` : 2 blocs → 0,5 et 4 blocs → 0,25 avec `rolloff` 1 ; gain plein sous 1 bloc ; exposants 0,5 et 2 ; portée = 32 × `v` ; fondu à 1 avant 80 % de la portée et à 0 exactement à la portée ; 0 au-delà ; `v` = 0 → 0 partout ; absorption = 0,05 dB × d, avec son plancher.
+- `PropagationTest` : 2 blocs → 0,5 et 4 blocs → 0,25 avec `rolloff` 1 ; gain plein sous 1 bloc ; exposants 0,5 et 2 ; portée ≈ 31,7 × `v` pour 20 W / 85 dB / seuil 68 dB ; ×4 en puissance → portée ×2 ; `rolloff` 0,5 → portée au carré (avant plafond) ; plafond `maxRange` ; fondu à 1 avant 80 % de la portée et à 0 exactement à la portée ; 0 au-delà ; `v` = 0 → 0 partout ; absorption = 0,05 dB × d, avec son plancher.
 - `DirectivityTest` : `OMNI` vaut 1 partout ; cône à 1 dans l'axe, décroissant hors axe, `rearGainDb` à l'arrière.
 - `EqualizerTest` : sinus 60 Hz atténué d'environ 6 dB, sinus 1 kHz inchangé (±0,5 dB) ; 0 dB → signal identique ; pas de discontinuité à la jointure de deux trames ; sortie dans [−1, 1].
 - `SourceSelectorTest` : garde les N plus forts ; égalités stables ; hystérésis de 1 dB ; promotion et rétrogradation quand N change ; un gain nul n'obtient jamais de source.
-- `AcousticSettingsTest` : aller-retour JSON ; bornes ; fichier corrompu → défauts ; aller-retour du codec réseau.
+- `AcousticSettingsTest` : aller-retour JSON ; commentaires acceptés ; bornes ; fichier corrompu → défauts ; aller-retour du codec réseau.
 
 **GameTests**
-- Un joueur à 30 blocs reçoit le flux d'une enceinte à 100 % (rayon 32 + 8 = 40), pas d'une enceinte à 50 % (rayon 16 + 8 = 24).
+- Un joueur à 30 blocs reçoit le flux d'une enceinte à 100 % (rayon ≈ 31,7 + 8), pas d'une enceinte à 50 % (rayon ≈ 15,8 + 8).
 - Un changement de volume change aussitôt l'ensemble des destinataires.
-- Un `range` modifié dans les réglages serveur est appliqué au relais.
+- Une puissance modifiée dans les réglages serveur (80 W, portée ×2) est appliquée au relais.
 - Les réglages sont envoyés au joueur à la connexion.
 
 **Vérification en jeu** (consignée dans la PR)

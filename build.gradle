@@ -63,6 +63,10 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
+	// Audio decoders, bundled jar-in-jar (licences: LICENSE-THIRD-PARTY.md)
+	include(implementation("javazoom:jlayer:1.0.1"))
+	include(implementation("org.jflac:jflac-codec:1.5.2"))
+
 	testImplementation platform("org.junit:junit-bom:${project.junit_version}")
 	testImplementation "org.junit.jupiter:junit-jupiter"
 	testRuntimeOnly "org.junit.platform:junit-platform-launcher"

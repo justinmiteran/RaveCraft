@@ -115,4 +115,16 @@ class JitterBufferTest {
 		}
 		assertEquals(60, buffer.bufferedFrames());
 	}
+
+	@Test
+	void drainPlaysTailBelowTargetThenWaits() {
+		offer(0, 3);
+		assertInstanceOf(Waiting.class, buffer.poll());
+		buffer.drain();
+		for (int i = 0; i < 4; i++) {
+			assertAudio(i, buffer.poll());
+		}
+		assertInstanceOf(Waiting.class, buffer.poll());
+		assertEquals(0, buffer.bufferedFrames());
+	}
 }

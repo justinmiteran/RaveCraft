@@ -14,6 +14,7 @@ public final class StreamPlayout {
 	private final JitterBuffer buffer = new JitterBuffer(StreamFormat.JITTER_TARGET_FRAMES, StreamFormat.MAX_AHEAD_FRAMES);
 	private final OpusMonoDecoder decoder = new OpusMonoDecoder();
 	private long lastOfferMillis;
+	private boolean finished;
 
 	public StreamPlayout(long nowMillis) {
 		this.lastOfferMillis = nowMillis;
@@ -45,6 +46,17 @@ public final class StreamPlayout {
 			}
 		}
 		return out;
+	}
+
+	/** The stream ended normally: play out the buffered tail, then report {@link #isDrained()}. */
+	public synchronized void finish() {
+		finished = true;
+		buffer.drain();
+	}
+
+	/** True once {@link #finish()} was called and everything buffered has been played. */
+	public synchronized boolean isDrained() {
+		return finished && buffer.bufferedFrames() == 0;
 	}
 
 	/** True when nothing arrived during the last {@code millis}. */

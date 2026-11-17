@@ -62,4 +62,24 @@ class StreamPlayoutTest {
 		assertFalse(playout.idleFor(5_000, 11_999));
 		assertTrue(playout.idleFor(5_000, 12_000));
 	}
+
+	@Test
+	void finishPlaysTailThenDrains() {
+		StreamPlayout playout = new StreamPlayout(0);
+		OpusMonoEncoder encoder = new OpusMonoEncoder();
+		List<byte[]> frames = new ArrayList<>();
+		for (int i = 0; i < StreamFormat.FRAMES_PER_CHUNK; i++) {
+			short[] pcm = new short[StreamFormat.FRAME_SAMPLES];
+			for (int s = 0; s < pcm.length; s++) {
+				pcm[s] = (short) Math.round(10_000 * Math.sin(2 * Math.PI * 1000 * (i * pcm.length + s) / StreamFormat.SAMPLE_RATE));
+			}
+			frames.add(encoder.encode(pcm));
+		}
+		playout.offer(0, frames, 0);
+		assertFalse(playout.isDrained());
+		playout.finish();
+		assertFalse(playout.isDrained());
+		assertTrue(rms(playout.nextBlock()) > 1_000);
+		assertTrue(playout.isDrained());
+	}
 }

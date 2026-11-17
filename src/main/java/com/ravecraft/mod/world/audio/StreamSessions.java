@@ -46,7 +46,7 @@ public final class StreamSessions {
 			return Optional.empty();
 		}
 		Opened<SpeakerKey> opened = TABLE.open(new SpeakerKey(level.dimension(), pos), player.getUUID());
-		opened.replaced().ifPresent(old -> notifyEnded(level.getServer(), old, true));
+		opened.replaced().ifPresent(old -> notifyEnded(level.getServer(), old, true, false));
 		Session<SpeakerKey> session = opened.session();
 		Net.send(player, new StreamOrderPayload(session.id(), session.key().pos(), true));
 		return Optional.of(session);
@@ -54,21 +54,24 @@ public final class StreamSessions {
 
 	/** Ends the session of the speaker at {@code pos} (absolute), if any: broken, switched off or unloaded. */
 	public static void endAt(ServerLevel level, BlockPos pos) {
-		TABLE.endByKey(new SpeakerKey(level.dimension(), pos)).ifPresent(s -> notifyEnded(level.getServer(), s, true));
+		TABLE.endByKey(new SpeakerKey(level.dimension(), pos)).ifPresent(s -> notifyEnded(level.getServer(), s, true, false));
 	}
 
-	/** Ends session {@code id} at the request of its owner; requests from anyone else are ignored. */
-	public static void close(int id, ServerPlayer requester) {
+	/**
+	 * Ends session {@code id} at the request of its owner; requests from anyone else are ignored. When the track
+	 * {@code finished}, listeners play their buffered tail before stopping.
+	 */
+	public static void close(int id, ServerPlayer requester, boolean finished) {
 		Optional<Session<SpeakerKey>> session = TABLE.byId(id);
 		if (session.isPresent() && session.get().owner().equals(requester.getUUID())) {
 			TABLE.endById(id);
-			notifyEnded(requester.level().getServer(), session.get(), false);
+			notifyEnded(requester.level().getServer(), session.get(), false, finished);
 		}
 	}
 
 	/** Ends every session of a player who left. */
 	public static void endByOwner(MinecraftServer server, UUID owner) {
-		TABLE.endByOwner(owner).forEach(s -> notifyEnded(server, s, false));
+		TABLE.endByOwner(owner).forEach(s -> notifyEnded(server, s, false, false));
 	}
 
 	/** Drops everything without notifying anyone: the server is stopping. */
@@ -77,7 +80,7 @@ public final class StreamSessions {
 	}
 
 	/** Tells the players tracking the speaker that the session is over, and its owner to stop when asked to. */
-	private static void notifyEnded(MinecraftServer server, Session<SpeakerKey> session, boolean tellOwner) {
+	private static void notifyEnded(MinecraftServer server, Session<SpeakerKey> session, boolean tellOwner, boolean drain) {
 		if (tellOwner) {
 			ServerPlayer owner = server.getPlayerList().getPlayer(session.owner());
 			if (owner != null) {
@@ -88,7 +91,7 @@ public final class StreamSessions {
 		if (level == null) {
 			return;
 		}
-		SessionEndPayload end = new SessionEndPayload(session.id());
+		SessionEndPayload end = new SessionEndPayload(session.id(), drain);
 		for (ServerPlayer player : PlayerLookup.tracking(level, session.key().pos())) {
 			if (!player.getUUID().equals(session.owner())) {
 				Net.send(player, end);

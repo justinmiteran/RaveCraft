@@ -34,6 +34,7 @@ public final class JitterBuffer {
 	/** Index of the next frame to play; frames below it are too old. */
 	private long cursor = Long.MIN_VALUE;
 	private boolean playing;
+	private boolean draining;
 
 	public JitterBuffer(int targetFrames, int maxAheadFrames) {
 		this.targetFrames = targetFrames;
@@ -61,7 +62,7 @@ public final class JitterBuffer {
 
 	public Slot poll() {
 		if (!playing) {
-			if (frames.isEmpty() || frames.lastKey() - frames.firstKey() < targetFrames) {
+			if (frames.isEmpty() || (!draining && frames.lastKey() - frames.firstKey() < targetFrames)) {
 				return WAITING;
 			}
 			playing = true;
@@ -74,6 +75,11 @@ public final class JitterBuffer {
 		byte[] frame = frames.remove(cursor);
 		cursor++;
 		return frame == null ? LOST : new Audio(frame);
+	}
+
+	/** No more frames will come: play what is buffered without waiting for the target. */
+	public void drain() {
+		draining = true;
 	}
 
 	public int bufferedFrames() {

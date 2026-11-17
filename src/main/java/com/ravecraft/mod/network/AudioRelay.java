@@ -40,7 +40,7 @@ public final class AudioRelay {
 		ServerPlayNetworking.registerGlobalReceiver(StreamOpenPayload.TYPE,
 				(payload, context) -> StreamSessions.open(context.player(), payload.pos()));
 		ServerPlayNetworking.registerGlobalReceiver(StreamClosePayload.TYPE,
-				(payload, context) -> StreamSessions.close(payload.sessionId(), context.player()));
+				(payload, context) -> StreamSessions.close(payload.sessionId(), context.player(), payload.finished()));
 		ServerPlayNetworking.registerGlobalReceiver(AudioChunkPayload.TYPE,
 				(payload, context) -> relay(context.player(), payload));
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {

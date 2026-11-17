@@ -5,13 +5,20 @@
   "screen.ravecraft.speaker_browser.roots": "Lecteurs et dossiers",
   "screen.ravecraft.speaker_browser.back": "Retour",
   "screen.ravecraft.speaker_browser.play": "Lire",
-  "screen.ravecraft.speaker_browser.stop": "Arrêter",
-  "screen.ravecraft.speaker_browser.now_playing": "En lecture : %s",
+  "screen.ravecraft.speaker_browser.now_playing": "En lecture : %s (%s) %s",
   "screen.ravecraft.speaker_browser.nothing_playing": "Aucune lecture en cours",
   "screen.ravecraft.speaker_browser.off_hint": "L’enceinte est éteinte : accroupi + clic droit pour l’allumer",
   "screen.ravecraft.speaker_browser.loading": "Chargement…",
   "screen.ravecraft.speaker_browser.error": "Impossible d’ouvrir ce dossier",
   "screen.ravecraft.speaker_browser.empty": "Aucune musique ici",
   "toast.ravecraft.track_removed.title": "Morceau retiré",
-  "toast.ravecraft.track_removed.message": "%s est introuvable ou illisible"
+  "toast.ravecraft.track_removed.message": "%s est introuvable ou illisible",
+  "screen.ravecraft.speaker_browser.add": "Ajouter",
+  "screen.ravecraft.speaker_browser.pause": "Pause",
+  "screen.ravecraft.speaker_browser.next": "Suivant",
+  "screen.ravecraft.speaker_browser.clear": "Vider",
+  "screen.ravecraft.speaker_browser.queue": "File d’attente (%s)",
+  "screen.ravecraft.speaker_browser.absent": "%s (absent)",
+  "screen.ravecraft.speaker_browser.paused": "En pause : %s (%s) %s",
+  "screen.ravecraft.speaker_browser.queue_empty": "File vide : choisissez de la musique puis Ajouter"
 }

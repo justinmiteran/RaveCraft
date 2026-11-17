@@ -185,6 +185,7 @@ Chaque sous-projet aura sa propre spec, son plan et sa réalisation. L'ordre res
 - [x] Initialisation du projet (`ravecraft`, package `com.ravecraft.mod`)
 - [x] Choisir le premier sous-projet : **Socle audio** (enceinte portable)
 - [ ] Socle audio : spec ([2026-11-17-audio-core-design.md](superpowers/specs/2026-11-17-audio-core-design.md)), plan, réalisation, release `v0.1.0`
+  - [x] Étape 1/5 (PR `feat/portable-speaker`) : enceinte portable posable et transportable, avec identité persistante, état marche/arrêt et volume. Recette **provisoire** vanilla `FFF / NRN / FFF` (lingot de fer, bloc musical, redstone), à remplacer par le sous-projet « Matériaux et composants ».
 
 ### Prévu plus tard (décidé pendant le socle audio)
 - Contrôle des appareils par **propriétaire + invités + verrou** (pour l'instant, contrôle ouvert à tous).

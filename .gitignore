@@ -47,3 +47,6 @@ node_modules/
 
 # Game logs written by runDatagen/runClient at the project root
 logs/
+
+# Datagen hash cache, rewritten on every runDatagen
+src/main/generated/.cache/

@@ -6,7 +6,8 @@
 	"environment": "*",
 	"entrypoints": {
 		"fabric-gametest": [
-			"com.ravecraft.mod.gametest.ExampleGameTest"
+			"com.ravecraft.mod.gametest.ExampleGameTest",
+			"com.ravecraft.mod.gametest.PortableSpeakerGameTest"
 		]
 	},
 	"depends": {

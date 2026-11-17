@@ -9,7 +9,10 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-/** S→C on join: the server's acoustic model. The portable profile is always omnidirectional, so it is not sent. */
+/**
+ * S→C on join: the server's acoustic model. The portable profile is always omnidirectional, so it is not sent. Decoded
+ * values are brought into their bounds, so a broken server cannot feed NaN gains to the renderer.
+ */
 public record AcousticSettingsPayload(AcousticSettings settings) implements CustomPacketPayload {
 	public static final Type<AcousticSettingsPayload> TYPE = new Type<>(RaveCraft.id("acoustic_settings"));
 	public static final StreamCodec<ByteBuf, AcousticSettingsPayload> CODEC = StreamCodec.composite(
@@ -20,7 +23,8 @@ public record AcousticSettingsPayload(AcousticSettings settings) implements Cust
 			ByteBufCodecs.DOUBLE, p -> p.settings().portable().bassCutDb(),
 			ByteBufCodecs.DOUBLE, p -> p.settings().portable().bassCutHz(),
 			(rolloff, fade, absorption, range, bassDb, bassHz) -> new AcousticSettingsPayload(new AcousticSettings(
-					rolloff, fade, absorption, new DeviceProfile(range, bassDb, bassHz, Directivity.OMNI))));
+					rolloff, fade, absorption, new DeviceProfile(range, bassDb, bassHz, Directivity.OMNI))
+					.clamped(RaveCraft.LOGGER::warn)));
 
 	@Override
 	public Type<AcousticSettingsPayload> type() {

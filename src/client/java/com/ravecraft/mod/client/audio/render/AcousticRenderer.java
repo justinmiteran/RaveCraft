@@ -11,6 +11,7 @@ import com.ravecraft.mod.core.audio.stream.StreamPlayout;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +47,7 @@ public final class AcousticRenderer {
 	private static volatile boolean efxWanted = true;
 	private static volatile boolean paused;
 
-	private static @Nullable Worker worker;
+	private static volatile @Nullable Worker worker;
 
 	private AcousticRenderer() {
 	}
@@ -110,6 +111,8 @@ public final class AcousticRenderer {
 
 	/** Client thread, every tick: speaker states and the player's volume settings. */
 	private static void clientTick(Minecraft minecraft) {
+		// Also done by the audio thread, which may never run (no sound device): ended streams must not pile up.
+		STREAMS.values().removeIf(stream -> !stream.alive.getAsBoolean());
 		for (RenderStream stream : STREAMS.values()) {
 			stream.refresh(minecraft.level);
 		}
@@ -125,6 +128,9 @@ public final class AcousticRenderer {
 		private final List<AlSource> free = new ArrayList<>();
 		/** The streams holding a source, by session id. */
 		private final Map<Integer, RenderStream> held = new HashMap<>();
+		/** The attached streams, copied once per step so every pass sees the same ones. */
+		private final List<RenderStream> streams = new ArrayList<>();
+		private final Map<Integer, Double> gains = new HashMap<>();
 		private final float[] scratch = new float[BLOCK_SAMPLES];
 		private final ByteBuffer pcm = BufferUtils.createByteBuffer(BLOCK_SAMPLES * 2);
 		private boolean efx;
@@ -141,15 +147,28 @@ public final class AcousticRenderer {
 		void shutDown() {
 			running = false;
 			LockSupport.unpark(this);
-			try {
-				join(2_000);
-			} catch (InterruptedException e) {
+			// Its sources must be gone before the context is destroyed, so wait for it however long a step takes.
+			boolean interrupted = false;
+			while (isAlive()) {
+				try {
+					join(2_000);
+					if (isAlive()) {
+						RaveCraft.LOGGER.warn("Speaker audio thread is slow to stop, still waiting");
+					}
+				} catch (InterruptedException e) {
+					interrupted = true;
+				}
+			}
+			if (interrupted) {
 				Thread.currentThread().interrupt();
 			}
 		}
 
 		@Override
 		public void run() {
+			// Streams kept playing out while no worker ran (engine reload): start their clocks afresh.
+			long start = Util.getMillis();
+			STREAMS.values().forEach(stream -> stream.pacer.reset(start));
 			efx = Efx.detect();
 			if (!efx) {
 				RaveCraft.LOGGER.warn("OpenAL EFX is not available: speakers play without air absorption");
@@ -169,20 +188,21 @@ public final class AcousticRenderer {
 		}
 
 		private void step(long now) {
+			dropDeadStreams();
+			streams.clear();
+			streams.addAll(STREAMS.values());
+
 			AcousticSettings settings = AcousticSettingsClient.get();
-			if (settings != configured) {
-				STREAMS.values().forEach(stream -> stream.configure(settings));
-				configured = settings;
-			}
-			for (RenderStream stream : STREAMS.values()) {
-				if (stream.eq == null) {
+			boolean reconfigure = settings != configured;
+			configured = settings;
+			for (RenderStream stream : streams) {
+				if (reconfigure || stream.eq == null) {
 					stream.configure(settings);
 				}
 			}
-			dropDeadStreams();
 			if (paused != wasPaused) {
 				wasPaused = paused;
-				for (RenderStream stream : STREAMS.values()) {
+				for (RenderStream stream : streams) {
 					if (stream.source != null) {
 						if (paused) {
 							stream.source.pause();
@@ -198,23 +218,22 @@ public final class AcousticRenderer {
 			}
 
 			Vec3 ear = listener;
-			Map<Integer, Double> gains = new HashMap<>();
-			Map<Integer, Double> distances = new HashMap<>();
-			for (RenderStream stream : STREAMS.values()) {
+			gains.clear();
+			for (RenderStream stream : streams) {
 				double dx = ear.x - (stream.pos.getX() + 0.5);
 				double dy = ear.y - (stream.pos.getY() + 0.5);
 				double dz = ear.z - (stream.pos.getZ() + 0.5);
 				double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 				double cos = distance < 1e-6 ? 1 : (stream.facingX * dx + stream.facingZ * dz) / distance;
-				double gain = stream.powered ? Propagation.gain(settings.rolloff(), settings.fadeFraction(),
+				stream.distance = distance;
+				stream.gain = stream.powered ? Propagation.gain(settings.rolloff(), settings.fadeFraction(),
 						settings.portable(), stream.volume, distance, cos) : 0;
-				gains.put(stream.sessionId, gain);
-				distances.put(stream.sessionId, distance);
+				gains.put(stream.sessionId, stream.gain);
 			}
 
 			int max = maxSources;
 			Set<Integer> chosen = SourceSelector.select(gains, held.keySet(), max);
-			for (RenderStream stream : STREAMS.values()) {
+			for (RenderStream stream : streams) {
 				if (stream.source != null && !chosen.contains(stream.sessionId)) {
 					release(stream, now);
 				}
@@ -222,8 +241,9 @@ public final class AcousticRenderer {
 			while (free.size() + held.size() > max && !free.isEmpty()) {
 				free.removeLast().delete();
 			}
-			for (RenderStream stream : STREAMS.values()) {
-				if (stream.source == null && chosen.contains(stream.sessionId)) {
+			for (RenderStream stream : streams) {
+				// A replaced stream may still hold this session's source until the next step releases it.
+				if (stream.source == null && chosen.contains(stream.sessionId) && !held.containsKey(stream.sessionId)) {
 					stream.source = acquire(max, now);
 					if (stream.source != null) {
 						held.put(stream.sessionId, stream);
@@ -233,7 +253,7 @@ public final class AcousticRenderer {
 
 			float volume = playerVolume;
 			boolean filter = efxWanted;
-			for (RenderStream stream : STREAMS.values()) {
+			for (RenderStream stream : streams) {
 				AlSource source = stream.source;
 				if (source == null) {
 					for (int i = stream.pacer.due(now); i > 0; i--) {
@@ -245,10 +265,9 @@ public final class AcousticRenderer {
 					stream.nextBlock(scratch, pcm);
 					source.queue(pcm);
 				}
-				double distance = distances.get(stream.sessionId);
 				source.place(stream.pos.getX() + 0.5, stream.pos.getY() + 0.5, stream.pos.getZ() + 0.5);
-				source.gain((float) (gains.get(stream.sessionId) * volume));
-				source.highGain(filter ? (float) Propagation.highFrequencyGain(settings.airAbsorptionDbPerBlock(), distance) : 1f);
+				source.gain((float) (stream.gain * volume));
+				source.highGain(filter ? (float) Propagation.highFrequencyGain(settings.airAbsorptionDbPerBlock(), stream.distance) : 1f);
 			}
 		}
 
@@ -257,14 +276,12 @@ public final class AcousticRenderer {
 		 * thread or just dropped) gives its source back.
 		 */
 		private void dropDeadStreams() {
-			for (RenderStream stream : List.copyOf(STREAMS.values())) {
-				if (!stream.alive.getAsBoolean()) {
-					STREAMS.remove(stream.sessionId, stream);
-				}
-			}
-			for (RenderStream stream : List.copyOf(held.values())) {
+			STREAMS.values().removeIf(stream -> !stream.alive.getAsBoolean());
+			for (Iterator<RenderStream> it = held.values().iterator(); it.hasNext(); ) {
+				RenderStream stream = it.next();
 				if (STREAMS.get(stream.sessionId) != stream) {
-					release(stream, 0);
+					it.remove();
+					recycle(stream);
 				}
 			}
 		}
@@ -292,12 +309,19 @@ public final class AcousticRenderer {
 			AlSource source = stream.source;
 			if (source != null) {
 				// Queued blocks were already taken from the playout: the virtual clock waits them out.
-				int pending = source.pendingBlocks();
+				stream.pacer.resetAfter(now, source.pendingBlocks());
+				held.remove(stream.sessionId);
+				recycle(stream);
+			}
+		}
+
+		/** Takes the stream's source back into the free pool. */
+		private void recycle(RenderStream stream) {
+			AlSource source = stream.source;
+			if (source != null) {
 				source.reset();
 				free.add(source);
 				stream.source = null;
-				held.remove(stream.sessionId);
-				stream.pacer.resetAfter(now, pending);
 			}
 		}
 

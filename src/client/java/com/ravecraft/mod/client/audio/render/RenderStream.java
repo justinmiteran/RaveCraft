@@ -37,6 +37,9 @@ final class RenderStream {
 	@Nullable Equalizer eq;
 	final VirtualPacer pacer;
 	@Nullable AlSource source;
+	/** This step's distance to the listener and propagation gain. */
+	double distance;
+	double gain;
 
 	RenderStream(int sessionId, BlockPos pos, StreamPlayout playout, BooleanSupplier alive, long nowMs) {
 		this.sessionId = sessionId;

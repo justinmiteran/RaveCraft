@@ -6,8 +6,8 @@ import com.ravecraft.mod.core.audio.stream.TokenBucket;
 import com.ravecraft.mod.network.payload.AudioChunkPayload;
 import com.ravecraft.mod.network.payload.RelayedChunkPayload;
 import com.ravecraft.mod.network.payload.StreamClosePayload;
-import com.ravecraft.mod.network.payload.StreamOpenPayload;
 import com.ravecraft.mod.world.audio.SpeakerKey;
+import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import com.ravecraft.mod.world.audio.StreamSessions;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,7 +26,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Server side of the audio relay: opens and closes sessions on request and forwards each chunk from the session
+ * Server side of the audio relay: checks each chunk and forwards each chunk from the session
  * owner to the players near the speaker. Listeners come from vanilla chunk tracking, which is maintained on events,
  * so nothing is scanned per tick.
  */
@@ -37,20 +37,14 @@ public final class AudioRelay {
 	}
 
 	public static void init() {
-		ServerPlayNetworking.registerGlobalReceiver(StreamOpenPayload.TYPE,
-				(payload, context) -> StreamSessions.open(context.player(), payload.pos(), payload.request()));
 		ServerPlayNetworking.registerGlobalReceiver(StreamClosePayload.TYPE,
-				(payload, context) -> StreamSessions.close(payload.sessionId(), context.player(), payload.finished()));
+				(payload, context) -> SpeakerPlayback.onStreamClose(context.player(), payload.sessionId(), payload.finished()));
 		ServerPlayNetworking.registerGlobalReceiver(AudioChunkPayload.TYPE,
 				(payload, context) -> relay(context.player(), payload));
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
 			BUCKETS.remove(handler.player.getUUID());
-			StreamSessions.endByOwner(server, handler.player.getUUID());
 		});
-		ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-			BUCKETS.clear();
-			StreamSessions.clear();
-		});
+		ServerLifecycleEvents.SERVER_STOPPING.register(server -> BUCKETS.clear());
 	}
 
 	private static void relay(ServerPlayer sender, AudioChunkPayload chunk) {
@@ -65,6 +59,7 @@ public final class AudioRelay {
 			return;
 		}
 		Session<SpeakerKey> session = found.get();
+		SpeakerPlayback.onChunk(chunk.sessionId());
 		ServerLevel level = sender.level().getServer().getLevel(session.key().dimension());
 		if (level == null) {
 			return;

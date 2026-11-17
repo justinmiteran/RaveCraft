@@ -7,6 +7,7 @@ import com.ravecraft.mod.core.audio.decode.PcmDecoder;
 import com.ravecraft.mod.core.audio.decode.PcmFormat;
 import com.ravecraft.mod.core.audio.opus.OpusMonoEncoder;
 import com.ravecraft.mod.core.audio.stream.EmitterPacer;
+import com.ravecraft.mod.core.audio.stream.FrameSkipper;
 import com.ravecraft.mod.core.audio.stream.LinearResampler;
 import com.ravecraft.mod.core.audio.stream.MonoFramer;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
@@ -20,6 +21,8 @@ import java.util.function.Consumer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 
 /**
  * Streams one track of this player's PC into a session: decode, mono, 48 kHz, Opus, 100 ms chunks sent at most
@@ -28,17 +31,23 @@ import net.minecraft.core.BlockPos;
  */
 public final class StreamEmitter {
 	private final int sessionId;
+	/** The speaker's dimension: this player hears its own stream only while there. */
+	private final ResourceKey<Level> dimension;
 	private final BlockPos pos;
 	private final Path track;
+	/** Where to start in the track: everything before is decoded and dropped. */
+	private final long startMs;
 	private final Runnable onFinished;
 	private final Consumer<Exception> onFailed;
 	private volatile boolean cancelled;
 	private Thread thread;
 
-	public StreamEmitter(int sessionId, BlockPos pos, Path track, Runnable onFinished, Consumer<Exception> onFailed) {
+	public StreamEmitter(int sessionId, ResourceKey<Level> dimension, BlockPos pos, Path track, long startMs, Runnable onFinished, Consumer<Exception> onFailed) {
 		this.sessionId = sessionId;
+		this.dimension = dimension;
 		this.pos = pos.immutable();
 		this.track = track;
+		this.startMs = startMs;
 		this.onFinished = onFinished;
 		this.onFailed = onFailed;
 	}
@@ -65,6 +74,7 @@ public final class StreamEmitter {
 			MonoFramer framer = new MonoFramer();
 			OpusMonoEncoder encoder = new OpusMonoEncoder();
 			EmitterPacer pacer = new EmitterPacer(StreamFormat.LEAD_MS);
+			FrameSkipper skipper = new FrameSkipper(startMs);
 			byte[] buffer = new byte[format.frameBytes() * 4096];
 			List<byte[]> chunk = new ArrayList<>(StreamFormat.FRAMES_PER_CHUNK);
 			int seq = 0;
@@ -77,6 +87,11 @@ public final class StreamEmitter {
 				short[] samples = resampler.process(Pcm16.toShorts(mono, mono.length), mono.length / 2);
 				framer.push(samples, samples.length);
 				for (short[] frame = framer.poll(); frame != null; frame = framer.poll()) {
+					if (skipper.skip()) {
+						// Real time starts with the first frame sent, not while the skipped part is decoded.
+						start = System.nanoTime();
+						continue;
+					}
 					chunk.add(encoder.encode(frame));
 					if (chunk.size() == StreamFormat.FRAMES_PER_CHUNK) {
 						send(seq++, chunk, pacer, start);
@@ -85,7 +100,7 @@ public final class StreamEmitter {
 				}
 			}
 			short[] tail = framer.flush();
-			if (tail != null) {
+			if (tail != null && !skipper.skip()) {
 				chunk.add(encoder.encode(tail));
 			}
 			if (!chunk.isEmpty() && !cancelled) {
@@ -118,7 +133,10 @@ public final class StreamEmitter {
 		List<byte[]> copy = List.copyOf(frames);
 		onClientThread(() -> {
 			ClientPlayNetworking.send(new AudioChunkPayload(sessionId, seq, copy));
-			ReceivedStreams.offer(sessionId, pos, seq, copy);
+			Minecraft minecraft = Minecraft.getInstance();
+			if (minecraft.level != null && minecraft.level.dimension().equals(dimension)) {
+				ReceivedStreams.offer(sessionId, pos, seq, copy);
+			}
 		});
 	}
 

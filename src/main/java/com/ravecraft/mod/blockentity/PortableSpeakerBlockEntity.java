@@ -3,9 +3,10 @@ package com.ravecraft.mod.blockentity;
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.block.PortableSpeakerBlock;
 import com.ravecraft.mod.component.SpeakerData;
+import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.registry.ModBlockEntities;
 import com.ravecraft.mod.registry.ModDataComponents;
-import com.ravecraft.mod.world.audio.StreamSessions;
+import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import java.util.Objects;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponentGetter;
@@ -13,6 +14,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.component.DyedItemColor;
@@ -24,7 +26,7 @@ import net.minecraft.world.level.storage.ValueOutput;
 import org.jspecify.annotations.Nullable;
 
 public class PortableSpeakerBlockEntity extends BlockEntity {
-	private static final String KEY = "speaker";
+	public static final String KEY = "speaker";
 	private static final String COLOR_KEY = "color";
 
 	private SpeakerData data = SpeakerData.create();
@@ -68,24 +70,25 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 			level.setBlock(worldPosition, getBlockState().setValue(PortableSpeakerBlock.POWERED, data.settings().powered()), 3);
 		}
 		setChanged();
-		if (!data.settings().powered() && level instanceof ServerLevel server) {
-			StreamSessions.endAt(server, worldPosition);
+		if (!data.settings().powered() && level instanceof ServerLevel) {
+			SpeakerPlayback.pauseAt(this);
 		}
 	}
 
-	/** Called when the block is broken or its chunk unloads: the speaker can no longer stream. */
+	/** Called when the block is broken or its chunk unloads: the speaker pauses, keeping its queue. */
 	@Override
 	public void setRemoved() {
 		super.setRemoved();
-		if (level instanceof ServerLevel server) {
-			StreamSessions.endAt(server, worldPosition);
+		if (level instanceof ServerLevel) {
+			SpeakerPlayback.pauseAt(this);
 		}
 	}
 
 	@Override
 	protected void saveAdditional(ValueOutput output) {
 		super.saveAdditional(output);
-		output.store(KEY, SpeakerData.CODEC, data);
+		// A chunk is saved before its block entities are removed: while playing, save where the track is now.
+		output.store(KEY, SpeakerData.CODEC, level instanceof ServerLevel ? data.withQueue(SpeakerPlayback.liveQueue(this)) : data);
 		output.storeNullable(COLOR_KEY, DyedItemColor.CODEC, color);
 	}
 
@@ -119,7 +122,8 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 	@Override
 	protected void collectImplicitComponents(DataComponentMap.Builder components) {
 		super.collectImplicitComponents(components);
-		components.set(ModDataComponents.SPEAKER, data);
+		// While playing, the stored position is stale: the item gets where the track is now.
+		components.set(ModDataComponents.SPEAKER, level instanceof ServerLevel ? data.withQueue(SpeakerPlayback.liveQueue(this)) : data);
 		if (color != null) {
 			components.set(DataComponents.DYED_COLOR, color);
 		}
@@ -139,6 +143,9 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 
 	@Override
 	public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-		return saveCustomOnly(registries);
+		// The queue only goes to players with the screen open (SpeakerState), not to everyone tracking the chunk.
+		CompoundTag tag = saveCustomOnly(registries);
+		tag.store(KEY, SpeakerData.CODEC, registries.createSerializationContext(NbtOps.INSTANCE), data.withQueue(SpeakerQueue.EMPTY));
+		return tag;
 	}
 }

@@ -1,4 +1,15 @@
 {
   "block.ravecraft.portable_speaker": "Portable Speaker",
-  "itemGroup.ravecraft.main": "RaveCraft"
+  "itemGroup.ravecraft.main": "RaveCraft",
+  "screen.ravecraft.speaker_browser.title": "Speaker music",
+  "screen.ravecraft.speaker_browser.roots": "Drives and folders",
+  "screen.ravecraft.speaker_browser.back": "Back",
+  "screen.ravecraft.speaker_browser.play": "Play",
+  "screen.ravecraft.speaker_browser.stop": "Stop",
+  "screen.ravecraft.speaker_browser.now_playing": "Now playing: %s",
+  "screen.ravecraft.speaker_browser.nothing_playing": "Nothing playing",
+  "screen.ravecraft.speaker_browser.off_hint": "The speaker is off: sneak + right-click it to switch it on",
+  "screen.ravecraft.speaker_browser.loading": "Loading…",
+  "screen.ravecraft.speaker_browser.error": "Cannot open this folder",
+  "screen.ravecraft.speaker_browser.empty": "No music here"
 }

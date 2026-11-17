@@ -1,4 +1,15 @@
 {
   "block.ravecraft.portable_speaker": "Enceinte portable",
-  "itemGroup.ravecraft.main": "RaveCraft"
+  "itemGroup.ravecraft.main": "RaveCraft",
+  "screen.ravecraft.speaker_browser.title": "Musique de l’enceinte",
+  "screen.ravecraft.speaker_browser.roots": "Lecteurs et dossiers",
+  "screen.ravecraft.speaker_browser.back": "Retour",
+  "screen.ravecraft.speaker_browser.play": "Lire",
+  "screen.ravecraft.speaker_browser.stop": "Arrêter",
+  "screen.ravecraft.speaker_browser.now_playing": "En lecture : %s",
+  "screen.ravecraft.speaker_browser.nothing_playing": "Aucune lecture en cours",
+  "screen.ravecraft.speaker_browser.off_hint": "L’enceinte est éteinte : accroupi + clic droit pour l’allumer",
+  "screen.ravecraft.speaker_browser.loading": "Chargement…",
+  "screen.ravecraft.speaker_browser.error": "Impossible d’ouvrir ce dossier",
+  "screen.ravecraft.speaker_browser.empty": "Aucune musique ici"
 }

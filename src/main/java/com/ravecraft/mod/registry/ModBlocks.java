@@ -1,6 +1,9 @@
 package com.ravecraft.mod.registry;
 
 import com.ravecraft.mod.RaveCraft;
+import com.ravecraft.mod.block.PortableSpeakerBlock;
+import com.ravecraft.mod.item.PortableSpeakerItem;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -22,18 +25,33 @@ public final class ModBlocks {
 					.strength(3.0F, 6.0F)
 					.requiresCorrectToolForDrops());
 
+	public static final Block PORTABLE_SPEAKER = register("portable_speaker", PortableSpeakerBlock::new,
+			BlockBehaviour.Properties.of()
+					.mapColor(MapColor.COLOR_GRAY)
+					.sound(SoundType.METAL)
+					.strength(1.0F)
+					.noOcclusion(),
+			PortableSpeakerItem::new, new Item.Properties().stacksTo(1));
+
 	private ModBlocks() {
 	}
 
 	/** Registers a block and its {@link BlockItem}, both under the same id. */
 	private static Block register(String name, Function<BlockBehaviour.Properties, Block> factory,
 			BlockBehaviour.Properties properties) {
+		return register(name, factory, properties, BlockItem::new, new Item.Properties());
+	}
+
+	/** Same as above, with a custom item factory and item properties. */
+	private static Block register(String name, Function<BlockBehaviour.Properties, Block> factory,
+			BlockBehaviour.Properties properties, BiFunction<Block, Item.Properties, Item> itemFactory,
+			Item.Properties baseItemProperties) {
 		ResourceKey<Block> blockKey = ResourceKey.create(Registries.BLOCK, RaveCraft.id(name));
 		Block block = Registry.register(BuiltInRegistries.BLOCK, blockKey, factory.apply(properties.setId(blockKey)));
 
 		ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, RaveCraft.id(name));
-		Item.Properties itemProperties = new Item.Properties().setId(itemKey).useBlockDescriptionPrefix();
-		Registry.register(BuiltInRegistries.ITEM, itemKey, new BlockItem(block, itemProperties));
+		Item.Properties itemProperties = baseItemProperties.setId(itemKey).useBlockDescriptionPrefix();
+		Registry.register(BuiltInRegistries.ITEM, itemKey, itemFactory.apply(block, itemProperties));
 		return block;
 	}
 

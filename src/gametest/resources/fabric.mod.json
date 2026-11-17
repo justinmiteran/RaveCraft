@@ -7,7 +7,8 @@
 	"entrypoints": {
 		"fabric-gametest": [
 			"com.ravecraft.mod.gametest.PortableSpeakerGameTest",
-			"com.ravecraft.mod.gametest.AudioRelayGameTest"
+			"com.ravecraft.mod.gametest.AudioRelayGameTest",
+			"com.ravecraft.mod.gametest.SharedQueueGameTest"
 		]
 	},
 	"depends": {

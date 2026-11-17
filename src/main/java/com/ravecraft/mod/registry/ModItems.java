@@ -8,10 +8,8 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
 
-/** Standalone items (block items live in {@link ModBlocks}). */
+/** Standalone items (block items live in {@link ModBlocks}). None yet. */
 public final class ModItems {
-	public static final Item EXAMPLE_ITEM = register("example_item", Item::new, new Item.Properties());
-
 	private ModItems() {
 	}
 

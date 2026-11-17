@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "F": "minecraft:iron_ingot",
+    "N": "minecraft:note_block",
+    "R": "minecraft:redstone"
+  },
+  "pattern": [
+    "FFF",
+    "NRN",
+    "FFF"
+  ],
+  "result": {
+    "id": "ravecraft:portable_speaker"
+  }
+}

@@ -1,6 +1,9 @@
 package com.ravecraft.mod;
 
+import com.ravecraft.mod.registry.ModBlockEntities;
 import com.ravecraft.mod.registry.ModBlocks;
+import com.ravecraft.mod.registry.ModCreativeTabs;
+import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.registry.ModItems;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.resources.Identifier;
@@ -14,8 +17,11 @@ public class RaveCraft implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		// Order matters when registries reference each other (e.g. a creative tab references items).
+		ModDataComponents.init();
 		ModBlocks.init();
+		ModBlockEntities.init();
 		ModItems.init();
+		ModCreativeTabs.init();
 		LOGGER.info("RaveCraft initialized");
 	}
 

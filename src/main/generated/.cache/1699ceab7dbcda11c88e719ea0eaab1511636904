@@ -1,3 +1,5 @@
 // 26.3	-999999999-01-01T00:00:00	RaveCraft/Recipes
-46526c41d7a46d8ebf9edbfc9b53f86447614330 data/ravecraft/advancement/recipes/building_blocks/example_block.json
-3068c466c9362e1a1b71781cd2432196cbeb02c8 data/ravecraft/recipe/example_block.json
+e31c2ded93c90d6337a2c4ff727e40c8bc8f2dca data/ravecraft/advancement/recipes/misc/portable_speaker_dyed.json
+bce81dc14644ef7ad9ce4ee998da5bba1f22a56c data/ravecraft/advancement/recipes/redstone/portable_speaker.json
+02b47c0999f557e592301fd7582d36a669bd69f5 data/ravecraft/recipe/portable_speaker.json
+9d5db12953de9b215952667676e2401f0e2c3c2a data/ravecraft/recipe/portable_speaker_dyed.json

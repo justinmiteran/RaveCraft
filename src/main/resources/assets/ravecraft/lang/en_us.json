@@ -1,4 +1,4 @@
 {
-  "block.ravecraft.example_block": "Example Block",
-  "item.ravecraft.example_item": "Example Item"
+  "block.ravecraft.portable_speaker": "Portable Speaker",
+  "itemGroup.ravecraft.main": "RaveCraft"
 }

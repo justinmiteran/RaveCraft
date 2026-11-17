@@ -1,0 +1,11 @@
+{
+	"required": true,
+	"package": "com.ravecraft.mod.client.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"CreativeModeInventoryScreenMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

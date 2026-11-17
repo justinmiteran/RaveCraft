@@ -2,7 +2,7 @@
 
 Usage (from repo root):
     python tools/textures/gen_textures.py                 # write every texture + art/textures/preview.png
-    python tools/textures/gen_textures.py --only example_block
+    python tools/textures/gen_textures.py --only portable_speaker_fabric
 
 Add a texture: write a function returning a 16x16 RGBA Image, then register it in BLOCKS, ANIMATED
 (frames + frametime, writes the .png.mcmeta) or ITEMS. A texture retouched by hand (Blockbench, Aseprite...)
@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import random
 from pathlib import Path
 
@@ -97,29 +98,141 @@ def inset(img, x0, y0, x1, y1, fill):
 # ---------------------------------------------------------------- textures
 
 
-def example_block():
-    img = casing(1)
-    inset(img, 5, 5, 10, 10, C["out"])
-    rect(img, 6, 6, 9, 9, C["accent_d"])
-    rect(img, 7, 7, 8, 8, C["accent"])
-    px(img, 7, 7, C["accent_l"])
-    return img
+# Portable speaker (barrel shape, models/block/portable_speaker.json). The fabric is a light grey weave tinted in
+# game by the dye colour (tintindex 0), so it stays bright and low-contrast; rubber, radiator and the copper logo
+# are never tinted. The details texture is a transparent overlay (cutout): equaliser logo at
+# (0,0)-(8,5), top controls row at v=8 (front edge of the top, the handle posts cover v=9-10).
+RUBBER = [(26, 27, 32), (38, 40, 47), (52, 55, 64), (72, 76, 88)]
+COPPER, COPPER_L = (214, 132, 72), (240, 172, 112)
+LED_OFF, LED_ON = (60, 30, 30), (110, 255, 140)
+EQ_LOGO = ["....#...",
+           "..#.#...",
+           "..#.#.#.",
+           "#.#.#.#.",
+           "........"]
 
 
-def example_item():
+def portable_speaker_fabric():
+    rnd = random.Random(11)
     img = new()
-    for x, y in ((7, 2), (8, 2), (6, 3), (9, 3), (5, 4), (10, 4)):
-        px(img, x, y, C["out"])
-    rect(img, 4, 5, 11, 12, C["out"])
-    rect(img, 5, 5, 10, 11, C["accent_d"])
-    rect(img, 5, 5, 7, 7, C["accent"]); px(img, 5, 5, C["accent_l"])
-    rect(img, 6, 3, 9, 4, C["accent"]); px(img, 7, 3, C["accent_l"])
+    for y in range(S):
+        for x in range(S):
+            v = 236 if (x + y) % 2 else 206
+            if (x + 2 * y) % 7 == 0:
+                v -= 16
+            v += rnd.randint(-6, 6)
+            px(img, x, y, (v, v, v))
     return img
 
 
-BLOCKS = {"example_block": example_block}
+def portable_speaker_rubber():
+    rnd = random.Random(5)
+    img = new()
+    for y in range(S):
+        for x in range(S):
+            px(img, x, y, RUBBER[1] if rnd.random() > 0.18 else RUBBER[2])
+    return img
+
+
+def portable_speaker_radiator():
+    """End cap: rubber rim and a recessed passive radiator centred on (8, 8)."""
+    img = portable_speaker_rubber()
+    for y in range(S):
+        for x in range(S):
+            d = math.hypot(x + 0.5 - 8, y + 0.5 - 8)
+            if 3.1 < d <= 3.9:
+                px(img, x, y, RUBBER[3] if x + y < 15 else RUBBER[0])
+            elif 2.0 < d <= 3.1:
+                px(img, x, y, (16, 17, 21))
+            elif d <= 2.0:
+                px(img, x, y, RUBBER[2] if x + y < 15 else RUBBER[1])
+    px(img, 7, 7, RUBBER[3])
+    return img
+
+
+def speaker_details(on):
+    img = new()
+    for y, row in enumerate(EQ_LOGO):
+        for x, ch in enumerate(row):
+            if ch == "#":
+                px(img, x, y, COPPER_L if y == 0 or EQ_LOGO[y - 1][x] != "#" else COPPER)
+    led = LED_ON if on else LED_OFF
+    # Top controls along the front edge (v=8), clear of the handle posts.
+    px(img, 2, 8, RUBBER[3])                 # volume down
+    px(img, 4, 8, COPPER)                    # play
+    px(img, 6, 8, RUBBER[3])                 # volume up
+    px(img, 7, 8, led)                       # power LED
+    return img
+
+
+def portable_speaker_details():
+    return speaker_details(False)
+
+
+def portable_speaker_details_on():
+    return speaker_details(True)
+
+
+# Inventory icon (flat, GUI only, boombox front with radiator end caps): layer 0 is the grey fabric, tinted with the dye colour like leather armour;
+# the overlay holds what is never tinted (outline, rubber, copper logo, controls).
+SPEAKER_ICON = ["................",
+                "....oooooooo....",
+                "...ohhhhhhhho...",
+                "...orrrrrrrro...",
+                "...or......ro...",
+                ".ooTTTTTTTTgToo.",
+                "orrffffffffffhro",
+                "rrrffffCCffffrrR",
+                "rkrffffccffffrkR",
+                "rkrfCCfccffffrkR",
+                "rkrfccfccfCCfrkR",
+                "rrrfccfccfccfrrR",
+                "orrFFFFFFFFFFrro",
+                ".ooDDDDDDDDDDoo.",
+                "...oooooooooo...",
+                "................"]
+ICON_FABRIC = {"T": 205, "f": 175, "F": 135, "D": 105}
+ICON_DETAILS = {"o": (14, 14, 18), "r": RUBBER[1], "R": RUBBER[0], "h": RUBBER[3], "k": (16, 17, 21),
+                "c": COPPER, "C": COPPER_L, "g": LED_OFF}
+
+
+def speaker_icon_layer(fabric, on=False):
+    img = new()
+    for y, row in enumerate(SPEAKER_ICON):
+        for x, ch in enumerate(row):
+            if fabric and ch in ICON_FABRIC:
+                v = ICON_FABRIC[ch]
+                px(img, x, y, (v, v, v))
+            elif not fabric and ch in ICON_DETAILS:
+                px(img, x, y, LED_ON if on and ch == "g" else ICON_DETAILS[ch])
+    return img
+
+
+def portable_speaker():
+    return speaker_icon_layer(True)
+
+
+def portable_speaker_overlay():
+    return speaker_icon_layer(False)
+
+
+def portable_speaker_overlay_on():
+    return speaker_icon_layer(False, on=True)
+
+
+BLOCKS = {
+    "portable_speaker_radiator": portable_speaker_radiator,
+    "portable_speaker_fabric": portable_speaker_fabric,
+    "portable_speaker_rubber": portable_speaker_rubber,
+    "portable_speaker_details": portable_speaker_details,
+    "portable_speaker_details_on": portable_speaker_details_on,
+}
 ANIMATED = {}  # name -> (frames fn, frametime ticks)
-ITEMS = {"example_item": example_item}
+ITEMS = {  # name -> fn (flat item textures)
+    "portable_speaker": portable_speaker,
+    "portable_speaker_overlay": portable_speaker_overlay,
+    "portable_speaker_overlay_on": portable_speaker_overlay_on,
+}
 
 
 def save_animated(name, frames, frametime):

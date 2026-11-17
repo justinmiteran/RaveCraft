@@ -26,4 +26,12 @@ class VirtualPacerTest {
 		pacer.reset(1000);
 		assertEquals(1, pacer.due(1150));
 	}
+
+	@Test
+	void resetAfterWaitsOutDiscardedBlocks() {
+		VirtualPacer pacer = new VirtualPacer(0, 100);
+		pacer.resetAfter(1000, 4);
+		assertEquals(0, pacer.due(1350));
+		assertEquals(1, pacer.due(1500));
+	}
 }

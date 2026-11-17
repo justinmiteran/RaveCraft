@@ -30,4 +30,12 @@ public final class VirtualPacer {
 	public void reset(long nowMs) {
 		clockMs = nowMs;
 	}
+
+	/**
+	 * Restarts the clock once {@code pendingBlocks} already taken from the stream (queued but never heard) would have
+	 * played, so dropping them does not move the stream ahead of real time.
+	 */
+	public void resetAfter(long nowMs, int pendingBlocks) {
+		clockMs = nowMs + pendingBlocks * blockMs;
+	}
 }

@@ -34,16 +34,24 @@ final class AlSource {
 
 	/** A new source, or null when the driver has none left. */
 	static @Nullable AlSource create(boolean efx) {
-		AL10.alGetError();
+		// The AL error state is shared with vanilla's sound thread: check the names themselves instead.
 		int source = AL10.alGenSources();
-		if (AL10.alGetError() != AL10.AL_NO_ERROR || source == 0) {
+		if (source == 0 || !AL10.alIsSource(source)) {
 			return null;
 		}
 		int[] buffers = new int[BUFFERS];
 		AL10.alGenBuffers(buffers);
-		if (AL10.alGetError() != AL10.AL_NO_ERROR) {
-			AL10.alDeleteSources(source);
-			return null;
+		for (int buffer : buffers) {
+			if (buffer == 0 || !AL10.alIsBuffer(buffer)) {
+				for (int created : buffers) {
+					if (created != 0 && AL10.alIsBuffer(created)) {
+						AL10.alDeleteBuffers(created);
+					}
+				}
+				AL10.alDeleteSources(source);
+				AL10.alGetError();
+				return null;
+			}
 		}
 		AL10.alSourcei(source, AL10.AL_SOURCE_RELATIVE, AL10.AL_FALSE);
 		AL10.alSourcei(source, AL_DISTANCE_MODEL, AL10.AL_NONE);
@@ -52,6 +60,15 @@ final class AlSource {
 		int filter = efx ? Efx.createLowpass() : 0;
 		AL10.alGetError();
 		return new AlSource(source, buffers, filter);
+	}
+
+	/** Blocks queued but not played yet. */
+	int pendingBlocks() {
+		int processed = AL10.alGetSourcei(source, AL10.AL_BUFFERS_PROCESSED);
+		for (int i = 0; i < processed; i++) {
+			free.add(AL10.alSourceUnqueueBuffers(source));
+		}
+		return BUFFERS - free.size();
 	}
 
 	/** Stops and empties the queue, ready for another stream. */
@@ -67,11 +84,7 @@ final class AlSource {
 
 	/** Whether a buffer is free for the next block, after taking back the ones already played. */
 	boolean wantsBlock() {
-		int processed = AL10.alGetSourcei(source, AL10.AL_BUFFERS_PROCESSED);
-		for (int i = 0; i < processed; i++) {
-			free.add(AL10.alSourceUnqueueBuffers(source));
-		}
-		return !free.isEmpty();
+		return pendingBlocks() < BUFFERS;
 	}
 
 	/** Queues one block of 16-bit mono PCM and (re)starts playback if the source ran dry. */

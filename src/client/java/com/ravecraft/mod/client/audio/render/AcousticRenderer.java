@@ -4,6 +4,7 @@ import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.client.options.RaveCraftOptions;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.Propagation;
+import com.ravecraft.mod.core.acoustics.RetryCooldown;
 import com.ravecraft.mod.core.acoustics.SourceSelector;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
@@ -34,6 +35,7 @@ import org.lwjgl.BufferUtils;
 public final class AcousticRenderer {
 	private static final long LOOP_NANOS = 10_000_000L;
 	private static final int BLOCK_SAMPLES = StreamFormat.CHUNK_SAMPLES;
+	private static final long SOURCE_RETRY_MS = 5_000;
 
 	private static final Map<Integer, RenderStream> STREAMS = new ConcurrentHashMap<>();
 
@@ -126,7 +128,8 @@ public final class AcousticRenderer {
 		private final float[] scratch = new float[BLOCK_SAMPLES];
 		private final ByteBuffer pcm = BufferUtils.createByteBuffer(BLOCK_SAMPLES * 2);
 		private boolean efx;
-		private boolean outOfSources;
+		private final RetryCooldown sourceRetry = new RetryCooldown(SOURCE_RETRY_MS);
+		private boolean warnedOutOfSources;
 		private boolean wasPaused;
 		private @Nullable AcousticSettings configured;
 
@@ -221,7 +224,7 @@ public final class AcousticRenderer {
 			}
 			for (RenderStream stream : STREAMS.values()) {
 				if (stream.source == null && chosen.contains(stream.sessionId)) {
-					stream.source = acquire(max);
+					stream.source = acquire(max, now);
 					if (stream.source != null) {
 						held.put(stream.sessionId, stream);
 					}
@@ -266,17 +269,21 @@ public final class AcousticRenderer {
 			}
 		}
 
-		private @Nullable AlSource acquire(int max) {
+		/** A free source, or a new one; after the driver refused one, waits a while before asking again. */
+		private @Nullable AlSource acquire(int max, long now) {
 			if (!free.isEmpty()) {
 				return free.removeLast();
 			}
-			if (outOfSources || held.size() >= max) {
+			if (held.size() >= max || !sourceRetry.canTry(now)) {
 				return null;
 			}
 			AlSource source = AlSource.create(efx);
 			if (source == null) {
-				outOfSources = true;
-				RaveCraft.LOGGER.warn("OpenAL has no more sources: speakers are limited to {}", held.size());
+				sourceRetry.failed(now);
+				if (!warnedOutOfSources) {
+					warnedOutOfSources = true;
+					RaveCraft.LOGGER.warn("OpenAL has no more sources for now: speakers are limited to {}", held.size());
+				}
 			}
 			return source;
 		}
@@ -284,11 +291,13 @@ public final class AcousticRenderer {
 		private void release(RenderStream stream, long now) {
 			AlSource source = stream.source;
 			if (source != null) {
+				// Queued blocks were already taken from the playout: the virtual clock waits them out.
+				int pending = source.pendingBlocks();
 				source.reset();
 				free.add(source);
 				stream.source = null;
 				held.remove(stream.sessionId);
-				stream.pacer.reset(now);
+				stream.pacer.resetAfter(now, pending);
 			}
 		}
 

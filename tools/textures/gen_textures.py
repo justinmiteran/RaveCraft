@@ -196,7 +196,7 @@ ICON_DETAILS = {"o": (14, 14, 18), "r": RUBBER[1], "R": RUBBER[0], "h": RUBBER[3
                 "c": COPPER, "C": COPPER_L, "g": LED_OFF}
 
 
-def speaker_icon_layer(fabric):
+def speaker_icon_layer(fabric, on=False):
     img = new()
     for y, row in enumerate(SPEAKER_ICON):
         for x, ch in enumerate(row):
@@ -204,7 +204,7 @@ def speaker_icon_layer(fabric):
                 v = ICON_FABRIC[ch]
                 px(img, x, y, (v, v, v))
             elif not fabric and ch in ICON_DETAILS:
-                px(img, x, y, ICON_DETAILS[ch])
+                px(img, x, y, LED_ON if on and ch == "g" else ICON_DETAILS[ch])
     return img
 
 
@@ -214,6 +214,10 @@ def portable_speaker():
 
 def portable_speaker_overlay():
     return speaker_icon_layer(False)
+
+
+def portable_speaker_overlay_on():
+    return speaker_icon_layer(False, on=True)
 
 
 BLOCKS = {
@@ -227,6 +231,7 @@ ANIMATED = {}  # name -> (frames fn, frametime ticks)
 ITEMS = {  # name -> fn (flat item textures)
     "portable_speaker": portable_speaker,
     "portable_speaker_overlay": portable_speaker_overlay,
+    "portable_speaker_overlay_on": portable_speaker_overlay_on,
 }
 
 

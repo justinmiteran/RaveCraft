@@ -1,5 +1,6 @@
 package com.ravecraft.mod.datagen;
 
+import com.ravecraft.mod.client.item.SpeakerPowered;
 import net.fabricmc.fabric.api.datagen.v1.DataGeneratorEntrypoint;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
 
@@ -10,6 +11,7 @@ import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
 public class RaveCraftDataGenerator implements DataGeneratorEntrypoint {
 	@Override
 	public void onInitializeDataGenerator(FabricDataGenerator generator) {
+		SpeakerPowered.register(); // the item model definition encodes it
 		FabricDataGenerator.Pack pack = generator.createPack();
 		pack.addProvider(RaveCraftModelProvider::new);
 		pack.addProvider(RaveCraftBlockLootProvider::new);

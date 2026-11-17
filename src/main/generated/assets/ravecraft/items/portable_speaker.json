@@ -4,27 +4,55 @@
     "cases": [
       {
         "model": {
-          "type": "minecraft:model",
-          "model": "ravecraft:item/portable_speaker",
-          "tints": [
-            {
-              "type": "minecraft:dye",
-              "default": -12829628
-            }
-          ]
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:model",
+            "model": "ravecraft:item/portable_speaker",
+            "tints": [
+              {
+                "type": "minecraft:dye",
+                "default": -12829628
+              }
+            ]
+          },
+          "on_true": {
+            "type": "minecraft:model",
+            "model": "ravecraft:item/portable_speaker_on",
+            "tints": [
+              {
+                "type": "minecraft:dye",
+                "default": -12829628
+              }
+            ]
+          },
+          "property": "ravecraft:speaker/powered"
         },
         "when": "gui"
       }
     ],
     "fallback": {
-      "type": "minecraft:model",
-      "model": "ravecraft:block/portable_speaker",
-      "tints": [
-        {
-          "type": "minecraft:dye",
-          "default": -12829628
-        }
-      ]
+      "type": "minecraft:condition",
+      "on_false": {
+        "type": "minecraft:model",
+        "model": "ravecraft:block/portable_speaker",
+        "tints": [
+          {
+            "type": "minecraft:dye",
+            "default": -12829628
+          }
+        ]
+      },
+      "on_true": {
+        "type": "minecraft:model",
+        "model": "ravecraft:block/portable_speaker_on",
+        "tints": [
+          {
+            "type": "minecraft:dye",
+            "default": -12829628
+          }
+        ]
+      },
+      "property": "ravecraft:speaker/powered"
     },
     "property": "minecraft:display_context"
   }

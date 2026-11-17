@@ -222,6 +222,19 @@ public class PortableSpeakerGameTest {
 	}
 
 	@GameTest
+	public void pickBlockKeepsDyedColour(GameTestHelper h) {
+		DyedItemColor lime = new DyedItemColor(0x80C71F);
+		BlockPos pos = new BlockPos(1, 2, 1);
+		h.setBlock(pos.below(), Blocks.STONE);
+		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
+		h.getBlockEntity(pos, PortableSpeakerBlockEntity.class).setDyedColor(lime);
+		ItemStack picked = h.getBlockState(pos).getCloneItemStack(h.getLevel(), h.absolutePos(pos), false);
+		h.assertValueEqual(picked.get(DataComponents.DYED_COLOR), lime, "picked colour");
+		h.assertTrue(!picked.has(ModDataComponents.SPEAKER), "plain pick does not copy the speaker identity");
+		h.succeed();
+	}
+
+	@GameTest
 	public void speakerNeedsSupportBelow(GameTestHelper h) {
 		BlockPos floating = new BlockPos(1, 4, 1);
 		h.assertTrue(!ModBlocks.PORTABLE_SPEAKER.defaultBlockState().canSurvive(h.getLevel(), h.absolutePos(floating)),

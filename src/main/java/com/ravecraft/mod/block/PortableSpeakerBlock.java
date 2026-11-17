@@ -5,6 +5,7 @@ import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.registry.ModDataComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -76,6 +77,16 @@ public class PortableSpeakerBlock extends BaseEntityBlock {
 	}
 
 	/** Stands on a sturdy floor only, like a lantern: it cannot float and drops when its support is broken. */
+	/** Middle-click keeps the fabric colour, like picking a coloured block; ctrl adds the full data on top. */
+	@Override
+	protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
+		ItemStack stack = super.getCloneItemStack(level, pos, state, includeData);
+		if (level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker && speaker.dyedColor() != null) {
+			stack.set(DataComponents.DYED_COLOR, speaker.dyedColor());
+		}
+		return stack;
+	}
+
 	@Override
 	protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
 		return Block.canSupportCenter(level, pos.below(), Direction.UP);

@@ -17,7 +17,7 @@
 	},
 	"elements": [
 		{
-			"uuid": "cd7bfca4-8d44-40c9-a0ef-6308b984ccc5",
+			"uuid": "2fef98af-4434-47b0-ba5a-69db72e47edd",
 			"name": "cap_left_0",
 			"origin": [
 				0,
@@ -100,7 +100,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "a56bded7-b397-46a9-80ef-a2321c2ea090",
+			"uuid": "55c390ce-bc90-4d19-b8e3-44583f34bafa",
 			"name": "cap_right_0",
 			"origin": [
 				0,
@@ -183,7 +183,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "f71390c8-5288-4844-876b-3e205ea04512",
+			"uuid": "0bb7c527-cdf8-400b-bdb3-ad87e7e735d7",
 			"name": "cap_left_1",
 			"origin": [
 				0,
@@ -266,7 +266,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "b91d55be-5078-4666-8144-2cd9a00edc36",
+			"uuid": "da4bd4a2-1d38-4371-af7c-73a877e99562",
 			"name": "cap_right_1",
 			"origin": [
 				0,
@@ -349,7 +349,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "6404567e-5c76-45bc-b6ae-aa69cb4a4f0c",
+			"uuid": "f272181e-4394-4bde-89c2-67f56cb0cf63",
 			"name": "cap_left_2",
 			"origin": [
 				0,
@@ -432,7 +432,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "7d19a208-b080-42ac-b9fa-56d0a9a96668",
+			"uuid": "399c33ea-de63-4a6c-9913-7b130f415ee6",
 			"name": "cap_right_2",
 			"origin": [
 				0,
@@ -515,7 +515,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "386beb99-1e7c-4a12-bd1f-a600abb8a22d",
+			"uuid": "7f1b2487-230e-4050-9de8-7025b608ecad",
 			"name": "neck_left_0",
 			"origin": [
 				0,
@@ -604,7 +604,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "3d256ff3-3453-49a0-b563-da19fa7a7bae",
+			"uuid": "530681e3-cc0b-4250-9fab-f9c61542eb17",
 			"name": "neck_right_0",
 			"origin": [
 				0,
@@ -693,7 +693,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "e9b5b23e-d031-400d-a600-cfc34a2f982e",
+			"uuid": "b8cb0655-a908-4bba-9376-d5d2181742d7",
 			"name": "neck_left_1",
 			"origin": [
 				0,
@@ -782,7 +782,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "996e27b7-21b5-4ea8-a59e-63d8c0a6b981",
+			"uuid": "cc564591-6c4f-4d46-adb8-98246a25199a",
 			"name": "neck_right_1",
 			"origin": [
 				0,
@@ -871,7 +871,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "38667a2d-906c-4d62-8f1f-f1bbac5fdd23",
+			"uuid": "7ea28b55-6980-45c0-b1a4-58e3414eb306",
 			"name": "neck_left_2",
 			"origin": [
 				0,
@@ -960,7 +960,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "fbf65e9d-0daf-433d-b741-6cb9e830acca",
+			"uuid": "15ce97fd-79ba-44f4-9e1d-1c82625dfe7b",
 			"name": "neck_right_2",
 			"origin": [
 				0,
@@ -1049,7 +1049,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "4ef660ca-57a4-44f8-a8f9-94beb92465ab",
+			"uuid": "3197d63b-d78d-4c27-9f19-cdf31050e433",
 			"name": "body_0",
 			"origin": [
 				0,
@@ -1138,7 +1138,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "94d2bfd5-324a-46df-9b93-28fed84a04fd",
+			"uuid": "c77fd2a9-d5df-4eed-a057-79c169ec346e",
 			"name": "body_1",
 			"origin": [
 				0,
@@ -1227,7 +1227,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "50ecdfa6-c3b5-450b-bc36-392e93b46c7d",
+			"uuid": "8ed72ec0-05ac-4d91-8a56-70bdc4856919",
 			"name": "body_2",
 			"origin": [
 				0,
@@ -1316,7 +1316,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "3313f84e-26e9-4f1a-9176-a9b7de9c987b",
+			"uuid": "85e4f0a8-bf07-4f4a-9bc0-b36479564375",
 			"name": "handle_post_left",
 			"origin": [
 				0,
@@ -1332,7 +1332,7 @@
 			],
 			"to": [
 				5,
-				12,
+				11,
 				9
 			],
 			"box_uv": false,
@@ -1340,7 +1340,7 @@
 				"north": {
 					"uv": [
 						11,
-						4,
+						5,
 						12,
 						7.5
 					],
@@ -1349,7 +1349,7 @@
 				"east": {
 					"uv": [
 						7,
-						4,
+						5,
 						9,
 						7.5
 					],
@@ -1358,7 +1358,7 @@
 				"south": {
 					"uv": [
 						4,
-						4,
+						5,
 						5,
 						7.5
 					],
@@ -1367,7 +1367,7 @@
 				"west": {
 					"uv": [
 						7,
-						4,
+						5,
 						9,
 						7.5
 					],
@@ -1399,7 +1399,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "c521c45e-9fa9-4aa4-b65e-2c833014cdb1",
+			"uuid": "2f995d19-a468-49b2-8799-f50a92031963",
 			"name": "handle_post_right",
 			"origin": [
 				0,
@@ -1415,7 +1415,7 @@
 			],
 			"to": [
 				12,
-				12,
+				11,
 				9
 			],
 			"box_uv": false,
@@ -1423,7 +1423,7 @@
 				"north": {
 					"uv": [
 						4,
-						4,
+						5,
 						5,
 						7.5
 					],
@@ -1432,7 +1432,7 @@
 				"east": {
 					"uv": [
 						7,
-						4,
+						5,
 						9,
 						7.5
 					],
@@ -1441,7 +1441,7 @@
 				"south": {
 					"uv": [
 						11,
-						4,
+						5,
 						12,
 						7.5
 					],
@@ -1450,7 +1450,7 @@
 				"west": {
 					"uv": [
 						7,
-						4,
+						5,
 						9,
 						7.5
 					],
@@ -1482,7 +1482,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "04512366-86af-4ec2-9721-bbeba2ab1ef6",
+			"uuid": "051f8955-fcb9-4dd6-a01e-c19fbcd7d69d",
 			"name": "handle_bar",
 			"origin": [
 				0,
@@ -1493,12 +1493,12 @@
 			"type": "cube",
 			"from": [
 				4,
-				12,
+				11,
 				7
 			],
 			"to": [
 				12,
-				13.5,
+				12.5,
 				9
 			],
 			"box_uv": false,
@@ -1506,36 +1506,36 @@
 				"north": {
 					"uv": [
 						4,
-						2.5,
+						3.5,
 						12,
-						4
+						5
 					],
 					"texture": 1
 				},
 				"east": {
 					"uv": [
 						7,
-						2.5,
+						3.5,
 						9,
-						4
+						5
 					],
 					"texture": 1
 				},
 				"south": {
 					"uv": [
 						4,
-						2.5,
+						3.5,
 						12,
-						4
+						5
 					],
 					"texture": 1
 				},
 				"west": {
 					"uv": [
 						7,
-						2.5,
+						3.5,
 						9,
-						4
+						5
 					],
 					"texture": 1
 				},
@@ -1565,7 +1565,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "e51ae279-4793-4a79-8f07-2848b30a2de5",
+			"uuid": "9f7f6f3e-31a8-405a-be06-23f9c6bbad31",
 			"name": "logo",
 			"origin": [
 				0,
@@ -1648,7 +1648,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "82d968a8-c59a-469b-a5ea-3f71eafca6e9",
+			"uuid": "3677344f-c3c9-489d-9d1e-edb6723a9f2f",
 			"name": "controls",
 			"origin": [
 				0,
@@ -1733,30 +1733,30 @@
 	],
 	"groups": [],
 	"outliner": [
-		"cd7bfca4-8d44-40c9-a0ef-6308b984ccc5",
-		"a56bded7-b397-46a9-80ef-a2321c2ea090",
-		"f71390c8-5288-4844-876b-3e205ea04512",
-		"b91d55be-5078-4666-8144-2cd9a00edc36",
-		"6404567e-5c76-45bc-b6ae-aa69cb4a4f0c",
-		"7d19a208-b080-42ac-b9fa-56d0a9a96668",
-		"386beb99-1e7c-4a12-bd1f-a600abb8a22d",
-		"3d256ff3-3453-49a0-b563-da19fa7a7bae",
-		"e9b5b23e-d031-400d-a600-cfc34a2f982e",
-		"996e27b7-21b5-4ea8-a59e-63d8c0a6b981",
-		"38667a2d-906c-4d62-8f1f-f1bbac5fdd23",
-		"fbf65e9d-0daf-433d-b741-6cb9e830acca",
-		"4ef660ca-57a4-44f8-a8f9-94beb92465ab",
-		"94d2bfd5-324a-46df-9b93-28fed84a04fd",
-		"50ecdfa6-c3b5-450b-bc36-392e93b46c7d",
-		"3313f84e-26e9-4f1a-9176-a9b7de9c987b",
-		"c521c45e-9fa9-4aa4-b65e-2c833014cdb1",
-		"04512366-86af-4ec2-9721-bbeba2ab1ef6",
-		"e51ae279-4793-4a79-8f07-2848b30a2de5",
-		"82d968a8-c59a-469b-a5ea-3f71eafca6e9"
+		"2fef98af-4434-47b0-ba5a-69db72e47edd",
+		"55c390ce-bc90-4d19-b8e3-44583f34bafa",
+		"0bb7c527-cdf8-400b-bdb3-ad87e7e735d7",
+		"da4bd4a2-1d38-4371-af7c-73a877e99562",
+		"f272181e-4394-4bde-89c2-67f56cb0cf63",
+		"399c33ea-de63-4a6c-9913-7b130f415ee6",
+		"7f1b2487-230e-4050-9de8-7025b608ecad",
+		"530681e3-cc0b-4250-9fab-f9c61542eb17",
+		"b8cb0655-a908-4bba-9376-d5d2181742d7",
+		"cc564591-6c4f-4d46-adb8-98246a25199a",
+		"7ea28b55-6980-45c0-b1a4-58e3414eb306",
+		"15ce97fd-79ba-44f4-9e1d-1c82625dfe7b",
+		"3197d63b-d78d-4c27-9f19-cdf31050e433",
+		"c77fd2a9-d5df-4eed-a057-79c169ec346e",
+		"8ed72ec0-05ac-4d91-8a56-70bdc4856919",
+		"85e4f0a8-bf07-4f4a-9bc0-b36479564375",
+		"2f995d19-a468-49b2-8799-f50a92031963",
+		"051f8955-fcb9-4dd6-a01e-c19fbcd7d69d",
+		"9f7f6f3e-31a8-405a-be06-23f9c6bbad31",
+		"3677344f-c3c9-489d-9d1e-edb6723a9f2f"
 	],
 	"textures": [
 		{
-			"uuid": "04cf8fd1-9863-4ac0-ae29-cad9fec1892e",
+			"uuid": "8c6c286f-0395-456d-8546-b913808cece6",
 			"name": "portable_speaker_fabric.png",
 			"source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACMklEQVR4nD2TSU8CURCEmxdMUBI4CKioLLIZAiEegJ/PlYNCMgOiRBZlV3DggAEumK+T4fQy73VVV1X3eGq12rFUKsl0OpWbmxv5+vqSeDwuo9FIfD6fbDYbeXx8lH6/L/f39zKZTPRst9uSTqfF8Pj5+SmRSER6vZ5cX1+LZVmSTCblcDhINpuV19dXJaXO7/crebFYlMViIR7Lso6A+Tg7O1PQ1dWVFsdiMe3I+fb2JplMRn5/f1XpcDiURCIhBjm2baus7Xarl4Aoxk44HNbiQqEgy+VSlUKOwufnZ/HYtn2kI7IAvb+/SyqVkkajIfl8Xu+xAenl5aXMZjM5Pz8/NTOhUEgDAoTXQCCgWQDGFvfj8Viz6XQ6Kh+bBDgYDMSsVitNGTkUr9drDYxOKMNGMBg8kUJGZ5Te3t6KMcYoU6VS0UfA8/lcPTIqvgkO0M/Pj+RyOQVjh0zMbrdTeR8fHxoknr1er9qqVqtKGo1GtQkB1ut1eXh40AyYjsdxnGO321Vwq9USd6mQBwmyAV9cXOhSoQQ7gLFn6AwzcgBTTBFKyKTZbMrd3Z04jqPf7lQ4seGZz+fH7+9vJUEuSsiANSZtd+5454Ts5eVFyuWyKjSkDYhHOtMRENNw5849NpkG+/D09KSZnTJg09jxv78/DZS02Q9kMgX2A3uuQrzTBDLD/El5v9+f5DJ/OqOAYuSjwP3hqHc31vBXoYDOdGDD+DcYFYoIjIwggQxSSLgH9w+JSYxdnn8opwAAAABJRU5ErkJggg==",
 			"path": "C:/Users/justi/Desktop/Projets/RaveCraft/art/tmp_pack/assets/ravecraft/textures/block/portable_speaker_fabric.png",
@@ -1782,7 +1782,7 @@
 			"saved": true
 		},
 		{
-			"uuid": "276b1c72-1b07-41ac-b108-f86dc3479788",
+			"uuid": "8c4fa103-1c4d-4000-b6b1-52d765718b83",
 			"name": "portable_speaker_rubber.png",
 			"source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAjUlEQVR4nJVSQQrAMAhrw84b+0TZbf9/1dg+sOFBcBJrGyiCxpqgtR3nWwjWbS/PfaU5SDJq1ppE1iyokYJIlUI/A1OQNVp10J9UJoNymAV44owiifAFNiXiSIRN2mY7pWcHzJufwuQrwGT2bAwd0gyQScxqGCUyjrzFJyP/rPZbYwa/YrrG6KyjW5DaB063Y9ELgoXCAAAAAElFTkSuQmCC",
 			"path": "C:/Users/justi/Desktop/Projets/RaveCraft/art/tmp_pack/assets/ravecraft/textures/block/portable_speaker_rubber.png",
@@ -1808,7 +1808,7 @@
 			"saved": true
 		},
 		{
-			"uuid": "26af5345-0789-44df-9af0-a96db91046d4",
+			"uuid": "1d79070b-033a-483d-9d23-cdd71bfa4a53",
 			"name": "portable_speaker_radiator.png",
 			"source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA4UlEQVR4nJVSTQvCMAztSk/zYwh+4VHGUDx4Ebz6xz0K/gEZyPAo6EXmx66TCClJTB0+KGnTvJc0TZTNlrVR0E165l7eGn0WnCEy3oHVyIAoVEGoKgSKWa2CJiKtzqESOvA8TedMBIkSTgaBUH8wNvvdlgXGccu0OwlLBtbKUik5zRafBaiql3k+StZMsBaJskQgghj4hqPJV/N8Ew05SJyK/GdDvYCG4njw++vl7PcyWbRab2rphLfCm0NNpHDauGoAsjaNTgv+Z7iYQGjeQ3fsG5tAyVSMfSMdayoqE1CxN0q2f9e2iCNLAAAAAElFTkSuQmCC",
 			"path": "C:/Users/justi/Desktop/Projets/RaveCraft/art/tmp_pack/assets/ravecraft/textures/block/portable_speaker_radiator.png",
@@ -1834,7 +1834,7 @@
 			"saved": true
 		},
 		{
-			"uuid": "09f84158-27b1-4afa-8453-87df0bf8b79e",
+			"uuid": "cf022b05-61d6-4958-9892-cc5e675c3b91",
 			"name": "portable_speaker_details.png",
 			"source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAQklEQVR4nGNgQAMf1hT8ZyABMKFrfHbjBgNZBjxD00isS5hwKSTVJaOAgYHBwycCHJjXWjz+w/g2cnIkpYlRMGQBALniG+OLmOYoAAAAAElFTkSuQmCC",
 			"path": "C:/Users/justi/Desktop/Projets/RaveCraft/art/tmp_pack/assets/ravecraft/textures/block/portable_speaker_details.png",

@@ -14,6 +14,7 @@ import net.minecraft.network.codec.StreamCodec;
  * Settings are flattened in the codecs as {@code powered} and {@code volume}.
  */
 public record SpeakerData(UUID id, SpeakerSettings settings) {
+	// New fields must use optionalFieldOf with a default so existing worlds still decode.
 	public static final Codec<SpeakerData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
 			UUIDUtil.CODEC.fieldOf("id").forGetter(SpeakerData::id),
 			Codec.BOOL.fieldOf("powered").forGetter(data -> data.settings().powered()),

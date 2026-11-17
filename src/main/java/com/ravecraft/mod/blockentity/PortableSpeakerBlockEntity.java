@@ -1,5 +1,6 @@
 package com.ravecraft.mod.blockentity;
 
+import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.block.PortableSpeakerBlock;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.registry.ModBlockEntities;
@@ -25,6 +26,11 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 		return data;
 	}
 
+	public void setData(SpeakerData data) {
+		this.data = data;
+		setChanged();
+	}
+
 	/** Flips the power state, keeping the block's POWERED property in sync. */
 	public void togglePower() {
 		data = data.withSettings(data.settings().togglePower());
@@ -43,7 +49,12 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 	@Override
 	protected void loadAdditional(ValueInput input) {
 		super.loadAdditional(input);
-		input.read(KEY, SpeakerData.CODEC).ifPresent(read -> data = read);
+		input.read(KEY, SpeakerData.CODEC).ifPresentOrElse(read -> data = read, () -> {
+			// Present but undecodable: keep the random id from construction, but do not fail silently.
+			if (input.child(KEY).isPresent()) {
+				RaveCraft.LOGGER.warn("Portable speaker at {} has undecodable data, using a fresh identity", worldPosition);
+			}
+		});
 	}
 
 	@Override

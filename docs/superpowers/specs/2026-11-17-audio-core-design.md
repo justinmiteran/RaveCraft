@@ -252,3 +252,4 @@ Puis mise à jour de `docs/SPEC.md` et release **`v0.1.0`** (procédure [docs/RE
 - Choix d'intégration du rendu : `SoundEngine` vanilla ou sources OpenAL dédiées (section 4.3).
 - API exactes en 26.3 : `DataComponentType`, synchronisation d'un `BlockEntity`, paquets `CustomPacketPayload` sur le canal play, événements Fabric de connexion et de déconnexion, entité objet au sol.
 - Détection des mods de physique du son.
+- Le registre des positions d'enceintes (PR 2) doit attribuer un nouvel id à une enceinte dont l'id entre en collision avec un id déjà enregistré, car les copies de l'inventaire créatif peuvent atteindre le mode survie.

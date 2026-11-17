@@ -6,7 +6,9 @@ import com.ravecraft.mod.registry.ModDataComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -23,6 +25,7 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jspecify.annotations.Nullable;
 
@@ -31,8 +34,9 @@ public class PortableSpeakerBlock extends BaseEntityBlock {
 	public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
 	public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
-	private static final VoxelShape SHAPE_NORTH_SOUTH = Block.box(3, 0, 5, 13, 8, 11);
-	private static final VoxelShape SHAPE_EAST_WEST = Block.box(5, 0, 3, 11, 8, 13);
+	// Body (y 0..8) plus the carry handle (posts and bar, up to y 11) from models/block/portable_speaker.json.
+	private static final VoxelShape SHAPE_NORTH_SOUTH = Shapes.or(Block.box(3, 0, 5, 13, 8, 11), Block.box(5, 8, 7.5, 11, 11, 8.5));
+	private static final VoxelShape SHAPE_EAST_WEST = Shapes.or(Block.box(5, 0, 3, 11, 8, 13), Block.box(7.5, 8, 5, 8.5, 11, 11));
 
 	public PortableSpeakerBlock(BlockBehaviour.Properties properties) {
 		super(properties);
@@ -51,6 +55,16 @@ public class PortableSpeakerBlock extends BaseEntityBlock {
 		return defaultBlockState()
 				.setValue(FACING, context.getHorizontalDirection().getOpposite())
 				.setValue(POWERED, powered);
+	}
+
+	@Override
+	public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity by, ItemStack stack) {
+		super.setPlacedBy(level, pos, state, by, stack);
+		// Creative placement does not consume the stack, so copies would share one identity: give each placed speaker a fresh id.
+		if (!level.isClientSide() && by instanceof Player player && player.hasInfiniteMaterials()
+				&& level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) {
+			speaker.setData(SpeakerData.create().withSettings(speaker.data().settings()));
+		}
 	}
 
 	@Override

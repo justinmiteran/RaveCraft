@@ -1,12 +1,31 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "ravecraft:block/portable_speaker",
-    "tints": [
+    "type": "minecraft:select",
+    "cases": [
       {
-        "type": "minecraft:dye",
-        "default": 3947588
+        "model": {
+          "type": "minecraft:model",
+          "model": "ravecraft:item/portable_speaker",
+          "tints": [
+            {
+              "type": "minecraft:dye",
+              "default": 3947588
+            }
+          ]
+        },
+        "when": "gui"
       }
-    ]
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "ravecraft:block/portable_speaker",
+      "tints": [
+        {
+          "type": "minecraft:dye",
+          "default": 3947588
+        }
+      ]
+    },
+    "property": "minecraft:display_context"
   }
 }

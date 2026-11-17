@@ -10,7 +10,12 @@ import net.minecraft.client.color.item.Dye;
 import net.minecraft.client.data.models.blockstates.MultiVariantGenerator;
 import net.minecraft.client.data.models.model.ItemModelUtils;
 import net.minecraft.client.data.models.model.ModelLocationUtils;
+import net.minecraft.client.data.models.model.ModelTemplates;
+import net.minecraft.client.data.models.model.TextureMapping;
+import net.minecraft.client.renderer.item.properties.select.DisplayContext;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemDisplayContext;
 
 /**
  * Blockstates, block models, item models and {@code assets/<modid>/items/*.json}. Custom geometry: design it in
@@ -31,9 +36,16 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 				.with(BlockModelGenerators.createBooleanModelDispatch(PortableSpeakerBlock.POWERED,
 						BlockModelGenerators.plainVariant(on), BlockModelGenerators.plainVariant(off)))
 				.with(BlockModelGenerators.ROTATION_HORIZONTAL_FACING));
-		// The fabric faces use tintindex 0: tint them with the item's dye colour, like leather armour.
-		generators.itemModelOutput.accept(ModBlocks.PORTABLE_SPEAKER.asItem(),
-				ItemModelUtils.tintedModel(off, new Dye(PortableSpeakerBlock.DEFAULT_COLOR)));
+		// Flat 2D icon in the inventory, the 3D block model everywhere else (hand, ground, item frame), like the
+		// trident. Both tint their fabric (layer / tintindex 0) with the item's dye colour, like leather armour.
+		Item speaker = ModBlocks.PORTABLE_SPEAKER.asItem();
+		Identifier icon = ModelTemplates.TWO_LAYERED_ITEM.create(ModelLocationUtils.getModelLocation(speaker),
+				TextureMapping.layered(TextureMapping.getItemTexture(speaker), TextureMapping.getItemTexture(speaker, "_overlay")),
+				generators.modelOutput);
+		Dye fabricTint = new Dye(PortableSpeakerBlock.DEFAULT_COLOR);
+		generators.itemModelOutput.accept(speaker, ItemModelUtils.select(new DisplayContext(),
+				ItemModelUtils.tintedModel(off, fabricTint),
+				ItemModelUtils.when(ItemDisplayContext.GUI, ItemModelUtils.tintedModel(icon, fabricTint))));
 	}
 
 	@Override

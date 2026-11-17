@@ -100,7 +100,7 @@ def inset(img, x0, y0, x1, y1, fill):
 
 # Portable speaker (barrel shape, models/block/portable_speaker.json). The fabric is a light grey weave tinted in
 # game by the dye colour (tintindex 0), so it stays bright and low-contrast; rubber, radiator and the copper logo
-# are never tinted. The details texture is a transparent overlay (cutout): equaliser logo and front LED at
+# are never tinted. The details texture is a transparent overlay (cutout): equaliser logo at
 # (0,0)-(8,5), top controls row at v=8 (front edge of the top, the handle posts cover v=9-10).
 RUBBER = [(26, 27, 32), (38, 40, 47), (52, 55, 64), (72, 76, 88)]
 COPPER, COPPER_L = (214, 132, 72), (240, 172, 112)
@@ -157,7 +157,6 @@ def speaker_details(on):
             if ch == "#":
                 px(img, x, y, COPPER_L if y == 0 or EQ_LOGO[y - 1][x] != "#" else COPPER)
     led = LED_ON if on else LED_OFF
-    px(img, 7, 4, led)                       # power LED on the front, under the logo
     # Top controls along the front edge (v=8), clear of the handle posts.
     px(img, 2, 8, RUBBER[3])                 # volume down
     px(img, 4, 8, COPPER)                    # play
@@ -174,6 +173,49 @@ def portable_speaker_details_on():
     return speaker_details(True)
 
 
+# Inventory icon (flat, GUI only): layer 0 is the grey fabric, tinted with the dye colour like leather armour;
+# the overlay holds what is never tinted (outline, rubber, copper logo, controls).
+SPEAKER_ICON = ["................",
+                "................",
+                "................",
+                ".....oooooo.....",
+                ".....hhhhhh.....",
+                "..oor......roo..",
+                ".ohTThTcThTgTro.",
+                "orfffffffCffffRo",
+                "orfffffCfcffffRo",
+                "orfffffcfcfCffRo",
+                "orfffCfcfcfcffRo",
+                ".oRFFFFFFFFFFRo.",
+                "..oooooooooooo..",
+                "................",
+                "................",
+                "................"]
+ICON_FABRIC = {"T": 245, "f": 215, "F": 170}
+ICON_DETAILS = {"o": (14, 14, 18), "r": RUBBER[1], "R": RUBBER[0], "h": RUBBER[3],
+                "c": COPPER, "C": COPPER_L, "g": LED_OFF}
+
+
+def speaker_icon_layer(fabric):
+    img = new()
+    for y, row in enumerate(SPEAKER_ICON):
+        for x, ch in enumerate(row):
+            if fabric and ch in ICON_FABRIC:
+                v = ICON_FABRIC[ch]
+                px(img, x, y, (v, v, v))
+            elif not fabric and ch in ICON_DETAILS:
+                px(img, x, y, ICON_DETAILS[ch])
+    return img
+
+
+def portable_speaker():
+    return speaker_icon_layer(True)
+
+
+def portable_speaker_overlay():
+    return speaker_icon_layer(False)
+
+
 BLOCKS = {
     "portable_speaker_radiator": portable_speaker_radiator,
     "portable_speaker_fabric": portable_speaker_fabric,
@@ -182,7 +224,10 @@ BLOCKS = {
     "portable_speaker_details_on": portable_speaker_details_on,
 }
 ANIMATED = {}  # name -> (frames fn, frametime ticks)
-ITEMS = {}  # name -> fn (flat item textures)
+ITEMS = {  # name -> fn (flat item textures)
+    "portable_speaker": portable_speaker,
+    "portable_speaker_overlay": portable_speaker_overlay,
+}
 
 
 def save_animated(name, frames, frametime):

@@ -1,0 +1,33 @@
+package com.ravecraft.mod.core.acoustics;
+
+/**
+ * Real-time clock of a stream that has no OpenAL source: tells how many blocks to consume (and drop) so the stream
+ * stays at the right position, ready to be heard again. After a stall it catches up at most
+ * {@link #MAX_CATCH_UP} blocks and forgets the rest.
+ */
+public final class VirtualPacer {
+	public static final int MAX_CATCH_UP = 10;
+
+	private final long blockMs;
+	private long clockMs;
+
+	public VirtualPacer(long startMs, long blockMs) {
+		this.blockMs = blockMs;
+		this.clockMs = startMs;
+	}
+
+	/** Whole blocks elapsed since the last call; the remainder carries over. */
+	public int due(long nowMs) {
+		long blocks = Math.max(0, (nowMs - clockMs) / blockMs);
+		if (blocks > MAX_CATCH_UP) {
+			clockMs = nowMs;
+			return MAX_CATCH_UP;
+		}
+		clockMs += blocks * blockMs;
+		return (int) blocks;
+	}
+
+	public void reset(long nowMs) {
+		clockMs = nowMs;
+	}
+}

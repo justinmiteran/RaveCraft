@@ -113,6 +113,8 @@ LocalPlayback (boucle locale) ───────►      │                 
 
 ## 6. Esquisse de 4b — étouffement
 
+> Conçue en détail dans [2026-11-17-acoustic-occlusion-design.md](2026-11-17-acoustic-occlusion-design.md), qui remplace cette esquisse (matières et milieux configurables, détours, occlusion maintenue avec Sound Physics Remastered ; `airAbsorptionDbPerBlock` y devient l'absorption du milieu `air`).
+
 - Table de **matières acoustiques** en `core` (laine, pierre, bois, verre, terre, eau, air…) : perte globale et perte des aigus par bloc traversé.
 - Tracé source → auditeur à ~4 Hz par source audible, sur les seuls blocs traversés ; résultat mis en cache et invalidé sur changement de bloc.
 - Effet appliqué via le filtre passe-bas EFX de 4a (`AL_LOWPASS_GAIN` et `GAINHF`) : les aigus sont plus atténués que les basses. Le gain étouffé participe au choix des sources.

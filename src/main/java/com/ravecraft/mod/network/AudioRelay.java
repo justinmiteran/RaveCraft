@@ -1,5 +1,9 @@
 package com.ravecraft.mod.network;
 
+import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.config.AcousticConfig;
+import com.ravecraft.mod.core.acoustics.Propagation;
+import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import com.ravecraft.mod.core.audio.stream.SessionTable.Session;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.TokenBucket;
@@ -66,15 +70,32 @@ public final class AudioRelay {
 		}
 		BlockPos pos = session.key().pos();
 		RelayedChunkPayload relayed = new RelayedChunkPayload(chunk.sessionId(), pos, chunk.seq(), chunk.frames());
-		for (ServerPlayer listener : listeners(level, pos, session.owner(), PlayerLookup.tracking(level, pos))) {
+		double radius = relayRadius(level, pos);
+		for (ServerPlayer listener : listeners(level, pos, session.owner(), PlayerLookup.tracking(level, pos), radius)) {
 			Net.send(listener, relayed);
 		}
 	}
 
-	/** The candidates in {@code level} within {@link StreamFormat#RELAY_RANGE} of the speaker, owner excluded. */
-	public static List<ServerPlayer> listeners(ServerLevel level, BlockPos pos, UUID owner, Collection<ServerPlayer> candidates) {
+	/**
+	 * How far the speaker at {@code pos} is relayed: its profile range at its current volume, plus a margin. 0 when
+	 * there is no powered speaker there.
+	 */
+	public static double relayRadius(ServerLevel level, BlockPos pos) {
+		if (!(level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) || !speaker.data().settings().powered()) {
+			return 0;
+		}
+		double volume = speaker.data().settings().volume() / (double) SpeakerSettings.MAX_VOLUME;
+		return Propagation.relayRadius(AcousticConfig.get().portable(), volume);
+	}
+
+	/** The candidates in {@code level} within {@code radius} of the speaker, owner excluded. */
+	public static List<ServerPlayer> listeners(ServerLevel level, BlockPos pos, UUID owner, Collection<ServerPlayer> candidates,
+			double radius) {
+		if (radius <= 0) {
+			return List.of();
+		}
 		Vec3 centre = Vec3.atCenterOf(pos);
-		double rangeSq = StreamFormat.RELAY_RANGE * StreamFormat.RELAY_RANGE;
+		double rangeSq = radius * radius;
 		List<ServerPlayer> listeners = new ArrayList<>();
 		for (ServerPlayer player : candidates) {
 			if (player.level() == level && !player.getUUID().equals(owner)

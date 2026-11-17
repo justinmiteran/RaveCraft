@@ -1,6 +1,10 @@
 package com.ravecraft.mod.gametest;
 
 import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.config.AcousticConfig;
+import com.ravecraft.mod.core.acoustics.AcousticSettings;
+import com.ravecraft.mod.core.acoustics.DeviceProfile;
+import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.audio.stream.SessionTable.Session;
 import com.ravecraft.mod.network.AudioRelay;
 import com.ravecraft.mod.registry.ModBlocks;
@@ -77,15 +81,79 @@ public class AudioRelayGameTest {
 		h.succeed();
 	}
 
+	/** Sets the speaker's volume (0 to 100). */
+	private static void volume(GameTestHelper h, int volume) {
+		PortableSpeakerBlockEntity speaker = h.getBlockEntity(SPEAKER, PortableSpeakerBlockEntity.class);
+		speaker.setData(speaker.data().withSettings(speaker.data().settings().withVolume(volume)));
+	}
+
+	private static boolean hears(GameTestHelper h, BlockPos pos, ServerPlayer owner, ServerPlayer player) {
+		return AudioRelay.listeners(h.getLevel(), pos, owner.getUUID(), List.of(owner, player),
+				AudioRelay.relayRadius(h.getLevel(), pos)).contains(player);
+	}
+
 	@GameTest
 	public void relayTargetsOnlyPlayersInRange(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
+		volume(h, 100);
 		ServerPlayer owner = playerAt(h, 1);
 		ServerPlayer near = playerAt(h, 5);
-		ServerPlayer far = playerAt(h, 30);
-		List<ServerPlayer> listeners = AudioRelay.listeners(h.getLevel(), pos, owner.getUUID(), List.of(owner, near, far));
+		ServerPlayer far = playerAt(h, 45);
+		List<ServerPlayer> listeners = AudioRelay.listeners(h.getLevel(), pos, owner.getUUID(), List.of(owner, near, far),
+				AudioRelay.relayRadius(h.getLevel(), pos));
 		h.assertValueEqual(listeners, List.of(near), "listeners");
 		h.succeed();
 	}
 
+	@GameTest
+	public void fullVolumeReachesThirtyBlocks(GameTestHelper h) {
+		BlockPos pos = poweredSpeaker(h);
+		volume(h, 100);
+		h.assertTrue(hears(h, pos, playerAt(h, 1), playerAt(h, 30)), "heard at 30 blocks");
+		h.succeed();
+	}
+
+	@GameTest
+	public void halfVolumeDoesNotReachThirtyBlocks(GameTestHelper h) {
+		BlockPos pos = poweredSpeaker(h);
+		volume(h, 50);
+		h.assertFalse(hears(h, pos, playerAt(h, 1), playerAt(h, 30)), "not heard at 30 blocks");
+		h.succeed();
+	}
+
+	@GameTest
+	public void volumeChangeAppliesAtOnce(GameTestHelper h) {
+		BlockPos pos = poweredSpeaker(h);
+		ServerPlayer owner = playerAt(h, 1);
+		ServerPlayer player = playerAt(h, 30);
+		volume(h, 50);
+		h.assertFalse(hears(h, pos, owner, player), "not heard at half volume");
+		volume(h, 100);
+		h.assertTrue(hears(h, pos, owner, player), "heard at full volume");
+		h.succeed();
+	}
+
+	@GameTest
+	public void serverRangeSettingApplies(GameTestHelper h) {
+		BlockPos pos = poweredSpeaker(h);
+		volume(h, 50);
+		AcousticSettings defaults = AcousticSettings.DEFAULT;
+		try {
+			AcousticConfig.set(new AcousticSettings(defaults.rolloff(), defaults.fadeFraction(),
+					defaults.airAbsorptionDbPerBlock(), new DeviceProfile(64, -6, 150, Directivity.OMNI)));
+			h.assertTrue(hears(h, pos, playerAt(h, 1), playerAt(h, 30)), "heard with range 64 at half volume");
+		} finally {
+			AcousticConfig.set(defaults);
+		}
+		h.succeed();
+	}
+
+	@GameTest
+	public void relayRadiusIsZeroAtVolumeZero(GameTestHelper h) {
+		BlockPos pos = poweredSpeaker(h);
+		volume(h, 0);
+		h.assertValueEqual(AudioRelay.relayRadius(h.getLevel(), pos), 0.0, "radius");
+		h.assertFalse(hears(h, pos, playerAt(h, 5), playerAt(h, 1)), "not heard at 1 block");
+		h.succeed();
+	}
 }

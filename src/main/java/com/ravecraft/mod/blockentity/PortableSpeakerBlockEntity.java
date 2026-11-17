@@ -3,6 +3,7 @@ package com.ravecraft.mod.blockentity;
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.block.PortableSpeakerBlock;
 import com.ravecraft.mod.component.SpeakerData;
+import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.registry.ModBlockEntities;
 import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.world.audio.StreamSessions;
@@ -13,6 +14,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.component.DyedItemColor;
@@ -139,6 +141,9 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 
 	@Override
 	public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-		return saveCustomOnly(registries);
+		// The queue only goes to players with the screen open (SpeakerState), not to everyone tracking the chunk.
+		CompoundTag tag = saveCustomOnly(registries);
+		tag.store(KEY, SpeakerData.CODEC, registries.createSerializationContext(NbtOps.INSTANCE), data.withQueue(SpeakerQueue.EMPTY));
+		return tag;
 	}
 }

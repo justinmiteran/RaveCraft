@@ -1,5 +1,6 @@
 package com.ravecraft.mod.client;
 
+import com.ravecraft.mod.client.audio.render.AcousticSettingsClient;
 import com.ravecraft.mod.block.SpeakerScreenOpener;
 import com.ravecraft.mod.client.audio.LocalPlayback;
 import com.ravecraft.mod.client.audio.stream.ClientRelay;
@@ -18,6 +19,7 @@ public class RaveCraftClient implements ClientModInitializer {
 		SpeakerPowered.register();
 		LocalPlayback.register();
 		ClientRelay.init();
+		AcousticSettingsClient.register();
 		SpeakerScreenOpener.set(pos -> Minecraft.getInstance().gui.setScreen(new SpeakerBrowserScreen(pos)));
 		BlockColorRegistry.register(List.of(new SpeakerFabricTint()), ModBlocks.PORTABLE_SPEAKER);
 	}

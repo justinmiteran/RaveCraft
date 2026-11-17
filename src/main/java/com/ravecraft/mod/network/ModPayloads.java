@@ -1,5 +1,6 @@
 package com.ravecraft.mod.network;
 
+import com.ravecraft.mod.network.payload.AcousticSettingsPayload;
 import com.ravecraft.mod.network.payload.AudioChunkPayload;
 import com.ravecraft.mod.network.payload.QueueAddPayload;
 import com.ravecraft.mod.network.payload.RelayedChunkPayload;
@@ -30,5 +31,6 @@ public final class ModPayloads {
 		PayloadTypeRegistry.clientboundPlay().register(SessionEndPayload.TYPE, SessionEndPayload.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(SpeakerStatePayload.TYPE, SpeakerStatePayload.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(TrackRemovedPayload.TYPE, TrackRemovedPayload.CODEC);
+		PayloadTypeRegistry.clientboundPlay().register(AcousticSettingsPayload.TYPE, AcousticSettingsPayload.CODEC);
 	}
 }

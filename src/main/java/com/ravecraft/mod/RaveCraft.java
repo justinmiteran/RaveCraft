@@ -1,5 +1,6 @@
 package com.ravecraft.mod;
 
+import com.ravecraft.mod.config.AcousticConfig;
 import com.ravecraft.mod.network.AudioRelay;
 import com.ravecraft.mod.network.SpeakerNetwork;
 import com.ravecraft.mod.network.ModPayloads;
@@ -26,6 +27,7 @@ public class RaveCraft implements ModInitializer {
 		ModItems.init();
 		ModCreativeTabs.init();
 		ModPayloads.init();
+		AcousticConfig.init();
 		AudioRelay.init();
 		SpeakerNetwork.init();
 		LOGGER.info("RaveCraft initialized");

@@ -1,0 +1,252 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "ravecraft:block/portable_speaker_side",
+    "front": "ravecraft:block/portable_speaker_front",
+    "side": "ravecraft:block/portable_speaker_side",
+    "top": "ravecraft:block/portable_speaker_top"
+  },
+  "elements": [
+    {
+      "name": "body",
+      "from": [
+        3,
+        0,
+        5
+      ],
+      "to": [
+        13,
+        8,
+        11
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            3,
+            4,
+            13,
+            12
+          ],
+          "texture": "#front"
+        },
+        "east": {
+          "uv": [
+            5,
+            4,
+            11,
+            12
+          ],
+          "texture": "#side"
+        },
+        "south": {
+          "uv": [
+            3,
+            4,
+            13,
+            12
+          ],
+          "texture": "#side"
+        },
+        "west": {
+          "uv": [
+            5,
+            4,
+            11,
+            12
+          ],
+          "texture": "#side"
+        },
+        "up": {
+          "uv": [
+            3,
+            5,
+            13,
+            11
+          ],
+          "texture": "#top"
+        },
+        "down": {
+          "uv": [
+            3,
+            5,
+            13,
+            11
+          ],
+          "texture": "#side",
+          "cullface": "down"
+        }
+      }
+    },
+    {
+      "name": "handle_post_west",
+      "from": [
+        5,
+        8,
+        7.5
+      ],
+      "to": [
+        6,
+        10,
+        8.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            3,
+            14,
+            4,
+            15
+          ],
+          "texture": "#top"
+        },
+        "east": {
+          "uv": [
+            3,
+            14,
+            4,
+            15
+          ],
+          "texture": "#top"
+        },
+        "south": {
+          "uv": [
+            3,
+            14,
+            4,
+            15
+          ],
+          "texture": "#top"
+        },
+        "west": {
+          "uv": [
+            3,
+            14,
+            4,
+            15
+          ],
+          "texture": "#top"
+        }
+      }
+    },
+    {
+      "name": "handle_post_east",
+      "from": [
+        10,
+        8,
+        7.5
+      ],
+      "to": [
+        11,
+        10,
+        8.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            3,
+            14,
+            4,
+            15
+          ],
+          "texture": "#top"
+        },
+        "east": {
+          "uv": [
+            3,
+            14,
+            4,
+            15
+          ],
+          "texture": "#top"
+        },
+        "south": {
+          "uv": [
+            3,
+            14,
+            4,
+            15
+          ],
+          "texture": "#top"
+        },
+        "west": {
+          "uv": [
+            3,
+            14,
+            4,
+            15
+          ],
+          "texture": "#top"
+        }
+      }
+    },
+    {
+      "name": "handle_bar",
+      "from": [
+        5,
+        10,
+        7.5
+      ],
+      "to": [
+        11,
+        11,
+        8.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            3,
+            14,
+            9,
+            15
+          ],
+          "texture": "#top"
+        },
+        "east": {
+          "uv": [
+            3,
+            14,
+            4,
+            15
+          ],
+          "texture": "#top"
+        },
+        "south": {
+          "uv": [
+            3,
+            14,
+            9,
+            15
+          ],
+          "texture": "#top"
+        },
+        "west": {
+          "uv": [
+            3,
+            14,
+            4,
+            15
+          ],
+          "texture": "#top"
+        },
+        "up": {
+          "uv": [
+            3,
+            13,
+            9,
+            14
+          ],
+          "texture": "#top"
+        },
+        "down": {
+          "uv": [
+            3,
+            14,
+            9,
+            15
+          ],
+          "texture": "#top"
+        }
+      }
+    }
+  ]
+}

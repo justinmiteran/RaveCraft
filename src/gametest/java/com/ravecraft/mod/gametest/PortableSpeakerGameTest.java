@@ -57,7 +57,9 @@ public class PortableSpeakerGameTest {
 		h.useBlock(pos);
 		SpeakerData before = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class).data();
 		h.getLevel().destroyBlock(h.absolutePos(pos), true);   // drops, unlike helper.destroyBlock
-		ItemEntity drop = h.getEntities(EntityTypes.ITEM, pos, 2).getFirst();
+		var drops = h.getEntities(EntityTypes.ITEM, pos, 2);
+		h.assertTrue(!drops.isEmpty(), "speaker dropped");
+		ItemEntity drop = drops.getFirst();
 		h.assertValueEqual(drop.getItem().get(ModDataComponents.SPEAKER), before, "dropped data");
 		h.succeed();
 	}

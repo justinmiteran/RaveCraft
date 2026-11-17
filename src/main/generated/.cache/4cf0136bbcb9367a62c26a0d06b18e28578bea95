@@ -1,6 +1,3 @@
 // 26.3	-999999999-01-01T00:00:00	RaveCraft/Model Definitions
-dec7a5d8479452220aced6fb383764c55e18288e assets/ravecraft/blockstates/example_block.json
-12385175a946773e6bf10e008b09179e4c7ac545 assets/ravecraft/items/example_block.json
-41297fc297c58e8f4ee7ea02c4180db07b7dd960 assets/ravecraft/items/example_item.json
-33410ecca5834873739a8f845e0add343d7b77cc assets/ravecraft/models/block/example_block.json
-c4378ed487f38f35fb0ab6d11f9fd908557ba703 assets/ravecraft/models/item/example_item.json
+721010985a8d3e1abc56a1303a39a72885c11819 assets/ravecraft/blockstates/portable_speaker.json
+962c7ff8cd57d5474642af3dffbf3aed855b95ff assets/ravecraft/items/portable_speaker.json

@@ -18,13 +18,6 @@ import net.minecraft.world.level.material.MapColor;
 
 /** Blocks and their block items. */
 public final class ModBlocks {
-	public static final Block EXAMPLE_BLOCK = register("example_block", Block::new,
-			BlockBehaviour.Properties.of()
-					.mapColor(MapColor.METAL)
-					.sound(SoundType.METAL)
-					.strength(3.0F, 6.0F)
-					.requiresCorrectToolForDrops());
-
 	public static final Block PORTABLE_SPEAKER = register("portable_speaker", PortableSpeakerBlock::new,
 			BlockBehaviour.Properties.of()
 					.mapColor(MapColor.COLOR_GRAY)

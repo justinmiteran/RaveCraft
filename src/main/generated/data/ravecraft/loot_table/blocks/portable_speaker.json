@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "condition": {
+        "type": "minecraft:survives_explosion"
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "modifier": {
+            "type": "minecraft:copy_components",
+            "include": [
+              "ravecraft:speaker"
+            ],
+            "source": "block_entity"
+          },
+          "name": "ravecraft:portable_speaker"
+        }
+      ],
+      "rolls": 1
+    }
+  ]
+}

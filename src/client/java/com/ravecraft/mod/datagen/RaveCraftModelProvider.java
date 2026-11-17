@@ -1,12 +1,14 @@
 package com.ravecraft.mod.datagen;
 
+import com.ravecraft.mod.block.PortableSpeakerBlock;
 import com.ravecraft.mod.registry.ModBlocks;
-import com.ravecraft.mod.registry.ModItems;
 import net.fabricmc.fabric.api.client.datagen.v1.provider.FabricModelProvider;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
-import net.minecraft.client.data.models.model.ModelTemplates;
+import net.minecraft.client.data.models.blockstates.MultiVariantGenerator;
+import net.minecraft.client.data.models.model.ModelLocationUtils;
+import net.minecraft.resources.Identifier;
 
 /**
  * Blockstates, block models, item models and {@code assets/<modid>/items/*.json}. Custom geometry: design it in
@@ -19,12 +21,18 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 
 	@Override
 	public void generateBlockStateModels(BlockModelGenerators generators) {
-		// Uses textures/block/example_block.png on all six faces.
-		generators.createTrivialCube(ModBlocks.EXAMPLE_BLOCK);
+		// Hand-written Blockbench models (models/block/portable_speaker[_on].json): only the blockstate and the
+		// item model definition are generated here.
+		Identifier off = ModelLocationUtils.getModelLocation(ModBlocks.PORTABLE_SPEAKER);
+		Identifier on = ModelLocationUtils.getModelLocation(ModBlocks.PORTABLE_SPEAKER, "_on");
+		generators.blockStateOutput.accept(MultiVariantGenerator.dispatch(ModBlocks.PORTABLE_SPEAKER)
+				.with(BlockModelGenerators.createBooleanModelDispatch(PortableSpeakerBlock.POWERED,
+						BlockModelGenerators.plainVariant(on), BlockModelGenerators.plainVariant(off)))
+				.with(BlockModelGenerators.ROTATION_HORIZONTAL_FACING));
+		generators.registerSimpleItemModel(ModBlocks.PORTABLE_SPEAKER, off);
 	}
 
 	@Override
 	public void generateItemModels(ItemModelGenerators generators) {
-		generators.generateFlatItem(ModItems.EXAMPLE_ITEM, ModelTemplates.FLAT_ITEM);
 	}
 }

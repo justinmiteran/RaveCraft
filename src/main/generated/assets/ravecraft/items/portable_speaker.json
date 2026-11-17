@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "ravecraft:item/example_item"
+    "model": "ravecraft:block/portable_speaker"
   }
 }

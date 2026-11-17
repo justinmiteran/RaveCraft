@@ -1,7 +1,6 @@
 package com.ravecraft.mod.datagen;
 
 import com.ravecraft.mod.registry.ModBlocks;
-import com.ravecraft.mod.registry.ModItems;
 import java.util.concurrent.CompletableFuture;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
@@ -24,13 +23,15 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 		return new RecipeProvider(recipes, advancements) {
 			@Override
 			public void buildRecipes() {
-				shaped(RecipeCategory.BUILDING_BLOCKS, ModBlocks.EXAMPLE_BLOCK)
-						.define('I', Items.IRON_INGOT)
-						.define('E', ModItems.EXAMPLE_ITEM)
-						.pattern("III")
-						.pattern("IEI")
-						.pattern("III")
-						.unlockedBy("has_example_item", has(ModItems.EXAMPLE_ITEM))
+				// PROVISIONAL: replaced by the materials sub-project (docs/SPEC.md).
+				shaped(RecipeCategory.REDSTONE, ModBlocks.PORTABLE_SPEAKER)
+						.define('F', Items.IRON_INGOT)
+						.define('N', Items.NOTE_BLOCK)
+						.define('R', Items.REDSTONE)
+						.pattern("FFF")
+						.pattern("NRN")
+						.pattern("FFF")
+						.unlockedBy("has_note_block", has(Items.NOTE_BLOCK))
 						.save(output);
 			}
 		};

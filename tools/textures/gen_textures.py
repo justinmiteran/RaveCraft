@@ -2,7 +2,7 @@
 
 Usage (from repo root):
     python tools/textures/gen_textures.py                 # write every texture + art/textures/preview.png
-    python tools/textures/gen_textures.py --only example_block
+    python tools/textures/gen_textures.py --only portable_speaker_front
 
 Add a texture: write a function returning a 16x16 RGBA Image, then register it in BLOCKS, ANIMATED
 (frames + frametime, writes the .png.mcmeta) or ITEMS. A texture retouched by hand (Blockbench, Aseprite...)
@@ -97,29 +97,101 @@ def inset(img, x0, y0, x1, y1, fill):
 # ---------------------------------------------------------------- textures
 
 
-def example_block():
-    img = casing(1)
-    inset(img, 5, 5, 10, 10, C["out"])
-    rect(img, 6, 6, 9, 9, C["accent_d"])
-    rect(img, 7, 7, 8, 8, C["accent"])
-    px(img, 7, 7, C["accent_l"])
+# Portable speaker: the model maps each face pixel-exactly onto a region of its 16x16 texture
+# (front 10x8 at (3,4), side 6x8 at (5,4), top 10x6 at (3,5)); the rest of the tile is plain casing so the
+# texture still reads well as a particle or in the preview.
+
+
+def panel(img, x0, y0, w, h):
+    """Small bevelled casing panel (outline, top-left highlight, bottom-right shadow) inside a region."""
+    x1, y1 = x0 + w - 1, y0 + h - 1
+    rect(img, x0, y0, x1, y1, C["case"])
+    for x in range(x0, x1 + 1):
+        px(img, x, y0, C["out"]); px(img, x, y1, C["out"])
+    for y in range(y0, y1 + 1):
+        px(img, x0, y, C["out"]); px(img, x1, y, C["out"])
+    for x in range(x0 + 1, x1):
+        px(img, x, y0 + 1, C["case_h"]); px(img, x, y1 - 1, C["case_d"])
+    for y in range(y0 + 1, y1):
+        px(img, x0 + 1, y, C["case_h"]); px(img, x1 - 1, y, C["case_d"])
+
+
+def speaker_front(on):
+    img = casing(20)
+    x0, y0 = 3, 4                       # 10x8 face
+    panel(img, x0, y0, 10, 8)
+    # Grille: dark field with a dotted mesh.
+    rect(img, x0 + 1, y0 + 1, x0 + 8, y0 + 6, C["out"])
+    for y in range(y0 + 1, y0 + 7):
+        for x in range(x0 + 1, x0 + 9):
+            if (x + y) % 2 == 0:
+                px(img, x, y, C["case_d"])
+    # Round cone (6x6) on the left: lit rim top-left, shadowed bottom-right, dust cap in the middle.
+    cx, cy = x0 + 2, y0 + 1
+    cone = ["  aa  ",
+            " abbc ",
+            "abddbc",
+            "abdebc",
+            " bccc ",
+            "  cc  "]
+    cols = {"a": C["case_h"], "b": C["case"], "c": C["case_d"], "d": C["rivet"], "e": C["case_l"]}
+    for j, row in enumerate(cone):
+        for i, ch in enumerate(row):
+            if ch != " ":
+                px(img, cx + i, cy + j, cols[ch])
+    px(img, cx + 2, cy + 2, C["case_h"])
+    # Status LED, top right of the grille.
+    lx, ly = x0 + 8, y0 + 1
+    if on:
+        px(img, lx, ly, C["accent_l"]); px(img, lx, ly + 1, C["accent"])
+    else:
+        px(img, lx, ly, C["accent_d"]); px(img, lx, ly + 1, C["out"])
     return img
 
 
-def example_item():
-    img = new()
-    for x, y in ((7, 2), (8, 2), (6, 3), (9, 3), (5, 4), (10, 4)):
-        px(img, x, y, C["out"])
-    rect(img, 4, 5, 11, 12, C["out"])
-    rect(img, 5, 5, 10, 11, C["accent_d"])
-    rect(img, 5, 5, 7, 7, C["accent"]); px(img, 5, 5, C["accent_l"])
-    rect(img, 6, 3, 9, 4, C["accent"]); px(img, 7, 3, C["accent_l"])
+def portable_speaker_front():
+    return speaker_front(False)
+
+
+def portable_speaker_front_on():
+    return speaker_front(True)
+
+
+def portable_speaker_side():
+    img = casing(21)
+    x0, y0 = 5, 4                       # 6x8 face
+    panel(img, x0, y0, 6, 8)
+    # Three vent slots.
+    for y in (y0 + 2, y0 + 4):
+        for x in range(x0 + 2, x0 + 4):
+            px(img, x, y, C["out"])
+        px(img, x0 + 2, y + 1, C["case_l"]); px(img, x0 + 3, y + 1, C["case_l"])
     return img
 
 
-BLOCKS = {"example_block": example_block}
+def portable_speaker_top():
+    img = casing(22)
+    x0, y0 = 3, 5                       # 10x6 face
+    panel(img, x0, y0, 10, 6)
+    # Handle mounts (where the carry handle posts sit) and a recessed groove between them.
+    for x in (x0 + 2, x0 + 7):
+        rect(img, x, y0 + 2, x, y0 + 3, C["out"])
+    for x in range(x0 + 3, x0 + 7):
+        px(img, x, y0 + 2, C["case_d"]); px(img, x, y0 + 3, C["case_l"])
+    # Handle swatch (sampled by the model's handle element): grip top and grip sides.
+    rect(img, 3, 13, 12, 13, C["case_h"])
+    rect(img, 3, 14, 12, 14, C["case_l"])
+    return img
+
+
+BLOCKS = {
+    "portable_speaker_front": portable_speaker_front,
+    "portable_speaker_front_on": portable_speaker_front_on,
+    "portable_speaker_side": portable_speaker_side,
+    "portable_speaker_top": portable_speaker_top,
+}
 ANIMATED = {}  # name -> (frames fn, frametime ticks)
-ITEMS = {"example_item": example_item}
+ITEMS = {}  # name -> fn (flat item textures)
 
 
 def save_animated(name, frames, frametime):

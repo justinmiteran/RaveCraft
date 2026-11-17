@@ -1,0 +1,40 @@
+package com.ravecraft.mod.core.queue;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * A player's local map from queue entry ids to the files they stand for. It never leaves the player's PC. Holds at
+ * most {@link #MAX_ENTRIES}; the oldest entries are forgotten first.
+ */
+public final class TrackTable {
+	public static final int MAX_ENTRIES = 5000;
+
+	private final LinkedHashMap<UUID, String> paths = new LinkedHashMap<>() {
+		@Override
+		protected boolean removeEldestEntry(Map.Entry<UUID, String> eldest) {
+			return size() > MAX_ENTRIES;
+		}
+	};
+
+	public static TrackTable of(Map<UUID, String> ordered) {
+		TrackTable table = new TrackTable();
+		ordered.forEach(table::put);
+		return table;
+	}
+
+	public void put(UUID entryId, String path) {
+		paths.put(entryId, path);
+	}
+
+	public Optional<String> get(UUID entryId) {
+		return Optional.ofNullable(paths.get(entryId));
+	}
+
+	/** An ordered copy, oldest first. */
+	public Map<UUID, String> snapshot() {
+		return new LinkedHashMap<>(paths);
+	}
+}

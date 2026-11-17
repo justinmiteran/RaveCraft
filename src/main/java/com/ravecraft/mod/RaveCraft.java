@@ -1,5 +1,7 @@
 package com.ravecraft.mod;
 
+import com.ravecraft.mod.network.AudioRelay;
+import com.ravecraft.mod.network.ModPayloads;
 import com.ravecraft.mod.registry.ModBlockEntities;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModCreativeTabs;
@@ -22,6 +24,8 @@ public class RaveCraft implements ModInitializer {
 		ModBlockEntities.init();
 		ModItems.init();
 		ModCreativeTabs.init();
+		ModPayloads.init();
+		AudioRelay.init();
 		LOGGER.info("RaveCraft initialized");
 	}
 

@@ -5,6 +5,7 @@ import com.ravecraft.mod.block.PortableSpeakerBlock;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.registry.ModBlockEntities;
 import com.ravecraft.mod.registry.ModDataComponents;
+import com.ravecraft.mod.world.audio.StreamSessions;
 import java.util.Objects;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponentGetter;
@@ -13,6 +14,7 @@ import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.component.DyedItemColor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -66,6 +68,18 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 			level.setBlock(worldPosition, getBlockState().setValue(PortableSpeakerBlock.POWERED, data.settings().powered()), 3);
 		}
 		setChanged();
+		if (!data.settings().powered() && level instanceof ServerLevel server) {
+			StreamSessions.endAt(server, worldPosition);
+		}
+	}
+
+	/** Called when the block is broken or its chunk unloads: the speaker can no longer stream. */
+	@Override
+	public void setRemoved() {
+		super.setRemoved();
+		if (level instanceof ServerLevel server) {
+			StreamSessions.endAt(server, worldPosition);
+		}
 	}
 
 	@Override

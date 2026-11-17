@@ -14,6 +14,7 @@ import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.client.data.models.model.TextureMapping;
 import net.minecraft.client.renderer.item.properties.select.DisplayContext;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.ARGB;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
 
@@ -42,7 +43,8 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 		Identifier icon = ModelTemplates.TWO_LAYERED_ITEM.create(ModelLocationUtils.getModelLocation(speaker),
 				TextureMapping.layered(TextureMapping.getItemTexture(speaker), TextureMapping.getItemTexture(speaker, "_overlay")),
 				generators.modelOutput);
-		Dye fabricTint = new Dye(PortableSpeakerBlock.DEFAULT_COLOR);
+		// Item tints are ARGB: without an opaque alpha the undyed fabric would be invisible.
+		Dye fabricTint = new Dye(ARGB.opaque(PortableSpeakerBlock.DEFAULT_COLOR));
 		generators.itemModelOutput.accept(speaker, ItemModelUtils.select(new DisplayContext(),
 				ItemModelUtils.tintedModel(off, fabricTint),
 				ItemModelUtils.when(ItemDisplayContext.GUI, ItemModelUtils.tintedModel(icon, fabricTint))));

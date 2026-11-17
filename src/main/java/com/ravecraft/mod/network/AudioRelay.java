@@ -38,7 +38,7 @@ public final class AudioRelay {
 
 	public static void init() {
 		ServerPlayNetworking.registerGlobalReceiver(StreamOpenPayload.TYPE,
-				(payload, context) -> StreamSessions.open(context.player(), payload.pos()));
+				(payload, context) -> StreamSessions.open(context.player(), payload.pos(), payload.request()));
 		ServerPlayNetworking.registerGlobalReceiver(StreamClosePayload.TYPE,
 				(payload, context) -> StreamSessions.close(payload.sessionId(), context.player(), payload.finished()));
 		ServerPlayNetworking.registerGlobalReceiver(AudioChunkPayload.TYPE,
@@ -55,13 +55,13 @@ public final class AudioRelay {
 
 	private static void relay(ServerPlayer sender, AudioChunkPayload chunk) {
 		Optional<Session<SpeakerKey>> found = StreamSessions.table().byId(chunk.sessionId());
-		if (found.isEmpty() || !found.get().owner().equals(sender.getUUID())) {
+		if (!chunk.isWellFormed() || found.isEmpty() || !found.get().owner().equals(sender.getUUID())) {
 			return;
 		}
 		long now = System.nanoTime();
 		TokenBucket bucket = BUCKETS.computeIfAbsent(sender.getUUID(),
 				id -> new TokenBucket(StreamFormat.RATE_BYTES_PER_SECOND, StreamFormat.RATE_BURST_BYTES, now));
-		if (!bucket.tryConsume(chunk.byteSize(), now)) {
+		if (!bucket.tryConsume(chunk.cost(), now)) {
 			return;
 		}
 		Session<SpeakerKey> session = found.get();

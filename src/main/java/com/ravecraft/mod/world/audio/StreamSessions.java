@@ -34,22 +34,36 @@ public final class StreamSessions {
 
 	/**
 	 * Opens a session for {@code player} on the powered speaker at {@code pos} (absolute), replacing any other
-	 * stream there, and orders the player to start. Returns empty, sending nothing, when the request is invalid.
+	 * stream there, and orders the player to start. A player must be within reach, except when renewing its own
+	 * session for the next track of its queue: that one finishes with its tail played out. An invalid request is
+	 * refused, and the refusal sent back carrying {@code request}.
 	 */
-	public static Optional<Session<SpeakerKey>> open(ServerPlayer player, BlockPos pos) {
+	public static Optional<Session<SpeakerKey>> open(ServerPlayer player, BlockPos pos, int request) {
 		if (!(player.level() instanceof ServerLevel level) || !level.isLoaded(pos)) {
+			refuse(player, pos, request);
 			return Optional.empty();
 		}
+		SpeakerKey key = new SpeakerKey(level.dimension(), pos);
+		UUID id = player.getUUID();
+		boolean renewing = TABLE.byKey(key).map(s -> s.owner().equals(id)).orElse(false);
 		BlockState state = level.getBlockState(pos);
 		if (!state.is(ModBlocks.PORTABLE_SPEAKER) || !state.getValue(PortableSpeakerBlock.POWERED)
-				|| !player.isWithinBlockInteractionRange(pos, 1.0)) {
+				|| (!renewing && !player.isWithinBlockInteractionRange(pos, 1.0))) {
+			refuse(player, pos, request);
 			return Optional.empty();
 		}
-		Opened<SpeakerKey> opened = TABLE.open(new SpeakerKey(level.dimension(), pos), player.getUUID());
-		opened.replaced().ifPresent(old -> notifyEnded(level.getServer(), old, true, false));
+		Opened<SpeakerKey> opened = TABLE.open(key, id);
+		opened.replaced().ifPresent(old -> {
+			boolean sameOwner = old.owner().equals(id);
+			notifyEnded(level.getServer(), old, !sameOwner, sameOwner);
+		});
 		Session<SpeakerKey> session = opened.session();
-		Net.send(player, new StreamOrderPayload(session.id(), session.key().pos(), true));
+		Net.send(player, new StreamOrderPayload(session.id(), pos, true, request));
 		return Optional.of(session);
+	}
+
+	private static void refuse(ServerPlayer player, BlockPos pos, int request) {
+		Net.send(player, new StreamOrderPayload(StreamOrderPayload.NO_SESSION, pos, false, request));
 	}
 
 	/** Ends the session of the speaker at {@code pos} (absolute), if any: broken, switched off or unloaded. */
@@ -84,7 +98,7 @@ public final class StreamSessions {
 		if (tellOwner) {
 			ServerPlayer owner = server.getPlayerList().getPlayer(session.owner());
 			if (owner != null) {
-				Net.send(owner, new StreamOrderPayload(session.id(), session.key().pos(), false));
+				Net.send(owner, new StreamOrderPayload(session.id(), session.key().pos(), false, StreamOrderPayload.NO_REQUEST));
 			}
 		}
 		ServerLevel level = server.getLevel(session.key().dimension());

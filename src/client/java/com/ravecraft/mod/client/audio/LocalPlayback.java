@@ -23,6 +23,8 @@ import net.minecraft.core.BlockPos;
  */
 public final class LocalPlayback {
 	private static final Map<BlockPos, Session> SESSIONS = new HashMap<>();
+	/** Numbers this client's open requests, so a late answer to an abandoned one is recognised. */
+	private static int lastRequest;
 
 	private LocalPlayback() {
 	}
@@ -60,20 +62,30 @@ public final class LocalPlayback {
 		return session == null ? Optional.empty() : Optional.ofNullable(session.current);
 	}
 
-	/** The server granted (start) or revoked (stop) a session. */
+	/** The server granted (start), refused or revoked (stop) a session. */
 	public static void onOrder(StreamOrderPayload order) {
 		Session session = SESSIONS.get(order.pos());
 		if (order.start()) {
-			if (session == null || !session.awaitingGrant) {
-				// Stopped meanwhile: give the session back.
+			if (session == null || !session.awaitingGrant || session.request != order.request()) {
+				// Answer to an abandoned request: give the session back.
 				ClientPlayNetworking.send(new StreamClosePayload(order.sessionId(), false));
 				return;
 			}
 			session.begin(order.sessionId());
-		} else if (session != null && session.sessionId == order.sessionId()) {
+			return;
+		}
+		if (session == null) {
+			return;
+		}
+		boolean refused = session.awaitingGrant && order.request() == session.request;
+		boolean revoked = order.sessionId() != StreamOrderPayload.NO_SESSION
+				&& (order.sessionId() == session.sessionId || order.sessionId() == session.previousId);
+		if (refused || revoked) {
 			SESSIONS.remove(session.pos);
 			session.cancel();
-			ReceivedStreams.end(order.sessionId(), false);
+			if (revoked) {
+				ReceivedStreams.end(order.sessionId(), false);
+			}
 		}
 	}
 
@@ -82,7 +94,10 @@ public final class LocalPlayback {
 		final Deque<Path> queue;
 		Path current;
 		boolean awaitingGrant;
+		int request;
 		int sessionId = -1;
+		/** The session the pending request renews: the server ends it, with its tail, when granting the next. */
+		int previousId = -1;
 		StreamEmitter emitter;
 
 		Session(BlockPos pos, Deque<Path> queue) {
@@ -100,23 +115,33 @@ public final class LocalPlayback {
 				return;
 			}
 			awaitingGrant = true;
-			ClientPlayNetworking.send(new StreamOpenPayload(pos));
+			request = ++lastRequest;
+			ClientPlayNetworking.send(new StreamOpenPayload(pos, request));
 		}
 
 		void begin(int id) {
 			awaitingGrant = false;
+			previousId = -1;
 			sessionId = id;
 			emitter = new StreamEmitter(id, pos, current, () -> ended(id, true), e -> ended(id, false));
 			emitter.start();
 		}
 
-		/** The track played out ({@code finished}) or could not be read: close its session and go on. */
+		/**
+		 * The track played out ({@code finished}) or could not be read. The next track renews the session, which
+		 * the server allows from out of reach; after the last one the session is closed.
+		 */
 		void ended(int id, boolean finished) {
 			if (SESSIONS.get(pos) != this || sessionId != id) {
 				return;
 			}
-			ClientPlayNetworking.send(new StreamClosePayload(id, finished));
 			ReceivedStreams.end(id, finished);
+			if (queue.isEmpty()) {
+				ClientPlayNetworking.send(new StreamClosePayload(id, finished));
+				SESSIONS.remove(pos, this);
+				return;
+			}
+			previousId = id;
 			next();
 		}
 

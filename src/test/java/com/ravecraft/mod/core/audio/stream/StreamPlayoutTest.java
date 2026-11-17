@@ -80,6 +80,10 @@ class StreamPlayoutTest {
 		playout.finish();
 		assertFalse(playout.isDrained());
 		assertTrue(rms(playout.nextBlock()) > 1_000);
+		for (int i = 0; i < StreamPlayout.TAIL_BLOCKS; i++) {
+			assertFalse(playout.isDrained(), "engine still holds queued blocks");
+			playout.nextBlock();
+		}
 		assertTrue(playout.isDrained());
 	}
 }

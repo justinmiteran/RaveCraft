@@ -28,4 +28,6 @@ public final class StreamFormat {
 
 	private StreamFormat() {
 	}
+	/** Rate-limit charge per chunk on top of its audio bytes, so empty chunks are not free. */
+	public static final int CHUNK_OVERHEAD_BYTES = 32;
 }

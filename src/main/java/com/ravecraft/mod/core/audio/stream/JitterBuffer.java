@@ -35,6 +35,8 @@ public final class JitterBuffer {
 	private long cursor = Long.MIN_VALUE;
 	private boolean playing;
 	private boolean draining;
+	/** Playback ran dry: the next start skips the backlog that piled up meanwhile. */
+	private boolean underran;
 
 	public JitterBuffer(int targetFrames, int maxAheadFrames) {
 		this.targetFrames = targetFrames;
@@ -67,9 +69,16 @@ public final class JitterBuffer {
 			}
 			playing = true;
 			cursor = frames.firstKey();
+			if (underran) {
+				// After a stall the whole backlog arrives at once (TCP loses nothing): resume at target latency.
+				cursor = Math.max(cursor, frames.lastKey() - targetFrames);
+				frames.headMap(cursor).clear();
+				underran = false;
+			}
 		}
 		if (frames.isEmpty()) {
 			playing = false;
+			underran = true;
 			return WAITING;
 		}
 		byte[] frame = frames.remove(cursor);

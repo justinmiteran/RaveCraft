@@ -1,6 +1,7 @@
 package com.ravecraft.mod.network.payload;
 
 import com.ravecraft.mod.RaveCraft;
+import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import io.netty.buffer.ByteBuf;
 import java.util.List;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -22,6 +23,24 @@ public record AudioChunkPayload(int sessionId, int seq, List<byte[]> frames) imp
 			total += frame.length;
 		}
 		return total;
+	}
+
+	/** At least one frame, and no empty frame: anything else carries no audio and is not relayed. */
+	public boolean isWellFormed() {
+		if (frames.isEmpty()) {
+			return false;
+		}
+		for (byte[] frame : frames) {
+			if (frame.length == 0) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/** What the chunk costs against the sender's rate limit. */
+	public int cost() {
+		return byteSize() + StreamFormat.CHUNK_OVERHEAD_BYTES;
 	}
 
 	@Override

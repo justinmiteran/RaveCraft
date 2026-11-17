@@ -1,5 +1,11 @@
 package com.ravecraft.mod.network.payload;
 
+import com.ravecraft.mod.core.audio.stream.StreamFormat;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -60,5 +66,17 @@ class AudioChunkPayloadTest {
 		VarInt.write(buf, 1); // one frame
 		FriendlyByteBuf.writeByteArray(buf, new byte[381]);
 		assertThrows(RuntimeException.class, () -> AudioChunkPayload.CODEC.decode(buf));
+	}
+
+	@Test
+	void chunkWithoutAudioIsMalformed() {
+		assertFalse(new AudioChunkPayload(1, 0, List.of()).isWellFormed());
+		assertFalse(new AudioChunkPayload(1, 0, List.of(new byte[0], new byte[3])).isWellFormed());
+		assertTrue(new AudioChunkPayload(1, 0, frames(5, 3)).isWellFormed());
+	}
+
+	@Test
+	void costChargesPerChunkOverhead() {
+		assertEquals(15 + StreamFormat.CHUNK_OVERHEAD_BYTES, new AudioChunkPayload(1, 0, frames(5, 3)).cost());
 	}
 }

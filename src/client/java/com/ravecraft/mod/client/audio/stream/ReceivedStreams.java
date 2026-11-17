@@ -1,29 +1,28 @@
 package com.ravecraft.mod.client.audio.stream;
 
 import com.ravecraft.mod.client.audio.SpeakerSoundInstance;
+import com.ravecraft.mod.core.audio.stream.SessionRoster;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.SequencedSet;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Util;
 
 /**
  * The streams this client is hearing, relayed or its own (loopback). A stream starts on its first chunk, with no
- * prior notice, so players walking into range just start hearing. Client thread only.
+ * prior notice, so players walking into range just start hearing; one that went quiet is dropped and starts again
+ * if chunks come back. Client thread only.
  */
 public final class ReceivedStreams {
 	private static final long IDLE_TIMEOUT_MS = 5_000;
 	private static final int REMEMBERED_ENDED = 64;
-	private static final Map<Integer, Stream> STREAMS = new HashMap<>();
-	/** Recently ended sessions, so late chunks do not restart them. */
-	private static final SequencedSet<Integer> ENDED = new LinkedHashSet<>();
+	private static final SessionRoster<Stream> STREAMS = new SessionRoster<>(REMEMBERED_ENDED);
+	/** Ended streams still playing their buffered tail. */
+	private static final List<Stream> DRAINING = new ArrayList<>();
 
 	private ReceivedStreams() {
 	}
@@ -34,76 +33,61 @@ public final class ReceivedStreams {
 	}
 
 	public static void offer(int sessionId, BlockPos pos, int seq, List<byte[]> frames) {
-		Stream stream = STREAMS.get(sessionId);
-		if (stream == null) {
-			if (ENDED.contains(sessionId)) {
-				return;
-			}
-			stream = new Stream(new StreamPlayout(Util.getMillis()));
-			STREAMS.put(sessionId, stream);
-			Stream started = stream;
-			Minecraft.getInstance().getSoundManager().play(
-					new SpeakerSoundInstance(pos, () -> new NetworkAudioStream(started.playout), started::alive));
-		}
-		stream.playout.offer(seq, frames, Util.getMillis());
+		long now = Util.getMillis();
+		STREAMS.admit(sessionId, () -> new Stream(pos.immutable(), new StreamPlayout(now))).ifPresent(stream -> {
+			stream.playout.offer(seq, frames, now);
+			stream.ensurePlaying();
+		});
 	}
 
 	/** Ends a session: after its buffered tail when {@code drain}, at once otherwise. */
 	public static void end(int sessionId, boolean drain) {
-		remember(sessionId);
-		Stream stream = STREAMS.get(sessionId);
-		if (stream == null) {
-			return;
-		}
-		if (drain) {
-			stream.playout.finish();
-		} else {
-			stream.stopped = true;
-			STREAMS.remove(sessionId);
-		}
+		STREAMS.end(sessionId).ifPresent(stream -> {
+			if (drain) {
+				stream.playout.finish();
+				DRAINING.add(stream);
+			} else {
+				stream.stopped = true;
+			}
+		});
 	}
 
 	public static void endAll() {
-		STREAMS.values().forEach(stream -> stream.stopped = true);
-		STREAMS.clear();
-		ENDED.clear();
+		STREAMS.clear().forEach(stream -> stream.stopped = true);
+		DRAINING.forEach(stream -> stream.stopped = true);
+		DRAINING.clear();
 	}
 
-	private static void remember(int sessionId) {
-		ENDED.add(sessionId);
-		while (ENDED.size() > REMEMBERED_ENDED) {
-			ENDED.removeFirst();
-		}
-	}
-
-	/** Drops streams that played out or went silent (owner vanished without notice). */
+	/** Drops streams that went silent (owner vanished without notice, or this player walked away). */
 	private static void tick() {
-		if (STREAMS.isEmpty()) {
-			return;
-		}
 		long now = Util.getMillis();
-		Iterator<Map.Entry<Integer, Stream>> it = STREAMS.entrySet().iterator();
-		while (it.hasNext()) {
-			Map.Entry<Integer, Stream> entry = it.next();
-			Stream stream = entry.getValue();
-			if (stream.playout.isDrained() || stream.playout.idleFor(IDLE_TIMEOUT_MS, now)) {
-				stream.stopped = true;
-				remember(entry.getKey());
-				it.remove();
-			}
-		}
+		STREAMS.expireIf(stream -> stream.playout.idleFor(IDLE_TIMEOUT_MS, now)).forEach(stream -> stream.stopped = true);
+		DRAINING.removeIf(stream -> !stream.alive());
 	}
 
 	private static final class Stream {
+		final BlockPos pos;
 		final StreamPlayout playout;
 		volatile boolean stopped;
+		SpeakerSoundInstance sound;
 
-		Stream(StreamPlayout playout) {
+		Stream(BlockPos pos, StreamPlayout playout) {
+			this.pos = pos;
 			this.playout = playout;
 		}
 
 		boolean alive() {
 			return !stopped && !playout.isDrained();
+		}
+
+		/** (Re)starts the sound if it never started or the engine dropped it (reload, no free source). */
+		void ensurePlaying() {
+			Minecraft minecraft = Minecraft.getInstance();
+			SoundManager sounds = minecraft.getSoundManager();
+			if ((sound == null || !sounds.isActive(sound)) && SpeakerSoundInstance.isPoweredSpeaker(minecraft.level, pos)) {
+				sound = new SpeakerSoundInstance(pos, () -> new NetworkAudioStream(playout), this::alive);
+				sounds.play(sound);
+			}
 		}
 	}
 }

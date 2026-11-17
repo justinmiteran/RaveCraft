@@ -92,7 +92,7 @@ class JitterBufferTest {
 		}
 		assertInstanceOf(Waiting.class, buffer.poll());
 		offer(100, 114);
-		assertAudio(100, buffer.poll());
+		assertAudio(104, buffer.poll());
 	}
 
 	@Test
@@ -126,5 +126,17 @@ class JitterBufferTest {
 		}
 		assertInstanceOf(Waiting.class, buffer.poll());
 		assertEquals(0, buffer.bufferedFrames());
+	}
+
+	@Test
+	void stalledBacklogResumesFromNewestFrames() {
+		offer(0, 10);
+		for (int i = 0; i <= 10; i++) {
+			assertAudio(i, buffer.poll());
+		}
+		assertInstanceOf(Waiting.class, buffer.poll());
+		offer(11, 40);
+		assertAudio(30, buffer.poll());
+		assertEquals(10, buffer.bufferedFrames());
 	}
 }

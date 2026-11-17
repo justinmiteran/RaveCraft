@@ -11,10 +11,14 @@ import java.util.List;
  * A block is never empty (silence while buffering), so the engine never runs dry and ends the sound. Thread-safe.
  */
 public final class StreamPlayout {
+	/** Blocks the sound engine may still hold queued when the buffer runs empty. */
+	public static final int TAIL_BLOCKS = 4;
 	private final JitterBuffer buffer = new JitterBuffer(StreamFormat.JITTER_TARGET_FRAMES, StreamFormat.MAX_AHEAD_FRAMES);
 	private final OpusMonoDecoder decoder = new OpusMonoDecoder();
 	private long lastOfferMillis;
 	private boolean finished;
+	/** Blocks served since a finished stream ran out of frames. */
+	private int blocksAfterEmpty;
 
 	public StreamPlayout(long nowMillis) {
 		this.lastOfferMillis = nowMillis;
@@ -29,6 +33,10 @@ public final class StreamPlayout {
 	/** Exactly {@link StreamFormat#CHUNK_SAMPLES} samples of 16-bit little-endian mono PCM. */
 	public synchronized byte[] nextBlock() {
 		byte[] out = new byte[StreamFormat.CHUNK_SAMPLES * 2];
+		if (finished && buffer.bufferedFrames() == 0) {
+			blocksAfterEmpty++;
+			return out;
+		}
 		for (int f = 0; f < StreamFormat.FRAMES_PER_CHUNK; f++) {
 			Slot slot = buffer.poll();
 			short[] pcm;
@@ -54,9 +62,12 @@ public final class StreamPlayout {
 		buffer.drain();
 	}
 
-	/** True once {@link #finish()} was called and everything buffered has been played. */
+	/**
+	 * True once {@link #finish()} was called and everything buffered has been played, including the
+	 * {@link #TAIL_BLOCKS} blocks the sound engine may still have queued.
+	 */
 	public synchronized boolean isDrained() {
-		return finished && buffer.bufferedFrames() == 0;
+		return finished && buffer.bufferedFrames() == 0 && blocksAfterEmpty >= TAIL_BLOCKS;
 	}
 
 	/** True when nothing arrived during the last {@code millis}. */

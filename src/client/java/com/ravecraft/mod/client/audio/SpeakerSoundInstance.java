@@ -48,13 +48,26 @@ public final class SpeakerSoundInstance extends AbstractTickableSoundInstance {
 	@Override
 	public void tick() {
 		ClientLevel level = Minecraft.getInstance().level;
-		BlockState state = level == null ? null : level.getBlockState(pos);
-		if (state == null || !state.is(ModBlocks.PORTABLE_SPEAKER) || !state.getValue(PortableSpeakerBlock.POWERED)
-				|| !alive.getAsBoolean()) {
+		if (!isPoweredSpeaker(level, pos) || !alive.getAsBoolean()) {
 			stop();
 		} else {
 			volume = volumeAt(level);
 		}
+	}
+
+	/** Whether a speaker at {@code pos} is there and switched on, so a stream may play from it. */
+	public static boolean isPoweredSpeaker(ClientLevel level, BlockPos pos) {
+		if (level == null) {
+			return false;
+		}
+		BlockState state = level.getBlockState(pos);
+		return state.is(ModBlocks.PORTABLE_SPEAKER) && state.getValue(PortableSpeakerBlock.POWERED);
+	}
+
+	/** Starts even at volume 0, so raising the volume later is heard without restarting the stream. */
+	@Override
+	public boolean canStartSilent() {
+		return true;
 	}
 
 	private float volumeAt(ClientLevel level) {

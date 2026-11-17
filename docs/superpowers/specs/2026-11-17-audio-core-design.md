@@ -60,8 +60,8 @@ Le serveur **fait autorité sur l'état** de l'enceinte. Il ne décode ni n'enco
 | Composant | Source set / package | Rôle |
 |---|---|---|
 | **Bibliothèque musicale** | `client` · `client.audio.library` | Liste les racines du PC (disques, clés USB) ; parcourt les dossiers ; lit les `.m3u`/`.m3u8` (via le parseur de `core`) ; extrait titre, artiste et durée. Tourne hors du thread de rendu. |
-| **Décodeurs** | `client` · `client.audio.decode` | MP3, FLAC, OGG Vorbis, WAV vers PCM 48 kHz stéréo (rééchantillonnage si besoin). Bibliothèques Java embarquées en jar-in-jar (`include`) ; **licences compatibles LGPL-3.0 obligatoires**, choix arrêté dans le plan. |
-| **Émetteur** | `client` · `client.audio.stream` | Découpe le PCM en trames de 20 ms, encode en Opus (~128 kb/s), regroupe environ 5 trames par paquet (~100 ms), avec un **identifiant de session** et un **numéro de séquence**. Avance maximale de 2 à 3 s sur la lecture. |
+| **Décodeurs** | `client` · `client.audio.decode` | MP3, FLAC, OGG Vorbis, WAV vers PCM 16 bits, puis mono 48 kHz (rééchantillonnage si besoin) : OpenAL ne spatialise que le mono. Bibliothèques Java embarquées en jar-in-jar (`include`) ; **licences compatibles LGPL-3.0 obligatoires**, choix arrêté dans le plan. |
+| **Émetteur** | `client` · `client.audio.stream` | Découpe le PCM en trames de 20 ms, encode en Opus mono 48 kHz (~64 kb/s, Concentus en Java pur, BSD-3), regroupe environ 5 trames par paquet (~100 ms), avec un **identifiant de session** et un **numéro de séquence**. Avance maximale de 2 à 3 s sur la lecture. |
 | **Enceinte (bloc + objet)** | `main` · `block`, `blockentity`, `item`, `registry` | Porte l'état (section 3.4). L'état suit l'enceinte sous toutes ses formes : bloc, objet en inventaire, objet au sol. |
 | **Gestionnaire de lecture** | `main` · `world.audio` | Côté serveur : sessions, choix du morceau suivant, ordres aux clients propriétaires, gestion des absences et des retraits. S'appuie sur la logique de file de `core`. |
 | **Relais** | `main` · `network` | Reçoit les paquets audio, vérifie l'émetteur, les transmet aux **auditeurs à portée**. Liste d'auditeurs maintenue sur événement (changement de chunk ou de dimension, connexion, déconnexion, déplacement de l'enceinte), jamais par un scan à chaque tick. |
@@ -217,7 +217,7 @@ Tout joueur **à portée d'interaction** de l'enceinte (ou son porteur) peut : a
 ## 8. Performances
 - Aucun scan de blocs ou de chunks par tick. Auditeurs, salle et étouffement sont calculés **sur événement**, ou à fréquence bornée pour l'étouffement.
 - Décodage, encodage, parcours de fichiers et calculs acoustiques dans des **threads dédiés**.
-- Le serveur ne fait que relayer : coût proportionnel au nombre d'auditeurs × ~128 kb/s.
+- Le serveur ne fait que relayer : coût proportionnel au nombre d'auditeurs × ~64 kb/s.
 
 ## 9. Tests
 
@@ -233,7 +233,9 @@ Branches successives, chacune avec un build vert et une pull request (ordre déf
 
 1. `feat/portable-speaker` : bloc, objet, état, registre en mémoire, recette, modèle, textures, onglet, traductions, suppression des exemples.
 2. `feat/local-playback` : bibliothèque musicale, parseur `.m3u`, décodeurs, lecture locale simple.
-3. `feat/audio-relay` : Opus, paquets, relais, gestionnaire de lecture, file partagée.
+3. En deux branches :
+   - 3a. `feat/audio-relay` : Opus, paquets, relais, récepteur ; le joueur qui lance la lecture diffuse sa propre file locale à tous ceux à portée.
+   - 3b. `feat/shared-queue` : file partagée et gestionnaire de lecture côté serveur (`StreamOrder` piloté par le serveur, absents, illisibles : D10–D12).
 4. `feat/acoustic-engine` : profils, distance, étouffement, réverbération, échos, limite de sources.
 5. `feat/speaker-ui` : interface complète, configuration, notifications.
 

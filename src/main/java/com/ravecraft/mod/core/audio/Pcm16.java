@@ -31,4 +31,13 @@ public final class Pcm16 {
 		}
 		return mono;
 	}
+
+	/** Reads {@code length} bytes of 16-bit little-endian PCM as samples; a trailing odd byte is ignored. */
+	public static short[] toShorts(byte[] le, int length) {
+		short[] out = new short[length / 2];
+		for (int i = 0; i < out.length; i++) {
+			out[i] = (short) ((le[i * 2] & 0xFF) | (le[i * 2 + 1] << 8));
+		}
+		return out;
+	}
 }

@@ -32,4 +32,9 @@ class Pcm16Test {
 		byte[] stereo = samples(100, 300, 5000, 5000);
 		assertArrayEquals(samples(200), Pcm16.downmixToMono(stereo, 4, 2));
 	}
+
+	@Test
+	void toShortsLittleEndian() {
+		assertArrayEquals(new short[]{0x0201, -1}, Pcm16.toShorts(new byte[]{0x01, 0x02, (byte) 0xFF, (byte) 0xFF, 0x7F}, 5));
+	}
 }

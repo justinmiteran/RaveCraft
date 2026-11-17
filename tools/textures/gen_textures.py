@@ -100,11 +100,11 @@ def inset(img, x0, y0, x1, y1, fill):
 
 # Portable speaker (barrel shape, models/block/portable_speaker.json). The fabric is a light grey weave tinted in
 # game by the dye colour (tintindex 0), so it stays bright and low-contrast; rubber, radiator and the copper logo
-# are never tinted. The details texture is a transparent overlay (cutout): equaliser logo at (0,0)-(8,5), top
-# controls row at v=9.
+# are never tinted. The details texture is a transparent overlay (cutout): equaliser logo and front LED at
+# (0,0)-(8,5), top controls row at v=8 (front edge of the top, the handle posts cover v=9-10).
 RUBBER = [(26, 27, 32), (38, 40, 47), (52, 55, 64), (72, 76, 88)]
 COPPER, COPPER_L = (214, 132, 72), (240, 172, 112)
-LED_OFF, LED_ON = (70, 40, 40), (90, 240, 255)
+LED_OFF, LED_ON = (60, 30, 30), (110, 255, 140)
 EQ_LOGO = ["....#...",
            "..#.#...",
            "..#.#.#.",
@@ -156,10 +156,13 @@ def speaker_details(on):
         for x, ch in enumerate(row):
             if ch == "#":
                 px(img, x, y, COPPER_L if y == 0 or EQ_LOGO[y - 1][x] != "#" else COPPER)
-    px(img, 2, 9, RUBBER[3])                 # volume down
-    px(img, 4, 9, COPPER)                    # play
-    px(img, 6, 9, RUBBER[3])                 # volume up
-    px(img, 7, 9, LED_ON if on else LED_OFF)  # power LED
+    led = LED_ON if on else LED_OFF
+    px(img, 7, 4, led)                       # power LED on the front, under the logo
+    # Top controls along the front edge (v=8), clear of the handle posts.
+    px(img, 2, 8, RUBBER[3])                 # volume down
+    px(img, 4, 8, COPPER)                    # play
+    px(img, 6, 8, RUBBER[3])                 # volume up
+    px(img, 7, 8, led)                       # power LED
     return img
 
 

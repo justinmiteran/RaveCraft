@@ -17,7 +17,7 @@
 	},
 	"elements": [
 		{
-			"uuid": "1038f3a0-202e-4a3a-bec7-56a5b8452fb0",
+			"uuid": "87c4f638-b548-4950-a207-431e36a506a4",
 			"name": "cap_left_0",
 			"origin": [
 				0,
@@ -100,7 +100,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "0664a60f-4232-4349-8cf9-df179bcbe9fe",
+			"uuid": "61550c4d-a5f8-4704-83cf-4ea90ecfdcfd",
 			"name": "cap_right_0",
 			"origin": [
 				0,
@@ -183,7 +183,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "a7a40e86-8a0f-4c00-9380-9050fa5f3bb2",
+			"uuid": "a94b0b9b-ae03-499a-90b7-9abe966db8ee",
 			"name": "cap_left_1",
 			"origin": [
 				0,
@@ -266,7 +266,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "06c9e635-6979-4d6c-a9a8-f7b5fe0d4c8c",
+			"uuid": "48de03f0-c4ef-4a1f-bb2b-eb770754fc96",
 			"name": "cap_right_1",
 			"origin": [
 				0,
@@ -349,7 +349,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "398590f4-b2e3-483b-8e78-db28059270be",
+			"uuid": "6119c7e9-4661-4c4b-80ea-8680e19a9064",
 			"name": "cap_left_2",
 			"origin": [
 				0,
@@ -432,7 +432,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "2a4d1c6c-0de5-4cc6-8d1c-5ba7b75dd289",
+			"uuid": "257e0464-08ae-4a20-a499-1df8d581faaf",
 			"name": "cap_right_2",
 			"origin": [
 				0,
@@ -515,7 +515,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "816624bb-ec07-4aa4-b209-e109e7e768ce",
+			"uuid": "1eb6b620-f022-4d30-9b9a-695b061df6a7",
 			"name": "neck_left_0",
 			"origin": [
 				0,
@@ -604,7 +604,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "ac88415d-1c2a-4695-9362-b3e477b9771a",
+			"uuid": "1fbd00bd-8025-4f3c-9e5f-1ff9cfde76ba",
 			"name": "neck_right_0",
 			"origin": [
 				0,
@@ -693,7 +693,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "880633d6-28cd-4a38-b192-02fcaa2d63ab",
+			"uuid": "f3c59f60-8d80-4e8d-9efb-8c42c20f0960",
 			"name": "neck_left_1",
 			"origin": [
 				0,
@@ -782,7 +782,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "a711178d-fb75-4496-9ebf-995253bf3f6e",
+			"uuid": "2a1c5d44-04d7-4fd9-abe6-915543cc5df8",
 			"name": "neck_right_1",
 			"origin": [
 				0,
@@ -871,7 +871,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "88234cc1-b7be-457d-882c-67a700ca7abe",
+			"uuid": "71ee34be-58c1-4e2f-bb1c-93eb9510e0fa",
 			"name": "neck_left_2",
 			"origin": [
 				0,
@@ -960,7 +960,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "00c8efda-28ee-4eb6-a238-2b4d18e0c314",
+			"uuid": "6caccbb4-cf3e-4cea-829e-5d59051f6982",
 			"name": "neck_right_2",
 			"origin": [
 				0,
@@ -1049,7 +1049,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "35aee734-d526-4b71-ae4c-7efada329ada",
+			"uuid": "60683d5d-eec3-4da3-8d9a-f8a68958dc81",
 			"name": "body_0",
 			"origin": [
 				0,
@@ -1138,7 +1138,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "90718995-b507-419f-b48d-c1fe263f0c93",
+			"uuid": "645452c4-e39f-4b39-94d7-38e839248b4d",
 			"name": "body_1",
 			"origin": [
 				0,
@@ -1227,7 +1227,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "e1f34e2e-d773-4ceb-b56e-2a117b5b2255",
+			"uuid": "eaa09231-45fd-412a-b55c-54b3766c641e",
 			"name": "body_2",
 			"origin": [
 				0,
@@ -1316,7 +1316,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "44999684-59fa-432f-bd2d-8c8716f9c53a",
+			"uuid": "d12c6391-8b6f-48c9-a856-19ac4b0faaf0",
 			"name": "handle_post_left",
 			"origin": [
 				0,
@@ -1399,7 +1399,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "31f08e59-99f8-480d-b777-332451c5f2c2",
+			"uuid": "a0514b40-47a9-4646-80e7-53915d379735",
 			"name": "handle_post_right",
 			"origin": [
 				0,
@@ -1482,7 +1482,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "9460f80b-64c2-4c14-85dd-53ec70aef21b",
+			"uuid": "15bdb209-822e-4aa4-be5c-09f456f697ab",
 			"name": "handle_bar",
 			"origin": [
 				0,
@@ -1565,7 +1565,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "90957885-4a84-4bb9-92f3-fc11db47c93f",
+			"uuid": "412c78f5-f4a9-4078-9344-9a8311d7bb86",
 			"name": "logo",
 			"origin": [
 				0,
@@ -1648,7 +1648,7 @@
 			"autouv": 0
 		},
 		{
-			"uuid": "2a3ad040-626b-4bf3-a709-43fc05ae6618",
+			"uuid": "682139e6-83f8-471b-bb8c-eb105c433b27",
 			"name": "controls",
 			"origin": [
 				0,
@@ -1733,30 +1733,30 @@
 	],
 	"groups": [],
 	"outliner": [
-		"1038f3a0-202e-4a3a-bec7-56a5b8452fb0",
-		"0664a60f-4232-4349-8cf9-df179bcbe9fe",
-		"a7a40e86-8a0f-4c00-9380-9050fa5f3bb2",
-		"06c9e635-6979-4d6c-a9a8-f7b5fe0d4c8c",
-		"398590f4-b2e3-483b-8e78-db28059270be",
-		"2a4d1c6c-0de5-4cc6-8d1c-5ba7b75dd289",
-		"816624bb-ec07-4aa4-b209-e109e7e768ce",
-		"ac88415d-1c2a-4695-9362-b3e477b9771a",
-		"880633d6-28cd-4a38-b192-02fcaa2d63ab",
-		"a711178d-fb75-4496-9ebf-995253bf3f6e",
-		"88234cc1-b7be-457d-882c-67a700ca7abe",
-		"00c8efda-28ee-4eb6-a238-2b4d18e0c314",
-		"35aee734-d526-4b71-ae4c-7efada329ada",
-		"90718995-b507-419f-b48d-c1fe263f0c93",
-		"e1f34e2e-d773-4ceb-b56e-2a117b5b2255",
-		"44999684-59fa-432f-bd2d-8c8716f9c53a",
-		"31f08e59-99f8-480d-b777-332451c5f2c2",
-		"9460f80b-64c2-4c14-85dd-53ec70aef21b",
-		"90957885-4a84-4bb9-92f3-fc11db47c93f",
-		"2a3ad040-626b-4bf3-a709-43fc05ae6618"
+		"87c4f638-b548-4950-a207-431e36a506a4",
+		"61550c4d-a5f8-4704-83cf-4ea90ecfdcfd",
+		"a94b0b9b-ae03-499a-90b7-9abe966db8ee",
+		"48de03f0-c4ef-4a1f-bb2b-eb770754fc96",
+		"6119c7e9-4661-4c4b-80ea-8680e19a9064",
+		"257e0464-08ae-4a20-a499-1df8d581faaf",
+		"1eb6b620-f022-4d30-9b9a-695b061df6a7",
+		"1fbd00bd-8025-4f3c-9e5f-1ff9cfde76ba",
+		"f3c59f60-8d80-4e8d-9efb-8c42c20f0960",
+		"2a1c5d44-04d7-4fd9-abe6-915543cc5df8",
+		"71ee34be-58c1-4e2f-bb1c-93eb9510e0fa",
+		"6caccbb4-cf3e-4cea-829e-5d59051f6982",
+		"60683d5d-eec3-4da3-8d9a-f8a68958dc81",
+		"645452c4-e39f-4b39-94d7-38e839248b4d",
+		"eaa09231-45fd-412a-b55c-54b3766c641e",
+		"d12c6391-8b6f-48c9-a856-19ac4b0faaf0",
+		"a0514b40-47a9-4646-80e7-53915d379735",
+		"15bdb209-822e-4aa4-be5c-09f456f697ab",
+		"412c78f5-f4a9-4078-9344-9a8311d7bb86",
+		"682139e6-83f8-471b-bb8c-eb105c433b27"
 	],
 	"textures": [
 		{
-			"uuid": "bb886d24-d8f6-433c-9430-d939396dd4d4",
+			"uuid": "bcc6cdad-710c-4d0e-95e5-8e21e8628ab3",
 			"name": "portable_speaker_fabric.png",
 			"source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACMklEQVR4nD2TSU8CURCEmxdMUBI4CKioLLIZAiEegJ/PlYNCMgOiRBZlV3DggAEumK+T4fQy73VVV1X3eGq12rFUKsl0OpWbmxv5+vqSeDwuo9FIfD6fbDYbeXx8lH6/L/f39zKZTPRst9uSTqfF8Pj5+SmRSER6vZ5cX1+LZVmSTCblcDhINpuV19dXJaXO7/crebFYlMViIR7Lso6A+Tg7O1PQ1dWVFsdiMe3I+fb2JplMRn5/f1XpcDiURCIhBjm2baus7Xarl4Aoxk44HNbiQqEgy+VSlUKOwufnZ/HYtn2kI7IAvb+/SyqVkkajIfl8Xu+xAenl5aXMZjM5Pz8/NTOhUEgDAoTXQCCgWQDGFvfj8Viz6XQ6Kh+bBDgYDMSsVitNGTkUr9drDYxOKMNGMBg8kUJGZ5Te3t6KMcYoU6VS0UfA8/lcPTIqvgkO0M/Pj+RyOQVjh0zMbrdTeR8fHxoknr1er9qqVqtKGo1GtQkB1ut1eXh40AyYjsdxnGO321Vwq9USd6mQBwmyAV9cXOhSoQQ7gLFn6AwzcgBTTBFKyKTZbMrd3Z04jqPf7lQ4seGZz+fH7+9vJUEuSsiANSZtd+5454Ts5eVFyuWyKjSkDYhHOtMRENNw5849NpkG+/D09KSZnTJg09jxv78/DZS02Q9kMgX2A3uuQrzTBDLD/El5v9+f5DJ/OqOAYuSjwP3hqHc31vBXoYDOdGDD+DcYFYoIjIwggQxSSLgH9w+JSYxdnn8opwAAAABJRU5ErkJggg==",
 			"path": "C:/Users/justi/Desktop/Projets/RaveCraft/art/tmp_pack/assets/ravecraft/textures/block/portable_speaker_fabric.png",
@@ -1782,7 +1782,7 @@
 			"saved": true
 		},
 		{
-			"uuid": "2b82bd1c-f905-484b-8e44-ead9fbf6ede0",
+			"uuid": "933f22bb-4ae9-4d85-a30e-8c32fe8dd54c",
 			"name": "portable_speaker_rubber.png",
 			"source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAjUlEQVR4nJVSQQrAMAhrw84b+0TZbf9/1dg+sOFBcBJrGyiCxpqgtR3nWwjWbS/PfaU5SDJq1ppE1iyokYJIlUI/A1OQNVp10J9UJoNymAV44owiifAFNiXiSIRN2mY7pWcHzJufwuQrwGT2bAwd0gyQScxqGCUyjrzFJyP/rPZbYwa/YrrG6KyjW5DaB063Y9ELgoXCAAAAAElFTkSuQmCC",
 			"path": "C:/Users/justi/Desktop/Projets/RaveCraft/art/tmp_pack/assets/ravecraft/textures/block/portable_speaker_rubber.png",
@@ -1808,7 +1808,7 @@
 			"saved": true
 		},
 		{
-			"uuid": "ca31778d-6b83-4d17-a8c1-386a7a526494",
+			"uuid": "f58910db-1a29-40a4-b95a-f1c3dfaeac12",
 			"name": "portable_speaker_radiator.png",
 			"source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA4UlEQVR4nJVSTQvCMAztSk/zYwh+4VHGUDx4Ebz6xz0K/gEZyPAo6EXmx66TCClJTB0+KGnTvJc0TZTNlrVR0E165l7eGn0WnCEy3oHVyIAoVEGoKgSKWa2CJiKtzqESOvA8TedMBIkSTgaBUH8wNvvdlgXGccu0OwlLBtbKUik5zRafBaiql3k+StZMsBaJskQgghj4hqPJV/N8Ew05SJyK/GdDvYCG4njw++vl7PcyWbRab2rphLfCm0NNpHDauGoAsjaNTgv+Z7iYQGjeQ3fsG5tAyVSMfSMdayoqE1CxN0q2f9e2iCNLAAAAAElFTkSuQmCC",
 			"path": "C:/Users/justi/Desktop/Projets/RaveCraft/art/tmp_pack/assets/ravecraft/textures/block/portable_speaker_radiator.png",
@@ -1834,9 +1834,9 @@
 			"saved": true
 		},
 		{
-			"uuid": "d3e821e2-9b19-462c-bf8e-866210a2064d",
+			"uuid": "5a9a0efb-ed3c-44ef-a1f8-d3fae794020f",
 			"name": "portable_speaker_details.png",
-			"source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAQUlEQVR4nGNgQAMf1hT8ZyABMKFrfHbjBgNZBjxD00isS5hwKSTVJaOAGsDDJwIcG9daPP7D+G4aGiQlqlEwUAAA6CQcAYFMaZ0AAAAASUVORK5CYII=",
+			"source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAQ0lEQVR4nGNgQAMf1hT8ZyABMKFrfHbjBgNZBjxD00isS5hwKSTVJViBjZwcSeEx1IGHTwTYv9daPP7D+CMtDEYwAAAC7x1aAUK3zQAAAABJRU5ErkJggg==",
 			"path": "C:/Users/justi/Desktop/Projets/RaveCraft/art/tmp_pack/assets/ravecraft/textures/block/portable_speaker_details.png",
 			"width": 16,
 			"height": 16,
@@ -1866,6 +1866,122 @@
 	"variable_placeholder_buttons": [],
 	"timeline_setups": [],
 	"unhandled_root_fields": {},
+	"display": {
+		"thirdperson_righthand": {
+			"rotation": [
+				90,
+				-90,
+				0
+			],
+			"translation": [
+				0.5,
+				0,
+				-2.75
+			],
+			"scale": [
+				0.55,
+				0.55,
+				0.55
+			]
+		},
+		"thirdperson_lefthand": {
+			"rotation": [
+				90,
+				-90,
+				0
+			],
+			"translation": [
+				0.5,
+				0,
+				-2.75
+			],
+			"scale": [
+				0.55,
+				0.55,
+				0.55
+			]
+		},
+		"firstperson_righthand": {
+			"rotation": [
+				0,
+				160,
+				0
+			],
+			"translation": [
+				0,
+				-1,
+				0
+			],
+			"scale": [
+				0.45,
+				0.45,
+				0.45
+			]
+		},
+		"firstperson_lefthand": {
+			"rotation": [
+				0,
+				160,
+				0
+			],
+			"translation": [
+				0,
+				-1,
+				0
+			],
+			"scale": [
+				0.45,
+				0.45,
+				0.45
+			]
+		},
+		"ground": {
+			"translation": [
+				0,
+				3,
+				0
+			],
+			"scale": [
+				0.4,
+				0.4,
+				0.4
+			]
+		},
+		"gui": {
+			"rotation": [
+				20,
+				-160,
+				0
+			],
+			"translation": [
+				0,
+				1,
+				0
+			],
+			"scale": [
+				0.85,
+				0.85,
+				0.85
+			]
+		},
+		"fixed": {
+			"rotation": [
+				0,
+				-180,
+				0
+			],
+			"translation": [
+				0,
+				1,
+				0
+			],
+			"scale": [
+				0.7,
+				0.7,
+				0.7
+			]
+		}
+	},
 	"ai_used": true,
 	"ai_agents": "claude-code"
 }

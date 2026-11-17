@@ -5,6 +5,7 @@
 	"client": [
 		"CreativeModeInventoryScreenMixin",
 		"OptionsMixin",
+		"SoundEngineMixin",
 		"SoundOptionsScreenMixin"
 	],
 	"injectors": {

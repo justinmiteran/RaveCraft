@@ -26,11 +26,48 @@ class PropagationTest {
 		assertEquals(0.25, Propagation.distanceGain(2, 2), EPS);
 	}
 
+	/** 20 W at 85 dB/W/m is 98 dB at 1 m; down to the 68 dB threshold that is 30 dB, so 10^1.5 blocks. */
+	private static final double PORTABLE_RANGE = Math.pow(10, (85 + 10 * Math.log10(20) - 68) / 20);
+	private static final AcousticSettings S = AcousticSettings.DEFAULT;
+
+	private static AcousticSettings with(double rolloff, double thresholdDb, double maxRange) {
+		return new AcousticSettings(rolloff, S.fadeFraction(), S.airAbsorptionDbPerBlock(), thresholdDb, maxRange, S.portable());
+	}
+
+	@Test
+	void levelAtOneMetreFromPowerAndSensitivity() {
+		assertEquals(85 + 10 * Math.log10(20), Propagation.levelAt1m(PORTABLE), EPS);
+		assertEquals(94, Propagation.levelAt1m(new DeviceProfile(1, 94, -6, 150, Directivity.OMNI)), EPS);
+	}
+
+	@Test
+	void portableCarriesAboutThirtyTwoBlocks() {
+		assertEquals(31.66, Propagation.range(S, PORTABLE, 1), 0.01);
+	}
+
 	@Test
 	void rangeScalesWithVolume() {
-		assertEquals(32, Propagation.range(PORTABLE, 1), EPS);
-		assertEquals(16, Propagation.range(PORTABLE, 0.5), EPS);
-		assertEquals(0, Propagation.range(PORTABLE, 0), EPS);
+		assertEquals(PORTABLE_RANGE / 2, Propagation.range(S, PORTABLE, 0.5), 1e-6);
+		assertEquals(0, Propagation.range(S, PORTABLE, 0), EPS);
+	}
+
+	@Test
+	void fourTimesThePowerDoublesTheRange() {
+		DeviceProfile loud = new DeviceProfile(80, 85, -6, 150, Directivity.OMNI);
+		assertEquals(2 * PORTABLE_RANGE, Propagation.range(S, loud, 1), 1e-6);
+	}
+
+	@Test
+	void softerRolloffCarriesFurther() {
+		double base = Propagation.range(with(1, 80, 512), PORTABLE, 1);
+		assertEquals(base * base, Propagation.range(with(0.5, 80, 512), PORTABLE, 1), 1e-6);
+	}
+
+	@Test
+	void rangeIsCapped() {
+		DeviceProfile festival = new DeviceProfile(8000, 100, 0, 40, Directivity.OMNI);
+		assertEquals(256, Propagation.range(S, festival, 1), EPS);
+		assertEquals(100, Propagation.range(with(1, 68, 100), festival, 1), EPS);
 	}
 
 	@Test
@@ -44,13 +81,13 @@ class PropagationTest {
 
 	@Test
 	void gainZeroBeyondRangeAndAtVolumeZero() {
-		assertEquals(0, Propagation.gain(1, 0.2, PORTABLE, 1, 33, 1), EPS);
-		assertEquals(0, Propagation.gain(1, 0.2, PORTABLE, 0, 0.5, 1), EPS);
+		assertEquals(0, Propagation.gain(S, PORTABLE, 1, 32, 1), EPS);
+		assertEquals(0, Propagation.gain(S, PORTABLE, 0, 0.5, 1), EPS);
 	}
 
 	@Test
 	void gainCombinesVolumeAndDistance() {
-		assertEquals(0.125, Propagation.gain(1, 0.2, PORTABLE, 0.5, 4, 1), EPS);
+		assertEquals(0.125, Propagation.gain(S, PORTABLE, 0.5, 4, 1), EPS);
 	}
 
 	@Test
@@ -62,12 +99,12 @@ class PropagationTest {
 
 	@Test
 	void relayRadius() {
-		assertEquals(40, Propagation.relayRadius(PORTABLE, 1), EPS);
-		assertEquals(24, Propagation.relayRadius(PORTABLE, 0.5), EPS);
+		assertEquals(PORTABLE_RANGE + 8, Propagation.relayRadius(S, PORTABLE, 1), 1e-6);
+		assertEquals(PORTABLE_RANGE / 2 + 8, Propagation.relayRadius(S, PORTABLE, 0.5), 1e-6);
 	}
 
 	@Test
 	void relayRadiusIsZeroAtVolumeZero() {
-		assertEquals(0, Propagation.relayRadius(PORTABLE, 0), EPS);
+		assertEquals(0, Propagation.relayRadius(S, PORTABLE, 0), EPS);
 	}
 }

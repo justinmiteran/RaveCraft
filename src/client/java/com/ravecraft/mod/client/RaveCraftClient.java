@@ -22,6 +22,7 @@ public class RaveCraftClient implements ClientModInitializer {
 		ClientRelay.init();
 		AcousticSettingsClient.register();
 		AcousticRenderer.register();
+		SpeakerTooltip.register();
 		SpeakerScreenOpener.set(pos -> Minecraft.getInstance().gui.setScreen(new SpeakerBrowserScreen(pos)));
 		BlockColorRegistry.register(List.of(new SpeakerFabricTint()), ModBlocks.PORTABLE_SPEAKER);
 	}

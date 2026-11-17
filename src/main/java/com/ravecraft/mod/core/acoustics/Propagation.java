@@ -1,8 +1,9 @@
 package com.ravecraft.mod.core.acoustics;
 
 /**
- * Realistic sound propagation: inverse distance law (−6 dB per doubling with rolloff 1), a smooth fade over the end
- * of the device range, directivity, and high-frequency absorption by the air.
+ * Realistic sound propagation: inverse distance law (−6 dB per doubling with rolloff 1), a range derived from the
+ * device's power and sensitivity, a smooth fade over the end of that range, directivity, and high-frequency
+ * absorption by the air.
  */
 public final class Propagation {
 	/** Extra blocks the server relays beyond the audible range, for movement between two chunks. */
@@ -13,9 +14,21 @@ public final class Propagation {
 	private Propagation() {
 	}
 
-	/** How far the device carries at {@code volume} (0 to 1). */
-	public static double range(DeviceProfile profile, double volume) {
-		return profile.range() * volume;
+	/** Sound pressure level 1 m in front of the device at full volume (dB SPL). */
+	public static double levelAt1m(DeviceProfile profile) {
+		return profile.sensitivityDb() + 10 * Math.log10(profile.powerWatts());
+	}
+
+	/**
+	 * How far the device carries at {@code volume} (0 to 1): the distance where its level, falling by the distance
+	 * law, reaches the hearing threshold. Never more than the server's {@code maxRange}.
+	 */
+	public static double range(AcousticSettings settings, DeviceProfile profile, double volume) {
+		if (volume <= 0) {
+			return 0;
+		}
+		double headroomDb = levelAt1m(profile) + 20 * Math.log10(volume) - settings.audibilityThresholdDb();
+		return Math.min(settings.maxRange(), Math.pow(10, headroomDb / (20 * settings.rolloff())));
 	}
 
 	/** {@code 1 / d^rolloff}, full gain inside one block. */
@@ -37,12 +50,13 @@ public final class Propagation {
 	}
 
 	/** Linear gain at the listener, before the player's own volume settings. */
-	public static double gain(double rolloff, double fadeFraction, DeviceProfile profile, double volume, double distance,
+	public static double gain(AcousticSettings settings, DeviceProfile profile, double volume, double distance,
 			double cosAngle) {
 		if (volume <= 0) {
 			return 0;
 		}
-		return volume * distanceGain(rolloff, distance) * fade(distance, range(profile, volume), fadeFraction)
+		return volume * distanceGain(settings.rolloff(), distance)
+				* fade(distance, range(settings, profile, volume), settings.fadeFraction())
 				* profile.directivity().gain(cosAngle);
 	}
 
@@ -52,7 +66,7 @@ public final class Propagation {
 	}
 
 	/** Players within this distance of the device receive its stream; 0 when silent. */
-	public static double relayRadius(DeviceProfile profile, double volume) {
-		return volume <= 0 ? 0 : range(profile, volume) + RELAY_MARGIN;
+	public static double relayRadius(AcousticSettings settings, DeviceProfile profile, double volume) {
+		return volume <= 0 ? 0 : range(settings, profile, volume) + RELAY_MARGIN;
 	}
 }

@@ -134,14 +134,16 @@ public class AudioRelayGameTest {
 	}
 
 	@GameTest
-	public void serverRangeSettingApplies(GameTestHelper h) {
+	public void serverPowerSettingApplies(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		volume(h, 50);
 		AcousticSettings defaults = AcousticSettings.DEFAULT;
 		try {
+			// Four times the power doubles the range: about 32 blocks at half volume.
 			AcousticConfig.set(new AcousticSettings(defaults.rolloff(), defaults.fadeFraction(),
-					defaults.airAbsorptionDbPerBlock(), new DeviceProfile(64, -6, 150, Directivity.OMNI)));
-			h.assertTrue(hears(h, pos, playerAt(h, 1), playerAt(h, 30)), "heard with range 64 at half volume");
+					defaults.airAbsorptionDbPerBlock(), defaults.audibilityThresholdDb(), defaults.maxRange(),
+					new DeviceProfile(80, 85, -6, 150, Directivity.OMNI)));
+			h.assertTrue(hears(h, pos, playerAt(h, 1), playerAt(h, 30)), "heard with 80 W at half volume");
 		} finally {
 			AcousticConfig.set(defaults);
 		}

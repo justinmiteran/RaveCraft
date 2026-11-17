@@ -17,9 +17,11 @@ class AcousticSettingsTest {
 	@Test
 	void clampsEveryField() {
 		List<String> warnings = new ArrayList<>();
-		AcousticSettings wild = new AcousticSettings(10, 0, -1, new DeviceProfile(1000, 5, 1, Directivity.OMNI));
+		AcousticSettings wild = new AcousticSettings(10, 0, -1, 5, 2000,
+				new DeviceProfile(0, 200, 5, 1, Directivity.OMNI));
 		AcousticSettings clamped = wild.clamped(warnings::add);
-		assertEquals(new AcousticSettings(3, 0.05, 0, new DeviceProfile(128, 0, 40, Directivity.OMNI)), clamped);
-		assertEquals(6, warnings.size(), warnings.toString());
+		assertEquals(new AcousticSettings(3, 0.05, 0, 30, 512, new DeviceProfile(0.1, 115, 0, 40, Directivity.OMNI)),
+				clamped);
+		assertEquals(9, warnings.size(), warnings.toString());
 	}
 }

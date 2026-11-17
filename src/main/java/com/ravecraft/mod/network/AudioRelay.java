@@ -85,7 +85,7 @@ public final class AudioRelay {
 			return 0;
 		}
 		double volume = speaker.data().settings().volume() / (double) SpeakerSettings.MAX_VOLUME;
-		return Propagation.relayRadius(AcousticConfig.get().portable(), volume);
+		return Propagation.relayRadius(AcousticConfig.get(), AcousticConfig.get().portable(), volume);
 	}
 
 	/** The candidates in {@code level} within {@code radius} of the speaker, owner excluded. */

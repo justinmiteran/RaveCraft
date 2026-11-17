@@ -15,16 +15,22 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
  */
 public record AcousticSettingsPayload(AcousticSettings settings) implements CustomPacketPayload {
 	public static final Type<AcousticSettingsPayload> TYPE = new Type<>(RaveCraft.id("acoustic_settings"));
+	private static final StreamCodec<ByteBuf, DeviceProfile> PROFILE = StreamCodec.composite(
+			ByteBufCodecs.DOUBLE, DeviceProfile::powerWatts,
+			ByteBufCodecs.DOUBLE, DeviceProfile::sensitivityDb,
+			ByteBufCodecs.DOUBLE, DeviceProfile::bassCutDb,
+			ByteBufCodecs.DOUBLE, DeviceProfile::bassCutHz,
+			(power, sensitivity, bassDb, bassHz) -> new DeviceProfile(power, sensitivity, bassDb, bassHz, Directivity.OMNI));
 	public static final StreamCodec<ByteBuf, AcousticSettingsPayload> CODEC = StreamCodec.composite(
 			ByteBufCodecs.DOUBLE, p -> p.settings().rolloff(),
 			ByteBufCodecs.DOUBLE, p -> p.settings().fadeFraction(),
 			ByteBufCodecs.DOUBLE, p -> p.settings().airAbsorptionDbPerBlock(),
-			ByteBufCodecs.DOUBLE, p -> p.settings().portable().range(),
-			ByteBufCodecs.DOUBLE, p -> p.settings().portable().bassCutDb(),
-			ByteBufCodecs.DOUBLE, p -> p.settings().portable().bassCutHz(),
-			(rolloff, fade, absorption, range, bassDb, bassHz) -> new AcousticSettingsPayload(new AcousticSettings(
-					rolloff, fade, absorption, new DeviceProfile(range, bassDb, bassHz, Directivity.OMNI))
-					.clamped(RaveCraft.LOGGER::warn)));
+			ByteBufCodecs.DOUBLE, p -> p.settings().audibilityThresholdDb(),
+			ByteBufCodecs.DOUBLE, p -> p.settings().maxRange(),
+			PROFILE, p -> p.settings().portable(),
+			(rolloff, fade, absorption, threshold, maxRange, portable) -> new AcousticSettingsPayload(
+					new AcousticSettings(rolloff, fade, absorption, threshold, maxRange, portable)
+							.clamped(RaveCraft.LOGGER::warn)));
 
 	@Override
 	public Type<AcousticSettingsPayload> type() {

@@ -1,6 +1,7 @@
 package com.ravecraft.mod.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import java.io.StringReader;
@@ -40,6 +41,45 @@ class AcousticSettingsJsonTest {
 
 	@Test
 	void outOfRangeIsClamped() {
-		assertEquals(128, read("{\"profiles\":{\"portable\":{\"range\":999}}}").portable().range());
+		assertEquals(115, read("{\"profiles\":{\"portable\":{\"sensitivityDb\":999}}}").portable().sensitivityDb());
+	}
+
+	@Test
+	void readsNewFields() {
+		AcousticSettings settings = read("{\"audibilityThresholdDb\":60,\"maxRange\":128,"
+				+ "\"profiles\":{\"portable\":{\"powerWatts\":40,\"sensitivityDb\":90}}}");
+		assertEquals(60, settings.audibilityThresholdDb());
+		assertEquals(128, settings.maxRange());
+		assertEquals(40, settings.portable().powerWatts());
+		assertEquals(90, settings.portable().sensitivityDb());
+	}
+
+	@Test
+	void acceptsComments() {
+		AcousticSettings settings = read("""
+				{
+				  // a line comment
+				  "rolloff": 0.5, /* a block comment */
+				  "profiles": { "portable": { "powerWatts": 40 } }
+				}
+				""");
+		assertEquals(0.5, settings.rolloff());
+		assertEquals(40, settings.portable().powerWatts());
+		assertEquals(List.of(), warnings);
+	}
+
+	@Test
+	void defaultFileExplainsEverySetting() {
+		StringWriter out = new StringWriter();
+		AcousticSettingsJson.write(AcousticSettings.DEFAULT, out);
+		String text = out.toString();
+		for (String key : List.of("rolloff", "fadeFraction", "airAbsorptionDbPerBlock", "audibilityThresholdDb", "maxRange",
+				"powerWatts", "sensitivityDb", "bassCutDb", "bassCutHz")) {
+			int at = text.indexOf("\"" + key + "\":");
+			assertTrue(at > 0, key + " missing");
+			String before = text.substring(0, text.lastIndexOf('\n', at)).stripTrailing();
+			String lineAbove = before.substring(before.lastIndexOf('\n') + 1).trim();
+			assertTrue(lineAbove.startsWith("//"), key + " has no comment line above it");
+		}
 	}
 }

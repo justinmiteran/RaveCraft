@@ -226,8 +226,8 @@ public final class AcousticRenderer {
 				double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 				double cos = distance < 1e-6 ? 1 : (stream.facingX * dx + stream.facingZ * dz) / distance;
 				stream.distance = distance;
-				stream.gain = stream.powered ? Propagation.gain(settings.rolloff(), settings.fadeFraction(),
-						settings.portable(), stream.volume, distance, cos) : 0;
+				stream.gain = stream.powered ? Propagation.gain(settings, settings.portable(),
+						stream.volume, distance, cos) : 0;
 				gains.put(stream.sessionId, stream.gain);
 			}
 

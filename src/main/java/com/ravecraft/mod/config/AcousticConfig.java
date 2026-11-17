@@ -15,11 +15,11 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 
 /**
- * The server's acoustic model, loaded from {@code config/ravecraft-server.json} when the server starts (written
- * with the defaults if missing) and sent to every player who joins.
+ * The server's acoustic model, loaded from {@code config/ravecraft-server.json5} when the server starts (written
+ * with the defaults and a comment per setting if missing) and sent to every player who joins.
  */
 public final class AcousticConfig {
-	public static final String FILE_NAME = "ravecraft-server.json";
+	public static final String FILE_NAME = "ravecraft-server.json5";
 	private static volatile AcousticSettings settings = AcousticSettings.DEFAULT;
 
 	private AcousticConfig() {

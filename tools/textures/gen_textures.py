@@ -173,26 +173,26 @@ def portable_speaker_details_on():
     return speaker_details(True)
 
 
-# Inventory icon (flat, GUI only): layer 0 is the grey fabric, tinted with the dye colour like leather armour;
+# Inventory icon (flat, GUI only, boombox front with radiator end caps): layer 0 is the grey fabric, tinted with the dye colour like leather armour;
 # the overlay holds what is never tinted (outline, rubber, copper logo, controls).
 SPEAKER_ICON = ["................",
-                "................",
-                "................",
-                ".....oooooo.....",
-                ".....hhhhhh.....",
-                "..oor......roo..",
-                ".ohTThTcThTgTro.",
-                "orfffffffCffffRo",
-                "orfffffCfcffffRo",
-                "orfffffcfcfCffRo",
-                "orfffCfcfcfcffRo",
-                ".oRFFFFFFFFFFRo.",
-                "..oooooooooooo..",
-                "................",
-                "................",
+                "....oooooooo....",
+                "...ohhhhhhhho...",
+                "...orrrrrrrro...",
+                "...or......ro...",
+                ".ooTTTTTTTTgToo.",
+                "orrffffffffffhro",
+                "rrrffffCCffffrrR",
+                "rkrffffccffffrkR",
+                "rkrfCCfccffffrkR",
+                "rkrfccfccfCCfrkR",
+                "rrrfccfccfccfrrR",
+                "orrFFFFFFFFFFrro",
+                ".ooDDDDDDDDDDoo.",
+                "...oooooooooo...",
                 "................"]
-ICON_FABRIC = {"T": 245, "f": 215, "F": 170}
-ICON_DETAILS = {"o": (14, 14, 18), "r": RUBBER[1], "R": RUBBER[0], "h": RUBBER[3],
+ICON_FABRIC = {"T": 205, "f": 175, "F": 135, "D": 105}
+ICON_DETAILS = {"o": (14, 14, 18), "r": RUBBER[1], "R": RUBBER[0], "h": RUBBER[3], "k": (16, 17, 21),
                 "c": COPPER, "C": COPPER_L, "g": LED_OFF}
 
 

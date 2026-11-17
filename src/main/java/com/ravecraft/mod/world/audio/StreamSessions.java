@@ -2,12 +2,14 @@ package com.ravecraft.mod.world.audio;
 
 import com.ravecraft.mod.block.PortableSpeakerBlock;
 import com.ravecraft.mod.core.audio.stream.SessionTable;
-import com.ravecraft.mod.core.audio.stream.SessionTable.Opened;
 import com.ravecraft.mod.core.audio.stream.SessionTable.Session;
 import com.ravecraft.mod.network.Net;
 import com.ravecraft.mod.network.payload.SessionEndPayload;
 import com.ravecraft.mod.network.payload.StreamOrderPayload;
 import com.ravecraft.mod.registry.ModBlocks;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
@@ -18,11 +20,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * The stream sessions of the running server: at most one per placed speaker, owned by the player streaming into it.
- * Server thread only. Sessions live in memory and end with the speaker, its power, its chunk or its owner.
+ * The stream sessions of the running server: at most one per placed speaker, each streaming one queue entry from
+ * its owner's PC. Only {@link SpeakerPlayback} opens them. Server thread only; sessions live in memory.
  */
 public final class StreamSessions {
 	private static final SessionTable<SpeakerKey> TABLE = new SessionTable<>();
+	/** The queue entry each open session streams, so stop orders can name it. */
+	private static final Map<Integer, UUID> ENTRIES = new HashMap<>();
 
 	private StreamSessions() {
 	}
@@ -33,72 +37,65 @@ public final class StreamSessions {
 	}
 
 	/**
-	 * Opens a session for {@code player} on the powered speaker at {@code pos} (absolute), replacing any other
-	 * stream there, and orders the player to start. A player must be within reach, except when renewing its own
-	 * session for the next track of its queue: that one finishes with its tail played out. An invalid request is
-	 * refused, and the refusal sent back carrying {@code request}.
+	 * Opens a session for {@code owner} to stream {@code entryId} into the powered speaker at {@code pos} (absolute),
+	 * cutting any other stream there. Distance does not matter: the owner may be anywhere. Sends no order.
 	 */
-	public static Optional<Session<SpeakerKey>> open(ServerPlayer player, BlockPos pos, int request) {
-		if (!(player.level() instanceof ServerLevel level) || !level.isLoaded(pos)) {
-			refuse(player, pos, request);
+	public static Optional<Session<SpeakerKey>> open(ServerLevel level, BlockPos pos, ServerPlayer owner, UUID entryId) {
+		if (!level.isLoaded(pos)) {
 			return Optional.empty();
 		}
-		SpeakerKey key = new SpeakerKey(level.dimension(), pos);
-		UUID id = player.getUUID();
-		boolean renewing = TABLE.byKey(key).map(s -> s.owner().equals(id)).orElse(false);
 		BlockState state = level.getBlockState(pos);
-		if (!state.is(ModBlocks.PORTABLE_SPEAKER) || !state.getValue(PortableSpeakerBlock.POWERED)
-				|| (!renewing && !player.isWithinBlockInteractionRange(pos, 1.0))) {
-			refuse(player, pos, request);
+		if (!state.is(ModBlocks.PORTABLE_SPEAKER) || !state.getValue(PortableSpeakerBlock.POWERED)) {
 			return Optional.empty();
 		}
-		Opened<SpeakerKey> opened = TABLE.open(key, id);
-		opened.replaced().ifPresent(old -> {
-			boolean sameOwner = old.owner().equals(id);
-			notifyEnded(level.getServer(), old, !sameOwner, sameOwner);
-		});
-		Session<SpeakerKey> session = opened.session();
-		Net.send(player, new StreamOrderPayload(session.id(), pos, true, request));
+		SpeakerKey key = new SpeakerKey(level.dimension(), pos.immutable());
+		endAt(level, pos);
+		Session<SpeakerKey> session = TABLE.open(key, owner.getUUID()).session();
+		ENTRIES.put(session.id(), entryId);
 		return Optional.of(session);
 	}
 
-	private static void refuse(ServerPlayer player, BlockPos pos, int request) {
-		Net.send(player, new StreamOrderPayload(StreamOrderPayload.NO_SESSION, pos, false, request));
-	}
-
-	/** Ends the session of the speaker at {@code pos} (absolute), if any: broken, switched off or unloaded. */
-	public static void endAt(ServerLevel level, BlockPos pos) {
-		TABLE.endByKey(new SpeakerKey(level.dimension(), pos)).ifPresent(s -> notifyEnded(level.getServer(), s, true, false));
+	/** Ends the session of the speaker at {@code pos} (absolute), if any, cutting it at once everywhere. */
+	public static Optional<Session<SpeakerKey>> endAt(ServerLevel level, BlockPos pos) {
+		Optional<Session<SpeakerKey>> ended = TABLE.endByKey(new SpeakerKey(level.dimension(), pos));
+		ended.ifPresent(s -> notifyEnded(level.getServer(), s, true, false));
+		return ended;
 	}
 
 	/**
-	 * Ends session {@code id} at the request of its owner; requests from anyone else are ignored. When the track
-	 * {@code finished}, listeners play their buffered tail before stopping.
+	 * Ends session {@code id} at the request of its owner; requests from anyone else are ignored and return empty.
+	 * When the track {@code finished}, listeners play their buffered tail before stopping.
 	 */
-	public static void close(int id, ServerPlayer requester, boolean finished) {
+	public static Optional<Session<SpeakerKey>> close(int id, ServerPlayer requester, boolean finished) {
 		Optional<Session<SpeakerKey>> session = TABLE.byId(id);
-		if (session.isPresent() && session.get().owner().equals(requester.getUUID())) {
-			TABLE.endById(id);
-			notifyEnded(requester.level().getServer(), session.get(), false, finished);
+		if (session.isEmpty() || !session.get().owner().equals(requester.getUUID())) {
+			return Optional.empty();
 		}
+		TABLE.endById(id);
+		notifyEnded(requester.level().getServer(), session.get(), false, finished);
+		return session;
 	}
 
-	/** Ends every session of a player who left. */
-	public static void endByOwner(MinecraftServer server, UUID owner) {
-		TABLE.endByOwner(owner).forEach(s -> notifyEnded(server, s, false, false));
+	/** Ends every session of a player who left, without telling them. */
+	public static List<Session<SpeakerKey>> endByOwner(MinecraftServer server, UUID owner) {
+		List<Session<SpeakerKey>> ended = TABLE.endByOwner(owner);
+		ended.forEach(s -> notifyEnded(server, s, false, false));
+		return ended;
 	}
 
 	/** Drops everything without notifying anyone: the server is stopping. */
 	public static void clear() {
 		TABLE.endAll();
+		ENTRIES.clear();
 	}
 
 	/** Tells the players tracking the speaker that the session is over, and its owner to stop when asked to. */
 	private static void notifyEnded(MinecraftServer server, Session<SpeakerKey> session, boolean tellOwner, boolean drain) {
-		if (tellOwner) {
+		UUID entryId = ENTRIES.remove(session.id());
+		if (tellOwner && entryId != null) {
 			ServerPlayer owner = server.getPlayerList().getPlayer(session.owner());
 			if (owner != null) {
-				Net.send(owner, new StreamOrderPayload(session.id(), session.key().pos(), false, StreamOrderPayload.NO_REQUEST));
+				Net.send(owner, new StreamOrderPayload(session.id(), session.key().pos(), false, entryId, 0));
 			}
 		}
 		ServerLevel level = server.getLevel(session.key().dimension());

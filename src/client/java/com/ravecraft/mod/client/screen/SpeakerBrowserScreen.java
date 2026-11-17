@@ -65,7 +65,7 @@ public final class SpeakerBrowserScreen extends Screen {
 		int bottom = height - 26;
 		playButton = addRenderableWidget(Button.builder(Component.translatable(KEY + "play"), b -> play())
 				.bounds(width / 2 - 104, bottom, 100, 20).build());
-		stopButton = addRenderableWidget(Button.builder(Component.translatable(KEY + "stop"), b -> LocalPlayback.stop(pos))
+		stopButton = addRenderableWidget(Button.builder(Component.translatable(KEY + "stop"), b -> { })
 				.bounds(width / 2 + 4, bottom, 100, 20).build());
 		show(folder);
 	}
@@ -78,7 +78,7 @@ public final class SpeakerBrowserScreen extends Screen {
 		}
 		boolean powered = speakerPowered();
 		playButton.active = powered && canPlay();
-		stopButton.active = LocalPlayback.nowPlaying(pos).isPresent();
+		stopButton.active = false;
 		backButton.active = folder != null;
 	}
 
@@ -98,9 +98,7 @@ public final class SpeakerBrowserScreen extends Screen {
 		if (!speakerPowered()) {
 			graphics.centeredText(font, Component.translatable(KEY + "off_hint"), width / 2, status, WARNING_COLOR);
 		} else {
-			Component line = LocalPlayback.nowPlaying(pos)
-					.map(track -> Component.translatable(KEY + "now_playing", AudioFiles.baseName(track)))
-					.orElse(Component.translatable(KEY + "nothing_playing"));
+			Component line = Component.translatable(KEY + "nothing_playing");
 			graphics.centeredText(font, line, width / 2, status, TEXT_COLOR);
 		}
 	}
@@ -184,11 +182,11 @@ public final class SpeakerBrowserScreen extends Screen {
 		}
 		LibraryEntry selected = selectedEntry();
 		if (selected == null) {
-			LocalPlayback.play(pos, tracksIn(entries, null));
+			LocalPlayback.add(pos, tracksIn(entries, null));
 		} else if (selected.kind() == Kind.TRACK) {
-			LocalPlayback.play(pos, tracksIn(entries, selected));
+			LocalPlayback.add(pos, tracksIn(entries, selected));
 		} else if (selected.kind() != Kind.ROOT) {
-			runAsync(() -> MusicLibrary.tracksOf(selected), tracks -> LocalPlayback.play(pos, tracks), () -> {
+			runAsync(() -> MusicLibrary.tracksOf(selected), tracks -> LocalPlayback.add(pos, tracks), () -> {
 			});
 		}
 	}

@@ -6,7 +6,6 @@ import com.ravecraft.mod.core.audio.stream.TokenBucket;
 import com.ravecraft.mod.network.payload.AudioChunkPayload;
 import com.ravecraft.mod.network.payload.RelayedChunkPayload;
 import com.ravecraft.mod.network.payload.StreamClosePayload;
-import com.ravecraft.mod.network.payload.StreamOpenPayload;
 import com.ravecraft.mod.world.audio.SpeakerKey;
 import com.ravecraft.mod.world.audio.StreamSessions;
 import java.util.ArrayList;
@@ -37,8 +36,6 @@ public final class AudioRelay {
 	}
 
 	public static void init() {
-		ServerPlayNetworking.registerGlobalReceiver(StreamOpenPayload.TYPE,
-				(payload, context) -> StreamSessions.open(context.player(), payload.pos(), payload.request()));
 		ServerPlayNetworking.registerGlobalReceiver(StreamClosePayload.TYPE,
 				(payload, context) -> StreamSessions.close(payload.sessionId(), context.player(), payload.finished()));
 		ServerPlayNetworking.registerGlobalReceiver(AudioChunkPayload.TYPE,

@@ -2,161 +2,135 @@ package com.ravecraft.mod.client.audio;
 
 import com.ravecraft.mod.client.audio.stream.ReceivedStreams;
 import com.ravecraft.mod.client.audio.stream.StreamEmitter;
+import com.ravecraft.mod.core.queue.QueueEntry;
+import com.ravecraft.mod.core.queue.SpeakerQueue;
+import com.ravecraft.mod.network.payload.QueueAddPayload;
 import com.ravecraft.mod.network.payload.StreamClosePayload;
-import com.ravecraft.mod.network.payload.StreamOpenPayload;
 import com.ravecraft.mod.network.payload.StreamOrderPayload;
+import com.ravecraft.mod.network.payload.StreamResultPayload;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.core.BlockPos;
 
 /**
- * The tracks this player streams into each speaker. For every track it asks the server for a session, streams the
- * file once the server grants it, then moves on. Everyone in range, this player included, hears the result through
- * {@link ReceivedStreams}. Client thread only.
+ * This player's side of the shared queues: adds local tracks to a speaker's queue (sending ids and titles, never
+ * paths), and streams them when the server orders it. Client thread only.
  */
 public final class LocalPlayback {
-	private static final Map<BlockPos, Session> SESSIONS = new HashMap<>();
-	/** Numbers this client's open requests, so a late answer to an abandoned one is recognised. */
-	private static int lastRequest;
+	/** One {@link QueueAddPayload} every 5 ticks: the server accepts at most 4 per second. */
+	private static final int TICKS_PER_BATCH = 5;
+	private static final Map<Integer, StreamEmitter> EMITTERS = new HashMap<>();
+	private static final Deque<QueueAddPayload> PENDING = new ArrayDeque<>();
+	private static int cooldown;
 
 	private LocalPlayback() {
 	}
 
 	public static void register() {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> stopAll());
+		ClientTickEvents.END_CLIENT_TICK.register(client -> sendPending());
 	}
 
-	/** Replaces whatever this player was streaming into the speaker at {@code pos} with {@code tracks}, in order. */
-	public static void play(BlockPos pos, List<Path> tracks) {
-		stop(pos);
-		if (tracks.isEmpty() || !ClientPlayNetworking.canSend(StreamOpenPayload.TYPE)) {
+	/** Appends {@code tracks} (at most a full queue) to the queue of the speaker at {@code pos}. */
+	public static void add(BlockPos pos, List<Path> tracks) {
+		if (tracks.isEmpty() || !ClientPlayNetworking.canSend(QueueAddPayload.TYPE)) {
 			return;
 		}
-		Session session = new Session(pos.immutable(), new ArrayDeque<>(tracks));
-		SESSIONS.put(session.pos, session);
-		session.next();
+		Map<UUID, Path> registered = new LinkedHashMap<>();
+		List<QueueAddPayload.NewEntry> batch = new ArrayList<>();
+		for (Path track : tracks.subList(0, Math.min(tracks.size(), SpeakerQueue.MAX_ENTRIES))) {
+			UUID id = UUID.randomUUID();
+			registered.put(id, track);
+			batch.add(new QueueAddPayload.NewEntry(id, titleOf(track)));
+			if (batch.size() == QueueAddPayload.MAX_ENTRIES) {
+				PENDING.add(new QueueAddPayload(pos.immutable(), batch));
+				batch = new ArrayList<>();
+			}
+		}
+		if (!batch.isEmpty()) {
+			PENDING.add(new QueueAddPayload(pos.immutable(), batch));
+		}
+		TrackTableStore.register(registered);
+		sendPending();
 	}
 
-	public static void stop(BlockPos pos) {
-		Session session = SESSIONS.remove(pos);
-		if (session != null) {
-			session.close(false);
+	/** The title shown to everyone: the file name without its extension. */
+	static String titleOf(Path track) {
+		String name = track.getFileName().toString();
+		int dot = name.lastIndexOf('.');
+		String title = dot > 0 ? name.substring(0, dot) : name;
+		return title.length() > QueueEntry.MAX_TITLE ? title.substring(0, QueueEntry.MAX_TITLE) : title;
+	}
+
+	private static void sendPending() {
+		if (cooldown > 0) {
+			cooldown--;
+			return;
+		}
+		QueueAddPayload next = PENDING.poll();
+		if (next != null) {
+			ClientPlayNetworking.send(next);
+			cooldown = TICKS_PER_BATCH - 1;
 		}
 	}
 
 	/** Leaving the world: the server already ends everything, so nothing is sent. */
 	public static void stopAll() {
-		SESSIONS.values().forEach(Session::cancel);
-		SESSIONS.clear();
+		EMITTERS.values().forEach(StreamEmitter::cancel);
+		EMITTERS.clear();
+		PENDING.clear();
+		cooldown = 0;
 	}
 
-	public static Optional<Path> nowPlaying(BlockPos pos) {
-		Session session = SESSIONS.get(pos);
-		return session == null ? Optional.empty() : Optional.ofNullable(session.current);
-	}
-
-	/** The server granted (start), refused or revoked (stop) a session. */
+	/** The server orders this player to stream one of its queued tracks (start), or to stop it. */
 	public static void onOrder(StreamOrderPayload order) {
-		Session session = SESSIONS.get(order.pos());
-		if (order.start()) {
-			if (session == null || !session.awaitingGrant || session.request != order.request()) {
-				// Answer to an abandoned request: give the session back.
-				ClientPlayNetworking.send(new StreamClosePayload(order.sessionId(), false));
-				return;
-			}
-			session.begin(order.sessionId());
-			return;
-		}
-		if (session == null) {
-			return;
-		}
-		boolean refused = session.awaitingGrant && order.request() == session.request;
-		boolean revoked = order.sessionId() != StreamOrderPayload.NO_SESSION
-				&& (order.sessionId() == session.sessionId || order.sessionId() == session.previousId);
-		if (refused || revoked) {
-			SESSIONS.remove(session.pos);
-			session.cancel();
-			if (revoked) {
-				ReceivedStreams.end(order.sessionId(), false);
-			}
-		}
-	}
-
-	private static final class Session {
-		final BlockPos pos;
-		final Deque<Path> queue;
-		Path current;
-		boolean awaitingGrant;
-		int request;
-		int sessionId = -1;
-		/** The session the pending request renews: the server ends it, with its tail, when granting the next. */
-		int previousId = -1;
-		StreamEmitter emitter;
-
-		Session(BlockPos pos, Deque<Path> queue) {
-			this.pos = pos;
-			this.queue = queue;
-		}
-
-		/** Asks for a session for the next queued track; forgets this speaker when the queue is empty. */
-		void next() {
-			sessionId = -1;
-			emitter = null;
-			current = queue.poll();
-			if (current == null) {
-				SESSIONS.remove(pos, this);
-				return;
-			}
-			awaitingGrant = true;
-			request = ++lastRequest;
-			ClientPlayNetworking.send(new StreamOpenPayload(pos, request));
-		}
-
-		void begin(int id) {
-			awaitingGrant = false;
-			previousId = -1;
-			sessionId = id;
-			emitter = new StreamEmitter(id, pos, current, () -> ended(id, true), e -> ended(id, false));
-			emitter.start();
-		}
-
-		/**
-		 * The track played out ({@code finished}) or could not be read. The next track renews the session, which
-		 * the server allows from out of reach; after the last one the session is closed.
-		 */
-		void ended(int id, boolean finished) {
-			if (SESSIONS.get(pos) != this || sessionId != id) {
-				return;
-			}
-			ReceivedStreams.end(id, finished);
-			if (queue.isEmpty()) {
-				ClientPlayNetworking.send(new StreamClosePayload(id, finished));
-				SESSIONS.remove(pos, this);
-				return;
-			}
-			previousId = id;
-			next();
-		}
-
-		void close(boolean finished) {
-			cancel();
-			if (sessionId >= 0) {
-				ClientPlayNetworking.send(new StreamClosePayload(sessionId, finished));
-				ReceivedStreams.end(sessionId, finished);
-			}
-		}
-
-		void cancel() {
+		int id = order.sessionId();
+		if (!order.start()) {
+			StreamEmitter emitter = EMITTERS.remove(id);
 			if (emitter != null) {
 				emitter.cancel();
 			}
+			ReceivedStreams.end(id, false);
+			return;
+		}
+		Optional<Path> track = TrackTableStore.resolve(order.entryId()).filter(Files::isReadable);
+		if (track.isEmpty()) {
+			ClientPlayNetworking.send(new StreamResultPayload(id));
+			return;
+		}
+		StreamEmitter previous = EMITTERS.remove(id);
+		if (previous != null) {
+			previous.cancel();
+		}
+		StreamEmitter emitter = new StreamEmitter(id, order.pos(), track.get(), order.positionMs(),
+				() -> finished(id), e -> failed(id));
+		EMITTERS.put(id, emitter);
+		emitter.start();
+	}
+
+	private static void finished(int id) {
+		if (EMITTERS.remove(id) != null) {
+			ReceivedStreams.end(id, true);
+			ClientPlayNetworking.send(new StreamClosePayload(id, true));
+		}
+	}
+
+	private static void failed(int id) {
+		if (EMITTERS.remove(id) != null) {
+			ReceivedStreams.end(id, false);
+			ClientPlayNetworking.send(new StreamResultPayload(id));
 		}
 	}
 }

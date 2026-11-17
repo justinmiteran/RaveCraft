@@ -30,15 +30,18 @@ public final class StreamEmitter {
 	private final int sessionId;
 	private final BlockPos pos;
 	private final Path track;
+	/** Where to start in the track: everything before is decoded and dropped. */
+	private final long startMs;
 	private final Runnable onFinished;
 	private final Consumer<Exception> onFailed;
 	private volatile boolean cancelled;
 	private Thread thread;
 
-	public StreamEmitter(int sessionId, BlockPos pos, Path track, Runnable onFinished, Consumer<Exception> onFailed) {
+	public StreamEmitter(int sessionId, BlockPos pos, Path track, long startMs, Runnable onFinished, Consumer<Exception> onFailed) {
 		this.sessionId = sessionId;
 		this.pos = pos.immutable();
 		this.track = track;
+		this.startMs = startMs;
 		this.onFinished = onFinished;
 		this.onFailed = onFailed;
 	}

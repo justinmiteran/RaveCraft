@@ -60,6 +60,35 @@ final class TestGrid implements AcousticGrid {
 		return this;
 	}
 
+	/** Fills the box from (x0, y0, z0) to (x1, y1, z1), inclusive, with full blocks of {@code material}. */
+	TestGrid fill(int x0, int y0, int z0, int x1, int y1, int z1, AcousticMaterial material) {
+		for (int x = x0; x <= x1; x++) {
+			for (int y = y0; y <= y1; y++) {
+				for (int z = z0; z <= z1; z++) {
+					solid(x, y, z, material);
+				}
+			}
+		}
+		return this;
+	}
+
+	/** Removes every solid in the box from (x0, y0, z0) to (x1, y1, z1), inclusive. */
+	TestGrid clear(int x0, int y0, int z0, int x1, int y1, int z1) {
+		for (int x = x0; x <= x1; x++) {
+			for (int y = y0; y <= y1; y++) {
+				for (int z = z0; z <= z1; z++) {
+					solids.remove(key(x, y, z));
+				}
+			}
+		}
+		return this;
+	}
+
+	/** A one-block-thick shell of {@code material} around the open box from (x0, y0, z0) to (x1, y1, z1). */
+	TestGrid shell(int x0, int y0, int z0, int x1, int y1, int z1, AcousticMaterial material) {
+		return fill(x0 - 1, y0 - 1, z0 - 1, x1 + 1, y1 + 1, z1 + 1, material).clear(x0, y0, z0, x1, y1, z1);
+	}
+
 	@Override
 	public void sample(int x, int y, int z, VoxelSample out) {
 		long k = key(x, y, z);

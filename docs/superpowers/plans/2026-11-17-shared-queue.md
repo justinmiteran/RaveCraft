@@ -240,7 +240,7 @@
 - **`onJoin`.** Calls `markAllDirty` and never resumes playback.
 - **Stale ids are ignored.** Any close or result whose `sessionId` does not match the key's `Playing` is ignored.
 - **Silent owner** (spec §4.3, a client that ignores the order). `Playing` gains `boolean heard`, and `AudioRelay` calls `SpeakerPlayback.onChunk(int sessionId)` on each accepted chunk. On `END_SERVER_TICK`, iterating only the `Playing` map (no world scan), a session not `heard` `START_TIMEOUT_MS = 10_000` after it opened is handled like `onStreamResult`.
-- **Chunk unload.** `setRemoved` stores the position in the block entity, but the chunk may already be saved. Losing that last position on unload only is accepted; the queue itself is persisted on every mutation.
+- **Chunk unload.** The chunk is saved before `setRemoved` runs, so `saveAdditional` itself stores the live position (`liveQueue`) while playing; this also covers autosaves and crashes. (Changed after the branch review: the spec requires the position to survive an unload.)
 
 **Test players.** Players that must count as online are created with `h.makeMockServerPlayerInLevel()`. Before relying on it, check that it exists in 26.3 and adds the player to the `PlayerList`. Offline owners are plain random UUIDs in a `QueueEntry`.
 

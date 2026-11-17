@@ -83,6 +83,8 @@ public final class StreamEmitter {
 				framer.push(samples, samples.length);
 				for (short[] frame = framer.poll(); frame != null; frame = framer.poll()) {
 					if (skipper.skip()) {
+						// Real time starts with the first frame sent, not while the skipped part is decoded.
+						start = System.nanoTime();
 						continue;
 					}
 					chunk.add(encoder.encode(frame));

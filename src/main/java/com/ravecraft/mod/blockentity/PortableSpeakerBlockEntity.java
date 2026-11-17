@@ -26,7 +26,7 @@ import net.minecraft.world.level.storage.ValueOutput;
 import org.jspecify.annotations.Nullable;
 
 public class PortableSpeakerBlockEntity extends BlockEntity {
-	private static final String KEY = "speaker";
+	public static final String KEY = "speaker";
 	private static final String COLOR_KEY = "color";
 
 	private SpeakerData data = SpeakerData.create();
@@ -87,7 +87,8 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 	@Override
 	protected void saveAdditional(ValueOutput output) {
 		super.saveAdditional(output);
-		output.store(KEY, SpeakerData.CODEC, data);
+		// A chunk is saved before its block entities are removed: while playing, save where the track is now.
+		output.store(KEY, SpeakerData.CODEC, level instanceof ServerLevel ? data.withQueue(SpeakerPlayback.liveQueue(this)) : data);
 		output.storeNullable(COLOR_KEY, DyedItemColor.CODEC, color);
 	}
 

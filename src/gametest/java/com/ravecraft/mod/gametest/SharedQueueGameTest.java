@@ -7,6 +7,7 @@ import com.ravecraft.mod.core.queue.QueueEntry;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.network.payload.QueueAddPayload.NewEntry;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
+import com.ravecraft.mod.network.SpeakerNetwork;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.world.audio.SpeakerKey;
@@ -18,6 +19,8 @@ import java.util.Optional;
 import java.util.UUID;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityTypes;
@@ -384,5 +387,47 @@ public class SharedQueueGameTest {
 			h.assertFalse(SpeakerPlayback.isPlaying(h.getLevel(), pos), "paused");
 			finish(h, pos, owner);
 		});
+	}
+
+	@GameTest
+	public void savingWhilePlayingStoresLivePosition(GameTestHelper h) {
+		BlockPos pos = poweredSpeaker(h);
+		ServerPlayer owner = online(h, 2);
+		SpeakerPlayback.add(owner, pos, newEntries(1));
+		SpeakerPlayback.command(owner, pos, Command.PLAY, Optional.empty());
+		h.runAfterDelay(10, () -> {
+			// A chunk is saved before its block entities are removed: the save itself must carry the position.
+			CompoundTag tag = be(h).saveWithoutMetadata(h.getLevel().registryAccess());
+			SpeakerData saved = SpeakerData.CODEC.parse(NbtOps.INSTANCE, tag.get(PortableSpeakerBlockEntity.KEY)).getOrThrow();
+			h.assertTrue(saved.queue().positionMs() > 0, "live position saved");
+			finish(h, pos, owner);
+		});
+	}
+
+	@GameTest(maxTicks = 300)
+	public void lateResumeGetsLongerStartTimeout(GameTestHelper h) {
+		BlockPos pos = poweredSpeaker(h);
+		ServerPlayer owner = online(h, 2);
+		SpeakerPlayback.add(owner, pos, newEntries(1));
+		SpeakerQueue queued = queue(h);
+		// One hour into a mix: the owner's client decodes and drops that hour before sending anything.
+		be(h).setData(be(h).data().withQueue(queued.withCurrent(queued.entries().getFirst().entryId(), 3_600_000)));
+		SpeakerPlayback.command(owner, pos, Command.PLAY, Optional.empty());
+		h.runAfterDelay(220, () -> {
+			h.assertValueEqual(queue(h).entries().size(), 1, "entry kept while the owner skips");
+			h.assertTrue(SpeakerPlayback.isPlaying(h.getLevel(), pos), "still playing");
+			finish(h, pos, owner);
+		});
+	}
+
+	@GameTest
+	public void commandsAreRateLimited(GameTestHelper h) {
+		ServerPlayer player = online(h, 2);
+		for (int i = 0; i < SpeakerNetwork.COMMANDS_PER_SECOND; i++) {
+			h.assertTrue(SpeakerNetwork.allowCommand(player), "command " + i + " allowed");
+		}
+		h.assertFalse(SpeakerNetwork.allowCommand(player), "burst over the limit dropped");
+		leave(h, player);
+		h.succeed();
 	}
 }

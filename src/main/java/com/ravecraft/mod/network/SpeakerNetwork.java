@@ -21,6 +21,12 @@ public final class SpeakerNetwork {
 	/** At most this many {@link QueueAddPayload} per second and per player; extra ones are dropped. */
 	private static final long ADDS_PER_SECOND = 4;
 	private static final Map<UUID, TokenBucket> ADD_BUCKETS = new HashMap<>();
+	/**
+	 * At most this many {@link SpeakerCommandPayload} per second and per player: each PLAY makes the entry's owner
+	 * start a decoder, so a spammer must not be able to churn another player's PC.
+	 */
+	public static final long COMMANDS_PER_SECOND = 10;
+	private static final Map<UUID, TokenBucket> COMMAND_BUCKETS = new HashMap<>();
 
 	private SpeakerNetwork() {
 	}
@@ -31,8 +37,11 @@ public final class SpeakerNetwork {
 				SpeakerPlayback.add(context.player(), payload.pos(), payload.entries());
 			}
 		});
-		ServerPlayNetworking.registerGlobalReceiver(SpeakerCommandPayload.TYPE, (payload, context) ->
-				SpeakerPlayback.command(context.player(), payload.pos(), payload.command(), payload.entryId()));
+		ServerPlayNetworking.registerGlobalReceiver(SpeakerCommandPayload.TYPE, (payload, context) -> {
+			if (allowCommand(context.player())) {
+				SpeakerPlayback.command(context.player(), payload.pos(), payload.command(), payload.entryId());
+			}
+		});
 		ServerPlayNetworking.registerGlobalReceiver(SpeakerWatchPayload.TYPE, (payload, context) ->
 				SpeakerWatchers.watch(context.player(), payload.pos(), payload.open()));
 		ServerPlayNetworking.registerGlobalReceiver(StreamResultPayload.TYPE, (payload, context) ->
@@ -41,6 +50,7 @@ public final class SpeakerNetwork {
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
 			UUID id = handler.player.getUUID();
 			ADD_BUCKETS.remove(id);
+			COMMAND_BUCKETS.remove(id);
 			SpeakerWatchers.forget(id);
 			SpeakerPlayback.onDisconnect(server, id);
 		});
@@ -52,7 +62,15 @@ public final class SpeakerNetwork {
 			SpeakerPlayback.pauseAll(server);
 			SpeakerWatchers.clear();
 			ADD_BUCKETS.clear();
+			COMMAND_BUCKETS.clear();
 		});
+	}
+
+	/** Consumes one command token of {@code player}; false when over {@link #COMMANDS_PER_SECOND}. */
+	public static boolean allowCommand(ServerPlayer player) {
+		long now = System.nanoTime();
+		return COMMAND_BUCKETS.computeIfAbsent(player.getUUID(),
+				id -> new TokenBucket(COMMANDS_PER_SECOND, COMMANDS_PER_SECOND, now)).tryConsume(1, now);
 	}
 
 	private static boolean allowAdd(ServerPlayer player) {

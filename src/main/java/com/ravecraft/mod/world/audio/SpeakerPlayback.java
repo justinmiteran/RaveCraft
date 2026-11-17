@@ -38,6 +38,11 @@ public final class SpeakerPlayback {
 	 * in ticks, not wall time, so a lagging server does not drop a track whose chunks it has not processed yet.
 	 */
 	public static final int START_TIMEOUT_TICKS = 200;
+	/**
+	 * Resuming at a position, the owner first decodes and drops everything before it, assumed at least 50 times
+	 * faster than real time: the timeout grows by one tick per 2.5 s of position.
+	 */
+	private static final long SKIPPED_MS_PER_TICK = 2_500;
 	private static final Map<SpeakerKey, Playing> PLAYING = new HashMap<>();
 
 	private static final class Playing {
@@ -142,7 +147,8 @@ public final class SpeakerPlayback {
 		int now = server.getTickCount();
 		List<SpeakerKey> silent = new ArrayList<>();
 		PLAYING.forEach((key, playing) -> {
-			if (!playing.heard && now - playing.startTick > START_TIMEOUT_TICKS) {
+			long timeout = START_TIMEOUT_TICKS + playing.clock.startPositionMs() / SKIPPED_MS_PER_TICK;
+			if (!playing.heard && now - playing.startTick > timeout) {
 				silent.add(key);
 			}
 		});

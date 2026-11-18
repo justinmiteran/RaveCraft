@@ -35,6 +35,22 @@ class AcousticConfigTest {
 		assertTrue(text.contains("\"occlusion\":"), text);
 		assertTrue(text.contains("\"air\":") && text.contains("\"highLossDbPerBlock\": 0.1"), text);
 		assertEquals(0.1, AcousticConfig.get().airAbsorptionDbPerBlock());
+		AcousticSettingsJson.Result reread = AcousticSettingsJson.read(new java.io.StringReader(text), w -> { });
+		assertEquals(0.1, reread.settings().occlusion().air().highLossDbPerBlock());
+		assertTrue(reread.complete());
+	}
+
+	@Test
+	void leavesBrokenFileAlone() throws IOException {
+		for (String broken : new String[] {"{ \"rolloff\": ", "{ \"rolloff\": \"fast\" }"}) {
+			Path file = dir.resolve(AcousticConfig.FILE_NAME);
+			Files.writeString(file, broken, StandardCharsets.UTF_8);
+			byte[] before = Files.readAllBytes(file);
+			AcousticConfig.load(file);
+			assertFalse(Files.exists(dir.resolve(AcousticConfig.FILE_NAME + ".bak")));
+			assertArrayEquals(before, Files.readAllBytes(file));
+			assertEquals(AcousticSettings.DEFAULT, AcousticConfig.get());
+		}
 	}
 
 	@Test

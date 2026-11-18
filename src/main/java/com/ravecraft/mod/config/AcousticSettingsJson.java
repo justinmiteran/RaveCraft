@@ -94,8 +94,9 @@ public final class AcousticSettingsJson {
 			}
 			return new Result(read.clamped(warn), r.complete);
 		} catch (RuntimeException | IOException e) {
-			warn.accept("unreadable (" + e.getMessage() + "), using defaults");
-			return new Result(d, false);
+			// Complete on purpose: a broken file is never rewritten, the admin fixes it and keeps their settings.
+			warn.accept("unreadable (" + e.getMessage() + "), using the defaults until the file is fixed");
+			return new Result(d, true);
 		}
 	}
 

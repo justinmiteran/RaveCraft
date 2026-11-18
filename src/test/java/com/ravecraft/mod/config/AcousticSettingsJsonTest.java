@@ -49,6 +49,7 @@ class AcousticSettingsJsonTest {
 	void corruptFileGivesDefaults() {
 		AcousticSettingsJson.Result r = result("{not json");
 		assertEquals(AcousticSettings.DEFAULT, r.settings());
+		assertTrue(r.complete(), "a broken file must not be rewritten");
 		assertEquals(1, warnings.size(), warnings.toString());
 	}
 
@@ -118,6 +119,16 @@ class AcousticSettingsJsonTest {
 	void oldFileMigratesAndAsksRewrite() {
 		AcousticSettingsJson.Result r = result("{\"airAbsorptionDbPerBlock\": 0.1}");
 		assertEquals(0.1, r.settings().occlusion().air().highLossDbPerBlock());
+		assertFalse(r.complete());
+	}
+
+	@Test
+	void mediaAirWinsOverTheOldKey() {
+		AcousticSettingsJson.Result r = result("""
+				{ "airAbsorptionDbPerBlock": 0.1,
+				  "occlusion": { "media": { "air": { "impedance": 415, "lossDbPerBlock": 0, "highLossDbPerBlock": 0.3 } } } }
+				""");
+		assertEquals(0.3, r.settings().occlusion().air().highLossDbPerBlock());
 		assertFalse(r.complete());
 	}
 

@@ -31,8 +31,12 @@ public final class Chorus {
 	public void process(float[] samples, int count, @Nullable FluidReverb fluid) {
 		boolean active = fluid != null && fluid.chorus();
 		if (active) {
-			rateHz = fluid.chorusRateHz();
-			depthMs = Math.clamp(fluid.chorusDepthMs(), 0, MAX_DEPTH_MS);
+			double rate = fluid.chorusRateHz();
+			double depth = fluid.chorusDepthMs();
+			rateHz = Double.isFinite(rate) ? Math.clamp(rate, 0.05, 5) : 0.05;
+			// The tap may never reach the write head, so the depth stops one sample short of the base delay.
+			double maxDepth = Math.min(MAX_DEPTH_MS, BASE_DELAY_MS - 1000 / sampleRate);
+			depthMs = Double.isFinite(depth) ? Math.clamp(depth, 0, maxDepth) : 0;
 		}
 		if (!active && mix <= 0) {
 			// Idle: only keep the line current.
@@ -50,7 +54,7 @@ public final class Chorus {
 		for (int i = 0; i < count; i++) {
 			float dry = samples[i];
 			line[write] = dry;
-			double delay = base + depth * Math.sin(phase);
+			double delay = Math.clamp(base + depth * Math.sin(phase), 1, n - 2);
 			double pos = write - delay;
 			if (pos < 0) {
 				pos += n;

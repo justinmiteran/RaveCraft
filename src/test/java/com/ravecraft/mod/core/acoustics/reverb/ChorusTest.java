@@ -110,4 +110,34 @@ class ChorusTest {
 		}
 		assertTrue(maxStep <= 1.5 * inputStep, "max step " + maxStep + " vs input " + inputStep);
 	}
+
+	@Test
+	void maxDepthStaysInsideTheLine() {
+		Chorus chorus = new Chorus(RATE);
+		FluidReverb deep = new FluidReverb("water", 1.2, 1, 1, 0.4, 0.3, true, 5, 10);
+		long n = 0;
+		for (int b = 0; b < 40; b++) {
+			float[] block = new float[4_800];
+			for (int i = 0; i < block.length; i++) {
+				block[i] = (float) Math.sin(2 * Math.PI * 300 * n++ / RATE);
+			}
+			chorus.process(block, block.length, deep);
+			for (float s : block) {
+				assertTrue(Float.isFinite(s) && Math.abs(s) <= 1.0001f, "sample " + s);
+			}
+		}
+	}
+
+	@Test
+	void nonFiniteParametersAreHarmless() {
+		Chorus chorus = new Chorus(RATE);
+		FluidReverb bad = new FluidReverb("water", 1.2, 1, 1, 0.4, 0.3, true, Double.NaN, Double.POSITIVE_INFINITY);
+		float[] block = new float[4_800];
+		block[0] = 1;
+		chorus.process(block, block.length, bad);
+		chorus.process(block, block.length, bad);
+		for (float s : block) {
+			assertTrue(Float.isFinite(s));
+		}
+	}
 }

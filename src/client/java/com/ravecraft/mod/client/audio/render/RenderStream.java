@@ -112,7 +112,7 @@ final class RenderStream {
 	 * {@code highLossDb}, then the underwater {@code chorus} when given. Written as 16-bit PCM into {@code out} (cleared and flipped) when given; only consumed
 	 * otherwise (still filtered, so the filter's state follows the stream).
 	 */
-	void nextBlock(float[] scratch, @Nullable ByteBuffer out, double highLossDb, @Nullable FluidReverb chorus) {
+	void nextBlock(float[] scratch, @Nullable ByteBuffer out, double highLossDb, @Nullable FluidReverb fluid) {
 		byte[] block = playout.nextBlock();
 		int samples = block.length / 2;
 		for (int i = 0; i < samples; i++) {
@@ -123,7 +123,7 @@ final class RenderStream {
 			eq.process(scratch, samples);
 		}
 		occlusionFilter.process(scratch, samples, highLossDb);
-		this.chorus.process(scratch, samples, chorus);
+		chorus.process(scratch, samples, fluid);
 		if (out != null) {
 			out.clear();
 			for (int i = 0; i < samples; i++) {

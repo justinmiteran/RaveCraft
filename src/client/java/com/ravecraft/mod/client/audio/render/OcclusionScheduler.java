@@ -79,6 +79,14 @@ public final class OcclusionScheduler {
 		});
 	}
 
+	/**
+	 * The grid the occlusion tracer reads, built from the current occlusion settings for the current level; null while
+	 * there is no level. Client thread only.
+	 */
+	static @Nullable WorldAcousticGrid grid() {
+		return grid;
+	}
+
 	/** Never throws: an exception out of END_CLIENT_TICK would crash the client. */
 	private static void tick(Minecraft minecraft) {
 		try {
@@ -213,7 +221,8 @@ public final class OcclusionScheduler {
 				});
 	}
 
-	private static boolean isAudible(AcousticSettings settings, RenderStream stream, Vec3 ear) {
+	/** Whether the stream plays and the listener is within its range. */
+	static boolean isAudible(AcousticSettings settings, RenderStream stream, Vec3 ear) {
 		if (!stream.powered || stream.volume <= 0) {
 			return false;
 		}

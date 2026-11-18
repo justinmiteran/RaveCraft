@@ -44,7 +44,7 @@ class OcclusionTracerTest {
 	void oneStoneWall() {
 		PathLoss loss = traceX(new TestGrid().wall(3, STONE));
 		assertEquals(15, loss.lossDb(), 1e-9);
-		assertEquals(15, loss.highLossDb(), 1e-9);
+		assertEquals(30, loss.highLossDb(), 1e-9);
 	}
 
 	@Test
@@ -76,7 +76,7 @@ class OcclusionTracerTest {
 		assertTrue(clipped > 0 && clipped < 0.2);
 		PathLoss loss = trace(new TestGrid().solid(0, 1, 0, STONE), x0, y0, 0.5, x1, y1, 0.5);
 		assertEquals(15 * clipped, loss.lossDb(), 1e-9);
-		assertEquals(15 * clipped, loss.highLossDb(), 1e-9);
+		assertEquals(30 * clipped, loss.highLossDb(), 1e-9);
 	}
 
 	@Test
@@ -123,7 +123,7 @@ class OcclusionTracerTest {
 	void waterloggedSlabIsMaterialAndMedium() {
 		PathLoss loss = traceX(new TestGrid(WATER).slab(3, 0, 0, STONE).fluid(3, 0, 0, WATER));
 		assertEquals(7.5, loss.lossDb(), 1e-9);
-		assertEquals(7.5 + 0.02 * 6, loss.highLossDb(), 1e-6);
+		assertEquals(15 + 0.02 * 6, loss.highLossDb(), 1e-6);
 	}
 
 	@Test
@@ -172,7 +172,7 @@ class OcclusionTracerTest {
 	void solidVoxelBetweenWaterKeepsWater() {
 		PathLoss loss = traceX(lake().solid(3, 0, 0, STONE));
 		assertEquals(15, loss.lossDb(), 1e-9);
-		assertEquals(15 + 0.02 * 6, loss.highLossDb(), 1e-9);
+		assertEquals(30 + 0.02 * 6, loss.highLossDb(), 1e-9);
 	}
 
 	@Test
@@ -187,7 +187,7 @@ class OcclusionTracerTest {
 	void diverThroughOneStoneToSubmergedSpeaker() {
 		PathLoss loss = traceX(lake().solid(3, 0, 0, STONE).solid(6, 0, 0, STONE));
 		assertEquals(15, loss.lossDb(), 1e-9);
-		assertEquals(15 + 0.02 * 6, loss.highLossDb(), 1e-9);
+		assertEquals(30 + 0.02 * 6, loss.highLossDb(), 1e-9);
 	}
 
 	@Test

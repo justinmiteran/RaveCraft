@@ -26,7 +26,7 @@ class OcclusionSettingsTest {
 		assertEquals(OcclusionSettings.BASE_MATERIALS, D.materials().stream().map(AcousticMaterial::name).toList());
 		assertEquals(List.of("foliage", "glass", "wood", "snow", "earth", "stone", "metal", "wool"),
 				OcclusionSettings.BASE_MATERIALS);
-		double[][] expected = {{2, 4}, {5, 6}, {8, 10}, {10, 14}, {12, 12}, {15, 15}, {18, 12}, {20, 20}};
+		double[][] expected = {{2, 6}, {5, 12}, {8, 18}, {10, 24}, {12, 24}, {15, 30}, {18, 20}, {20, 36}};
 		for (int i = 0; i < 8; i++) {
 			assertEquals(expected[i][0], D.materials().get(i).lossDb());
 			assertEquals(expected[i][1], D.materials().get(i).highLossDb());
@@ -156,7 +156,7 @@ class OcclusionSettingsTest {
 		assertEquals(D.medium("air"), s.medium("air"));
 		AcousticMaterial wool = s.materials().stream().filter(m -> m.name().equals("wool")).findFirst().orElseThrow();
 		assertEquals(20, wool.lossDb());
-		assertEquals(20, wool.highLossDb());
+		assertEquals(36, wool.highLossDb());
 	}
 
 	@Test

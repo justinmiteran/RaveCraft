@@ -9,7 +9,7 @@ Le son des enceintes est étouffé par ce qui se trouve entre l'enceinte et l'au
 
 ### Critères de réussite
 - À travers un mur de pierre, on entend la fête « de l'autre côté » : environ −15 dB global, aigus presque coupés. Trois ou quatre murs donnent le silence.
-- Ouvrir une porte pendant la lecture rend le son plus clair et plus fort, sans saut ni clic, en une demi-seconde environ (recalcul 4 fois par seconde, puis lissage sur 200 ms).
+- Ouvrir une porte pendant la lecture rend le son plus clair et plus fort, sans saut ni clic, en une demi-seconde environ pour le volume (recalcul 4 fois par seconde, puis lissage sur 200 ms) ; le timbre suit avec jusqu'à 0,4 s de plus (file d'OpenAL, §4.4).
 - Une enceinte dans une pièce fermée par une porte ouverte s'entend par la porte (détour) et non comme si les murs n'existaient pas.
 - Sous l'eau, la musique de la surface devient lointaine et sourde ; deux joueurs sous l'eau s'entendent normalement.
 - Dans une dimension sans air (mod spatial configuré en vide), aucune enceinte ne s'entend.
@@ -66,7 +66,7 @@ OcclusionScheduler                                AcousticRenderer
 | `client.audio.occlusion.WorldAcousticGrid` | client | `AcousticGrid` sur le `ClientLevel` ; chunk non chargé → air sans matière. |
 | `client.audio.occlusion.OcclusionScheduler` | client | À chaque fin de tick client : choisit les flux à recalculer, appelle le traceur dans le budget, publie le résultat dans `RenderStream`. |
 
-`RenderStream` reçoit deux champs `volatile double occlusionLossDb, occlusionHighLossDb`. `AcousticRenderer` les lisse (rampe d'environ 200 ms) et les applique : gain du flux multiplié par `10^(−perte/20)` (le gain étouffé sert aussi au `SourceSelector`), gain HF du filtre multiplié par `10^(−perteAigus/20)`.
+`RenderStream` reçoit deux champs `volatile double occlusionLossDb, occlusionHighLossDb`. `AcousticRenderer` les lisse (rampe d'environ 200 ms) et les applique : gain du flux multiplié par `10^(−perte/20)` (le gain étouffé sert aussi au `SourceSelector`), perte des aigus appliquée par un passe-bas propre au mod (voir §4.4). Le filtre EFX d'OpenAL ne porte plus que l'absorption de l'air : dans OpenAL Soft, c'est une étagère fixée vers 5 kHz, qui laisse passer les médiums.
 
 ## 4. Matières
 
@@ -86,16 +86,22 @@ Une matière de base retirée de la config reprend ses valeurs par défaut. Une 
 
 | Matière | `lossDb` | `highLossDb` |
 |---|---|---|
-| foliage | 2 | 4 |
-| glass | 5 | 6 |
-| wood | 8 | 10 |
-| snow | 10 | 14 |
-| earth | 12 | 12 |
-| stone | 15 | 15 |
-| metal | 18 | 12 |
-| wool | 20 | 20 |
+| foliage | 2 | 6 |
+| glass | 5 | 12 |
+| wood | 8 | 18 |
+| snow | 10 | 24 |
+| earth | 12 | 24 |
+| stone | 15 | 30 |
+| metal | 18 | 20 |
+| wool | 20 | 36 |
 
-`highLossDb` est une perte **supplémentaire** sur les aigus : à travers un bloc de pierre, −15 dB global et −30 dB sur les aigus.
+`highLossDb` est une perte **supplémentaire**, mesurée à 4 kHz. À travers un bloc de pierre : −15 dB global, et en plus ≈ −2 dB à 100 Hz, −30 dB à 4 kHz. Ces valeurs suivent l'ordre de grandeur de la loi de masse (un mur de béton de 20 cm isole ≈ 46 dB à 100 Hz et ≈ 78 dB à 4 kHz, soit ≈ 30 dB d'écart), compressé pour le jeu ; elles se règlent en jeu.
+
+### 4.4 Filtre des aigus
+
+`core.acoustics.occlusion.OcclusionFilter` : passe-bas d'ordre 1 (bilinéaire, −6 dB par octave comme la loi de masse) appliqué au PCM mono de chaque flux dans `RenderStream.nextBlock`, après l'égaliseur de l'appareil. Sa coupure est choisie pour perdre exactement la perte des aigus du chemin à 4 kHz : ≈ 125 Hz derrière un bloc de pierre (30 dB), ≈ 500 Hz derrière du bois (18 dB), ≈ 1 kHz derrière du verre (12 dB). Coupure plancher 20 Hz (≈ 46 dB à 4 kHz au plus). Sans perte, le son passe intact. Une nouvelle perte est atteinte en glissant sur le bloc de 100 ms (coefficients mis à jour chaque milliseconde), sans clic. L'option « Effets acoustiques » le désactive comme le filtre EFX.
+
+Contrepartie : le filtre agit avant la file d'OpenAL (jusqu'à 4 blocs de 100 ms d'avance), donc un changement de timbre arrive jusqu'à 0,4 s après le changement de volume.
 
 ## 5. Milieux
 

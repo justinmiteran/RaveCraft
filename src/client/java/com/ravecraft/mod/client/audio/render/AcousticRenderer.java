@@ -279,18 +279,20 @@ public final class AcousticRenderer {
 				AlSource source = stream.source;
 				if (source == null) {
 					for (int i = stream.pacer.due(now); i > 0; i--) {
-						stream.nextBlock(scratch, null);
+						stream.nextBlock(scratch, null, filter ? stream.highLossDb : 0);
 					}
 					continue;
 				}
 				while (source.wantsBlock()) {
-					stream.nextBlock(scratch, pcm);
+					stream.nextBlock(scratch, pcm, filter ? stream.highLossDb : 0);
 					source.queue(pcm);
 				}
 				source.place(stream.pos.getX() + 0.5, stream.pos.getY() + 0.5, stream.pos.getZ() + 0.5);
 				source.gain((float) (stream.gain * volume));
-				source.highGain(filter ? (float) (Propagation.highFrequencyGain(settings.airAbsorptionDbPerBlock(),
-						stream.distance) * Math.pow(10, -stream.highLossDb / 20)) : 1f);
+				// The EFX shelf only cuts the top octaves: it carries the air's absorption, while occlusion's treble
+				// loss goes through the stream's own low-pass (nextBlock), which reaches down into the mids.
+				source.highGain(filter ? (float) Propagation.highFrequencyGain(settings.airAbsorptionDbPerBlock(),
+						stream.distance) : 1f);
 			}
 		}
 

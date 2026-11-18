@@ -236,8 +236,9 @@ public final class AcousticSettingsJson {
 		b.append("""
 				  // How walls, water and other obstacles muffle a speaker. Sound loses level and treble as it travels,
 				  // and each obstacle on the straight line to the listener adds its loss (capped by "maxLossDb").
-				  // "lossDb" is a loss of the whole sound, in dB; "highLossDb" is the EXTRA loss of the treble on top
-				  // of it, so a wall with lossDb 15 and highLossDb 15 takes 30 dB off the highs.
+				  // "lossDb" is a loss of the whole sound, in dB; "highLossDb" is the EXTRA loss at 4 kHz on top of
+				  // it, made by a low-pass falling 6 dB per octave (like a real wall): with lossDb 15 and highLossDb 30,
+				  // a wall takes about 17 dB off at 100 Hz and 45 dB off at 4 kHz, so mostly the bass gets through.
 				  "occlusion": {
 				    // Turns the whole occlusion model off for everyone when false: walls no longer muffle sound.
 				    "enabled": %s,

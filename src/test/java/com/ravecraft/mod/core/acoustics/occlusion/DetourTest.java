@@ -45,7 +45,7 @@ class DetourTest {
 	void closedRoomIsDirectLoss() {
 		Occlusion o = roomOcclusion(room(), S, RANGE);
 		assertEquals(15, o.lossDb(), 1e-9);
-		assertEquals(15, o.highLossDb(), 1e-9);
+		assertEquals(30, o.highLossDb(), 1e-9);
 	}
 
 	private static Occlusion occlusion(TestGrid grid, double[] l, double[] s, int maxDetours) {
@@ -120,7 +120,7 @@ class DetourTest {
 		assertTrue(o.lossDb() > 0, "lossDb " + o.lossDb());
 		assertTrue(o.highLossDb() > 0, "highLossDb " + o.highLossDb());
 		assertEquals(5.1347, o.lossDb(), 1e-4);
-		assertEquals(10.4493, o.highLossDb(), 1e-4);
+		assertEquals(10.4495, o.highLossDb(), 1e-4);
 	}
 
 	/**
@@ -225,7 +225,7 @@ class DetourTest {
 	void detourLongerThanRangeIgnored() {
 		Occlusion o = roomOcclusion(openDoor(), S, 9.5);
 		assertEquals(15, o.lossDb(), 1e-9);
-		assertEquals(15, o.highLossDb(), 1e-9);
+		assertEquals(30, o.highLossDb(), 1e-9);
 	}
 
 	@Test
@@ -244,7 +244,7 @@ class DetourTest {
 	void detoursDisabledUsesDirectOnly() {
 		Occlusion o = roomOcclusion(openDoor(), settings(true, false), RANGE);
 		assertEquals(15, o.lossDb(), 1e-9);
-		assertEquals(15, o.highLossDb(), 1e-9);
+		assertEquals(30, o.highLossDb(), 1e-9);
 	}
 
 	@Test

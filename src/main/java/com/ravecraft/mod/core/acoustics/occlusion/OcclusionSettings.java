@@ -31,14 +31,14 @@ public record OcclusionSettings(boolean enabled, double maxLossDb, List<Acoustic
 			List.of("foliage", "glass", "wood", "snow", "earth", "stone", "metal", "wool");
 
 	private static final List<AcousticMaterial> BASE_DEFAULTS = List.of(
-			new AcousticMaterial("foliage", 2, 4),
-			new AcousticMaterial("glass", 5, 6),
-			new AcousticMaterial("wood", 8, 10),
-			new AcousticMaterial("snow", 10, 14),
-			new AcousticMaterial("earth", 12, 12),
-			new AcousticMaterial("stone", 15, 15),
-			new AcousticMaterial("metal", 18, 12),
-			new AcousticMaterial("wool", 20, 20));
+			new AcousticMaterial("foliage", 2, 6),
+			new AcousticMaterial("glass", 5, 12),
+			new AcousticMaterial("wood", 8, 18),
+			new AcousticMaterial("snow", 10, 24),
+			new AcousticMaterial("earth", 12, 24),
+			new AcousticMaterial("stone", 15, 30),
+			new AcousticMaterial("metal", 18, 20),
+			new AcousticMaterial("wool", 20, 36));
 	private static final AcousticMedium AIR = new AcousticMedium("air", 415, 0, 0.05);
 
 	public static final OcclusionSettings DEFAULT = new OcclusionSettings(true, 60, List.of(

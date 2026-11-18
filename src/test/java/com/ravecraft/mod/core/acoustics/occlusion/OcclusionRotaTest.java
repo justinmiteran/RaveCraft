@@ -62,4 +62,22 @@ class OcclusionRotaTest {
 		List<Integer> picked = rota.pick(List.of(1, 2), 3);
 		assertEquals(List.of(2), picked);
 	}
+
+	@Test
+	void forgottenThenSeenAgainIsPickedAtOnce() {
+		OcclusionRota rota = new OcclusionRota();
+		rota.pick(List.of(1, 2), 0);
+		// Id 1 has slot 0: it would wait until tick 5.
+		assertFalse(rota.pick(List.of(1, 2), 1).contains(1));
+		rota.forget(Set.of(2));
+		assertEquals(1, rota.pick(List.of(1, 2), 2).getFirst());
+	}
+
+	@Test
+	void unfinishedNoLongerAudibleIsNotReturned() {
+		OcclusionRota rota = new OcclusionRota();
+		rota.pick(List.of(1, 2), 0);
+		rota.unfinished(2);
+		assertFalse(rota.pick(List.of(1), 2).contains(2));
+	}
 }

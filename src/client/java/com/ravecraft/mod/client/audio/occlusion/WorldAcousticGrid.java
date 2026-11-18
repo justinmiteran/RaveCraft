@@ -37,7 +37,8 @@ public final class WorldAcousticGrid implements AcousticGrid {
 
 	@Override
 	public void sample(int x, int y, int z, VoxelSample out) {
-		if (!level.hasChunk(x >> 4, z >> 4)) {
+		// ClientLevel.hasChunk always answers true: ask the chunk cache whether the chunk is really there.
+		if (!level.getChunkSource().hasChunk(x >> 4, z >> 4)) {
 			out.material = null;
 			out.fillX = 0;
 			out.fillY = 0;

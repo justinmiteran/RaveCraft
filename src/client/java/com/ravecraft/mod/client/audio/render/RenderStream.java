@@ -45,6 +45,8 @@ final class RenderStream {
 
 	/** Written on the audio thread each step, read by the occlusion scheduler to trace the loudest streams first. */
 	volatile double heardGain;
+	/** Client thread only: {@code heardGain} as the scheduler read it before sorting, stable during the sort. */
+	double sortGain;
 
 	// Audio thread only.
 	@Nullable Equalizer eq;

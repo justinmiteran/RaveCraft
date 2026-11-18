@@ -33,14 +33,17 @@ import org.jspecify.annotations.Nullable;
  * streams stay package-private. Client thread only, except the tag reload flag.
  */
 public final class OcclusionScheduler {
+	/** On the snapshot taken before sorting: the audio thread rewrites {@code heardGain} during the sort. */
 	private static final Comparator<RenderStream> LOUDEST_FIRST =
-			Comparator.comparingDouble((RenderStream stream) -> stream.heardGain).reversed();
+			Comparator.comparingDouble((RenderStream stream) -> stream.sortGain).reversed();
 
 	private static final OcclusionRota ROTA = new OcclusionRota();
 	private static final List<RenderStream> AUDIBLE = new ArrayList<>();
 	private static final List<Integer> AUDIBLE_IDS = new ArrayList<>();
 	private static final Set<Integer> ALIVE = new HashSet<>();
-	private static final Map<Integer, RenderStream> BY_ID = new HashMap<>();
+	private static Map<Integer, RenderStream> byId = new HashMap<>();
+	/** Last tick's audible streams, to notice a session that restarted with a new stream under the same id. */
+	private static Map<Integer, RenderStream> previousById = new HashMap<>();
 
 	/** Set when the client received new tags: the block materials are measured again. */
 	private static volatile boolean tagsReloaded;
@@ -93,6 +96,8 @@ public final class OcclusionScheduler {
 				stream.occlusionKnown = false;
 			}
 			ROTA.forget(Set.of());
+			previousById.clear();
+			byId.clear();
 			return;
 		}
 		OcclusionTracer tracer = OcclusionScheduler.tracer;
@@ -105,6 +110,7 @@ public final class OcclusionScheduler {
 		AUDIBLE.clear();
 		for (RenderStream stream : AcousticRenderer.streams()) {
 			if (isAudible(settings, stream, ear)) {
+				stream.sortGain = stream.heardGain;
 				AUDIBLE.add(stream);
 			} else {
 				stream.occlusionKnown = false;
@@ -113,11 +119,19 @@ public final class OcclusionScheduler {
 		AUDIBLE.sort(LOUDEST_FIRST);
 		AUDIBLE_IDS.clear();
 		ALIVE.clear();
-		BY_ID.clear();
+		Map<Integer, RenderStream> swap = previousById;
+		previousById = byId;
+		byId = swap;
+		byId.clear();
 		for (RenderStream stream : AUDIBLE) {
 			AUDIBLE_IDS.add(stream.sessionId);
-			ALIVE.add(stream.sessionId);
-			BY_ID.put(stream.sessionId, stream);
+			byId.put(stream.sessionId, stream);
+			RenderStream previous = previousById.get(stream.sessionId);
+			// A stream that replaced another one under the same id is left out once, so that it comes back as new
+			// and is traced at once instead of waiting for the old one's slot.
+			if (previous == null || previous == stream) {
+				ALIVE.add(stream.sessionId);
+			}
 		}
 		ROTA.forget(ALIVE);
 
@@ -131,7 +145,7 @@ public final class OcclusionScheduler {
 		List<Integer> due = ROTA.pick(AUDIBLE_IDS, tick);
 		TraceBudget budget = new TraceBudget(RaveCraftOptions.occlusionQuality().get().voxelsPerTick());
 		for (int i = 0; i < due.size(); i++) {
-			RenderStream stream = BY_ID.get(due.get(i));
+			RenderStream stream = byId.get(due.get(i));
 			double sx = stream.pos.getX() + 0.5;
 			double sy = stream.pos.getY() + 0.5;
 			double sz = stream.pos.getZ() + 0.5;

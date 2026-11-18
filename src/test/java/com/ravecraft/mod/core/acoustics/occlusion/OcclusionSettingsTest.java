@@ -32,7 +32,7 @@ class OcclusionSettingsTest {
 			assertEquals(expected[i][1], D.materials().get(i).highLossDb());
 		}
 		assertEquals(new AcousticMedium("air", 415, 0, 0.05, 0, 0, 0, 1), D.media().get(0));
-		assertEquals(new AcousticMedium("water", 1_480_000, 0, 0.02, 10, 12, 0.8, 0.01), D.media().get(1));
+		assertEquals(new AcousticMedium("water", 1_480_000, 0, 0.02, 6, 30, 0.8, 0.01), D.media().get(1));
 		assertEquals(new AcousticMedium("lava", 6_000_000, 3, 6, 20, 24, 0.9, 0.05), D.media().get(2));
 		assertEquals(new AcousticMedium("vacuum", 0, 0, 0, 0, 0, 0, 1), D.media().get(3));
 		assertTrue(D.enabled());
@@ -170,8 +170,8 @@ class OcclusionSettingsTest {
 	@Test
 	void waterAndLavaChangeWhatTheListenerHears() {
 		AcousticMedium water = D.medium("water");
-		assertEquals(10, water.listenerLossDb());
-		assertEquals(12, water.listenerHighLossDb());
+		assertEquals(6, water.listenerLossDb());
+		assertEquals(30, water.listenerHighLossDb());
 		assertEquals(0.8, water.listenerBlur());
 		AcousticMedium lava = D.medium("lava");
 		assertEquals(20, lava.listenerLossDb());

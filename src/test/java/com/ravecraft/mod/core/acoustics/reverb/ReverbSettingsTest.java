@@ -24,7 +24,7 @@ class ReverbSettingsTest {
 		assertEquals(0.32, s.maxWetGain());
 		assertEquals(6, s.sameSpaceLossDb());
 		assertEquals(new EchoSettings(17, 35, 4, 0.2, 0.6, 0.15, 0.5), s.echo());
-		assertEquals(List.of(new FluidReverb("water", 1.2, 1, 1, 0.4, 0.3, false, 0.4, 1.5),
+		assertEquals(List.of(new FluidReverb("water", 1.2, 1, 1, 0.4, 0.3, true, 0.4, 1.5),
 				new FluidReverb("lava", 0.6, 1, 1, 0.3, 0.2, false, 0.25, 2)), s.media());
 		assertEquals(16, ReverbSettings.MAX_MEDIA);
 	}

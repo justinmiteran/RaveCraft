@@ -11,7 +11,7 @@ Le son des enceintes prend la couleur du lieu où il résonne. Une salle de pier
 - Une salle fermée en pierre résonne nettement. La même salle tapissée de laine sonne mate, avec une décroissance courte et peu d'aigus. Le plein air n'a presque pas de réverbération.
 - Une enceinte dans une grotte, entendue depuis l'extérieur, sonne caverneuse et étouffée par les murs.
 - Face à une paroi réfléchissante entre 17 et 35 blocs, par exemple un ravin, on entend un écho net et discret (une ou deux répétitions). Ailleurs, aucun écho.
-- La tête sous l'eau ou dans la lave, le son est épais et enfermé. Le chorus (léger flottement) n'existe que si le serveur l'active.
+- La tête sous l'eau ou dans la lave, le son est épais et enfermé. Sous l'eau, un léger flottement (chorus) s'y ajoute ; le serveur peut le couper.
 - Se déplacer ou changer de pièce fait glisser la réverbération, sans saut ni clic.
 - Les valeurs sont réglées par le serveur et identiques pour tous les joueurs.
 - Aucune baisse de FPS perceptible avec 16 enceintes audibles.
@@ -22,7 +22,7 @@ Le son des enceintes prend la couleur du lieu où il résonne. Une salle de pier
 |---|---|
 | R1 | **Espace mesuré autour de l'auditeur et autour des enceintes** : ton lieu, plus le lieu des 2 enceintes audibles les plus fortes qui ne sont pas dans ton espace. |
 | R2 | **Écho réaliste et rare** : seulement face à une grande paroi réfléchissante lointaine, discret, une ou deux répétitions. |
-| R3 | **Sous l'eau** : un préréglage de réverbération propre au fluide ; le **chorus** est une option de la config serveur, désactivée par défaut. |
+| R3 | **Sous l'eau** : un préréglage de réverbération propre au fluide ; le **chorus** est une option de la config serveur, activée par défaut pour l'eau. |
 | R4 | **Approche hybride** : réverbération et écho en EFX (emplacements d'effet auxiliaires, 2 envois par source), chorus dans notre traitement du PCM. |
 | R5 | Seules les enceintes RaveCraft sont concernées ; les sons vanilla ne changent pas (comme la perception de l'auditeur en 4b, et compatible avec Sound Physics Remastered). |
 | R6 | Pas de suivi des changements de blocs : les mesures sont refaites périodiquement (2 s pour l'auditeur, 5 s pour une enceinte). |
@@ -144,7 +144,7 @@ Dans `config/ravecraft-server.json5`, envoyée à chaque joueur, chaque réglage
 | `diffusion` | 1 | 1 | 0–1 |
 | `gain` | 0,4 | 0,3 | 0–1 |
 | `decayHfRatio` | 0,3 | 0,2 | 0,1–2 |
-| `chorus` | `false` | `false` | |
+| `chorus` | `true` | `false` | |
 | `chorusRateHz` | 0,4 | 0,25 | 0,05–5 |
 | `chorusDepthMs` | 1,5 | 2 | 0–10 (la profondeur appliquée reste sous le retard de base de 8 ms) |
 

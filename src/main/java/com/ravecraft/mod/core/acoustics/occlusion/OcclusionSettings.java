@@ -43,7 +43,7 @@ public record OcclusionSettings(boolean enabled, double maxLossDb, List<Acoustic
 
 	public static final OcclusionSettings DEFAULT = new OcclusionSettings(true, 60, List.of(
 			AIR,
-			new AcousticMedium("water", 1_480_000, 0, 0.02, 10, 12, 0.8, 0.01),
+			new AcousticMedium("water", 1_480_000, 0, 0.02, 6, 30, 0.8, 0.01),
 			new AcousticMedium("lava", 6_000_000, 3, 6, 20, 24, 0.9, 0.05),
 			new AcousticMedium("vacuum", 0, 0, 0, 0, 0, 0, 1)),
 			0.67, 0.5, Map.of(), BASE_DEFAULTS, true, 6, 10);

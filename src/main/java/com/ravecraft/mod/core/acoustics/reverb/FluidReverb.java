@@ -6,6 +6,6 @@ package com.ravecraft.mod.core.acoustics.reverb;
  */
 public record FluidReverb(String medium, double decaySeconds, double density, double diffusion, double gain,
 		double decayHfRatio, boolean chorus, double chorusRateHz, double chorusDepthMs) {
-	public static final FluidReverb WATER = new FluidReverb("water", 1.2, 1, 1, 0.4, 0.3, false, 0.4, 1.5);
+	public static final FluidReverb WATER = new FluidReverb("water", 1.2, 1, 1, 0.4, 0.3, true, 0.4, 1.5);
 	public static final FluidReverb LAVA = new FluidReverb("lava", 0.6, 1, 1, 0.3, 0.2, false, 0.25, 2);
 }

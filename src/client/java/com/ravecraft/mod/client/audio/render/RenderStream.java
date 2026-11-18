@@ -5,6 +5,7 @@ import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.Equalizer;
 import com.ravecraft.mod.core.acoustics.VirtualPacer;
+import com.ravecraft.mod.core.acoustics.occlusion.LossSmoother;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
@@ -22,6 +23,9 @@ import org.jspecify.annotations.Nullable;
  * and the audio-thread side (equalizer, virtual pacing, source).
  */
 final class RenderStream {
+	/** How long an occlusion change takes to be heard in full. */
+	static final double OCCLUSION_RAMP_MS = 200;
+
 	final int sessionId;
 	final BlockPos pos;
 	final StreamPlayout playout;
@@ -33,13 +37,27 @@ final class RenderStream {
 	volatile double facingX;
 	volatile double facingZ = 1;
 
+	// Written on the client thread by the occlusion scheduler, read on the audio thread: both losses are published
+	// before occlusionKnown is set.
+	volatile double occlusionLossDb;
+	volatile double occlusionHighLossDb;
+	volatile boolean occlusionKnown;
+
+	/** Written on the audio thread each step, read by the occlusion scheduler to trace the loudest streams first. */
+	volatile double heardGain;
+
 	// Audio thread only.
 	@Nullable Equalizer eq;
 	final VirtualPacer pacer;
 	@Nullable AlSource source;
-	/** This step's distance to the listener and propagation gain. */
+	/** This step's distance to the listener, and its gain (propagation, then occlusion). */
 	double distance;
 	double gain;
+	/** This step's smoothed occlusion losses, in dB. */
+	double lossDb;
+	double highLossDb;
+	final LossSmoother lossRamp = new LossSmoother(OCCLUSION_RAMP_MS);
+	final LossSmoother highRamp = new LossSmoother(OCCLUSION_RAMP_MS);
 
 	RenderStream(int sessionId, BlockPos pos, StreamPlayout playout, BooleanSupplier alive, long nowMs) {
 		this.sessionId = sessionId;

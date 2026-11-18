@@ -37,6 +37,8 @@ public final class AcousticRenderer {
 	private static final long LOOP_NANOS = 10_000_000L;
 	private static final int BLOCK_SAMPLES = StreamFormat.CHUNK_SAMPLES;
 	private static final long SOURCE_RETRY_MS = 5_000;
+	/** A longer gap between two steps (a stall) does not move the occlusion ramps further. */
+	private static final double MAX_RAMP_STEP_MS = 100;
 
 	private static final Map<Integer, RenderStream> STREAMS = new ConcurrentHashMap<>();
 
@@ -109,6 +111,16 @@ public final class AcousticRenderer {
 		listener = camera;
 	}
 
+	/** The attached streams, for the occlusion scheduler (client thread). */
+	static Iterable<RenderStream> streams() {
+		return STREAMS.values();
+	}
+
+	/** Where the listener was last placed. */
+	static Vec3 listener() {
+		return listener;
+	}
+
 	/** Client thread, every tick: speaker states and the player's volume settings. */
 	private static void clientTick(Minecraft minecraft) {
 		// Also done by the audio thread, which may never run (no sound device): ended streams must not pile up.
@@ -138,6 +150,8 @@ public final class AcousticRenderer {
 		private boolean warnedOutOfSources;
 		private boolean wasPaused;
 		private @Nullable AcousticSettings configured;
+		/** When the previous step ran, for the occlusion ramps; negative before the first one. */
+		private long lastStep = -1;
 
 		Worker() {
 			super("RaveCraft audio");
@@ -171,7 +185,7 @@ public final class AcousticRenderer {
 			STREAMS.values().forEach(stream -> stream.pacer.reset(start));
 			efx = Efx.detect();
 			if (!efx) {
-				RaveCraft.LOGGER.warn("OpenAL EFX is not available: speakers play without air absorption");
+				RaveCraft.LOGGER.warn("OpenAL EFX is not available: speakers play without air absorption or muffled treble");
 			}
 			try {
 				while (running) {
@@ -213,6 +227,8 @@ public final class AcousticRenderer {
 					stream.pacer.reset(now);
 				}
 			}
+			double dt = lastStep < 0 ? 0 : Math.clamp(now - lastStep, 0, MAX_RAMP_STEP_MS);
+			lastStep = now;
 			if (paused) {
 				return;
 			}
@@ -228,6 +244,10 @@ public final class AcousticRenderer {
 				stream.distance = distance;
 				stream.gain = stream.powered ? Propagation.gain(settings, settings.portable(),
 						stream.volume, distance, cos) : 0;
+				occlude(stream, dt);
+				// Before the selection: the sources go to the speakers that are loudest once muffled.
+				stream.gain *= Math.pow(10, -stream.lossDb / 20);
+				stream.heardGain = stream.gain;
 				gains.put(stream.sessionId, stream.gain);
 			}
 
@@ -267,8 +287,27 @@ public final class AcousticRenderer {
 				}
 				source.place(stream.pos.getX() + 0.5, stream.pos.getY() + 0.5, stream.pos.getZ() + 0.5);
 				source.gain((float) (stream.gain * volume));
-				source.highGain(filter ? (float) Propagation.highFrequencyGain(settings.airAbsorptionDbPerBlock(), stream.distance) : 1f);
+				source.highGain(filter ? (float) (Propagation.highFrequencyGain(settings.airAbsorptionDbPerBlock(),
+						stream.distance) * Math.pow(10, -stream.highLossDb / 20)) : 1f);
 			}
+		}
+
+		/**
+		 * Smooths the stream's occlusion toward what the scheduler last published; none until it has published one,
+		 * and the first value published is taken at once (a new stream does not fade from unmuffled).
+		 */
+		private static void occlude(RenderStream stream, double dt) {
+			if (!stream.occlusionKnown) {
+				stream.lossRamp.reset();
+				stream.highRamp.reset();
+				stream.lossDb = 0;
+				stream.highLossDb = 0;
+				return;
+			}
+			double loss = stream.occlusionLossDb;
+			double high = stream.occlusionHighLossDb;
+			stream.lossDb = stream.lossRamp.step(loss, dt);
+			stream.highLossDb = stream.highRamp.step(high, dt);
 		}
 
 		/**

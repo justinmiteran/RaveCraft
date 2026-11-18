@@ -124,7 +124,10 @@ public final class AcousticSettingsJson {
 			JsonObject m = e.getValue().isJsonObject() ? e.getValue().getAsJsonObject() : new JsonObject();
 			media.add(new AcousticMedium(e.getKey(), r.number(m, "impedance", base.impedance()),
 					r.number(m, "lossDbPerBlock", base.lossDbPerBlock()),
-					r.number(m, "highLossDbPerBlock", base.highLossDbPerBlock())));
+					r.number(m, "highLossDbPerBlock", base.highLossDbPerBlock()),
+					r.number(m, "listenerLossDb", base.listenerLossDb()),
+					r.number(m, "listenerHighLossDb", base.listenerHighLossDb()),
+					r.number(m, "listenerBlur", base.listenerBlur())));
 		}
 		for (AcousticMedium m : defaultMedia) {
 			if (media.stream().noneMatch(x -> x.name().equals(m.name()))) {
@@ -256,12 +259,19 @@ public final class AcousticSettingsJson {
 				      //   lossDbPerBlock: loss of the whole sound for each block travelled in it. Bounds: 0 to 40.
 				      //   highLossDbPerBlock: extra treble loss for each block travelled in it; for air this is the
 				      //     old air absorption (far speakers sound duller). Bounds: 0 to 40.
+				      //   listenerLossDb, listenerHighLossDb, listenerBlur: how a player whose head is in this medium
+				      //     hears every speaker. A human ear underwater hears through the skull: quieter
+				      //     (listenerLossDb, 0 to 60), duller (listenerHighLossDb, extra loss at 4 kHz, 0 to 40) and
+				      //     without direction (listenerBlur: 0 sharp, 1 the sound seems to come from everywhere).
 				""".formatted(o.enabled(), n(o.maxLossDb())));
 		for (int i = 0; i < o.media().size(); i++) {
 			AcousticMedium m = o.media().get(i);
 			b.append("      ").append(quote(m.name())).append(": { \"impedance\": ").append(n(m.impedance()))
 					.append(", \"lossDbPerBlock\": ").append(n(m.lossDbPerBlock()))
-					.append(", \"highLossDbPerBlock\": ").append(n(m.highLossDbPerBlock())).append(" }")
+					.append(", \"highLossDbPerBlock\": ").append(n(m.highLossDbPerBlock()))
+					.append(",\n        \"listenerLossDb\": ").append(n(m.listenerLossDb()))
+					.append(", \"listenerHighLossDb\": ").append(n(m.listenerHighLossDb()))
+					.append(", \"listenerBlur\": ").append(n(m.listenerBlur())).append(" }")
 					.append(i < o.media().size() - 1 ? ",\n" : "\n");
 		}
 		b.append("""

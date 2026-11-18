@@ -43,8 +43,8 @@ public record OcclusionSettings(boolean enabled, double maxLossDb, List<Acoustic
 
 	public static final OcclusionSettings DEFAULT = new OcclusionSettings(true, 60, List.of(
 			AIR,
-			new AcousticMedium("water", 1_480_000, 0, 0.02),
-			new AcousticMedium("lava", 6_000_000, 3, 6),
+			new AcousticMedium("water", 1_480_000, 0, 0.02, 10, 12, 0.8),
+			new AcousticMedium("lava", 6_000_000, 3, 6, 20, 24, 0.9),
 			new AcousticMedium("vacuum", 0, 0, 0)),
 			0.67, 0.5, Map.of(), BASE_DEFAULTS, true, 6, 10);
 
@@ -92,7 +92,10 @@ public record OcclusionSettings(boolean enabled, double maxLossDb, List<Acoustic
 			keptMedia.add(new AcousticMedium(m.name(),
 					bound(p + "impedance", m.impedance(), 0, 100_000_000, warn),
 					bound(p + "lossDbPerBlock", m.lossDbPerBlock(), 0, 40, warn),
-					bound(p + "highLossDbPerBlock", m.highLossDbPerBlock(), 0, 40, warn)));
+					bound(p + "highLossDbPerBlock", m.highLossDbPerBlock(), 0, 40, warn),
+					bound(p + "listenerLossDb", m.listenerLossDb(), 0, 60, warn),
+					bound(p + "listenerHighLossDb", m.listenerHighLossDb(), 0, 40, warn),
+					bound(p + "listenerBlur", m.listenerBlur(), 0, 1, warn)));
 		}
 		keptMedia = capped("occlusion.media", keptMedia, MAX_MEDIA, List.of(AIR), AcousticMedium::name, warn);
 

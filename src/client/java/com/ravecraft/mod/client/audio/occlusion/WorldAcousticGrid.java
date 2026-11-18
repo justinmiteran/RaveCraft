@@ -2,6 +2,7 @@ package com.ravecraft.mod.client.audio.occlusion;
 
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticGrid;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
+import com.ravecraft.mod.core.acoustics.occlusion.ListenerPerception;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
 import com.ravecraft.mod.core.acoustics.occlusion.VoxelSample;
 import com.ravecraft.mod.world.acoustics.BlockAcoustics;
@@ -11,6 +12,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * The client's loaded world as the occlusion tracer sees it. An unloaded chunk is open air: no material, and
@@ -43,6 +46,22 @@ public final class WorldAcousticGrid implements AcousticGrid {
 	@Override
 	public AcousticMedium defaultMedium() {
 		return dimension;
+	}
+
+	/**
+	 * How a listener whose eye is at {@code eye} hears: the perception of the fluid's medium when the eye is under
+	 * its surface, else of the dimension's medium. Nothing in an unloaded chunk.
+	 */
+	public ListenerPerception perceptionAt(Vec3 eye) {
+		pos.set(eye.x, eye.y, eye.z);
+		if (level.getChunkSource().getChunk(pos.getX() >> 4, pos.getZ() >> 4, false) == null) {
+			return ListenerPerception.NONE;
+		}
+		FluidState fluid = level.getFluidState(pos);
+		if (!fluid.isEmpty() && ListenerPerception.headInFluid(eye.y, pos.getY(), fluid.getHeight(level, pos))) {
+			return ListenerPerception.of(media.medium(fluid, level.dimension().identifier().toString()));
+		}
+		return ListenerPerception.of(dimension);
 	}
 
 	@Override

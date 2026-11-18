@@ -5,6 +5,7 @@ import com.ravecraft.mod.client.audio.occlusion.WorldAcousticGrid;
 import com.ravecraft.mod.client.options.RaveCraftOptions;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.Propagation;
+import com.ravecraft.mod.core.acoustics.occlusion.ListenerPerception;
 import com.ravecraft.mod.core.acoustics.occlusion.Occlusion;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionPass;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionRota;
@@ -113,6 +114,7 @@ public final class OcclusionScheduler {
 		if (level == null) {
 			grid = null;
 			tracer = null;
+			AcousticRenderer.headPerception(ListenerPerception.NONE);
 			for (RenderStream stream : AcousticRenderer.streams()) {
 				stream.occlusionKnown = false;
 			}
@@ -129,6 +131,8 @@ public final class OcclusionScheduler {
 		}
 
 		Vec3 ear = AcousticRenderer.listener();
+		WorldAcousticGrid world = grid;
+		AcousticRenderer.headPerception(occlusion.enabled() ? world.perceptionAt(ear) : ListenerPerception.NONE);
 		AUDIBLE.clear();
 		for (RenderStream stream : AcousticRenderer.streams()) {
 			if (isAudible(settings, stream, ear)) {

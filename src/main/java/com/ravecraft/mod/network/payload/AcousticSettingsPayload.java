@@ -38,6 +38,9 @@ public record AcousticSettingsPayload(AcousticSettings settings) implements Cust
 			ByteBufCodecs.DOUBLE, AcousticMedium::impedance,
 			ByteBufCodecs.DOUBLE, AcousticMedium::lossDbPerBlock,
 			ByteBufCodecs.DOUBLE, AcousticMedium::highLossDbPerBlock,
+			ByteBufCodecs.DOUBLE, AcousticMedium::listenerLossDb,
+			ByteBufCodecs.DOUBLE, AcousticMedium::listenerHighLossDb,
+			ByteBufCodecs.DOUBLE, AcousticMedium::listenerBlur,
 			AcousticMedium::new);
 	private static final StreamCodec<ByteBuf, Map.Entry<String, String>> DIMENSION = StreamCodec.composite(
 			ByteBufCodecs.stringUtf8(OcclusionSettings.MAX_DIMENSION_ID), Map.Entry::getKey,

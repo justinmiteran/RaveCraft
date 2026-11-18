@@ -11,7 +11,7 @@ Le son des enceintes est étouffé par ce qui se trouve entre l'enceinte et l'au
 - À travers un mur de pierre, on entend la fête « de l'autre côté » : environ −15 dB global, aigus presque coupés. Trois ou quatre murs donnent le silence.
 - Ouvrir une porte pendant la lecture rend le son plus clair et plus fort, sans saut ni clic, en une demi-seconde environ pour le volume (recalcul 4 fois par seconde, puis lissage sur 200 ms) ; le timbre suit avec jusqu'à 0,4 s de plus (file d'OpenAL, §4.4).
 - Une enceinte dans une pièce fermée par une porte ouverte s'entend par la porte (détour) et non comme si les murs n'existaient pas.
-- Sous l'eau, la musique de la surface devient lointaine et sourde ; deux joueurs sous l'eau s'entendent normalement.
+- Sous l'eau, la musique de la surface devient lointaine et sourde. Tête sous l'eau, toute enceinte (même immergée) s'entend comme par une oreille humaine immergée : plus faible, plus terne, sans direction (§5.1). Une enceinte immergée porte loin sous l'eau.
 - Dans une dimension sans air (mod spatial configuré en vide), aucune enceinte ne s'entend.
 - Les matières, les milieux et leurs valeurs sont réglés par le serveur et identiques pour tous les joueurs ; l'affectation des blocs et des fluides se fait par tags, donc par datapack.
 - Aucune baisse de FPS perceptible avec 16 enceintes audibles.
@@ -117,6 +117,24 @@ Contrepartie : le filtre agit avant la file d'OpenAL (jusqu'à 4 blocs de 100 ms
 - Tags de fluides générés : `#ravecraft:medium/water` (inclut `#minecraft:water`) et `#ravecraft:medium/lava` (inclut `#minecraft:lava`).
 - `dimensions` : `{ "<dimension>": "<milieu>" }`, vide par défaut. Exemple : `"ad_astra:moon": "vacuum"`.
 - Limite assumée : les zones pressurisées des mods spatiaux ne sont pas gérées (une compatibilité dédiée pourra venir plus tard).
+
+### 5.1 Perception de l'auditeur
+
+Sous l'eau, l'oreille humaine n'entend plus par le tympan mais par les os du crâne : le son est plus faible, plus terne, et sa direction se perd (il va 4 fois plus vite, l'écart entre les deux oreilles disparaît). Ce n'est pas un mur : c'est l'auditeur qui change, quel que soit le chemin du son.
+
+Chaque milieu a donc trois réglages pour un joueur dont **la tête** y est (`ListenerPerception`) :
+
+| Milieu | `listenerLossDb` | `listenerHighLossDb` (à 4 kHz) | `listenerBlur` |
+|---|---|---|---|
+| air, vacuum | 0 | 0 | 0 |
+| water | 10 | 12 (coupure ≈ 1 kHz) | 0,8 |
+| lava | 20 | 24 | 0,9 |
+
+- La tête est dans un fluide quand l'œil (position de la caméra) est sous sa surface (hauteur du fluide dans le bloc) ; sinon le milieu de la dimension compte. Chunk non chargé : aucun effet.
+- Les pertes s'ajoutent à celles de chaque enceinte : la perte globale avant la sélection des sources, la perte des aigus dans le passe-bas de §4.4.
+- `listenerBlur` règle le rayon de la source OpenAL (`AL_EXT_SOURCE_RADIUS`, présent dans OpenAL Soft) à `flou × distance` : à 1, l'auditeur est « dans » la source et l'entend de partout. Sans l'extension, pas de flou.
+- Plonger ou sortir la tête change tout en douceur (rampe de 200 ms) ; le timbre suit avec la latence de §4.4.
+- Seulement les enceintes RaveCraft, pas les sons vanilla. L'option « Effets acoustiques » coupe la perte des aigus et le flou ; `occlusion.enabled = false` coupe tout.
 
 ## 6. Tracé
 
@@ -240,7 +258,7 @@ Chaque réglage est précédé d'un commentaire dans le fichier écrit, comme en
 
 ### À vérifier en jeu (liste reprise dans la PR)
 - Porte ouverte puis fermée pendant la lecture : changement en douceur.
-- Plongée sous l'eau près d'une enceinte en surface ; deux joueurs sous l'eau.
+- Plongée sous l'eau près d'une enceinte en surface ; deux joueurs sous l'eau ; tête sous l'eau près d'une enceinte immergée : plus faible, terne, sans direction, et retour net en sortant la tête.
 - Enceinte dans une cave fermée de 4 blocs de pierre : silence à l'extérieur.
 - 16 enceintes audibles : pas de baisse de FPS en qualité Moyenne.
 - Sound Physics Remastered installé : pas de double étouffement.

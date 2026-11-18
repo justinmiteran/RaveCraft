@@ -49,7 +49,7 @@ class AcousticSettingsPayloadTest {
 	@Test
 	void roundTripsOcclusion() {
 		List<AcousticMedium> media = new ArrayList<>(OcclusionSettings.DEFAULT.media());
-		media.add(new AcousticMedium("slime", 2_000_000, 1.5, 2.5));
+		media.add(new AcousticMedium("slime", 2_000_000, 1.5, 2.5, 7, 9, 0.5));
 		List<AcousticMaterial> materials = new ArrayList<>(OcclusionSettings.DEFAULT.materials());
 		materials.add(new AcousticMaterial("rubber", 25, 30));
 		OcclusionSettings custom = new OcclusionSettings(false, 45, media, 0.5, 1.25,

@@ -6,6 +6,8 @@ import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.Propagation;
 import com.ravecraft.mod.core.acoustics.RetryCooldown;
 import com.ravecraft.mod.core.acoustics.SourceSelector;
+import com.ravecraft.mod.core.acoustics.occlusion.ListenerPerception;
+import com.ravecraft.mod.core.acoustics.occlusion.LossSmoother;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionGate;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
@@ -45,6 +47,8 @@ public final class AcousticRenderer {
 
 	// Published by the client and render threads, read by the audio thread.
 	private static volatile Vec3 listener = Vec3.ZERO;
+	/** How the medium around the listener's head changes what they hear; published by the occlusion scheduler. */
+	private static volatile ListenerPerception head = ListenerPerception.NONE;
 	private static volatile float playerVolume = 1f;
 	private static volatile int maxSources = 8;
 	private static volatile boolean efxWanted = true;
@@ -117,6 +121,11 @@ public final class AcousticRenderer {
 		return STREAMS.values();
 	}
 
+	/** Client thread: the perception of the medium the listener's head is in. */
+	static void headPerception(ListenerPerception perception) {
+		head = perception;
+	}
+
 	/** Where the listener was last placed. */
 	static Vec3 listener() {
 		return listener;
@@ -145,6 +154,9 @@ public final class AcousticRenderer {
 		private final List<RenderStream> streams = new ArrayList<>();
 		private final Map<Integer, Double> gains = new HashMap<>();
 		private final float[] scratch = new float[BLOCK_SAMPLES];
+		private final LossSmoother headLoss = new LossSmoother(RenderStream.OCCLUSION_RAMP_MS);
+		private final LossSmoother headHighLoss = new LossSmoother(RenderStream.OCCLUSION_RAMP_MS);
+		private final LossSmoother headBlurRamp = new LossSmoother(RenderStream.OCCLUSION_RAMP_MS);
 		private final ByteBuffer pcm = BufferUtils.createByteBuffer(BLOCK_SAMPLES * 2);
 		private boolean efx;
 		private final RetryCooldown sourceRetry = new RetryCooldown(SOURCE_RETRY_MS);
@@ -235,6 +247,11 @@ public final class AcousticRenderer {
 			}
 
 			Vec3 ear = listener;
+			// Diving in or out of water changes everything heard at once, smoothly.
+			ListenerPerception perception = head;
+			double headLossDb = headLoss.step(perception.lossDb(), dt);
+			double headHighLossDb = headHighLoss.step(perception.highLossDb(), dt);
+			double headBlur = headBlurRamp.step(perception.blur(), dt);
 			gains.clear();
 			for (RenderStream stream : streams) {
 				double dx = ear.x - (stream.pos.getX() + 0.5);
@@ -248,7 +265,7 @@ public final class AcousticRenderer {
 				boolean known = occlude(stream, dt);
 				// Before the selection: the sources go to the speakers that are loudest once muffled. A stream not
 				// traced yet ranks 0, gets no source and is consumed silently, in step with its playout.
-				stream.gain = OcclusionGate.gain(stream.gain, known, stream.lossDb);
+				stream.gain = OcclusionGate.gain(stream.gain, known, stream.lossDb + headLossDb);
 				stream.heardGain = stream.gain;
 				gains.put(stream.sessionId, stream.gain);
 			}
@@ -279,12 +296,12 @@ public final class AcousticRenderer {
 				AlSource source = stream.source;
 				if (source == null) {
 					for (int i = stream.pacer.due(now); i > 0; i--) {
-						stream.nextBlock(scratch, null, filter ? stream.highLossDb : 0);
+						stream.nextBlock(scratch, null, filter ? stream.highLossDb + headHighLossDb : 0);
 					}
 					continue;
 				}
 				while (source.wantsBlock()) {
-					stream.nextBlock(scratch, pcm, filter ? stream.highLossDb : 0);
+					stream.nextBlock(scratch, pcm, filter ? stream.highLossDb + headHighLossDb : 0);
 					source.queue(pcm);
 				}
 				source.place(stream.pos.getX() + 0.5, stream.pos.getY() + 0.5, stream.pos.getZ() + 0.5);
@@ -293,6 +310,7 @@ public final class AcousticRenderer {
 				// loss goes through the stream's own low-pass (nextBlock), which reaches down into the mids.
 				source.highGain(filter ? (float) Propagation.highFrequencyGain(settings.airAbsorptionDbPerBlock(),
 						stream.distance) : 1f);
+				source.radius(filter ? (float) (headBlur * stream.distance) : 0f);
 			}
 		}
 

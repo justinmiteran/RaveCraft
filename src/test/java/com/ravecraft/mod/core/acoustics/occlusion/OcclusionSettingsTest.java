@@ -32,8 +32,8 @@ class OcclusionSettingsTest {
 			assertEquals(expected[i][1], D.materials().get(i).highLossDb());
 		}
 		assertEquals(new AcousticMedium("air", 415, 0, 0.05), D.media().get(0));
-		assertEquals(new AcousticMedium("water", 1_480_000, 0, 0.02), D.media().get(1));
-		assertEquals(new AcousticMedium("lava", 6_000_000, 3, 6), D.media().get(2));
+		assertEquals(new AcousticMedium("water", 1_480_000, 0, 0.02, 10, 12, 0.8), D.media().get(1));
+		assertEquals(new AcousticMedium("lava", 6_000_000, 3, 6, 20, 24, 0.9), D.media().get(2));
 		assertEquals(new AcousticMedium("vacuum", 0, 0, 0), D.media().get(3));
 		assertTrue(D.enabled());
 		assertEquals(60, D.maxLossDb());
@@ -165,5 +165,33 @@ class OcclusionSettingsTest {
 		OcclusionSettings s = with(D.media(), Map.of("ad_astra:moon", "vacuum"), D.materials());
 		assertEquals(D.medium("vacuum"), s.dimensionMedium("ad_astra:moon"));
 		assertEquals(D.air(), s.dimensionMedium("minecraft:overworld"));
+	}
+
+	@Test
+	void waterAndLavaChangeWhatTheListenerHears() {
+		AcousticMedium water = D.medium("water");
+		assertEquals(10, water.listenerLossDb());
+		assertEquals(12, water.listenerHighLossDb());
+		assertEquals(0.8, water.listenerBlur());
+		AcousticMedium lava = D.medium("lava");
+		assertEquals(20, lava.listenerLossDb());
+		assertEquals(24, lava.listenerHighLossDb());
+		assertEquals(0.9, lava.listenerBlur());
+		AcousticMedium air = D.medium("air");
+		assertEquals(0, air.listenerLossDb());
+		assertEquals(0, air.listenerHighLossDb());
+		assertEquals(0, air.listenerBlur());
+	}
+
+	@Test
+	void listenerPerceptionIsBounded() {
+		List<String> warnings = new ArrayList<>();
+		OcclusionSettings s = with(List.of(D.medium("air"), new AcousticMedium("goo", 1000, 0, 0, 99, -3, 1.5)),
+				Map.of(), D.materials()).clamped(warnings::add);
+		AcousticMedium goo = s.medium("goo");
+		assertEquals(60, goo.listenerLossDb());
+		assertEquals(0, goo.listenerHighLossDb());
+		assertEquals(1, goo.listenerBlur());
+		assertEquals(3, warnings.size(), warnings.toString());
 	}
 }

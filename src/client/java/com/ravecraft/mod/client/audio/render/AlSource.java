@@ -6,6 +6,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import org.jspecify.annotations.Nullable;
 import org.lwjgl.openal.AL10;
+import org.lwjgl.openal.EXTSourceRadius;
 
 /**
  * One OpenAL streaming source with its own small ring of buffers (4 × 100 ms) and an optional EFX low-pass filter.
@@ -19,14 +20,18 @@ final class AlSource {
 	private final int source;
 	private final int[] buffers;
 	private final int filter;
+	/** Whether the driver has AL_EXT_SOURCE_RADIUS (OpenAL Soft does): without it, no blur of direction. */
+	private final boolean radius;
 	private final Deque<Integer> free = new ArrayDeque<>();
 	private boolean paused;
 	private float lastHighGain = -1;
+	private float lastRadius = 0;
 
-	private AlSource(int source, int[] buffers, int filter) {
+	private AlSource(int source, int[] buffers, int filter, boolean radius) {
 		this.source = source;
 		this.buffers = buffers;
 		this.filter = filter;
+		this.radius = radius;
 		for (int buffer : buffers) {
 			free.add(buffer);
 		}
@@ -58,8 +63,9 @@ final class AlSource {
 		AL10.alSourcef(source, AL10.AL_ROLLOFF_FACTOR, 0f);
 		AL10.alSourcei(source, AL10.AL_LOOPING, AL10.AL_FALSE);
 		int filter = efx ? Efx.createLowpass() : 0;
+		boolean radius = AL10.alIsExtensionPresent("AL_EXT_SOURCE_RADIUS");
 		AL10.alGetError();
-		return new AlSource(source, buffers, filter);
+		return new AlSource(source, buffers, filter, radius);
 	}
 
 	/** Blocks queued but not played yet. */
@@ -110,6 +116,17 @@ final class AlSource {
 		if (filter != 0 && Math.abs(gain - lastHighGain) > 1e-3f) {
 			Efx.apply(source, filter, gain);
 			lastHighGain = gain;
+		}
+	}
+
+	/**
+	 * The source's radius: a listener inside it hears the sound from everywhere, and a radius approaching the
+	 * distance blurs the direction gradually. 0 is a point source. Ignored without AL_EXT_SOURCE_RADIUS.
+	 */
+	void radius(float r) {
+		if (radius && Math.abs(r - lastRadius) > 1e-3f) {
+			AL10.alSourcef(source, EXTSourceRadius.AL_SOURCE_RADIUS, r);
+			lastRadius = r;
 		}
 	}
 

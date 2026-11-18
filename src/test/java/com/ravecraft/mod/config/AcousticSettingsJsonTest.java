@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
+import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -152,7 +153,9 @@ class AcousticSettingsJsonTest {
 		OcclusionSettings d = OcclusionSettings.DEFAULT;
 		List<AcousticMaterial> materials = new ArrayList<>(d.materials());
 		materials.add(new AcousticMaterial("rubber", 25, 30));
-		OcclusionSettings custom = new OcclusionSettings(d.enabled(), d.maxLossDb(), d.media(), d.interfaceScale(),
+		List<AcousticMedium> media = new ArrayList<>(d.media());
+		media.add(new AcousticMedium("slime", 2_000_000, 1.5, 2.5, 7, 9, 0.5));
+		OcclusionSettings custom = new OcclusionSettings(d.enabled(), d.maxLossDb(), media, d.interfaceScale(),
 				d.interfaceHighRatio(), Map.of("ad_astra:moon", "vacuum"), materials, d.detours(), d.bendLossDb(),
 				d.bendHighLossDb());
 		AcousticSettings s = AcousticSettings.DEFAULT;

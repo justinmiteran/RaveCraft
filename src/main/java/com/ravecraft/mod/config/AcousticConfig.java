@@ -10,6 +10,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -51,10 +52,30 @@ public final class AcousticConfig {
 			return;
 		}
 		try (Reader in = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-			settings = AcousticSettingsJson.read(in, warning -> RaveCraft.LOGGER.warn("{}: {}", FILE_NAME, warning));
+			AcousticSettingsJson.Result result =
+					AcousticSettingsJson.read(in, warning -> RaveCraft.LOGGER.warn("{}: {}", FILE_NAME, warning));
+			settings = result.settings();
+			if (!result.complete()) {
+				rewrite(file);
+			}
 		} catch (IOException e) {
 			RaveCraft.LOGGER.warn("{}: unreadable ({}), using defaults", FILE_NAME, e.toString());
 			settings = AcousticSettings.DEFAULT;
+		}
+	}
+
+	/** Brings an incomplete file up to date: the old text is kept as {@code <name>.bak}, then the file is rewritten. */
+	private static void rewrite(Path file) {
+		Path backup = file.resolveSibling(file.getFileName() + ".bak");
+		try {
+			Files.copy(file, backup, StandardCopyOption.REPLACE_EXISTING);
+			try (Writer out = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+				AcousticSettingsJson.write(settings, out);
+			}
+			RaveCraft.LOGGER.info("{}: added the missing settings, the previous file is kept as {}", FILE_NAME,
+					backup.getFileName());
+		} catch (IOException e) {
+			RaveCraft.LOGGER.warn("{}: cannot update the file: {}", FILE_NAME, e.toString());
 		}
 	}
 }

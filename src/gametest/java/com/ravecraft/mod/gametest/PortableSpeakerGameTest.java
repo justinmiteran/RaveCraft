@@ -29,6 +29,8 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.material.Fluids;
 
 public class PortableSpeakerGameTest {
 	/** The mock player only overrides gameMode(), so abilities must be set for hasInfiniteMaterials() to hold. */
@@ -272,6 +274,44 @@ public class PortableSpeakerGameTest {
 	@GameTest
 	public void speakerDoesNotStack(GameTestHelper h) {
 		h.assertValueEqual(new ItemStack(ModBlocks.PORTABLE_SPEAKER).getMaxStackSize(), 1, "max stack size");
+		h.succeed();
+	}
+
+	/** Places a fresh speaker item on the stone floor below {@code pos}, as a survival player would. */
+	private static void placeSpeaker(GameTestHelper h, BlockPos pos) {
+		ItemStack stack = new ItemStack(ModBlocks.PORTABLE_SPEAKER);
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+		h.setBlock(pos.below(), Blocks.STONE);
+		h.placeAt(player, stack, pos.below(), Direction.UP);
+	}
+
+	@GameTest
+	public void placingInWaterWaterlogsSpeaker(GameTestHelper h) {
+		BlockPos pos = new BlockPos(1, 2, 1);
+		h.setBlock(pos, Blocks.WATER);
+		placeSpeaker(h, pos);
+		h.assertBlockProperty(pos, BlockStateProperties.WATERLOGGED, true);
+		h.assertTrue(h.getBlockState(pos).getFluidState().is(Fluids.WATER), "speaker holds water");
+		h.succeed();
+	}
+
+	@GameTest
+	public void placingInAirLeavesSpeakerDry(GameTestHelper h) {
+		BlockPos pos = new BlockPos(1, 2, 1);
+		placeSpeaker(h, pos);
+		h.assertBlockProperty(pos, BlockStateProperties.WATERLOGGED, false);
+		h.assertTrue(h.getBlockState(pos).getFluidState().isEmpty(), "dry speaker has no fluid");
+		h.succeed();
+	}
+
+	@GameTest
+	public void breakingWaterloggedSpeakerLeavesWater(GameTestHelper h) {
+		BlockPos pos = new BlockPos(1, 2, 1);
+		h.setBlock(pos, Blocks.WATER);
+		placeSpeaker(h, pos);
+		h.getLevel().destroyBlock(h.absolutePos(pos), true);
+		h.assertBlockPresent(Blocks.WATER, pos);
 		h.succeed();
 	}
 }

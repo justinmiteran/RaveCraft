@@ -31,21 +31,21 @@ public record OcclusionSettings(boolean enabled, double maxLossDb, List<Acoustic
 			List.of("foliage", "glass", "wood", "snow", "earth", "stone", "metal", "wool");
 
 	private static final List<AcousticMaterial> BASE_DEFAULTS = List.of(
-			new AcousticMaterial("foliage", 2, 6),
-			new AcousticMaterial("glass", 5, 12),
-			new AcousticMaterial("wood", 8, 18),
-			new AcousticMaterial("snow", 10, 24),
-			new AcousticMaterial("earth", 12, 24),
-			new AcousticMaterial("stone", 15, 30),
-			new AcousticMaterial("metal", 18, 20),
-			new AcousticMaterial("wool", 20, 36));
-	private static final AcousticMedium AIR = new AcousticMedium("air", 415, 0, 0.05);
+			new AcousticMaterial("foliage", 2, 6, 0.5),
+			new AcousticMaterial("glass", 5, 12, 0.03),
+			new AcousticMaterial("wood", 8, 18, 0.1),
+			new AcousticMaterial("snow", 10, 24, 0.4),
+			new AcousticMaterial("earth", 12, 24, 0.3),
+			new AcousticMaterial("stone", 15, 30, 0.02),
+			new AcousticMaterial("metal", 18, 20, 0.05),
+			new AcousticMaterial("wool", 20, 36, 0.7));
+	private static final AcousticMedium AIR = new AcousticMedium("air", 415, 0, 0.05, 0, 0, 0, 1);
 
 	public static final OcclusionSettings DEFAULT = new OcclusionSettings(true, 60, List.of(
 			AIR,
-			new AcousticMedium("water", 1_480_000, 0, 0.02, 10, 12, 0.8),
-			new AcousticMedium("lava", 6_000_000, 3, 6, 20, 24, 0.9),
-			new AcousticMedium("vacuum", 0, 0, 0)),
+			new AcousticMedium("water", 1_480_000, 0, 0.02, 10, 12, 0.8, 0.01),
+			new AcousticMedium("lava", 6_000_000, 3, 6, 20, 24, 0.9, 0.05),
+			new AcousticMedium("vacuum", 0, 0, 0, 0, 0, 0, 1)),
 			0.67, 0.5, Map.of(), BASE_DEFAULTS, true, 6, 10);
 
 	private static final Pattern NAME = Pattern.compile("[a-z0-9_]{1," + MAX_NAME + "}");
@@ -95,7 +95,8 @@ public record OcclusionSettings(boolean enabled, double maxLossDb, List<Acoustic
 					bound(p + "highLossDbPerBlock", m.highLossDbPerBlock(), 0, 40, warn),
 					bound(p + "listenerLossDb", m.listenerLossDb(), 0, 60, warn),
 					bound(p + "listenerHighLossDb", m.listenerHighLossDb(), 0, 40, warn),
-					bound(p + "listenerBlur", m.listenerBlur(), 0, 1, warn)));
+					bound(p + "listenerBlur", m.listenerBlur(), 0, 1, warn),
+					bound(p + "surfaceAbsorption", m.surfaceAbsorption(), 0, 1, warn)));
 		}
 		keptMedia = capped("occlusion.media", keptMedia, MAX_MEDIA, List.of(AIR), AcousticMedium::name, warn);
 
@@ -108,7 +109,8 @@ public record OcclusionSettings(boolean enabled, double maxLossDb, List<Acoustic
 			String p = "occlusion.materials." + m.name() + ".";
 			keptMaterials.add(new AcousticMaterial(m.name(),
 					bound(p + "lossDb", m.lossDb(), 0, 40, warn),
-					bound(p + "highLossDb", m.highLossDb(), 0, 40, warn)));
+					bound(p + "highLossDb", m.highLossDb(), 0, 40, warn),
+					bound(p + "absorption", m.absorption(), 0, 1, warn)));
 		}
 		keptMaterials = capped("occlusion.materials", keptMaterials, MAX_MATERIALS, BASE_DEFAULTS,
 				AcousticMaterial::name, warn);

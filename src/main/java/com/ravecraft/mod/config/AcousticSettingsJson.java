@@ -127,7 +127,8 @@ public final class AcousticSettingsJson {
 					r.number(m, "highLossDbPerBlock", base.highLossDbPerBlock()),
 					r.number(m, "listenerLossDb", base.listenerLossDb()),
 					r.number(m, "listenerHighLossDb", base.listenerHighLossDb()),
-					r.number(m, "listenerBlur", base.listenerBlur())));
+					r.number(m, "listenerBlur", base.listenerBlur()),
+					r.number(m, "surfaceAbsorption", base.surfaceAbsorption())));
 		}
 		for (AcousticMedium m : defaultMedia) {
 			if (media.stream().noneMatch(x -> x.name().equals(m.name()))) {
@@ -142,7 +143,8 @@ public final class AcousticSettingsJson {
 					new AcousticMaterial(e.getKey(), 0, 0));
 			JsonObject m = e.getValue().isJsonObject() ? e.getValue().getAsJsonObject() : new JsonObject();
 			materials.add(new AcousticMaterial(e.getKey(), r.number(m, "lossDb", base.lossDb()),
-					r.number(m, "highLossDb", base.highLossDb())));
+					r.number(m, "highLossDb", base.highLossDb()),
+					r.number(m, "absorption", base.absorption())));
 		}
 		for (AcousticMaterial m : d.materials()) {
 			if (materials.stream().noneMatch(x -> x.name().equals(m.name()))) {
@@ -263,6 +265,8 @@ public final class AcousticSettingsJson {
 				      //     hears every speaker. A human ear underwater hears through the skull: quieter
 				      //     (listenerLossDb, 0 to 60), duller (listenerHighLossDb, extra loss at 4 kHz, 0 to 40) and
 				      //     without direction (listenerBlur: 0 sharp, 1 the sound seems to come from everywhere).
+				      //   surfaceAbsorption: share of the sound absorbed by the surface of this medium seen from
+				      //     another one, for the room reverb (water reflects, open air swallows). Bounds: 0 to 1.
 				""".formatted(o.enabled(), n(o.maxLossDb())));
 		for (int i = 0; i < o.media().size(); i++) {
 			AcousticMedium m = o.media().get(i);
@@ -271,7 +275,8 @@ public final class AcousticSettingsJson {
 					.append(", \"highLossDbPerBlock\": ").append(n(m.highLossDbPerBlock()))
 					.append(",\n        \"listenerLossDb\": ").append(n(m.listenerLossDb()))
 					.append(", \"listenerHighLossDb\": ").append(n(m.listenerHighLossDb()))
-					.append(", \"listenerBlur\": ").append(n(m.listenerBlur())).append(" }")
+					.append(", \"listenerBlur\": ").append(n(m.listenerBlur()))
+					.append(", \"surfaceAbsorption\": ").append(n(m.surfaceAbsorption())).append(" }")
 					.append(i < o.media().size() - 1 ? ",\n" : "\n");
 		}
 		b.append("""
@@ -295,11 +300,14 @@ public final class AcousticSettingsJson {
 				    "materials": {
 				      //   lossDb: loss of the whole sound for one block of it. Bounds: 0 to 40.
 				      //   highLossDb: extra treble loss for one block of it, on top of lossDb. Bounds: 0 to 40.
+				      //   absorption: share of the sound a surface of it absorbs instead of reflecting into the room,
+				      //     for the room reverb (stone rings, wool deadens). Bounds: 0 to 1.
 				""".formatted(n(o.interfaceScale()), n(o.interfaceHighRatio()), dimensionsText(o.dimensions())));
 		for (int i = 0; i < o.materials().size(); i++) {
 			AcousticMaterial m = o.materials().get(i);
 			b.append("      ").append(quote(m.name())).append(": { \"lossDb\": ").append(n(m.lossDb()))
-					.append(", \"highLossDb\": ").append(n(m.highLossDb())).append(" }")
+					.append(", \"highLossDb\": ").append(n(m.highLossDb()))
+					.append(", \"absorption\": ").append(n(m.absorption())).append(" }")
 					.append(i < o.materials().size() - 1 ? ",\n" : "\n");
 		}
 		b.append("""

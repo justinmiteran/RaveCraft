@@ -31,10 +31,10 @@ class OcclusionSettingsTest {
 			assertEquals(expected[i][0], D.materials().get(i).lossDb());
 			assertEquals(expected[i][1], D.materials().get(i).highLossDb());
 		}
-		assertEquals(new AcousticMedium("air", 415, 0, 0.05), D.media().get(0));
-		assertEquals(new AcousticMedium("water", 1_480_000, 0, 0.02, 10, 12, 0.8), D.media().get(1));
-		assertEquals(new AcousticMedium("lava", 6_000_000, 3, 6, 20, 24, 0.9), D.media().get(2));
-		assertEquals(new AcousticMedium("vacuum", 0, 0, 0), D.media().get(3));
+		assertEquals(new AcousticMedium("air", 415, 0, 0.05, 0, 0, 0, 1), D.media().get(0));
+		assertEquals(new AcousticMedium("water", 1_480_000, 0, 0.02, 10, 12, 0.8, 0.01), D.media().get(1));
+		assertEquals(new AcousticMedium("lava", 6_000_000, 3, 6, 20, 24, 0.9, 0.05), D.media().get(2));
+		assertEquals(new AcousticMedium("vacuum", 0, 0, 0, 0, 0, 0, 1), D.media().get(3));
 		assertTrue(D.enabled());
 		assertEquals(60, D.maxLossDb());
 		assertEquals(0.67, D.interfaceScale());
@@ -193,5 +193,27 @@ class OcclusionSettingsTest {
 		assertEquals(0, goo.listenerHighLossDb());
 		assertEquals(1, goo.listenerBlur());
 		assertEquals(3, warnings.size(), warnings.toString());
+	}
+
+	@Test
+	void materialsAndMediaAbsorbAsSpecified() {
+		double[] materials = {0.50, 0.03, 0.10, 0.40, 0.30, 0.02, 0.05, 0.70};
+		for (int i = 0; i < 8; i++) {
+			assertEquals(materials[i], D.materials().get(i).absorption(), D.materials().get(i).name());
+		}
+		assertEquals(1, D.medium("air").surfaceAbsorption());
+		assertEquals(0.01, D.medium("water").surfaceAbsorption());
+		assertEquals(0.05, D.medium("lava").surfaceAbsorption());
+		assertEquals(1, D.medium("vacuum").surfaceAbsorption());
+	}
+
+	@Test
+	void absorptionIsBounded() {
+		List<String> warnings = new ArrayList<>();
+		OcclusionSettings s = with(List.of(D.medium("air"), new AcousticMedium("goo", 1000, 0, 0, 0, 0, 0, -0.2)),
+				Map.of(), List.of(new AcousticMaterial("stone", 15, 30, 1.5))).clamped(warnings::add);
+		assertEquals(0, s.medium("goo").surfaceAbsorption());
+		assertEquals(1, s.materials().stream().filter(m -> m.name().equals("stone")).findFirst().orElseThrow().absorption());
+		assertEquals(2, warnings.size(), warnings.toString());
 	}
 }

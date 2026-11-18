@@ -110,7 +110,7 @@ class AcousticSettingsJsonTest {
 				""");
 		OcclusionSettings o = r.settings().occlusion();
 		assertEquals(40, o.maxLossDb());
-		assertEquals(new AcousticMaterial("stone", 10, 5), material(o, "stone"));
+		assertEquals(new AcousticMaterial("stone", 10, 5, 0.02), material(o, "stone"));
 		assertEquals(new AcousticMaterial("rubber", 25, 30), material(o, "rubber"));
 		assertEquals("vacuum", o.dimensionMedium("ad_astra:moon").name());
 		assertFalse(r.complete());
@@ -152,9 +152,9 @@ class AcousticSettingsJsonTest {
 	void customListsRoundTrip() {
 		OcclusionSettings d = OcclusionSettings.DEFAULT;
 		List<AcousticMaterial> materials = new ArrayList<>(d.materials());
-		materials.add(new AcousticMaterial("rubber", 25, 30));
+		materials.add(new AcousticMaterial("rubber", 25, 30, 0.6));
 		List<AcousticMedium> media = new ArrayList<>(d.media());
-		media.add(new AcousticMedium("slime", 2_000_000, 1.5, 2.5, 7, 9, 0.5));
+		media.add(new AcousticMedium("slime", 2_000_000, 1.5, 2.5, 7, 9, 0.5, 0.3));
 		OcclusionSettings custom = new OcclusionSettings(d.enabled(), d.maxLossDb(), media, d.interfaceScale(),
 				d.interfaceHighRatio(), Map.of("ad_astra:moon", "vacuum"), materials, d.detours(), d.bendLossDb(),
 				d.bendHighLossDb());
@@ -166,5 +166,18 @@ class AcousticSettingsJsonTest {
 		AcousticSettingsJson.Result r = result(out.toString());
 		assertEquals(withCustom, r.settings());
 		assertTrue(r.complete());
+	}
+
+	@Test
+	void fileWithoutAbsorptionIsIncompleteAndTakesDefaults() {
+		AcousticSettingsJson.Result r = result("""
+				{ "occlusion": {
+				  "media": { "water": { "impedance": 1480000, "lossDbPerBlock": 0, "highLossDbPerBlock": 0.02 } },
+				  "materials": { "stone": { "lossDb": 15, "highLossDb": 30 } } } }
+				""");
+		OcclusionSettings o = r.settings().occlusion();
+		assertEquals(0.02, material(o, "stone").absorption());
+		assertEquals(0.01, o.medium("water").surfaceAbsorption());
+		assertFalse(r.complete());
 	}
 }

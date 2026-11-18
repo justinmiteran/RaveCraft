@@ -32,6 +32,7 @@ public record AcousticSettingsPayload(AcousticSettings settings) implements Cust
 			ByteBufCodecs.stringUtf8(OcclusionSettings.MAX_NAME), AcousticMaterial::name,
 			ByteBufCodecs.DOUBLE, AcousticMaterial::lossDb,
 			ByteBufCodecs.DOUBLE, AcousticMaterial::highLossDb,
+			ByteBufCodecs.DOUBLE, AcousticMaterial::absorption,
 			AcousticMaterial::new);
 	private static final StreamCodec<ByteBuf, AcousticMedium> MEDIUM = StreamCodec.composite(
 			ByteBufCodecs.stringUtf8(OcclusionSettings.MAX_NAME), AcousticMedium::name,
@@ -41,6 +42,7 @@ public record AcousticSettingsPayload(AcousticSettings settings) implements Cust
 			ByteBufCodecs.DOUBLE, AcousticMedium::listenerLossDb,
 			ByteBufCodecs.DOUBLE, AcousticMedium::listenerHighLossDb,
 			ByteBufCodecs.DOUBLE, AcousticMedium::listenerBlur,
+			ByteBufCodecs.DOUBLE, AcousticMedium::surfaceAbsorption,
 			AcousticMedium::new);
 	private static final StreamCodec<ByteBuf, Map.Entry<String, String>> DIMENSION = StreamCodec.composite(
 			ByteBufCodecs.stringUtf8(OcclusionSettings.MAX_DIMENSION_ID), Map.Entry::getKey,

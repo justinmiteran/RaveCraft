@@ -9,7 +9,7 @@ Le son des enceintes est étouffé par ce qui se trouve entre l'enceinte et l'au
 
 ### Critères de réussite
 - À travers un mur de pierre, on entend la fête « de l'autre côté » : environ −15 dB global, aigus presque coupés. Trois ou quatre murs donnent le silence.
-- Ouvrir une porte pendant la lecture rend le son plus clair et plus fort, sans saut ni clic, en moins de 250 ms.
+- Ouvrir une porte pendant la lecture rend le son plus clair et plus fort, sans saut ni clic, en une demi-seconde environ (recalcul 4 fois par seconde, puis lissage sur 200 ms).
 - Une enceinte dans une pièce fermée par une porte ouverte s'entend par la porte (détour) et non comme si les murs n'existaient pas.
 - Sous l'eau, la musique de la surface devient lointaine et sourde ; deux joueurs sous l'eau s'entendent normalement.
 - Dans une dimension sans air (mod spatial configuré en vide), aucune enceinte ne s'entend.
@@ -210,6 +210,9 @@ Chaque réglage est précédé d'un commentaire dans le fichier écrit, comme en
 - `/reload` (tags modifiés) ou nouveaux réglages reçus : cache de `BlockAcoustics` vidé, tous les flux recalculés dès que le budget le permet.
 - Changement de dimension : les flux sont déjà détachés par 4a ; le milieu de dimension est relu à chaque tracé.
 - Sound Physics Remastered (`sound_physics_remastered`) chargé : ligne d'information dans le log, rien d'autre.
+- Bloc solide sans fluide (pierre sous l'eau, enceinte non waterloggable immergée) : il n'a pas de milieu propre et garde le milieu courant, sans interface. Une extrémité dans un tel bloc prend le premier vrai milieu rencontré sur le segment direct.
+- Enceinte jamais encore tracée (arrivée, retour à portée) : muette jusqu'à son premier tracé, soit un tick au plus. Si le budget est épuisé, elle reçoit au moins le tracé en ligne droite.
+- Bloc d'un autre mod dont la forme de collision lève une exception hors du monde : traité comme un cube plein de sa matière, une ligne dans le log par bloc. Une erreur pendant un tracé est journalisée et la valeur précédente est gardée ; le tick ne plante jamais.
 
 ## 9. Tests
 

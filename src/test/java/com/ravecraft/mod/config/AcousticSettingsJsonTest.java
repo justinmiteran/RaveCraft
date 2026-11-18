@@ -123,6 +123,12 @@ class AcousticSettingsJsonTest {
 	}
 
 	@Test
+	void migratedOldAirKeyKeepsItsOldRange() {
+		assertEquals(1, result("{\"airAbsorptionDbPerBlock\": 5}").settings().occlusion().air().highLossDbPerBlock());
+		assertEquals(0, result("{\"airAbsorptionDbPerBlock\": -2}").settings().occlusion().air().highLossDbPerBlock());
+	}
+
+	@Test
 	void mediaAirWinsOverTheOldKey() {
 		AcousticSettingsJson.Result r = result("""
 				{ "airAbsorptionDbPerBlock": 0.1,

@@ -106,8 +106,13 @@ public final class AcousticSettingsJson {
 		List<AcousticMedium> defaultMedia = new ArrayList<>(d.media());
 		boolean fileDefinesAir = o.has("media") && o.get("media").isJsonObject() && o.getAsJsonObject("media").has("air");
 		if (root.has(OLD_AIR_KEY) && !fileDefinesAir) {
-			// Migration: the old key becomes the treble loss of the air medium, unless the file defines air itself.
-			double old = root.get(OLD_AIR_KEY).getAsDouble();
+			// Migration: the old key becomes the treble loss of the air medium, unless the file defines air itself. It
+			// keeps the 4a range [0, 1], narrower than a medium's.
+			double raw = root.get(OLD_AIR_KEY).getAsDouble();
+			double old = Double.isNaN(raw) ? 0 : Math.clamp(raw, 0, 1);
+			if (old != raw) {
+				warn.accept(OLD_AIR_KEY + " = " + raw + " is out of [0, 1], using " + old);
+			}
 			defaultMedia.replaceAll(m -> m.name().equals("air")
 					? new AcousticMedium(m.name(), m.impedance(), m.lossDbPerBlock(), old) : m);
 		}

@@ -9,6 +9,10 @@ import com.ravecraft.mod.core.acoustics.SourceSelector;
 import com.ravecraft.mod.core.acoustics.occlusion.ListenerPerception;
 import com.ravecraft.mod.core.acoustics.occlusion.LossSmoother;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionGate;
+import com.ravecraft.mod.core.acoustics.reverb.Echo;
+import com.ravecraft.mod.core.acoustics.reverb.EchoSettings;
+import com.ravecraft.mod.core.acoustics.reverb.ReverbParams;
+import com.ravecraft.mod.core.acoustics.reverb.SendRoute;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
 import java.nio.ByteBuffer;
@@ -42,6 +46,12 @@ public final class AcousticRenderer {
 	private static final long SOURCE_RETRY_MS = 5_000;
 	/** A longer gap between two steps (a stall) does not move the occlusion ramps further. */
 	private static final double MAX_RAMP_STEP_MS = 100;
+	/** The reverb slots glide toward their targets at most this often. */
+	private static final long GLIDE_PERIOD_MS = 100;
+	/** A glide covers {@code elapsed / GLIDE_MS} of the way to the target. */
+	private static final double GLIDE_MS = 1000;
+	/** Reverb slots: the listener's space (L), then two speaker spaces (S1, S2). */
+	private static final int REVERB_SLOTS = 3;
 
 	private static final Map<Integer, RenderStream> STREAMS = new ConcurrentHashMap<>();
 
@@ -53,6 +63,8 @@ public final class AcousticRenderer {
 	private static volatile int maxSources = 8;
 	private static volatile boolean efxWanted = true;
 	private static volatile boolean paused;
+	/** The reverb and echo every slot moves toward; published whole by the reverb scheduler. */
+	private static volatile ReverbTargets reverbTargets = ReverbTargets.SILENT;
 
 	private static volatile @Nullable Worker worker;
 
@@ -126,6 +138,15 @@ public final class AcousticRenderer {
 		head = perception;
 	}
 
+	/**
+	 * Client thread: what the listener reverb, the two speaker-space reverbs and the echo should become. Published
+	 * as one snapshot, so the audio thread never mixes two updates.
+	 */
+	static void reverbTargets(ReverbParams listener, ReverbParams s1, ReverbParams s2, Echo echo,
+			EchoSettings echoSettings) {
+		reverbTargets = new ReverbTargets(listener, s1, s2, echo, echoSettings);
+	}
+
 	/** Where the listener was last placed. */
 	static Vec3 listener() {
 		return listener;
@@ -142,6 +163,21 @@ public final class AcousticRenderer {
 				* RaveCraftOptions.volume().get());
 		maxSources = RaveCraftOptions.maxSources().get();
 		efxWanted = RaveCraftOptions.acousticEffects().get();
+	}
+
+	/** One consistent set of reverb targets: L, S1, S2 and the echo. */
+	private record ReverbTargets(ReverbParams listener, ReverbParams s1, ReverbParams s2, Echo echo,
+			EchoSettings echoSettings) {
+		static final ReverbTargets SILENT = new ReverbTargets(ReverbParams.SILENT, ReverbParams.SILENT,
+				ReverbParams.SILENT, Echo.NONE, EchoSettings.DEFAULT);
+
+		ReverbParams slot(int index) {
+			return switch (index) {
+				case 1 -> s1;
+				case 2 -> s2;
+				default -> listener;
+			};
+		}
 	}
 
 	/** The audio thread and everything it owns: sources, scratch buffers. */
@@ -165,6 +201,17 @@ public final class AcousticRenderer {
 		private @Nullable AcousticSettings configured;
 		/** When the previous step ran, for the occlusion ramps; negative before the first one. */
 		private long lastStep = -1;
+		/** Auxiliary sends per source (0 without EFX): send 0 carries the reverb, send 1 the echo. */
+		private int sends;
+		/** L, S1, S2; an entry is null when its slot could not be created. */
+		private final Efx.@Nullable Slot[] reverbSlots = new Efx.Slot[REVERB_SLOTS];
+		/** The reverb each slot currently plays, gliding toward its target. */
+		private final ReverbParams[] reverbNow = {ReverbParams.SILENT, ReverbParams.SILENT, ReverbParams.SILENT};
+		private Efx.@Nullable Slot echoSlot;
+		private Echo echoNow = Echo.NONE;
+		private EchoSettings echoSettingsNow = EchoSettings.DEFAULT;
+		/** When the slots last glided; negative before the first glide. */
+		private long lastGlide = -1;
 
 		Worker() {
 			super("RaveCraft audio");
@@ -199,6 +246,8 @@ public final class AcousticRenderer {
 			efx = Efx.detect();
 			if (!efx) {
 				RaveCraft.LOGGER.warn("OpenAL EFX is not available: speakers play without air absorption or muffled treble");
+			} else {
+				createSlots();
 			}
 			try {
 				while (running) {
@@ -292,6 +341,8 @@ public final class AcousticRenderer {
 
 			float volume = playerVolume;
 			boolean filter = efxWanted;
+			boolean reverb = efx && sends >= 1 && filter && settings.reverb().enabled();
+			glide(reverb ? reverbTargets : ReverbTargets.SILENT, now);
 			for (RenderStream stream : streams) {
 				AlSource source = stream.source;
 				if (source == null) {
@@ -311,6 +362,83 @@ public final class AcousticRenderer {
 				source.highGain(filter ? (float) Propagation.highFrequencyGain(settings.airAbsorptionDbPerBlock(),
 						stream.distance) : 1f);
 				source.radius(filter ? (float) (headBlur * stream.distance) : 0f);
+				route(stream, source, reverb, dt);
+			}
+		}
+
+		/** Creates L, S1, S2 and, with a second send, E. A slot that cannot be created is logged once and skipped. */
+		private void createSlots() {
+			sends = Efx.maxSends();
+			if (sends < 1) {
+				RaveCraft.LOGGER.warn("OpenAL has no auxiliary sends: speakers play without reverb");
+				return;
+			}
+			int missing = 0;
+			for (int i = 0; i < REVERB_SLOTS; i++) {
+				reverbSlots[i] = Efx.createReverbSlot();
+				if (reverbSlots[i] == null) {
+					missing++;
+				}
+			}
+			if (sends >= 2) {
+				echoSlot = Efx.createEchoSlot();
+				if (echoSlot == null) {
+					missing++;
+				}
+			} else {
+				RaveCraft.LOGGER.info("OpenAL has a single auxiliary send: speakers play without distant echoes");
+			}
+			if (missing > 0) {
+				RaveCraft.LOGGER.warn("OpenAL refused {} reverb/echo effect slot(s): those spaces play dry", missing);
+			}
+		}
+
+		/**
+		 * Moves every slot toward its target, at most every {@link #GLIDE_PERIOD_MS}, by the share of the way the
+		 * elapsed time covers; the echo is loaded as soon as it changes.
+		 */
+		private void glide(ReverbTargets targets, long now) {
+			if (lastGlide < 0) {
+				lastGlide = now;
+			} else if (now - lastGlide >= GLIDE_PERIOD_MS) {
+				double fraction = (now - lastGlide) / GLIDE_MS;
+				lastGlide = now;
+				for (int i = 0; i < REVERB_SLOTS; i++) {
+					Efx.Slot slot = reverbSlots[i];
+					ReverbParams next = reverbNow[i].toward(targets.slot(i), fraction);
+					if (slot != null && !next.equals(reverbNow[i])) {
+						Efx.applyReverb(slot, next);
+					}
+					reverbNow[i] = next;
+				}
+			}
+			Efx.Slot echo = echoSlot;
+			if (echo != null && (!targets.echo().equals(echoNow) || !targets.echoSettings().equals(echoSettingsNow))) {
+				Efx.applyEcho(echo, targets.echo(), targets.echoSettings());
+			}
+			echoNow = targets.echo();
+			echoSettingsNow = targets.echoSettings();
+		}
+
+		/**
+		 * The stream's sends: send 0 into the reverb slot of its space (faded across slot changes), send 1 into the
+		 * echo. All detached while reverb is off, and a send whose slot is missing stays detached.
+		 */
+		private void route(RenderStream stream, AlSource source, boolean reverb, double dt) {
+			if (!efx || sends < 1) {
+				return;
+			}
+			int target = stream.reverbSlot;
+			stream.route.step(target >= 0 && target < REVERB_SLOTS ? target : SendRoute.LISTENER, dt);
+			if (!reverb) {
+				source.detachSends();
+				return;
+			}
+			Efx.Slot slot = reverbSlots[stream.route.slot()];
+			source.send(0, slot == null ? 0 : slot.slot(), (float) stream.route.gain());
+			if (sends >= 2) {
+				Efx.Slot echo = echoSlot;
+				source.send(1, echo == null ? 0 : echo.slot(), 1f);
 			}
 		}
 
@@ -399,6 +527,19 @@ public final class AcousticRenderer {
 			held.clear();
 			free.forEach(AlSource::delete);
 			free.clear();
+			// Every send was detached (by delete) before its slot goes.
+			for (int i = 0; i < REVERB_SLOTS; i++) {
+				Efx.Slot slot = reverbSlots[i];
+				if (slot != null) {
+					Efx.deleteSlot(slot);
+					reverbSlots[i] = null;
+				}
+			}
+			Efx.Slot echo = echoSlot;
+			if (echo != null) {
+				Efx.deleteSlot(echo);
+				echoSlot = null;
+			}
 		}
 	}
 }

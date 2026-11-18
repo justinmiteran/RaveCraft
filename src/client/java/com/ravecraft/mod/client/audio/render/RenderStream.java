@@ -7,6 +7,7 @@ import com.ravecraft.mod.core.acoustics.Equalizer;
 import com.ravecraft.mod.core.acoustics.VirtualPacer;
 import com.ravecraft.mod.core.acoustics.occlusion.LossSmoother;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionFilter;
+import com.ravecraft.mod.core.acoustics.reverb.SendRoute;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
@@ -44,6 +45,9 @@ final class RenderStream {
 	volatile double occlusionHighLossDb;
 	volatile boolean occlusionKnown;
 
+	/** Which reverb slot this stream's space feeds (0 = listener, 1 = S1, 2 = S2); written by the reverb scheduler. */
+	volatile int reverbSlot = SendRoute.LISTENER;
+
 	/** Written on the audio thread each step, read by the occlusion scheduler to trace the loudest streams first. */
 	volatile double heardGain;
 	/** Client thread only: {@code heardGain} as the scheduler read it before sorting, stable during the sort. */
@@ -54,6 +58,8 @@ final class RenderStream {
 	final OcclusionFilter occlusionFilter = new OcclusionFilter(StreamFormat.SAMPLE_RATE);
 	final VirtualPacer pacer;
 	@Nullable AlSource source;
+	/** Fades the reverb send between slots when {@code reverbSlot} changes. */
+	final SendRoute route = new SendRoute();
 	/** This step's distance to the listener, and its gain (propagation, then occlusion). */
 	double distance;
 	double gain;

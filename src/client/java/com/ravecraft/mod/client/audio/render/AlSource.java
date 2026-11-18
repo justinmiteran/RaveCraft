@@ -6,16 +6,20 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import org.jspecify.annotations.Nullable;
 import org.lwjgl.openal.AL10;
+import org.lwjgl.openal.EXTEfx;
 import org.lwjgl.openal.EXTSourceRadius;
 
 /**
- * One OpenAL streaming source with its own small ring of buffers (4 × 100 ms) and an optional EFX low-pass filter.
+ * One OpenAL streaming source with its own small ring of buffers (4 × 100 ms), an optional EFX low-pass filter and
+ * up to two auxiliary sends (reverb, echo).
  * World-positioned, no OpenAL distance attenuation: the gain comes from RaveCraft's propagation model. Audio
  * thread only.
  */
 final class AlSource {
 	private static final int BUFFERS = 4;
 	private static final int AL_DISTANCE_MODEL = 0xD000;
+	/** Auxiliary sends this class drives: 0 the reverb, 1 the echo. */
+	private static final int SENDS = 2;
 
 	private final int source;
 	private final int[] buffers;
@@ -26,6 +30,10 @@ final class AlSource {
 	private boolean paused;
 	private float lastHighGain = -1;
 	private float lastRadius = 0;
+	/** Per auxiliary send: its low-pass filter (only its overall gain is used; 0 if none), slot and gain. */
+	private final int[] sendFilters = new int[SENDS];
+	private final int[] sendSlots = new int[SENDS];
+	private final float[] sendGains = new float[SENDS];
 
 	private AlSource(int source, int[] buffers, int filter, boolean radius) {
 		this.source = source;
@@ -77,8 +85,9 @@ final class AlSource {
 		return BUFFERS - free.size();
 	}
 
-	/** Stops and empties the queue, ready for another stream. */
+	/** Stops, detaches the sends and empties the queue, ready for another stream. */
 	void reset() {
+		detachSends();
 		AL10.alSourceStop(source);
 		AL10.alSourcei(source, AL10.AL_BUFFER, 0);
 		free.clear();
@@ -130,6 +139,50 @@ final class AlSource {
 		}
 	}
 
+	/**
+	 * Routes auxiliary send {@code index} into effect slot {@code slotId} at {@code gain}; slot 0 detaches it.
+	 * Skips the AL calls when nothing changed. Without EFX (no direct filter), sends are never used.
+	 */
+	void send(int index, int slotId, float gain) {
+		if (index < 0 || index >= SENDS) {
+			return;
+		}
+		if (slotId == 0) {
+			if (sendSlots[index] != 0) {
+				Efx.send(source, index, EXTEfx.AL_EFFECTSLOT_NULL, EXTEfx.AL_FILTER_NULL);
+				sendSlots[index] = 0;
+			}
+			return;
+		}
+		if (slotId == sendSlots[index] && Math.abs(gain - sendGains[index]) <= 1e-3f) {
+			return;
+		}
+		if (sendFilters[index] == 0) {
+			sendFilters[index] = Efx.createLowpass();
+		}
+		int filter = sendFilters[index];
+		if (filter != 0) {
+			Efx.sendGain(filter, gain);
+			Efx.send(source, index, slotId, filter);
+		} else if (gain > 1e-3f) {
+			// No filter to carry the gain: the send plays at full level rather than not at all.
+			Efx.send(source, index, slotId, EXTEfx.AL_FILTER_NULL);
+		} else {
+			Efx.send(source, index, EXTEfx.AL_EFFECTSLOT_NULL, EXTEfx.AL_FILTER_NULL);
+			sendSlots[index] = 0;
+			return;
+		}
+		sendSlots[index] = slotId;
+		sendGains[index] = gain;
+	}
+
+	/** Detaches every auxiliary send still routed somewhere. */
+	void detachSends() {
+		for (int i = 0; i < SENDS; i++) {
+			send(i, 0, 0f);
+		}
+	}
+
 	void pause() {
 		paused = true;
 		AL10.alSourcePause(source);
@@ -143,12 +196,18 @@ final class AlSource {
 	}
 
 	void delete() {
+		detachSends();
 		AL10.alSourceStop(source);
 		AL10.alSourcei(source, AL10.AL_BUFFER, 0);
 		AL10.alDeleteSources(source);
 		AL10.alDeleteBuffers(buffers);
 		if (filter != 0) {
 			Efx.delete(filter);
+		}
+		for (int sendFilter : sendFilters) {
+			if (sendFilter != 0) {
+				Efx.delete(sendFilter);
+			}
 		}
 		AL10.alGetError();
 	}

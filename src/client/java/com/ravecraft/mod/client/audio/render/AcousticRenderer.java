@@ -12,6 +12,7 @@ import com.ravecraft.mod.core.acoustics.occlusion.OcclusionGate;
 import com.ravecraft.mod.core.acoustics.reverb.Echo;
 import com.ravecraft.mod.core.acoustics.reverb.EchoSettings;
 import com.ravecraft.mod.core.acoustics.reverb.ParamGlide;
+import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
 import com.ravecraft.mod.core.acoustics.reverb.ReverbParams;
 import com.ravecraft.mod.core.acoustics.reverb.SendRoute;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
@@ -62,6 +63,8 @@ public final class AcousticRenderer {
 	private static volatile int maxSources = 8;
 	private static volatile boolean efxWanted = true;
 	private static volatile boolean paused;
+	/** The fluid reverb whose chorus the head is in, or null; published by the scheduler. */
+	private static volatile @Nullable FluidReverb headChorus;
 	/** The reverb and echo every slot moves toward; published whole by the reverb scheduler. */
 	private static volatile ReverbTargets reverbTargets = ReverbTargets.SILENT;
 
@@ -135,6 +138,11 @@ public final class AcousticRenderer {
 	/** Client thread: the perception of the medium the listener's head is in. */
 	static void headPerception(ListenerPerception perception) {
 		head = perception;
+	}
+
+	/** Client thread: the fluid the listener's head is in, whose chorus the streams apply (null for none). */
+	static void headChorus(@Nullable FluidReverb fluid) {
+		headChorus = fluid;
 	}
 
 	/**
@@ -367,16 +375,17 @@ public final class AcousticRenderer {
 			boolean filter = efxWanted;
 			boolean reverb = efx && sends >= 1 && filter && settings.reverb().enabled();
 			glide(reverb ? reverbTargets : ReverbTargets.SILENT, now);
+			FluidReverb chorus = efxWanted && settings.reverb().enabled() ? headChorus : null;
 			for (RenderStream stream : streams) {
 				AlSource source = stream.source;
 				if (source == null) {
 					for (int i = stream.pacer.due(now); i > 0; i--) {
-						stream.nextBlock(scratch, null, filter ? stream.highLossDb + headHighLossDb : 0);
+						stream.nextBlock(scratch, null, filter ? stream.highLossDb + headHighLossDb : 0, chorus);
 					}
 					continue;
 				}
 				while (source.wantsBlock()) {
-					stream.nextBlock(scratch, pcm, filter ? stream.highLossDb + headHighLossDb : 0);
+					stream.nextBlock(scratch, pcm, filter ? stream.highLossDb + headHighLossDb : 0, chorus);
 					source.queue(pcm);
 				}
 				source.place(stream.pos.getX() + 0.5, stream.pos.getY() + 0.5, stream.pos.getZ() + 0.5);

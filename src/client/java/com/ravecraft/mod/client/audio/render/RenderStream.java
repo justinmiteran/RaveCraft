@@ -7,6 +7,8 @@ import com.ravecraft.mod.core.acoustics.Equalizer;
 import com.ravecraft.mod.core.acoustics.VirtualPacer;
 import com.ravecraft.mod.core.acoustics.occlusion.LossSmoother;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionFilter;
+import com.ravecraft.mod.core.acoustics.reverb.Chorus;
+import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
 import com.ravecraft.mod.core.acoustics.reverb.SendRoute;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
@@ -56,6 +58,7 @@ final class RenderStream {
 	// Audio thread only.
 	@Nullable Equalizer eq;
 	final OcclusionFilter occlusionFilter = new OcclusionFilter(StreamFormat.SAMPLE_RATE);
+	final Chorus chorus = new Chorus(StreamFormat.SAMPLE_RATE);
 	final VirtualPacer pacer;
 	@Nullable AlSource source;
 	/** Fades the reverb send between slots when {@code reverbSlot} changes. */
@@ -106,10 +109,10 @@ final class RenderStream {
 
 	/**
 	 * Audio thread: takes the next 100 ms from the playout, through the equalizer and the occlusion low-pass at
-	 * {@code highLossDb}. Written as 16-bit PCM into {@code out} (cleared and flipped) when given; only consumed
+	 * {@code highLossDb}, then the underwater {@code chorus} when given. Written as 16-bit PCM into {@code out} (cleared and flipped) when given; only consumed
 	 * otherwise (still filtered, so the filter's state follows the stream).
 	 */
-	void nextBlock(float[] scratch, @Nullable ByteBuffer out, double highLossDb) {
+	void nextBlock(float[] scratch, @Nullable ByteBuffer out, double highLossDb, @Nullable FluidReverb chorus) {
 		byte[] block = playout.nextBlock();
 		int samples = block.length / 2;
 		for (int i = 0; i < samples; i++) {
@@ -120,6 +123,7 @@ final class RenderStream {
 			eq.process(scratch, samples);
 		}
 		occlusionFilter.process(scratch, samples, highLossDb);
+		this.chorus.process(scratch, samples, chorus);
 		if (out != null) {
 			out.clear();
 			for (int i = 0; i < samples; i++) {

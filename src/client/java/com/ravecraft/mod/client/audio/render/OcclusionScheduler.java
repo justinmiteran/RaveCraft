@@ -5,6 +5,7 @@ import com.ravecraft.mod.client.options.RaveCraftOptions;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.Propagation;
 import com.ravecraft.mod.core.acoustics.occlusion.Occlusion;
+import com.ravecraft.mod.core.acoustics.occlusion.OcclusionPass;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionRota;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionTracer;
@@ -40,6 +41,7 @@ public final class OcclusionScheduler {
 	private static final OcclusionRota ROTA = new OcclusionRota();
 	private static final List<RenderStream> AUDIBLE = new ArrayList<>();
 	private static final List<Integer> AUDIBLE_IDS = new ArrayList<>();
+	private static final List<RenderStream> DUE = new ArrayList<>();
 	private static final Set<Integer> ALIVE = new HashSet<>();
 	private static Map<Integer, RenderStream> byId = new HashMap<>();
 	/** Last tick's audible streams, to notice a session that restarted with a new stream under the same id. */
@@ -142,30 +144,41 @@ public final class OcclusionScheduler {
 			return;
 		}
 
-		List<Integer> due = ROTA.pick(AUDIBLE_IDS, tick);
-		TraceBudget budget = new TraceBudget(RaveCraftOptions.occlusionQuality().get().voxelsPerTick());
-		for (int i = 0; i < due.size(); i++) {
-			RenderStream stream = byId.get(due.get(i));
-			double sx = stream.pos.getX() + 0.5;
-			double sy = stream.pos.getY() + 0.5;
-			double sz = stream.pos.getZ() + 0.5;
-			boolean wholeBudget = budget.used() == 0;
-			Occlusion result = tracer.occlusion(ear.x, ear.y, ear.z, sx, sy, sz, settings.rolloff(),
-					range(settings, stream), budget);
-			if (result == null) {
-				if (!wholeBudget) {
-					// The rest waits for the next tick, which starts with them.
-					for (int j = i; j < due.size(); j++) {
-						ROTA.unfinished(due.get(j));
-					}
-					break;
-				}
-				// Even a whole tick's budget is not enough for this stream's detours: settle for the straight line,
-				// which visits a bounded number of voxels, so that it is never left unmuffled for good.
-				result = direct(tracer, ear, sx, sy, sz);
-			}
-			publish(stream, result.lossDb(), result.highLossDb());
+		DUE.clear();
+		for (Integer id : ROTA.pick(AUDIBLE_IDS, tick)) {
+			DUE.add(byId.get(id));
 		}
+		OcclusionTracer pathTracer = tracer;
+		double rolloff = settings.rolloff();
+		OcclusionPass.run(DUE, new TraceBudget(RaveCraftOptions.occlusionQuality().get().voxelsPerTick()),
+				new OcclusionPass.Ops<RenderStream>() {
+					@Override
+					public boolean known(RenderStream stream) {
+						return stream.occlusionKnown;
+					}
+
+					@Override
+					public @Nullable Occlusion occlusion(RenderStream stream, TraceBudget budget) {
+						return pathTracer.occlusion(ear.x, ear.y, ear.z, stream.pos.getX() + 0.5,
+								stream.pos.getY() + 0.5, stream.pos.getZ() + 0.5, rolloff, range(settings, stream), budget);
+					}
+
+					@Override
+					public Occlusion direct(RenderStream stream) {
+						return OcclusionScheduler.direct(pathTracer, ear, stream.pos.getX() + 0.5,
+								stream.pos.getY() + 0.5, stream.pos.getZ() + 0.5);
+					}
+
+					@Override
+					public void publish(RenderStream stream, Occlusion occlusion) {
+						OcclusionScheduler.publish(stream, occlusion.lossDb(), occlusion.highLossDb());
+					}
+
+					@Override
+					public void unfinished(RenderStream stream) {
+						ROTA.unfinished(stream.sessionId);
+					}
+				});
 	}
 
 	private static boolean isAudible(AcousticSettings settings, RenderStream stream, Vec3 ear) {

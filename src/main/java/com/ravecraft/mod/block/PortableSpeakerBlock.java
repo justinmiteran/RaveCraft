@@ -21,6 +21,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.SimpleWaterloggedBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
@@ -28,16 +29,19 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jspecify.annotations.Nullable;
 
-/** A small battery-powered speaker that keeps its identity and settings when picked up. */
-public class PortableSpeakerBlock extends BaseEntityBlock {
+/** A small battery-powered speaker that keeps its identity and settings when picked up; it is waterproof, so it can sit in water. */
+public class PortableSpeakerBlock extends BaseEntityBlock implements SimpleWaterloggedBlock {
 	public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
 	public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
+	public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
 	/** Fabric colour of an undyed speaker (charcoal black), also the item model's default tint. */
 	public static final int DEFAULT_COLOR = 0x3C3C44;
@@ -49,12 +53,12 @@ public class PortableSpeakerBlock extends BaseEntityBlock {
 
 	public PortableSpeakerBlock(BlockBehaviour.Properties properties) {
 		super(properties);
-		registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(POWERED, false));
+		registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(POWERED, false).setValue(WATERLOGGED, false));
 	}
 
 	@Override
 	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-		builder.add(FACING, POWERED);
+		builder.add(FACING, POWERED, WATERLOGGED);
 	}
 
 	@Override
@@ -63,7 +67,8 @@ public class PortableSpeakerBlock extends BaseEntityBlock {
 		boolean powered = data != null && data.settings().powered();
 		return defaultBlockState()
 				.setValue(FACING, context.getHorizontalDirection().getOpposite())
-				.setValue(POWERED, powered);
+				.setValue(POWERED, powered)
+				.setValue(WATERLOGGED, context.getLevel().getFluidState(context.getClickedPos()).is(Fluids.WATER));
 	}
 
 	@Override
@@ -76,7 +81,6 @@ public class PortableSpeakerBlock extends BaseEntityBlock {
 		}
 	}
 
-	/** Stands on a sturdy floor only, like a lantern: it cannot float and drops when its support is broken. */
 	/** Middle-click keeps the fabric colour, like picking a coloured block; ctrl adds the full data on top. */
 	@Override
 	protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
@@ -87,6 +91,7 @@ public class PortableSpeakerBlock extends BaseEntityBlock {
 		return stack;
 	}
 
+	/** Stands on a sturdy floor only, like a lantern: it cannot float and drops when its support is broken. */
 	@Override
 	protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
 		return Block.canSupportCenter(level, pos.below(), Direction.UP);
@@ -95,10 +100,18 @@ public class PortableSpeakerBlock extends BaseEntityBlock {
 	@Override
 	protected BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess ticks, BlockPos pos,
 			Direction directionToNeighbour, BlockPos neighbourPos, BlockState neighbourState, RandomSource random) {
+		if (state.getValue(WATERLOGGED)) {
+			ticks.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+		}
 		if (directionToNeighbour == Direction.DOWN && !state.canSurvive(level, pos)) {
 			return Blocks.AIR.defaultBlockState();
 		}
 		return super.updateShape(state, level, ticks, pos, directionToNeighbour, neighbourPos, neighbourState, random);
+	}
+
+	@Override
+	protected FluidState getFluidState(BlockState state) {
+		return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
 	}
 
 	@Override

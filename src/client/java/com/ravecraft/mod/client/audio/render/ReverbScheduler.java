@@ -11,6 +11,7 @@ import com.ravecraft.mod.core.acoustics.reverb.Echo;
 import com.ravecraft.mod.core.acoustics.reverb.EchoFinder;
 import com.ravecraft.mod.core.acoustics.reverb.EchoSettings;
 import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
+import com.ravecraft.mod.core.acoustics.reverb.ReverbDebug;
 import com.ravecraft.mod.core.acoustics.reverb.ReverbParams;
 import com.ravecraft.mod.core.acoustics.reverb.ReverbSettings;
 import com.ravecraft.mod.core.acoustics.reverb.RoomProbe;
@@ -18,6 +19,7 @@ import com.ravecraft.mod.core.acoustics.reverb.RoomShape;
 import com.ravecraft.mod.core.acoustics.reverb.SendRoute;
 import com.ravecraft.mod.core.acoustics.reverb.SpaceSlots;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -71,6 +73,8 @@ public final class ReverbScheduler {
 	private static long listenerStartTick;
 	private static ReverbParams listenerParams = ReverbParams.SILENT;
 	private static Echo listenerEcho = Echo.NONE;
+	/** The last measure of the listener's space, for the debug screen; null until one ends. */
+	private static @Nullable RoomShape listenerShape;
 
 	// The fluid the head was last in, and its reverb, so that staying in it allocates nothing.
 	private static @Nullable FluidReverb headFluid;
@@ -180,7 +184,8 @@ public final class ReverbScheduler {
 			}
 			if (listenerRunning && probe.run(budget)) {
 				listenerRunning = false;
-				listenerParams = ReverbParams.of(RoomShape.of(probe.hits(), rayLength), reverb);
+				listenerShape = RoomShape.of(probe.hits(), rayLength);
+				listenerParams = ReverbParams.of(listenerShape, reverb);
 				listenerEcho = EchoFinder.find(probe.hits(), reverb.echo());
 			}
 			targetL = listenerParams;
@@ -240,6 +245,13 @@ public final class ReverbScheduler {
 		publish(targetL, SLOT_PARAMS[0], SLOT_PARAMS[1], echo, reverb.echo());
 	}
 
+	/** The debug screen lines for the listener's space. Client thread only. */
+	public static List<String> debugLines() {
+		FluidReverb fluid = headFluid;
+		return ReverbDebug.lines(probedGrid != null, listenerShape, fluid != null ? headFluidParams : listenerParams,
+				fluid != null ? Echo.NONE : listenerEcho, fluid != null ? fluid.medium() : null);
+	}
+
 	/** Whether the listener's space is due for a new measure: never measured, moved 1 block, or 2 s old. */
 	private static boolean listenerDue(Vec3 ear) {
 		if (!listenerStarted || tick - listenerStartTick >= LISTENER_PERIOD) {
@@ -271,6 +283,7 @@ public final class ReverbScheduler {
 		listenerStarted = false;
 		listenerParams = ReverbParams.SILENT;
 		listenerEcho = Echo.NONE;
+		listenerShape = null;
 		headFluid = null;
 		for (int i = 0; i < SpaceSlots.SLOTS; i++) {
 			SLOT_PROBES[i] = null;

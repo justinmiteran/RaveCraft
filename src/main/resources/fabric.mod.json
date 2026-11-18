@@ -24,6 +24,7 @@
 			"com.ravecraft.mod.datagen.RaveCraftDataGenerator"
 		]
 	},
+	"accessWidener": "ravecraft.classtweaker",
 	"mixins": [
 		{
 			"config": "ravecraft.client.mixins.json",

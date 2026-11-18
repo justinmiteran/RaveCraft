@@ -97,7 +97,7 @@ Stockage : `BlockEntity` quand l'enceinte est posée, **composant de données** 
 - `bassGain`, `midGain`, `trebleGain` : réponse en fréquence ;
 - `directivity` : omnidirectionnel ou cône orienté (angle et atténuation hors axe), exposé dès maintenant pour les futures sonos.
 
-**Profil de l'enceinte portable** : portée d'environ 16 blocs, basses faibles, omnidirectionnelle.
+**Profil de l'enceinte portable** : portée de 32 blocs à volume maximal, basses faibles, omnidirectionnelle (révisé par [la spec du moteur acoustique](2026-11-17-acoustic-engine-design.md), A2).
 
 ### 4.2 Effets
 | Effet | Modèle | Fréquence de calcul |
@@ -110,6 +110,8 @@ Stockage : `BlockEntity` quand l'enceinte est posée, **composant de données** 
 Les calculs ne lisent que les blocs traversés par les rayons, dans un rayon borné. Les résultats sont **mis en cache** et invalidés sur changement de bloc (événement), conformément aux règles de performance.
 
 ### 4.3 Rendu (`client.audio.render`)
+> Intégration tranchée : sources OpenAL dédiées (voir [la spec du moteur acoustique](2026-11-17-acoustic-engine-design.md), A3).
+
 - Les sources musicales sont des sources de **streaming** OpenAL. Le rendu applique le gain, un filtre passe-bas (EFX `AL_FILTER_LOWPASS`) et des emplacements d'effet auxiliaires (réverbération et écho EFX). `EXTEfx` est fourni par la LWJGL OpenAL embarquée dans Minecraft 26.3 (vérifié).
 - **Intégration au moteur son de Minecraft** : `AudioStream` et `Channel` (streaming) existent en 26.3 (vérifié). Le plan choisira entre passer par le `SoundEngine` vanilla (`SoundInstance` + `AudioStream` maison) ou gérer des sources OpenAL dédiées dans le même contexte. Contrainte : la réserve vanilla de canaux de streaming est de **2 à 8 canaux** (`clamp(√canaux, 2, 8)` dans `Library.init`) et elle est partagée avec la musique de fond et les juke-box.
 - **Limite de sources audibles** : 8 par défaut, réglable, les plus proches en priorité. Un mur d'enceintes futur comptera pour **un seul système**.
@@ -145,6 +147,8 @@ Marquée **provisoire** dans `docs/SPEC.md` et par un commentaire dans `RaveCraf
 | **Lecteur** (bas) | Titre en cours avec progression, précédent, lecture/pause, suivant, aléatoire, répétition, volume, allumer/éteindre. |
 
 ### 5.4 Configuration client
+> Le volume RaveCraft et le nombre de sources sont finalement des options de Minecraft (écran Musique et sons, `options.txt`) : voir [la spec du moteur acoustique](2026-11-17-acoustic-engine-design.md), A5.
+
 - `config/ravecraft-client.json` : volume RaveCraft, sources audibles maximum (défaut 8), notifications « morceau retiré » activées ou non, dossiers favoris.
 - `config/ravecraft-tracks.json` : table locale `entryId` → chemin absolu du fichier. Elle n'est **jamais envoyée** et survit au redémarrage, ce qui permet de rejouer ses morceaux après une reconnexion.
 - Format JSON lu et écrit sans dépendance externe (Gson est fourni par Minecraft).

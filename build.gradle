@@ -26,6 +26,7 @@ fabricApi {
 
 loom {
 	splitEnvironmentSourceSets()
+	accessWidenerPath = file("src/main/resources/ravecraft.classtweaker")
 
 	mods {
 		"ravecraft" {

@@ -23,8 +23,6 @@ public final class StreamFormat {
 	/** Per-sender rate limit: 200 kb/s, with room for the initial lead burst. */
 	public static final long RATE_BYTES_PER_SECOND = 25_000;
 	public static final long RATE_BURST_BYTES = 40_000;
-	/** Players within this distance of a speaker receive its stream (16 audible + 8 margin). */
-	public static final double RELAY_RANGE = 24.0;
 
 	private StreamFormat() {
 	}

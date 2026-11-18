@@ -1,14 +1,12 @@
 package com.ravecraft.mod.client.audio.stream;
 
-import com.ravecraft.mod.client.audio.SpeakerSoundInstance;
+import com.ravecraft.mod.client.audio.render.AcousticRenderer;
 import com.ravecraft.mod.core.audio.stream.SessionRoster;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
 import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Util;
 
@@ -36,7 +34,7 @@ public final class ReceivedStreams {
 		long now = Util.getMillis();
 		STREAMS.admit(sessionId, () -> new Stream(pos.immutable(), new StreamPlayout(now))).ifPresent(stream -> {
 			stream.playout.offer(seq, frames, now);
-			stream.ensurePlaying();
+			AcousticRenderer.attach(sessionId, stream.pos, stream.playout, stream::alive);
 		});
 	}
 
@@ -56,6 +54,7 @@ public final class ReceivedStreams {
 		STREAMS.clear().forEach(stream -> stream.stopped = true);
 		DRAINING.forEach(stream -> stream.stopped = true);
 		DRAINING.clear();
+		AcousticRenderer.detachAll();
 	}
 
 	/** Drops streams that went silent (owner vanished without notice, or this player walked away). */
@@ -69,25 +68,15 @@ public final class ReceivedStreams {
 		final BlockPos pos;
 		final StreamPlayout playout;
 		volatile boolean stopped;
-		SpeakerSoundInstance sound;
 
 		Stream(BlockPos pos, StreamPlayout playout) {
 			this.pos = pos;
 			this.playout = playout;
 		}
 
+		/** Read by the audio thread: false once stopped or fully played out. */
 		boolean alive() {
 			return !stopped && !playout.isDrained();
-		}
-
-		/** (Re)starts the sound if it never started or the engine dropped it (reload, no free source). */
-		void ensurePlaying() {
-			Minecraft minecraft = Minecraft.getInstance();
-			SoundManager sounds = minecraft.getSoundManager();
-			if ((sound == null || !sounds.isActive(sound)) && SpeakerSoundInstance.isPoweredSpeaker(minecraft.level, pos)) {
-				sound = new SpeakerSoundInstance(pos, () -> new NetworkAudioStream(playout), this::alive);
-				sounds.play(sound);
-			}
 		}
 	}
 }

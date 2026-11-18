@@ -12,8 +12,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CrossCollisionBlock;
 import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.WallSide;
 import net.minecraft.world.level.material.Fluids;
 
 public class BlockAcousticsGameTest {
@@ -30,6 +32,7 @@ public class BlockAcousticsGameTest {
 
 	private void assertNoMaterial(GameTestHelper h, Block block) {
 		h.assertTrue(acoustics.material(block.defaultBlockState()) == null, block + " should have no material");
+		h.succeed();
 	}
 
 	private void assertFill(GameTestHelper h, BlockState state, Direction.Axis axis, double expected) {
@@ -87,7 +90,6 @@ public class BlockAcousticsGameTest {
 		assertNoMaterial(h, Blocks.SHORT_GRASS);
 		assertNoMaterial(h, Blocks.TORCH);
 		assertNoMaterial(h, Blocks.AIR);
-		h.succeed();
 	}
 
 	@GameTest
@@ -118,6 +120,24 @@ public class BlockAcousticsGameTest {
 	}
 
 	@GameTest
+	public void fenceDoesNotSeal(GameTestHelper h) {
+		BlockState fence = Blocks.OAK_FENCE.defaultBlockState().setValue(CrossCollisionBlock.EAST, true)
+				.setValue(CrossCollisionBlock.WEST, true);
+		double fill = acoustics.fill(fence, Direction.Axis.Z);
+		h.assertTrue(fill < 0.5, "fence fill Z should be < 0.5 but is " + fill);
+		h.succeed();
+	}
+
+	@GameTest
+	public void wallFillStaysWithinOne(GameTestHelper h) {
+		BlockState wall = Blocks.COBBLESTONE_WALL.defaultBlockState().setValue(WallBlock.NORTH, WallSide.LOW)
+				.setValue(WallBlock.SOUTH, WallSide.LOW);
+		double fill = acoustics.fill(wall, Direction.Axis.X);
+		h.assertTrue(fill <= 1.0, "wall fill X should be <= 1 but is " + fill);
+		h.succeed();
+	}
+
+	@GameTest
 	public void carpetCountsByVolume(GameTestHelper h) {
 		assertFill(h, Blocks.CARPET.white().defaultBlockState(), Direction.Axis.Y, 1.0 / 16.0);
 		h.succeed();
@@ -131,6 +151,8 @@ public class BlockAcousticsGameTest {
 		AcousticMaterial m = acoustics.material(state);
 		h.assertTrue(m != null && m.name().equals("wood"), "slab is wood but is " + m);
 		h.assertValueEqual(media.medium(state.getFluidState(), OVERWORLD).name(), "water", "medium");
+		h.assertTrue(media.medium(state.getFluidState(), OVERWORLD) == OcclusionSettings.DEFAULT.medium("water"),
+				"water is the settings' own instance");
 		h.succeed();
 	}
 
@@ -139,6 +161,10 @@ public class BlockAcousticsGameTest {
 		h.assertValueEqual(media.medium(Blocks.LAVA.defaultBlockState().getFluidState(), OVERWORLD).name(), "lava",
 				"lava medium");
 		h.assertValueEqual(media.medium(Fluids.EMPTY.defaultFluidState(), OVERWORLD).name(), "air", "empty fluid");
+		h.assertTrue(media.medium(Fluids.EMPTY.defaultFluidState(), OVERWORLD) == OcclusionSettings.DEFAULT.air(),
+				"air is the settings' own instance");
+		h.assertTrue(media.medium(Fluids.WATER.defaultFluidState(), OVERWORLD) == OcclusionSettings.DEFAULT.medium("water"),
+				"water fluid is the settings' water");
 		h.succeed();
 	}
 }

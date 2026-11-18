@@ -143,14 +143,26 @@ public final class BlockAcoustics {
 		Direction.Axis c = axis == Direction.Axis.Z ? Direction.Axis.Y : Direction.Axis.Z;
 		double volume = 0;
 		for (AABB box : boxes) {
+			boolean inside = box.minX >= -EPSILON && box.minY >= -EPSILON && box.minZ >= -EPSILON
+					&& box.maxX <= 1 + EPSILON && box.maxY <= 1 + EPSILON && box.maxZ <= 1 + EPSILON;
 			boolean spans = box.min(b) <= EPSILON && box.max(b) >= 1 - EPSILON
 					&& box.min(c) <= EPSILON && box.max(c) >= 1 - EPSILON;
 			double thickness = box.max(axis) - box.min(axis);
-			if (spans && thickness >= SEALING_THICKNESS - EPSILON && thickness <= MAX_PANEL_THICKNESS + EPSILON) {
+			// Only a panel that sits entirely inside the voxel seals it: a fence (1.5 high) is not a wall.
+			if (inside && spans && thickness >= SEALING_THICKNESS - EPSILON
+					&& thickness <= MAX_PANEL_THICKNESS + EPSILON) {
 				return 1;
 			}
-			volume += box.getXsize() * box.getYsize() * box.getZsize();
+			volume += clippedVolume(box);
 		}
 		return Math.min(volume, 1);
+	}
+
+	/** The volume of the part of the box inside the unit cube. */
+	private static double clippedVolume(AABB box) {
+		double x = Math.min(box.maxX, 1) - Math.max(box.minX, 0);
+		double y = Math.min(box.maxY, 1) - Math.max(box.minY, 0);
+		double z = Math.min(box.maxZ, 1) - Math.max(box.minZ, 0);
+		return x <= 0 || y <= 0 || z <= 0 ? 0 : x * y * z;
 	}
 }

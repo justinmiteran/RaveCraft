@@ -4,7 +4,15 @@ package com.ravecraft.mod.core.acoustics.occlusion;
 public interface AcousticGrid {
 	/**
 	 * Fills {@code out} with the voxel at (x, y, z): its material and fills (no material and zero fills when the voxel
-	 * is open) and its medium, never null.
+	 * is open) and its own medium: the fluid it holds, else the {@linkplain #defaultMedium() dimension's medium} for an
+	 * open voxel, and null for a solid voxel without fluid (it takes the medium around it). Every medium is an instance
+	 * held by the tracer's settings.
 	 */
 	void sample(int x, int y, int z, VoxelSample out);
+
+	/**
+	 * The dimension's medium, for a segment that only crosses voxels without a medium of their own; an instance held
+	 * by the tracer's settings.
+	 */
+	AcousticMedium defaultMedium();
 }

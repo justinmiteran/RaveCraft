@@ -13,8 +13,10 @@ import org.jspecify.annotations.Nullable;
  * Walks a straight segment voxel by voxel (Amanatides–Woo) and adds up what it loses: the materials it crosses
  * (weighted by their fill along the entry axis), the media it travels through (except air, whose absorption
  * {@code Propagation} applies) and the interfaces between media. The start and end voxels bring no material (the
- * speaker's block, the listener's head). A medium of impedance 0 anywhere on the way mutes the segment. Both totals
- * are capped at {@link OcclusionSettings#maxLossDb()}.
+ * speaker's block, the listener's head). A voxel without a medium of its own (a solid without fluid) stays in the
+ * medium the walk is in, with no interface: a segment starting in one takes the first medium it meets, and one that
+ * meets none is in {@link AcousticGrid#defaultMedium()}. A medium of impedance 0 anywhere on the way mutes the
+ * segment. Both totals are capped at {@link OcclusionSettings#maxLossDb()}.
  *
  * <p>{@link #occlusion} adds detours: when the straight line loses 3 dB or more, sound may also bend through
  * waypoints picked around both ends (an open door, a corridor), and the direct path and the best detours are summed
@@ -49,6 +51,14 @@ public final class OcclusionTracer {
 	private final int[] step = new int[3];
 	private final double[] tMax = new double[3];
 	private final double[] tDelta = new double[3];
+	/**
+	 * Set by each {@link #trace}: the medium the segment starts in and the one it arrives in (a voxel without a medium
+	 * of its own takes the one around it along the segment); null when the trace stopped before knowing it.
+	 */
+	private @Nullable AcousticMedium startMedium;
+	private @Nullable AcousticMedium endMedium;
+	/** Set by each {@link #trace}: true when it was muted by the medium at one of its ends. */
+	private boolean endMuted;
 
 	/** A candidate waypoint near one end, with the trace that reaches it from that end. */
 	private record Waypoint(double x, double y, double z, PathLoss fromEnd) {
@@ -113,7 +123,13 @@ public final class OcclusionTracer {
 		double high = 0;
 		double t = 0;
 		boolean first = true;
-		@Nullable AcousticMedium previous = null;
+		// The medium the walk is in. A voxel without a medium of its own (a solid without fluid) stays in it; until
+		// the first real medium, the length walked is kept aside and that medium absorbs it once known.
+		@Nullable AcousticMedium current = null;
+		double pending = 0;
+		startMedium = null;
+		endMedium = null;
+		endMuted = false;
 		while (true) {
 			if (!budget.take()) {
 				return null;
@@ -134,8 +150,9 @@ public final class OcclusionTracer {
 
 			if (inside >= MIN_LENGTH) {
 				grid.sample(cell[0], cell[1], cell[2], sample);
-				AcousticMedium medium = sample.medium != null ? sample.medium : air;
-				if (medium.impedance() <= 0) {
+				AcousticMedium own = sample.medium;
+				if (own != null && own.impedance() <= 0) {
+					endMuted = first || last;
 					return PathLoss.mute(length);
 				}
 				AcousticMaterial material = sample.material;
@@ -144,19 +161,29 @@ public final class OcclusionTracer {
 					loss += material.lossDb() * weight;
 					high += material.highLossDb() * weight;
 				}
-				if (!medium.name().equals(air.name())) {
-					loss += medium.lossDbPerBlock() * inside;
-					high += medium.highLossDbPerBlock() * inside;
-				}
-				if (previous != null && !previous.equals(medium)) {
-					double interfaceLoss = Interfaces.lossDb(previous, medium, settings.interfaceScale());
-					if (Double.isInfinite(interfaceLoss)) {
-						return PathLoss.mute(length);
+				if (own == null) {
+					if (current == null) {
+						pending += inside;
+					} else {
+						loss += absorption(current, inside);
+						high += highAbsorption(current, inside);
 					}
-					loss += interfaceLoss;
-					high += Interfaces.highLossDb(interfaceLoss, settings.interfaceHighRatio());
+				} else {
+					loss += absorption(own, inside + pending);
+					high += highAbsorption(own, inside + pending);
+					pending = 0;
+					if (current == null) {
+						startMedium = own;
+					} else if (!current.equals(own)) {
+						double interfaceLoss = Interfaces.lossDb(current, own, settings.interfaceScale());
+						if (Double.isInfinite(interfaceLoss)) {
+							return PathLoss.mute(length);
+						}
+						loss += interfaceLoss;
+						high += Interfaces.highLossDb(interfaceLoss, settings.interfaceHighRatio());
+					}
+					current = own;
 				}
-				previous = medium;
 			}
 
 			if (last) {
@@ -168,8 +195,37 @@ public final class OcclusionTracer {
 			entryAxis = next;
 			first = false;
 		}
+		if (current == null) {
+			// Nothing but voxels without a medium of their own: the segment is in the dimension's medium.
+			current = grid.defaultMedium();
+			startMedium = current;
+			if (current.impedance() <= 0) {
+				endMuted = true;
+				return PathLoss.mute(length);
+			}
+			loss += absorption(current, pending);
+			high += highAbsorption(current, pending);
+		}
+		endMedium = current;
 		double max = settings.maxLossDb();
 		return new PathLoss(Math.min(loss, max), Math.min(high, max), length);
+	}
+
+	/** The medium of the voxel holding (x, y, z), or {@link AcousticGrid#defaultMedium()} when it has none. */
+	private AcousticMedium ownMedium(double x, double y, double z) {
+		grid.sample((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z), sample);
+		AcousticMedium own = sample.medium;
+		return own != null ? own : grid.defaultMedium();
+	}
+
+	/** What {@code medium} absorbs broadband over {@code blocks}; none for air, left to {@code Propagation}. */
+	private double absorption(AcousticMedium medium, double blocks) {
+		return medium.name().equals(air.name()) ? 0 : medium.lossDbPerBlock() * blocks;
+	}
+
+	/** What {@code medium} absorbs in the treble over {@code blocks}; none for air, left to {@code Propagation}. */
+	private double highAbsorption(AcousticMedium medium, double blocks) {
+		return medium.name().equals(air.name()) ? 0 : medium.highLossDbPerBlock() * blocks;
 	}
 
 	/**
@@ -200,15 +256,20 @@ public final class OcclusionTracer {
 		}
 		List<Route> routes = new ArrayList<>();
 		routes.add(new Route(direct.lossDb(), direct.highLossDb(), null));
-		if (!settings.detours() || direct.lossDb() < DETOUR_THRESHOLD_DB) {
+		// An end in a medium that carries nothing (vacuum) mutes every detour as well.
+		if (!settings.detours() || direct.lossDb() < DETOUR_THRESHOLD_DB || (direct.mute() && endMuted)) {
 			return combine(routes);
 		}
+		// The ends' media as the direct path found them (the waypoints must lie in the same medium); a path muted on
+		// the way may not have reached them: then the end's own medium, or the dimension's.
+		AcousticMedium listenerMedium = startMedium != null ? startMedium : ownMedium(lx, ly, lz);
+		AcousticMedium sourceMedium = endMedium != null ? endMedium : ownMedium(sx, sy, sz);
 
-		List<Waypoint> nearListener = waypoints(lx, ly, lz, sx, sy, sz, budget);
+		List<Waypoint> nearListener = waypoints(lx, ly, lz, listenerMedium, sx, sy, sz, budget);
 		if (nearListener == null) {
 			return null;
 		}
-		List<Waypoint> nearSource = waypoints(sx, sy, sz, lx, ly, lz, budget);
+		List<Waypoint> nearSource = waypoints(sx, sy, sz, sourceMedium, lx, ly, lz, budget);
 		if (nearSource == null) {
 			return null;
 		}
@@ -293,19 +354,18 @@ public final class OcclusionTracer {
 	}
 
 	/**
-	 * The waypoints around the end at (ax, ay, az): for each of the 26 directions and each radius, the point that far
-	 * from the centre of the end's voxel, a candidate when its voxel holds no material and is in the end's medium.
+	 * The waypoints around the end at (ax, ay, az), in {@code medium}: for each of the 26 directions and each radius, the
+	 * point that far from the centre of the end's voxel, a candidate when its voxel holds no material and is in
+	 * {@code medium}.
 	 * Candidates are traced from the end in ascending distance to (ox, oy, oz) and the first
 	 * {@value #WAYPOINTS_PER_END} reached losing less than 3 dB are returned, each with the trace that reached it so
 	 * that it is not traced again. Null when {@code budget} ran out.
 	 */
-	private @Nullable List<Waypoint> waypoints(double ax, double ay, double az, double ox, double oy, double oz,
-			TraceBudget budget) {
+	private @Nullable List<Waypoint> waypoints(double ax, double ay, double az, AcousticMedium medium,
+			double ox, double oy, double oz, TraceBudget budget) {
 		int bx = (int) Math.floor(ax);
 		int by = (int) Math.floor(ay);
 		int bz = (int) Math.floor(az);
-		grid.sample(bx, by, bz, sample);
-		AcousticMedium medium = sample.medium != null ? sample.medium : air;
 		Set<Long> seen = new HashSet<>();
 		List<double[]> candidates = new ArrayList<>();
 		for (double[] d : DIRECTIONS) {
@@ -318,8 +378,7 @@ public final class OcclusionTracer {
 					continue;
 				}
 				grid.sample(vx, vy, vz, sample);
-				AcousticMedium here = sample.medium != null ? sample.medium : air;
-				if (sample.material == null && here.equals(medium)) {
+				if (sample.material == null && medium.equals(sample.medium)) {
 					candidates.add(p);
 				}
 			}

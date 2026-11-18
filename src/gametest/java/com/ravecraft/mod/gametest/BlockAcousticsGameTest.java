@@ -1,7 +1,10 @@
 package com.ravecraft.mod.gametest;
 
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
+import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
+import com.ravecraft.mod.core.acoustics.occlusion.VoxelSample;
+import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.world.acoustics.BlockAcoustics;
 import com.ravecraft.mod.world.acoustics.MediumResolver;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
@@ -17,6 +20,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.WallSide;
 import net.minecraft.world.level.material.Fluids;
+import org.jspecify.annotations.Nullable;
 
 public class BlockAcousticsGameTest {
 	private static final String OVERWORLD = "minecraft:overworld";
@@ -165,6 +169,29 @@ public class BlockAcousticsGameTest {
 				"air is the settings' own instance");
 		h.assertTrue(media.medium(Fluids.WATER.defaultFluidState(), OVERWORLD) == OcclusionSettings.DEFAULT.medium("water"),
 				"water fluid is the settings' water");
+		h.succeed();
+	}
+
+	private @Nullable AcousticMedium voxelMedium(BlockState state) {
+		VoxelSample out = new VoxelSample();
+		acoustics.sample(state, media, media.dimensionMedium(OVERWORLD), out);
+		return out.medium;
+	}
+
+	@GameTest
+	public void solidWithoutFluidHasNoMediumOfItsOwn(GameTestHelper h) {
+		OcclusionSettings s = OcclusionSettings.DEFAULT;
+		BlockState stone = Blocks.STONE.defaultBlockState();
+		h.assertTrue(voxelMedium(stone) == null, "stone: " + voxelMedium(stone));
+		BlockState speaker = ModBlocks.PORTABLE_SPEAKER.defaultBlockState();
+		h.assertTrue(voxelMedium(speaker) == null, "speaker: " + voxelMedium(speaker));
+		h.assertTrue(voxelMedium(Blocks.AIR.defaultBlockState()) == s.air(), "air block is the dimension's air");
+		h.assertTrue(voxelMedium(Blocks.SHORT_GRASS.defaultBlockState()) == s.air(), "grass is open: air");
+		h.assertTrue(voxelMedium(Blocks.WATER.defaultBlockState()) == s.medium("water"), "water block is water");
+		h.assertTrue(voxelMedium(Blocks.SEAGRASS.defaultBlockState()) == s.medium("water"), "seagrass is in water");
+		h.assertTrue(voxelMedium(Blocks.OAK_SLAB.defaultBlockState().setValue(BlockStateProperties.WATERLOGGED, true))
+				== s.medium("water"), "a waterlogged slab is in water");
+		h.assertTrue(media.dimensionMedium(OVERWORLD) == s.air(), "the overworld is the settings' air");
 		h.succeed();
 	}
 }

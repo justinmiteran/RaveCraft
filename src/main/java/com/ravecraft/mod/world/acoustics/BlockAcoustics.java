@@ -81,14 +81,17 @@ public final class BlockAcoustics {
 		};
 	}
 
-	/** Fills {@code out} with the state's material and fills, and the given medium. */
-	public void sample(BlockState state, AcousticMedium medium, VoxelSample out) {
+	/**
+	 * Fills {@code out} with the state's material and fills, and its own medium as {@code media} resolves it
+	 * ({@link MediumResolver#voxelMedium}): {@code dimension} must come from the same settings.
+	 */
+	public void sample(BlockState state, MediumResolver media, AcousticMedium dimension, VoxelSample out) {
 		Entry e = entry(state);
 		out.material = e.material();
 		out.fillX = e.fillX();
 		out.fillY = e.fillY();
 		out.fillZ = e.fillZ();
-		out.medium = medium;
+		out.medium = media.voxelMedium(state.getFluidState(), e.material() != null, dimension);
 	}
 
 	public void clearCache() {

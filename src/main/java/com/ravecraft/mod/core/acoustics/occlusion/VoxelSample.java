@@ -4,8 +4,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * What one voxel holds, filled in by {@link AcousticGrid#sample}: the solid material (or none), how much of the voxel
- * it fills seen along each axis (0 to 1), and the medium at that position (the fluid it contains, or the surrounding
- * medium). Mutable and reused by the tracer to avoid allocating per voxel.
+ * it fills seen along each axis (0 to 1), and the voxel's own medium (the fluid it contains, the dimension's medium
+ * for an open voxel, null for a solid one without fluid). Mutable and reused by the tracer to avoid allocating per voxel.
  */
 public final class VoxelSample {
 	public static final int X = 0;

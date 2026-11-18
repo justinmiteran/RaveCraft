@@ -267,4 +267,32 @@ class DetourTest {
 		assertNull(new OcclusionTracer(openDoor(), S)
 				.occlusion(12.5, 1.5, 3.5, 3.5, 1.5, 3.5, ROLLOFF, RANGE, new TraceBudget(20)));
 	}
+
+	/**
+	 * {@link #pillarCornerIsNotFree()} underwater, the speaker a solid voxel without fluid: the detours start in the
+	 * water around it and lose what they lose in open air (water absorbs no broadband), plus the water's treble.
+	 */
+	@Test
+	void submergedSpeakerDetoursAroundPillar() {
+		AcousticMedium water = Objects.requireNonNull(S.medium("water"));
+		TestGrid grid = new TestGrid().fluidBox(-8, -8, -8, 8, 8, 8, water).fill(1, 0, -2, 2, 3, -1, STONE)
+				.solid(0, 1, 0, STONE);
+		Occlusion o = occlusion(grid, new double[] {3.5, 1.5, -2.5}, new double[] {0.5, 1.5, 0.5});
+		assertEquals(5.1347, o.lossDb(), 1e-4);
+		assertTrue(o.highLossDb() > 10.4493, "highLossDb " + o.highLossDb());
+		assertTrue(o.highLossDb() < 10.4493 + 0.02 * 10, "highLossDb " + o.highLossDb());
+	}
+
+	@Test
+	void endInVacuumSearchesNoDetour() {
+		for (TestGrid grid : new TestGrid[] {openDoor().fluid(12, 1, 3, VACUUM), openDoor().fluid(3, 1, 3, VACUUM)}) {
+			TraceBudget direct = new TraceBudget(100_000);
+			assertTrue(Objects.requireNonNull(new OcclusionTracer(grid, S)
+					.trace(12.5, 1.5, 3.5, 3.5, 1.5, 3.5, direct)).mute());
+			TraceBudget budget = new TraceBudget(100_000);
+			Occlusion o = new OcclusionTracer(grid, S).occlusion(12.5, 1.5, 3.5, 3.5, 1.5, 3.5, ROLLOFF, RANGE, budget);
+			assertEquals(Occlusion.MUTE, o);
+			assertEquals(direct.used(), budget.used());
+		}
+	}
 }

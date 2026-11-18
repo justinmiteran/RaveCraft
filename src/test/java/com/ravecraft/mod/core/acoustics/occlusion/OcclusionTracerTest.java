@@ -162,4 +162,58 @@ class OcclusionTracerTest {
 		assertEquals(22.5, forward.lossDb(), 1e-9);
 		assertEquals(forward.lossDb(), backward.lossDb(), 1e-9);
 	}
+
+	/** A lake: water in x in [-8, 20], y, z in [-8, 8], air around. */
+	private static TestGrid lake() {
+		return new TestGrid().fluidBox(-8, -8, -8, 20, 8, 8, WATER);
+	}
+
+	@Test
+	void solidVoxelBetweenWaterKeepsWater() {
+		PathLoss loss = traceX(lake().solid(3, 0, 0, STONE));
+		assertEquals(15, loss.lossDb(), 1e-9);
+		assertEquals(15 + 0.02 * 6, loss.highLossDb(), 1e-9);
+	}
+
+	@Test
+	void speakerVoxelWithoutFluidUnderwater() {
+		// A speaker that cannot be waterlogged is a solid voxel without fluid: it is in the water around it.
+		PathLoss loss = trace(lake().solid(2, 0, 0, STONE), 0.5, 0.5, 0.5, 2.5, 0.5, 0.5);
+		assertEquals(0, loss.lossDb(), 1e-9);
+		assertEquals(0.02 * 2, loss.highLossDb(), 1e-9);
+	}
+
+	@Test
+	void diverThroughOneStoneToSubmergedSpeaker() {
+		PathLoss loss = traceX(lake().solid(3, 0, 0, STONE).solid(6, 0, 0, STONE));
+		assertEquals(15, loss.lossDb(), 1e-9);
+		assertEquals(15 + 0.02 * 6, loss.highLossDb(), 1e-9);
+	}
+
+	@Test
+	void startVoxelWithoutMediumAdoptsTheFirstOne() {
+		// The listener's voxel is solid: the walk takes the water it meets next, with no interface, and the water
+		// absorbs over the whole segment.
+		PathLoss loss = traceX(lake().solid(0, 0, 0, STONE));
+		assertEquals(0, loss.lossDb(), 1e-9);
+		assertEquals(0.02 * 6, loss.highLossDb(), 1e-9);
+	}
+
+	@Test
+	void solidVoxelAtTheSurfaceKeepsTheMediumItCameFrom() {
+		// Water up to x = 3, a solid at x = 4, air beyond: one interface, where the air begins.
+		TestGrid grid = new TestGrid().fluidBox(-8, -8, -8, 4, 8, 8, WATER).solid(4, 0, 0, STONE);
+		PathLoss loss = traceX(grid);
+		assertEquals(15 + Interfaces.lossDb(WATER, S.air(), S.interfaceScale()), loss.lossDb(), 1e-9);
+	}
+
+	@Test
+	void onlySolidVoxelsTakeTheDefaultMedium() {
+		PathLoss inWater = trace(new TestGrid(WATER).solid(0, 0, 0, STONE).solid(1, 0, 0, STONE),
+				0.5, 0.5, 0.5, 1.5, 0.5, 0.5);
+		assertEquals(0, inWater.lossDb(), 1e-9);
+		assertEquals(0.02, inWater.highLossDb(), 1e-9);
+		assertTrue(trace(new TestGrid(VACUUM).solid(0, 0, 0, STONE).solid(1, 0, 0, STONE),
+				0.5, 0.5, 0.5, 1.5, 0.5, 0.5).mute());
+	}
 }

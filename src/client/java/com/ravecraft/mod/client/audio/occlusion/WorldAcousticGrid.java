@@ -1,24 +1,29 @@
 package com.ravecraft.mod.client.audio.occlusion;
 
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticGrid;
+import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
 import com.ravecraft.mod.core.acoustics.occlusion.VoxelSample;
 import com.ravecraft.mod.world.acoustics.BlockAcoustics;
 import com.ravecraft.mod.world.acoustics.MediumResolver;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
 
 /**
  * The client's loaded world as the occlusion tracer sees it. An unloaded chunk is open air: no material, and
- * the air medium. Client thread only (it reads the level and reuses one position).
+ * the air medium. A solid block without fluid has no medium of its own (it is in the medium around it). Client
+ * thread only (it reads the level and reuses one position).
  */
 public final class WorldAcousticGrid implements AcousticGrid {
 	private final ClientLevel level;
 	private final BlockAcoustics blocks;
 	private final MediumResolver media;
 	private final OcclusionSettings settings;
-	private final String dimensionId;
+	/** The level's dimension medium, looked up once: neither the level nor the settings change for this grid. */
+	private final AcousticMedium dimension;
 	private final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
 	/** {@code blocks} and {@code media} must be built from {@code settings}, the tracer's own instance. */
@@ -28,7 +33,7 @@ public final class WorldAcousticGrid implements AcousticGrid {
 		this.blocks = blocks;
 		this.media = media;
 		this.settings = settings;
-		this.dimensionId = level.dimension().identifier().toString();
+		this.dimension = media.dimensionMedium(level.dimension().identifier().toString());
 	}
 
 	public ClientLevel level() {
@@ -36,9 +41,15 @@ public final class WorldAcousticGrid implements AcousticGrid {
 	}
 
 	@Override
+	public AcousticMedium defaultMedium() {
+		return dimension;
+	}
+
+	@Override
 	public void sample(int x, int y, int z, VoxelSample out) {
 		// ClientLevel.hasChunk always answers true: ask the chunk cache whether the chunk is really there.
-		if (!level.getChunkSource().hasChunk(x >> 4, z >> 4)) {
+		LevelChunk chunk = level.getChunkSource().getChunk(x >> 4, z >> 4, false);
+		if (chunk == null) {
 			out.material = null;
 			out.fillX = 0;
 			out.fillY = 0;
@@ -46,7 +57,9 @@ public final class WorldAcousticGrid implements AcousticGrid {
 			out.medium = settings.air();
 			return;
 		}
-		BlockState state = level.getBlockState(pos.set(x, y, z));
-		blocks.sample(state, media.medium(state.getFluidState(), dimensionId), out);
+		pos.set(x, y, z);
+		// What Level.getBlockState answers outside the world's bounds.
+		BlockState state = level.isInValidBounds(pos) ? chunk.getBlockState(pos) : Blocks.VOID_AIR.defaultBlockState();
+		blocks.sample(state, media, dimension, out);
 	}
 }

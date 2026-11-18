@@ -5,7 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** An in-memory {@link AcousticGrid} for tests: a background medium (air by default) everywhere unless told otherwise. */
+/**
+ * An in-memory {@link AcousticGrid} for tests: a background medium (air by default, the dimension's medium) everywhere
+ * unless told otherwise. Like the world, a solid voxel has no medium of its own unless {@link #fluid} waterlogs it: the
+ * background and {@link #fluidBox} only reach open voxels.
+ */
 final class TestGrid implements AcousticGrid {
 	private record Solid(AcousticMaterial material, double fillX, double fillY, double fillZ) {
 	}
@@ -104,14 +108,16 @@ final class TestGrid implements AcousticGrid {
 			out.fillY = 0;
 			out.fillZ = 0;
 		}
-		out.medium = medium(x, y, z, k);
+		AcousticMedium fluid = fluids.get(k);
+		out.medium = fluid != null ? fluid : s != null ? null : medium(x, y, z);
 	}
 
-	private AcousticMedium medium(int x, int y, int z, long k) {
-		AcousticMedium m = fluids.get(k);
-		if (m != null) {
-			return m;
-		}
+	@Override
+	public AcousticMedium defaultMedium() {
+		return background;
+	}
+
+	private AcousticMedium medium(int x, int y, int z) {
 		for (int i = boxes.size() - 1; i >= 0; i--) {
 			if (boxes.get(i).contains(x, y, z)) {
 				return boxes.get(i).medium();

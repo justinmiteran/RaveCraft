@@ -48,6 +48,10 @@ public final class ReverbScheduler {
 	/** The speaker slots S1 and S2 sit at these reverb slot indexes, after the listener's. */
 	private static final int FIRST_SPEAKER_SLOT = 1;
 
+	/** Voxels the last tick's probes used, and the budget they had (debug screen). */
+	private static int lastVoxels;
+	private static int lastBudget;
+
 	private static long lastTickFailureLog = Long.MIN_VALUE;
 	private static long tick;
 
@@ -150,7 +154,8 @@ public final class ReverbScheduler {
 				slotSessions[i] = null;
 			}
 		}
-		TraceBudget budget = new TraceBudget(quality.reverbVoxelsPerTick());
+		lastBudget = quality.reverbVoxelsPerTick();
+		TraceBudget budget = new TraceBudget(lastBudget);
 		Vec3 ear = AcousticRenderer.listener();
 
 		// The listener's space: a fluid around the head replaces the measure and silences the echo.
@@ -242,7 +247,27 @@ public final class ReverbScheduler {
 			}
 		}
 
+		lastVoxels = budget.used();
 		publish(targetL, SLOT_PARAMS[0], SLOT_PARAMS[1], echo, reverb.echo());
+	}
+
+	/** Voxels the last tick's probes used (debug screen). */
+	static int lastVoxels() {
+		return lastVoxels;
+	}
+
+	/** The voxel budget of the last tick (debug screen). */
+	static int lastBudget() {
+		return lastBudget;
+	}
+
+	/** Room probes still running: the listener's and the speaker slots' (debug screen). */
+	static int probesRunning() {
+		int running = listenerRunning ? 1 : 0;
+		for (boolean slot : SLOT_RUNNING) {
+			running += slot ? 1 : 0;
+		}
+		return running;
 	}
 
 	/** The debug screen lines for the listener's space. Client thread only. */
@@ -276,6 +301,7 @@ public final class ReverbScheduler {
 
 	/** No world, no grid or reverb off: every space silent, no echo, no chorus, every stream on the listener slot. */
 	private static void silence() {
+		lastVoxels = 0;
 		probedGrid = null;
 		measured = null;
 		listenerProbe = null;

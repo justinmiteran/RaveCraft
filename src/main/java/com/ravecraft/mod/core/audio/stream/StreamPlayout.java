@@ -16,6 +16,7 @@ public final class StreamPlayout {
 	private final JitterBuffer buffer = new JitterBuffer(StreamFormat.JITTER_TARGET_FRAMES, StreamFormat.MAX_AHEAD_FRAMES);
 	private final OpusMonoDecoder decoder = new OpusMonoDecoder();
 	private long lastOfferMillis;
+	private long receivedBytes;
 	private boolean finished;
 	/** Blocks served since a finished stream ran out of frames. */
 	private int blocksAfterEmpty;
@@ -28,6 +29,9 @@ public final class StreamPlayout {
 	public synchronized void offer(int seq, List<byte[]> frames, long nowMillis) {
 		buffer.offer((long) seq * StreamFormat.FRAMES_PER_CHUNK, frames);
 		lastOfferMillis = nowMillis;
+		for (byte[] frame : frames) {
+			receivedBytes += frame.length;
+		}
 	}
 
 	/** Exactly {@link StreamFormat#CHUNK_SAMPLES} samples of 16-bit little-endian mono PCM. */
@@ -54,6 +58,12 @@ public final class StreamPlayout {
 			}
 		}
 		return out;
+	}
+
+	/** How the stream is doing, for the debug screen. */
+	public synchronized PlayoutStats stats() {
+		return new PlayoutStats(buffer.bufferedFrames() * StreamFormat.FRAME_MS, buffer.underruns(),
+				buffer.lostFrames(), receivedBytes);
 	}
 
 	/** The stream ended normally: play out the buffered tail, then report {@link #isDrained()}. */

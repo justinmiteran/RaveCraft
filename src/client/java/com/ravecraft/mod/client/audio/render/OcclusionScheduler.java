@@ -40,6 +40,9 @@ public final class OcclusionScheduler {
 	private static final Comparator<RenderStream> LOUDEST_FIRST =
 			Comparator.comparingDouble((RenderStream stream) -> stream.sortGain).reversed();
 
+	/** Voxels the last tick's traces used, and the budget they had (debug screen). */
+	private static int lastVoxels;
+	private static int lastBudget;
 	private static final OcclusionRota ROTA = new OcclusionRota();
 	private static final List<RenderStream> AUDIBLE = new ArrayList<>();
 	private static final List<Integer> AUDIBLE_IDS = new ArrayList<>();
@@ -169,6 +172,7 @@ public final class OcclusionScheduler {
 		}
 		ROTA.forget(ALIVE);
 
+		lastVoxels = 0;
 		if (!occlusion.enabled()) {
 			for (RenderStream stream : AUDIBLE) {
 				publish(stream, 0, 0);
@@ -182,7 +186,9 @@ public final class OcclusionScheduler {
 		}
 		OcclusionTracer pathTracer = tracer;
 		double rolloff = settings.rolloff();
-		OcclusionPass.run(DUE, new TraceBudget(RaveCraftOptions.occlusionQuality().get().voxelsPerTick()),
+		lastBudget = RaveCraftOptions.occlusionQuality().get().voxelsPerTick();
+		TraceBudget budget = new TraceBudget(lastBudget);
+		OcclusionPass.run(DUE, budget,
 				new OcclusionPass.Ops<RenderStream>() {
 					@Override
 					public boolean known(RenderStream stream) {
@@ -219,6 +225,17 @@ public final class OcclusionScheduler {
 						}
 					}
 				});
+		lastVoxels = budget.used();
+	}
+
+	/** Voxels the last tick's traces used (debug screen). */
+	static int lastVoxels() {
+		return lastVoxels;
+	}
+
+	/** The voxel budget of the last tick (debug screen). */
+	static int lastBudget() {
+		return lastBudget;
 	}
 
 	/** Whether the stream plays and the listener is within its range. */

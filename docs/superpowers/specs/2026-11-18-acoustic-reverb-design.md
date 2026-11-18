@@ -160,6 +160,11 @@ Un `ReverbScheduler` voisin de `OcclusionScheduler`, après lui :
 - Les résultats (`ReverbParams`, écho, affectations S1/S2) sont publiés vers le thread audio par champs volatils, comme l'occlusion.
 - Jamais d'exception hors du tick : un échec est journalisé au plus une fois par minute, l'ancienne mesure reste.
 - **Écran de debug** : l'entrée `ravecraft:reverb` (désactivée par défaut, à activer dans F3 + F6) affiche la dernière mesure de ton espace (ouverture, libre parcours, absorption, irrégularité), les réglages EAX qui en sortent (décroissance, diffusion, réflexions, gain) et l'écho ; dans un fluide, le préréglage utilisé.
+- **Autres entrées de debug du moteur acoustique** (même activation, F3 + F6) :
+  - `ravecraft:speakers` : enceintes audibles, combien jouent sur le plafond de sources, et pour les 4 plus fortes la distance, le niveau entendu, l'occlusion (perte et aigus), l'emplacement de réverbération (L, S1, S2) et si la source est coupée ;
+  - `ravecraft:listener` : milieu autour de la tête et sa perception (perte, aigus, flou, chorus), état de l'option d'effets, de l'EFX (nombre d'envois) et des réglages serveur d'occlusion et de réverbération ;
+  - `ravecraft:streams` : par flux, tampon en ms, sous-alimentations, trames perdues, débit reçu en kb/s, titre et propriétaire du morceau ;
+  - `ravecraft:perf` : voxels utilisés au dernier tick contre le budget (occlusion et réverbération), sondes en cours, durée moyenne et maximale d'un pas du fil audio.
 
 ## 7. Tests
 

@@ -6,6 +6,7 @@ import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.Propagation;
 import com.ravecraft.mod.core.acoustics.RetryCooldown;
 import com.ravecraft.mod.core.acoustics.SourceSelector;
+import com.ravecraft.mod.core.acoustics.debug.StepTimer;
 import com.ravecraft.mod.core.acoustics.occlusion.ListenerPerception;
 import com.ravecraft.mod.core.acoustics.occlusion.LossSmoother;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionGate;
@@ -70,6 +71,12 @@ public final class AcousticRenderer {
 	private static volatile ReverbTargets reverbTargets = ReverbTargets.SILENT;
 
 	private static volatile @Nullable Worker worker;
+
+	// Published by the audio thread for the debug screen.
+	private static volatile boolean efxActive;
+	private static volatile int efxSends;
+	private static volatile double stepAverageMs;
+	private static volatile double stepMaxMs;
 
 	private AcousticRenderer() {
 	}
@@ -160,6 +167,41 @@ public final class AcousticRenderer {
 		return listener;
 	}
 
+	/** The perception of the medium around the head, as last published. */
+	static ListenerPerception head() {
+		return head;
+	}
+
+	/** The fluid whose chorus the streams apply, or null. */
+	static @Nullable FluidReverb chorusFluid() {
+		return headChorus;
+	}
+
+	static int maxSources() {
+		return maxSources;
+	}
+
+	/** Whether the audio thread runs, and what it found and measured (debug screen). */
+	static boolean audioRunning() {
+		return worker != null;
+	}
+
+	static boolean efxActive() {
+		return efxActive;
+	}
+
+	static int efxSends() {
+		return efxSends;
+	}
+
+	static double stepAverageMs() {
+		return stepAverageMs;
+	}
+
+	static double stepMaxMs() {
+		return stepMaxMs;
+	}
+
 	/** Client thread, every tick: speaker states and the player's volume settings. */
 	private static void clientTick(Minecraft minecraft) {
 		// Also done by the audio thread, which may never run (no sound device): ended streams must not pile up.
@@ -202,6 +244,7 @@ public final class AcousticRenderer {
 		private final LossSmoother headHighLoss = new LossSmoother(RenderStream.OCCLUSION_RAMP_MS);
 		private final LossSmoother headBlurRamp = new LossSmoother(RenderStream.OCCLUSION_RAMP_MS);
 		private final ByteBuffer pcm = BufferUtils.createByteBuffer(BLOCK_SAMPLES * 2);
+		private final StepTimer stepTimer = new StepTimer();
 		private boolean efx;
 		private final RetryCooldown sourceRetry = new RetryCooldown(SOURCE_RETRY_MS);
 		private boolean warnedOutOfSources;
@@ -261,15 +304,21 @@ public final class AcousticRenderer {
 			try {
 				setUpEfx();
 				while (running) {
+					long began = System.nanoTime();
 					try {
 						step(Util.getMillis());
 					} catch (RuntimeException e) {
 						RaveCraft.LOGGER.error("Speaker audio step failed", e);
 					}
+					stepTimer.record(System.nanoTime() - began, Util.getMillis());
+					stepAverageMs = stepTimer.averageMs();
+					stepMaxMs = stepTimer.maxMs();
 					LockSupport.parkNanos(LOOP_NANOS);
 				}
 			} finally {
 				releaseAll();
+				efxActive = false;
+				efxSends = 0;
 			}
 		}
 
@@ -374,6 +423,12 @@ public final class AcousticRenderer {
 					}
 				}
 			}
+
+			for (RenderStream stream : streams) {
+				stream.sounding = stream.source != null;
+			}
+			efxActive = efx;
+			efxSends = sends;
 
 			float volume = playerVolume;
 			boolean filter = efxWanted;

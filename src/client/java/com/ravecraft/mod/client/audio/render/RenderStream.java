@@ -52,6 +52,8 @@ final class RenderStream {
 
 	/** Written on the audio thread each step, read by the occlusion scheduler to trace the loudest streams first. */
 	volatile double heardGain;
+	/** Written on the audio thread each step: whether this stream holds a sound source (for the debug screen). */
+	volatile boolean sounding;
 	/** Client thread only: {@code heardGain} as the scheduler read it before sorting, stable during the sort. */
 	double sortGain;
 

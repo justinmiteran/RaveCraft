@@ -139,4 +139,29 @@ class JitterBufferTest {
 		assertAudio(30, buffer.poll());
 		assertEquals(10, buffer.bufferedFrames());
 	}
+
+	@Test
+	void countsLostFramesAndUnderruns() {
+		offer(0, 4);
+		offer(6, 11);
+		assertEquals(0, buffer.lostFrames());
+		assertEquals(0, buffer.underruns());
+		for (int i = 0; i < 12; i++) {
+			buffer.poll();
+		}
+		assertEquals(1, buffer.lostFrames());
+		assertEquals(0, buffer.underruns());
+		buffer.poll();
+		assertEquals(1, buffer.underruns());
+		buffer.poll();
+		assertEquals(1, buffer.underruns(), "waiting again is the same stall");
+	}
+
+	@Test
+	void prebufferIsNotAnUnderrun() {
+		offerChunk(0);
+		buffer.poll();
+		buffer.poll();
+		assertEquals(0, buffer.underruns());
+	}
 }

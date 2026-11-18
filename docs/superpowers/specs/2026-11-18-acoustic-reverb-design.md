@@ -54,10 +54,10 @@ Chaque matière de 4b gagne une clé `absorption` (0 à 1, configurable) :
 Une surface de fluide touchée par un rayon a l'absorption `surfaceAbsorption` du milieu situé derrière elle : eau 0,01, lave 0,05, air 1 (un rayon parti de l'eau vers l'air sort). Le vide absorbe tout (1).
 
 ### 3.4 Écho
-- On cherche une **paroi lointaine** : au moins `echoMinRays` rayons (4 par défaut) qui touchent une surface d'absorption ≤ `echoMaxAbsorption` (0,2), entre `echoMinDistance` (17) et `echoMaxDistance` (35) blocs, et dont les distances sont à ±15 % de leur médiane.
+- On cherche une **paroi lointaine** : au moins `echo.minRays` rayons (4 par défaut) qui touchent une surface d'absorption ≤ `echo.maxAbsorption` (0,2), entre `echo.minDistance` (17) et `echo.maxDistance` (35) blocs, et dont les distances sont à ±15 % de leur médiane (pour chaque rayon candidat, son groupe réunit les candidats à ±15 % de sa distance ; `d` est la médiane du groupe retenu).
 - S'il y a plusieurs groupes, on garde celui qui a le plus de rayons, puis le plus proche.
 - Délai : `2 · d / 343` s (0,099 à 0,204 s pour 17 à 35 blocs ; la limite de l'effet EFX Echo est 0,207 s).
-- Niveau : `(1 − α_paroi) · (rayons du groupe / N)`, multiplié par `echoGain` (configurable), et atténué en `17 / d`.
+- Niveau : `(1 − α_paroi) · (rayons du groupe / N)`, multiplié par `echo.gain` (configurable), et atténué en `17 / d`.
 - Sans paroi de ce genre, l'écho est à zéro. Une paroi au-delà de 35 blocs ne fait pas d'écho distinct, mais elle compte toujours dans la réverbération.
 
 ### 3.5 Réglages EAX (`ReverbParams`)
@@ -126,14 +126,15 @@ Dans `config/ravecraft-server.json5`, envoyée à chaque joueur, chaque réglage
 | `maxDecaySeconds` | 6 | 0,5–20 |
 | `maxWetGain` | 0,32 | 0–1 |
 | `sameSpaceLossDb` | 6 | 0–60 |
-| `echoMinDistance` | 17 | 10–35 |
-| `echoMaxDistance` | 35 | `echoMinDistance`–35 |
-| `echoMinRays` | 4 | 1–16 |
-| `echoMaxAbsorption` | 0,2 | 0–1 |
-| `echoGain` | 0,6 | 0–1 |
-| `echoFeedback` | 0,15 | 0–0,5 |
-| `echoDamping` | 0,5 | 0–0,99 |
+| `echo.minDistance` | 17 | 10–35 |
+| `echo.maxDistance` | 35 | `echo.minDistance`–35 |
+| `echo.minRays` | 4 | 1–16 |
+| `echo.maxAbsorption` | 0,2 | 0–1 |
+| `echo.gain` | 0,6 | 0–1 |
+| `echo.feedback` | 0,15 | 0–0,5 |
+| `echo.damping` | 0,5 | 0–0,99 |
 
+- Les réglages d'écho sont regroupés dans la sous-section `reverb.echo`.
 - Préréglages par fluide, `reverb.media` (liste ouverte, par nom de milieu) :
 
 | Clé | Eau | Lave | Bornes |
@@ -145,7 +146,7 @@ Dans `config/ravecraft-server.json5`, envoyée à chaque joueur, chaque réglage
 | `decayHfRatio` | 0,3 | 0,2 | 0,1–2 |
 | `chorus` | `false` | `false` | |
 | `chorusRateHz` | 0,4 | 0,25 | 0,05–5 |
-| `chorusDepthMs` | 1,5 | 2 | 0–10 |
+| `chorusDepthMs` | 1,5 | 2 | 0–10 (la profondeur appliquée reste sous le retard de base de 8 ms) |
 
 Un fluide sans préréglage garde la mesure de l'espace.
 

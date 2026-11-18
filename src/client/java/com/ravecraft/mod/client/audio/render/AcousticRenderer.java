@@ -6,6 +6,7 @@ import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.Propagation;
 import com.ravecraft.mod.core.acoustics.RetryCooldown;
 import com.ravecraft.mod.core.acoustics.SourceSelector;
+import com.ravecraft.mod.core.acoustics.occlusion.OcclusionGate;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
 import java.nio.ByteBuffer;
@@ -244,9 +245,10 @@ public final class AcousticRenderer {
 				stream.distance = distance;
 				stream.gain = stream.powered ? Propagation.gain(settings, settings.portable(),
 						stream.volume, distance, cos) : 0;
-				occlude(stream, dt);
-				// Before the selection: the sources go to the speakers that are loudest once muffled.
-				stream.gain *= Math.pow(10, -stream.lossDb / 20);
+				boolean known = occlude(stream, dt);
+				// Before the selection: the sources go to the speakers that are loudest once muffled. A stream not
+				// traced yet ranks 0, gets no source and is consumed silently, in step with its playout.
+				stream.gain = OcclusionGate.gain(stream.gain, known, stream.lossDb);
 				stream.heardGain = stream.gain;
 				gains.put(stream.sessionId, stream.gain);
 			}
@@ -293,21 +295,23 @@ public final class AcousticRenderer {
 		}
 
 		/**
-		 * Smooths the stream's occlusion toward what the scheduler last published; none until it has published one,
-		 * and the first value published is taken at once (a new stream does not fade from unmuffled).
+		 * Smooths the stream's occlusion toward what the scheduler last published, and says whether there is one
+		 * (read once: the scheduler may publish meanwhile). None until it has published one, and the first value
+		 * published is taken at once (a new stream does not fade from unmuffled).
 		 */
-		private static void occlude(RenderStream stream, double dt) {
+		private static boolean occlude(RenderStream stream, double dt) {
 			if (!stream.occlusionKnown) {
 				stream.lossRamp.reset();
 				stream.highRamp.reset();
 				stream.lossDb = 0;
 				stream.highLossDb = 0;
-				return;
+				return false;
 			}
 			double loss = stream.occlusionLossDb;
 			double high = stream.occlusionHighLossDb;
 			stream.lossDb = stream.lossRamp.step(loss, dt);
 			stream.highLossDb = stream.highRamp.step(high, dt);
+			return true;
 		}
 
 		/**

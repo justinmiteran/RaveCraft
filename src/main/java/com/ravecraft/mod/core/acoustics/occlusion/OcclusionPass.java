@@ -6,8 +6,11 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * One tick of occlusion tracing: the due streams, loudest first, share one voxel budget. A stream whose trace runs out
- * of budget waits for the next tick, which starts with it; the first stream of a tick that does not fit even the
- * whole budget settles for its straight line, which visits a bounded number of voxels.
+ * of budget waits for the next tick, which starts with it; one that was never published meanwhile gets its straight
+ * line at once (the audio thread holds it silent until then), as does the first stream of a tick that does not fit
+ * even the whole budget: a straight line visits a bounded number of voxels. A trace that throws (a modded block) is
+ * reported and skipped: the stream keeps its last occlusion, or gets none if it never had one, and the pass never
+ * throws.
  */
 public final class OcclusionPass {
 	/** What the pass does to a stream; implemented by the client scheduler. */
@@ -26,26 +29,41 @@ public final class OcclusionPass {
 
 		/** {@code stream} goes first on the next tick. */
 		void unfinished(T stream);
+
+		/** A trace of {@code stream} threw {@code e} (to log); the pass goes on with the next stream. */
+		void failed(T stream, RuntimeException e);
 	}
 
 	private OcclusionPass() {
 	}
 
 	public static <T> void run(List<T> due, TraceBudget budget, Ops<T> ops) {
-		for (int i = 0; i < due.size(); i++) {
-			T stream = due.get(i);
-			boolean wholeBudget = budget.used() == 0;
-			Occlusion result = ops.occlusion(stream, budget);
-			if (result == null) {
-				if (!wholeBudget) {
-					for (int j = i; j < due.size(); j++) {
-						ops.unfinished(due.get(j));
+		boolean outOfBudget = false;
+		for (T stream : due) {
+			try {
+				if (!outOfBudget) {
+					boolean wholeBudget = budget.used() == 0;
+					Occlusion result = ops.occlusion(stream, budget);
+					if (result != null) {
+						ops.publish(stream, result);
+						continue;
 					}
-					return;
+					if (wholeBudget) {
+						ops.publish(stream, ops.direct(stream));
+						continue;
+					}
+					outOfBudget = true;
 				}
-				result = ops.direct(stream);
+				ops.unfinished(stream);
+				if (!ops.known(stream)) {
+					ops.publish(stream, ops.direct(stream));
+				}
+			} catch (RuntimeException e) {
+				ops.failed(stream, e);
+				if (!ops.known(stream)) {
+					ops.publish(stream, Occlusion.NONE);
+				}
 			}
-			ops.publish(stream, result);
 		}
 	}
 }

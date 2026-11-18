@@ -1,6 +1,7 @@
 package com.ravecraft.mod.core.acoustics.occlusion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,6 +71,11 @@ class OcclusionPassTest {
 		public void unfinished(Stream stream) {
 			events.add("unfinished " + stream.name);
 		}
+
+		@Override
+		public void failed(Stream stream, RuntimeException e) {
+			events.add("failed " + stream.name);
+		}
 	}
 
 	@Test
@@ -89,5 +95,43 @@ class OcclusionPassTest {
 		OcclusionPass.run(List.of(a), new TraceBudget(10), r);
 		assertEquals(List.of("trace a", "direct a", "publish a"), r.events);
 		assertEquals(DIRECT, a.published);
+	}
+
+	@Test
+	void unknownStreamPastTheBudgetGetsItsStraightLineAtOnce() {
+		Stream a = new Stream("a", 8, true);
+		Stream b = new Stream("b", 8, false);
+		Stream c = new Stream("c", 8, true);
+		c.published = DIRECT;
+		Recorder r = new Recorder();
+		OcclusionPass.run(List.of(a, b, c), new TraceBudget(10), r);
+		assertEquals(List.of("trace a", "publish a", "trace b", "unfinished b", "direct b", "publish b",
+				"unfinished c"), r.events);
+		assertEquals(DIRECT, b.published);
+		assertTrue(b.known);
+	}
+
+	@Test
+	void failingTraceKeepsTheLastValueAndGoesOn() {
+		Stream a = new Stream("a", 1, true);
+		a.published = DIRECT;
+		Stream b = new Stream("b", 1, false);
+		Recorder r = new Recorder();
+		r.throwing.put("a", new IllegalStateException("modded block"));
+		OcclusionPass.run(List.of(a, b), new TraceBudget(10), r);
+		assertEquals(List.of("trace a", "failed a", "trace b", "publish b"), r.events);
+		assertEquals(DIRECT, a.published);
+		assertEquals(FULL, b.published);
+	}
+
+	@Test
+	void failingTraceOfAnUnknownStreamPublishesNoOcclusion() {
+		// Held silent until known otherwise: a stream whose trace always fails would never be heard.
+		Stream a = new Stream("a", 1, false);
+		Recorder r = new Recorder();
+		r.throwing.put("a", new IllegalStateException("modded block"));
+		OcclusionPass.run(List.of(a), new TraceBudget(10), r);
+		assertEquals(List.of("trace a", "failed a", "publish a"), r.events);
+		assertEquals(Occlusion.NONE, a.published);
 	}
 }

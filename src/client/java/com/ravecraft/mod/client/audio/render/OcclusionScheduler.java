@@ -1,5 +1,6 @@
 package com.ravecraft.mod.client.audio.render;
 
+import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.client.audio.occlusion.WorldAcousticGrid;
 import com.ravecraft.mod.client.options.RaveCraftOptions;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
@@ -42,6 +43,11 @@ public final class OcclusionScheduler {
 	private static final List<RenderStream> AUDIBLE = new ArrayList<>();
 	private static final List<Integer> AUDIBLE_IDS = new ArrayList<>();
 	private static final List<RenderStream> DUE = new ArrayList<>();
+	/** Sessions whose trace already failed once: each is logged once. */
+	private static final Set<Integer> FAILED_SESSIONS = new HashSet<>();
+	/** Logs an unexpected failure of the whole tick at most once a minute. */
+	private static final long TICK_FAILURE_LOG_MS = 60_000;
+	private static long lastTickFailureLog = Long.MIN_VALUE;
 	private static final Set<Integer> ALIVE = new HashSet<>();
 	private static Map<Integer, RenderStream> byId = new HashMap<>();
 	/** Last tick's audible streams, to notice a session that restarted with a new stream under the same id. */
@@ -72,7 +78,20 @@ public final class OcclusionScheduler {
 		});
 	}
 
+	/** Never throws: an exception out of END_CLIENT_TICK would crash the client. */
 	private static void tick(Minecraft minecraft) {
+		try {
+			traceTick(minecraft);
+		} catch (RuntimeException e) {
+			long now = System.currentTimeMillis();
+			if (lastTickFailureLog == Long.MIN_VALUE || now - lastTickFailureLog >= TICK_FAILURE_LOG_MS) {
+				lastTickFailureLog = now;
+				RaveCraft.LOGGER.error("Occlusion tick failed; the streams keep their last occlusion", e);
+			}
+		}
+	}
+
+	private static void traceTick(Minecraft minecraft) {
 		tick++;
 		AcousticSettings settings = AcousticSettingsClient.get();
 		OcclusionSettings occlusion = settings.occlusion();
@@ -100,6 +119,7 @@ public final class OcclusionScheduler {
 			ROTA.forget(Set.of());
 			previousById.clear();
 			byId.clear();
+			FAILED_SESSIONS.clear();
 			return;
 		}
 		OcclusionTracer tracer = OcclusionScheduler.tracer;
@@ -177,6 +197,14 @@ public final class OcclusionScheduler {
 					@Override
 					public void unfinished(RenderStream stream) {
 						ROTA.unfinished(stream.sessionId);
+					}
+
+					@Override
+					public void failed(RenderStream stream, RuntimeException e) {
+						if (FAILED_SESSIONS.add(stream.sessionId)) {
+							RaveCraft.LOGGER.error("Occlusion trace failed for speaker session {} at {}; it keeps its"
+									+ " last value", stream.sessionId, stream.pos, e);
+						}
 					}
 				});
 	}

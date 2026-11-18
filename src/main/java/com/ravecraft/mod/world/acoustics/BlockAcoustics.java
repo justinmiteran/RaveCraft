@@ -1,5 +1,6 @@
 package com.ravecraft.mod.world.acoustics;
 
+import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
@@ -7,13 +8,16 @@ import com.ravecraft.mod.core.acoustics.occlusion.VoxelSample;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.EmptyBlockGetter;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jspecify.annotations.Nullable;
 
@@ -28,6 +32,8 @@ public final class BlockAcoustics {
 	private static final double EPSILON = 1e-6;
 
 	private static final Map<SoundType, String> BY_SOUND = new HashMap<>();
+	/** Blocks whose shape could not be read, each logged once. */
+	private static final Set<Block> FAILED_BLOCKS = ConcurrentHashMap.newKeySet();
 
 	static {
 		put("wood", SoundType.WOOD, SoundType.NETHER_WOOD, SoundType.BAMBOO_WOOD, SoundType.CHERRY_WOOD,
@@ -60,11 +66,28 @@ public final class BlockAcoustics {
 	private record Entry(@Nullable AcousticMaterial material, double fillX, double fillY, double fillZ) {
 	}
 
+	/** Where a block state's collision shape comes from. */
+	@FunctionalInterface
+	public interface ShapeSource {
+		VoxelShape shape(BlockState state);
+	}
+
+	/** The shape of the block alone, as if at the origin of an empty world. */
+	private static final ShapeSource COLLISION = state -> state.getCollisionShape(EmptyBlockGetter.INSTANCE,
+			BlockPos.ZERO);
+
 	private final OcclusionSettings settings;
+	private final ShapeSource shapes;
 	private final Map<BlockState, Entry> cache = new ConcurrentHashMap<>();
 
 	public BlockAcoustics(OcclusionSettings settings) {
+		this(settings, COLLISION);
+	}
+
+	/** With the shapes taken from {@code shapes} instead of the collision shapes (for tests). */
+	public BlockAcoustics(OcclusionSettings settings, ShapeSource shapes) {
 		this.settings = settings;
+		this.shapes = shapes;
 	}
 
 	public @Nullable AcousticMaterial material(BlockState state) {
@@ -108,7 +131,17 @@ public final class BlockAcoustics {
 	}
 
 	private Entry compute(BlockState state) {
-		VoxelShape shape = state.getCollisionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
+		VoxelShape shape;
+		try {
+			shape = shapes.shape(state);
+		} catch (RuntimeException e) {
+			// Modded blocks may read a block entity or cast the getter: count it as a full cube of its material.
+			if (FAILED_BLOCKS.add(state.getBlock())) {
+				RaveCraft.LOGGER.warn("Cannot get the collision shape of {}; it counts as a full block for sound",
+						state.getBlock(), e);
+			}
+			shape = Shapes.block();
+		}
 		AcousticMaterial material = null;
 		for (AcousticMaterial m : settings.materials()) {
 			if (state.is(AcousticTags.material(m.name()))) {

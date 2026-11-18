@@ -194,4 +194,26 @@ public class BlockAcousticsGameTest {
 		h.assertTrue(media.dimensionMedium(OVERWORLD) == s.air(), "the overworld is the settings' air");
 		h.succeed();
 	}
+
+	@GameTest
+	public void throwingShapeFallsBackToAFullCube(GameTestHelper h) {
+		int[] calls = {0};
+		BlockAcoustics throwing = new BlockAcoustics(OcclusionSettings.DEFAULT, state -> {
+			calls[0]++;
+			throw new IllegalStateException("a modded block reading a block entity that is not there");
+		});
+		BlockState planks = Blocks.OAK_PLANKS.defaultBlockState();
+		AcousticMaterial m = throwing.material(planks);
+		h.assertTrue(m != null && m.name().equals("wood"), "falls back to the resolved material, wood, but is " + m);
+		for (Direction.Axis axis : Direction.Axis.values()) {
+			h.assertValueEqual(throwing.fill(planks, axis), 1.0, "full cube along " + axis);
+		}
+		// Redstone dust has no tag and a footstep sound no material claims: stone.
+		AcousticMaterial unresolved = throwing.material(Blocks.REDSTONE_WIRE.defaultBlockState());
+		h.assertTrue(unresolved != null && unresolved.name().equals("stone"), "unresolved is stone, but is "
+				+ unresolved);
+		throwing.material(planks);
+		h.assertValueEqual(calls[0], 2, "the fallback is cached");
+		h.succeed();
+	}
 }

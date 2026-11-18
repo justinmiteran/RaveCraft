@@ -125,6 +125,7 @@ LocalPlayback (boucle locale) ───────►      │                 
 - ~24 rayons autour de l'auditeur, longueur bornée : ouverture, taille et absorption de l'espace → paramètres de réverbération EFX (temps de décroissance, densité, diffusion, gain) sur un emplacement d'effet auxiliaire partagé.
 - Échos distincts dans les grands espaces à parois lointaines, délai tiré de la distance des parois.
 - Recalcul quand l'auditeur se déplace d'au moins 1 bloc ou qu'un bloc change dans la zone mesurée. Même règle de compatibilité que 4b.
+- **Couleur sous l'eau** : quand la tête de l'auditeur est dans un fluide (règle de 4b, `ListenerPerception`), l'emplacement d'effet partagé passe sur un préréglage propre au milieu au lieu de la salle mesurée : réverbération courte et très dense, éventuellement un léger chorus, pour un son épais qui résonne. Préréglage par milieu dans la section `"occlusion"` de la config (eau et lave par défaut), enceintes RaveCraft seulement. 4b ne fait que baisser, assourdir et flouter le son direct.
 
 ## 8. Points à vérifier pendant le plan
 

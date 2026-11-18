@@ -46,11 +46,7 @@ public final class OcclusionTracer {
 	private final OcclusionSettings settings;
 	private final AcousticMedium air;
 	private final VoxelSample sample = new VoxelSample();
-	private final int[] cell = new int[3];
-	private final int[] end = new int[3];
-	private final int[] step = new int[3];
-	private final double[] tMax = new double[3];
-	private final double[] tDelta = new double[3];
+	private final VoxelWalk walk = new VoxelWalk();
 	/**
 	 * Set by each {@link #trace}: the medium the segment starts in and the one it arrives in (a voxel without a medium
 	 * of its own takes the one around it along the segment); null when the trace stopped before knowing it.
@@ -89,40 +85,10 @@ public final class OcclusionTracer {
 	 */
 	public @Nullable PathLoss trace(double x0, double y0, double z0, double x1, double y1, double z1,
 			TraceBudget budget) {
-		double[] from = {x0, y0, z0};
-		double[] delta = {x1 - x0, y1 - y0, z1 - z0};
-		double length = Math.sqrt(delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2]);
-		cell[0] = (int) Math.floor(x0);
-		cell[1] = (int) Math.floor(y0);
-		cell[2] = (int) Math.floor(z0);
-		end[0] = (int) Math.floor(x1);
-		end[1] = (int) Math.floor(y1);
-		end[2] = (int) Math.floor(z1);
-		int entryAxis = 0;
-		for (int a = 0; a < 3; a++) {
-			double d = delta[a];
-			if (d > 0) {
-				step[a] = 1;
-				tMax[a] = (cell[a] + 1 - from[a]) / d;
-				tDelta[a] = 1 / d;
-			} else if (d < 0) {
-				step[a] = -1;
-				tMax[a] = (from[a] - cell[a]) / -d;
-				tDelta[a] = -1 / d;
-			} else {
-				step[a] = 0;
-				tMax[a] = Double.POSITIVE_INFINITY;
-				tDelta[a] = Double.POSITIVE_INFINITY;
-			}
-			if (Math.abs(d) > Math.abs(delta[entryAxis])) {
-				entryAxis = a;
-			}
-		}
-
+		walk.start(x0, y0, z0, x1, y1, z1);
+		double length = walk.length();
 		double loss = 0;
 		double high = 0;
-		double t = 0;
-		boolean first = true;
 		// The medium the walk is in. A voxel without a medium of its own (a solid without fluid) stays in it; until
 		// the first real medium, the length walked is kept aside and that medium absorbs it once known.
 		@Nullable AcousticMedium current = null;
@@ -134,22 +100,12 @@ public final class OcclusionTracer {
 			if (!budget.take()) {
 				return null;
 			}
-			boolean last = cell[0] == end[0] && cell[1] == end[1] && cell[2] == end[2];
-			int next = -1;
-			double tExit = 1;
-			if (!last) {
-				// Lowest axis first on ties; an axis already at its end coordinate never steps again.
-				for (int a = 0; a < 3; a++) {
-					if (cell[a] != end[a] && (next < 0 || tMax[a] < tMax[next])) {
-						next = a;
-					}
-				}
-				tExit = Math.clamp(tMax[next], t, 1);
-			}
-			double inside = (tExit - t) * length;
+			boolean first = walk.first();
+			boolean last = walk.last();
+			double inside = (walk.exitT() - walk.enterT()) * length;
 
 			if (inside >= MIN_LENGTH) {
-				grid.sample(cell[0], cell[1], cell[2], sample);
+				grid.sample(walk.x(), walk.y(), walk.z(), sample);
 				AcousticMedium own = sample.medium;
 				if (own != null && own.impedance() <= 0) {
 					endMuted = first || last;
@@ -157,7 +113,7 @@ public final class OcclusionTracer {
 				}
 				AcousticMaterial material = sample.material;
 				if (material != null && !first && !last) {
-					double weight = sample.fill(entryAxis) * Math.min(1, inside);
+					double weight = sample.fill(walk.entryAxis()) * Math.min(1, inside);
 					loss += material.lossDb() * weight;
 					high += material.highLossDb() * weight;
 				}
@@ -189,11 +145,7 @@ public final class OcclusionTracer {
 			if (last) {
 				break;
 			}
-			cell[next] += step[next];
-			tMax[next] += tDelta[next];
-			t = tExit;
-			entryAxis = next;
-			first = false;
+			walk.step();
 		}
 		if (current == null) {
 			// Nothing but voxels without a medium of their own: the segment is in the dimension's medium.

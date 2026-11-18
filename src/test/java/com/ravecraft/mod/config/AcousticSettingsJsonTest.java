@@ -8,6 +8,9 @@ import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
+import com.ravecraft.mod.core.acoustics.reverb.EchoSettings;
+import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
+import com.ravecraft.mod.core.acoustics.reverb.ReverbSettings;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -160,12 +163,35 @@ class AcousticSettingsJsonTest {
 				d.bendHighLossDb());
 		AcousticSettings s = AcousticSettings.DEFAULT;
 		AcousticSettings withCustom = new AcousticSettings(s.rolloff(), s.fadeFraction(), s.audibilityThresholdDb(),
-				s.maxRange(), s.portable(), custom);
+				s.maxRange(), s.portable(), custom, s.reverb());
 		StringWriter out = new StringWriter();
 		AcousticSettingsJson.write(withCustom, out);
 		AcousticSettingsJson.Result r = result(out.toString());
 		assertEquals(withCustom, r.settings());
 		assertTrue(r.complete());
+	}
+
+	@Test
+	void reverbRoundTrips() {
+		List<FluidReverb> media = new ArrayList<>(ReverbSettings.DEFAULT.media());
+		media.add(new FluidReverb("slime", 2.5, 0.5, 0.6, 0.2, 0.7, true, 0.8, 3));
+		ReverbSettings custom = new ReverbSettings(false, 90, 8, 0.5, 12,
+				new EchoSettings(20, 30, 6, 0.3, 0.4, 0.25, 0.7), media);
+		AcousticSettings s = AcousticSettings.DEFAULT;
+		AcousticSettings withCustom = new AcousticSettings(s.rolloff(), s.fadeFraction(), s.audibilityThresholdDb(),
+				s.maxRange(), s.portable(), s.occlusion(), custom);
+		StringWriter out = new StringWriter();
+		AcousticSettingsJson.write(withCustom, out);
+		AcousticSettingsJson.Result r = result(out.toString());
+		assertEquals(withCustom, r.settings());
+		assertTrue(r.complete());
+	}
+
+	@Test
+	void fileWithoutReverbIsIncompleteAndTakesDefaults() {
+		AcousticSettingsJson.Result r = result("{ \"rolloff\": 1 }");
+		assertEquals(ReverbSettings.DEFAULT, r.settings().reverb());
+		assertFalse(r.complete());
 	}
 
 	@Test

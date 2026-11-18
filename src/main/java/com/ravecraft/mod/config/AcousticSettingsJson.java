@@ -13,6 +13,9 @@ import com.ravecraft.mod.core.acoustics.DeviceProfile;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
+import com.ravecraft.mod.core.acoustics.reverb.EchoSettings;
+import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
+import com.ravecraft.mod.core.acoustics.reverb.ReverbSettings;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
@@ -88,7 +91,8 @@ public final class AcousticSettingsJson {
 					r.number(o, "maxRange", d.maxRange()),
 					new DeviceProfile(r.number(p, "powerWatts", dp.powerWatts()), r.number(p, "sensitivityDb", dp.sensitivityDb()),
 							r.number(p, "bassCutDb", dp.bassCutDb()), r.number(p, "bassCutHz", dp.bassCutHz()), dp.directivity()),
-					readOcclusion(r, o, d.occlusion(), warn));
+					readOcclusion(r, o, d.occlusion(), warn),
+					readReverb(r, o, d.reverb()));
 			if (o.has(OLD_AIR_KEY)) {
 				r.complete = false;
 			}
@@ -170,6 +174,40 @@ public final class AcousticSettingsJson {
 				r.number(o, "bendHighLossDb", d.bendHighLossDb()));
 	}
 
+	private static ReverbSettings readReverb(Reading r, JsonObject root, ReverbSettings d) {
+		JsonObject o = r.object(root, "reverb");
+
+		EchoSettings de = d.echo();
+		JsonObject e = r.object(o, "echo");
+		EchoSettings echo = new EchoSettings(r.number(e, "minDistance", de.minDistance()),
+				r.number(e, "maxDistance", de.maxDistance()), (int) r.number(e, "minRays", de.minRays()),
+				r.number(e, "maxAbsorption", de.maxAbsorption()), r.number(e, "gain", de.gain()),
+				r.number(e, "feedback", de.feedback()), r.number(e, "damping", de.damping()));
+
+		// Entries keep file order and start from the default of the same name; defaults the file lacks follow them.
+		List<FluidReverb> media = new ArrayList<>();
+		for (Map.Entry<String, JsonElement> entry : r.object(o, "media").entrySet()) {
+			FluidReverb base = named(d.media(), entry.getKey(), FluidReverb::medium,
+					new FluidReverb(entry.getKey(), 1, 1, 1, 0.3, 1, false, 0.4, 1.5));
+			JsonObject m = entry.getValue().isJsonObject() ? entry.getValue().getAsJsonObject() : new JsonObject();
+			media.add(new FluidReverb(entry.getKey(), r.number(m, "decaySeconds", base.decaySeconds()),
+					r.number(m, "density", base.density()), r.number(m, "diffusion", base.diffusion()),
+					r.number(m, "gain", base.gain()), r.number(m, "decayHfRatio", base.decayHfRatio()),
+					r.bool(m, "chorus", base.chorus()), r.number(m, "chorusRateHz", base.chorusRateHz()),
+					r.number(m, "chorusDepthMs", base.chorusDepthMs())));
+		}
+		for (FluidReverb f : d.media()) {
+			if (media.stream().noneMatch(x -> x.medium().equals(f.medium()))) {
+				r.complete = false;
+				media.add(f);
+			}
+		}
+
+		return new ReverbSettings(r.bool(o, "enabled", d.enabled()), r.number(o, "rayLength", d.rayLength()),
+				r.number(o, "maxDecaySeconds", d.maxDecaySeconds()), r.number(o, "maxWetGain", d.maxWetGain()),
+				r.number(o, "sameSpaceLossDb", d.sameSpaceLossDb()), echo, media);
+	}
+
 	private static <T> T named(List<T> list, String name, Function<T, String> nameOf, T fallback) {
 		for (T t : list) {
 			if (nameOf.apply(t).equals(name)) {
@@ -225,9 +263,10 @@ public final class AcousticSettingsJson {
 				    }
 				  },
 
-				%s}
+				%s%s}
 				""".formatted(n(s.rolloff()), n(s.fadeFraction()), n(s.audibilityThresholdDb()), n(s.maxRange()),
-				n(p.powerWatts()), n(p.sensitivityDb()), n(p.bassCutDb()), n(p.bassCutHz()), occlusionText(s.occlusion()));
+				n(p.powerWatts()), n(p.sensitivityDb()), n(p.bassCutDb()), n(p.bassCutHz()), occlusionText(s.occlusion()),
+				reverbText(s.reverb()));
 		try {
 			out.write(text);
 			out.flush();
@@ -322,8 +361,86 @@ public final class AcousticSettingsJson {
 
 				    // Extra treble loss added for each bend of a detour, on top of bendLossDb. Bounds: 0 to 40.
 				    "bendHighLossDb": %s
-				  }
+				  },
+
 				""".formatted(o.detours(), n(o.bendLossDb()), n(o.bendHighLossDb())));
+		return b.toString();
+	}
+
+	private static String reverbText(ReverbSettings v) {
+		EchoSettings e = v.echo();
+		StringBuilder b = new StringBuilder();
+		b.append("""
+				  // How rooms ring. A speaker in an enclosed space gets a reverb that grows with the size of the room
+				  // and shrinks with the absorption of its walls (see "absorption" in the occlusion materials), and a
+				  // far hard wall can give a distinct echo. Underwater and in lava the reverb is that of the fluid.
+				  "reverb": {
+				    // Turns the whole reverb off for everyone when false: no room tail, echo or fluid reverb.
+				    "enabled": %s,
+
+				    // How far the rays that measure a room travel, in blocks. A room larger than this sounds like
+				    // open air. Longer is more precise and costs more. Bounds: 16 to 128.
+				    "rayLength": %s,
+
+				    // The longest reverb tail, in seconds, however large and hard the room. Bounds: 0.5 to 20.
+				    "maxDecaySeconds": %s,
+
+				    // The loudest the reverb may be, as a share of the dry sound. Bounds: 0 to 1.
+				    "maxWetGain": %s,
+
+				    // Level lost, in dB, by the reverb of a speaker in the same room as the listener when it is
+				    // heard through the wall of another one. Bounds: 0 to 60.
+				    "sameSpaceLossDb": %s,
+
+				    // The distinct echo thrown back by a far, hard surface.
+				    "echo": {
+				      // Nearest surface that gives an echo, in blocks. Bounds: 10 to 35.
+				      "minDistance": %s,
+
+				      // Farthest surface that gives an echo, in blocks; never below minDistance. Bounds: minDistance to 35.
+				      "maxDistance": %s,
+
+				      // Rays that must come back from such a surface for the echo to be heard. Bounds: 1 to 16.
+				      "minRays": %s,
+
+				      // Surfaces absorbing more than this share give no echo. Bounds: 0 to 1.
+				      "maxAbsorption": %s,
+
+				      // Loudness of the echo. Bounds: 0 to 1.
+				      "gain": %s,
+
+				      // Share of the echo fed back into itself: more repeats. Bounds: 0 to 0.5.
+				      "feedback": %s,
+
+				      // How much each repeat loses its treble. Bounds: 0 to 0.99.
+				      "damping": %s
+				    },
+
+				    // The reverb heard with the head in a fluid: one line per medium name (see the occlusion media),
+				    // in order, at most 16 (names use a-z, 0-9 and _, 1 to 32 characters).
+				    "media": {
+				      //   decaySeconds: length of the tail. Bounds: 0.1 to 20.
+				      //   density, diffusion: how thick and how smooth the tail is. Bounds: 0 to 1.
+				      //   gain: loudness of the reverb. Bounds: 0 to 1.
+				      //   decayHfRatio: how long the treble lasts compared to the rest (below 1 = duller). Bounds: 0.1 to 2.
+				      //   chorus: true adds a slow wobble to the sound (water). chorusRateHz: its speed, 0.05 to 5.
+				      //     chorusDepthMs: its depth, 0 to 10.
+				""".formatted(v.enabled(), n(v.rayLength()), n(v.maxDecaySeconds()), n(v.maxWetGain()),
+				n(v.sameSpaceLossDb()), n(e.minDistance()), n(e.maxDistance()), e.minRays(), n(e.maxAbsorption()),
+				n(e.gain()), n(e.feedback()), n(e.damping())));
+		for (int i = 0; i < v.media().size(); i++) {
+			FluidReverb f = v.media().get(i);
+			b.append("      ").append(quote(f.medium())).append(": { \"decaySeconds\": ").append(n(f.decaySeconds()))
+					.append(", \"density\": ").append(n(f.density()))
+					.append(", \"diffusion\": ").append(n(f.diffusion()))
+					.append(", \"gain\": ").append(n(f.gain()))
+					.append(",\n        \"decayHfRatio\": ").append(n(f.decayHfRatio()))
+					.append(", \"chorus\": ").append(f.chorus())
+					.append(", \"chorusRateHz\": ").append(n(f.chorusRateHz()))
+					.append(", \"chorusDepthMs\": ").append(n(f.chorusDepthMs())).append(" }")
+					.append(i < v.media().size() - 1 ? ",\n" : "\n");
+		}
+		b.append("    }\n  }\n");
 		return b.toString();
 	}
 

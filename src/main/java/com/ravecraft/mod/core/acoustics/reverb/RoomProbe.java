@@ -29,6 +29,7 @@ public final class RoomProbe {
 	private double ox;
 	private double oy;
 	private double oz;
+	private double[] direction = new double[3];
 	private double rayLength;
 	private int ray;
 	private boolean walking;
@@ -55,6 +56,7 @@ public final class RoomProbe {
 	public boolean run(TraceBudget budget) {
 		while (ray < directions.length) {
 			double[] d = directions[ray];
+			direction = d;
 			if (!walking) {
 				walk.start(ox, oy, oz, ox + d[0] * rayLength, oy + d[1] * rayLength, oz + d[2] * rayLength);
 				walking = true;
@@ -95,13 +97,25 @@ public final class RoomProbe {
 	private @Nullable RayHit hit() {
 		double distance = walk.enterT() * walk.length();
 		AcousticMaterial material = sample.material;
-		if (material != null && sample.fill(walk.entryAxis()) >= SOLID_FILL) {
-			return new RayHit(false, distance, material.absorption());
+		int axis = walk.entryAxis();
+		if (material != null && sample.fill(axis) >= SOLID_FILL) {
+			return new RayHit(false, distance, material.absorption(), axis, facePlane(axis));
 		}
 		AcousticMedium own = sample.medium;
 		if (own != null && !own.equals(startMedium)) {
-			return new RayHit(false, distance, own.impedance() <= 0 ? 1 : own.surfaceAbsorption());
+			return new RayHit(false, distance, own.impedance() <= 0 ? 1 : own.surfaceAbsorption(), axis,
+					facePlane(axis));
 		}
 		return null;
+	}
+
+	/** The block boundary the ray crossed along {@code axis} to enter the current voxel. */
+	private int facePlane(int axis) {
+		int cell = switch (axis) {
+			case VoxelSample.X -> walk.x();
+			case VoxelSample.Y -> walk.y();
+			default -> walk.z();
+		};
+		return direction[axis] >= 0 ? cell : cell + 1;
 	}
 }

@@ -49,16 +49,26 @@ class ReverbParamsTest {
 
 	@Test
 	void openAirIsDry() {
-		ReverbParams p = ReverbParams.of(new RoomShape(1, 64, 1, 1), R);
+		ReverbParams p = ReverbParams.of(new RoomShape(1, 64, 1, 1, 0.5), R);
 		assertEquals(0, p.gain());
 		assertEquals(0, p.reflectionsGain());
 	}
 
 	@Test
 	void smallRoomIsDenserThanBigRoom() {
-		ReverbParams small = ReverbParams.of(new RoomShape(0, 2, 0.2, 0.2), R);
-		ReverbParams big = ReverbParams.of(new RoomShape(0, 40, 0.2, 0.2), R);
+		ReverbParams small = ReverbParams.of(new RoomShape(0, 2, 0.2, 0.2, 0.5), R);
+		ReverbParams big = ReverbParams.of(new RoomShape(0, 40, 0.2, 0.2, 0.5), R);
 		assertTrue(small.density() > big.density());
+	}
+
+	@Test
+	void smoothRoomIsHarderThanRuggedRoom() {
+		ReverbParams smooth = ReverbParams.of(new RoomShape(0, 6, 0.1, 0.1, 0), R);
+		ReverbParams rugged = ReverbParams.of(new RoomShape(0, 6, 0.1, 0.1, 1), R);
+		assertEquals(0.4, smooth.diffusion(), 1e-9);
+		assertEquals(1, rugged.diffusion(), 1e-9);
+		assertEquals(smooth.gain(), smooth.reflectionsGain(), 1e-9);
+		assertEquals(0.5 * rugged.gain(), rugged.reflectionsGain(), 1e-9);
 	}
 
 	@Test
@@ -67,7 +77,9 @@ class ReverbParamsTest {
 		for (double l : new double[] { 0, 0.5, 128 }) {
 			for (double openness : new double[] { 0, 1 }) {
 				for (double a : new double[] { 0, 0.5, 1 }) {
-					assertInBounds(ReverbParams.of(new RoomShape(openness, l, a, a), extreme));
+					for (double irregularity : new double[] { 0, 1 }) {
+						assertInBounds(ReverbParams.of(new RoomShape(openness, l, a, a, irregularity), extreme));
+					}
 				}
 			}
 		}

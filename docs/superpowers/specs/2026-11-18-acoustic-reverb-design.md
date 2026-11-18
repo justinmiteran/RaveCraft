@@ -42,6 +42,7 @@ Calcul en Java pur dans `com.ravecraft.mod.core.acoustics.reverb`, sur l'interfa
 - **Ouverture** `o` : part de rayons ouverts (0 à 1).
 - **Libre parcours moyen** `l` : distance moyenne des rayons qui ont touché, en blocs (1 bloc = 1 m). Sans impact, `l` = longueur maximale.
 - **Absorption moyenne** `ᾱ` : moyenne des absorptions des surfaces touchées. Un rayon ouvert compte comme absorption totale (α = 1).
+- **Irrégularité** `i` : chaque rayon qui touche note la face franchie (axe et plan de bloc). Des murs plats et lisses ne montrent que quelques grandes faces (une boîte en montre 6) ; une grotte, des piliers ou des meubles en montrent beaucoup. `i = (F − 6) / min(N − 6, 18)`, borné à 0–1, où `F` est le nombre de faces distinctes et `N` le nombre de rayons qui ont touché une face : 0 pour une boîte, 1 dès 24 faces distinctes. Avec 6 impacts ou moins, `i` = 0,5 (indécidable).
 - **RT60** (Eyring) : `RT60 = 0,161 · V / (−S · ln(1 − ᾱ))` ; avec `l = 4V/S`, cela donne `RT60 = 0,161 · l / (−4 · ln(1 − ᾱ))`. Exemple : salle de pierre de libre parcours 5 blocs → ≈ 10 s, ramené au plafond ; la même en laine → ≈ 0,17 s. Le résultat est borné entre 0,1 s et `maxDecaySeconds` (6 s par défaut, au plus 20 s, limite EAX).
 
 ### 3.3 Absorption des matières et des milieux
@@ -68,11 +69,11 @@ Fonction pure `RoomShape → ReverbParams`, toujours dans les bornes EAX :
 | `DECAY_TIME` | RT60 |
 | `DECAY_HFRATIO` | `1 − 0,6 · ᾱ_aigus`, borné à 0,1–1,0 : une salle absorbante perd ses aigus plus vite |
 | `GAIN` (réverbération tardive) | `maxWetGain · (1 − o)^1,5` : presque nul en plein air |
-| `REFLECTIONS_GAIN` | 0,5 × `GAIN` |
+| `REFLECTIONS_GAIN` | `GAIN · (1 − 0,5 · i)` : des murs lisses renvoient des premières réflexions franches, une grotte les éparpille |
 | `REFLECTIONS_DELAY` | `min(0,3, l / 343)` |
 | `LATE_REVERB_DELAY` | `min(0,1, l / 343)` |
 | `DENSITY` | `clamp(8 / l, 0, 1)` : une petite salle est plus dense |
-| `DIFFUSION` | `0,5 + 0,5 · (1 − o)` |
+| `DIFFUSION` | `0,4 + 0,6 · i` : murs lisses → queue granuleuse qui « sonne » ; lieu irrégulier → queue douce et fondue |
 | `AIR_ABSORPTION_GAINHF` | 0,994 (valeur par défaut EAX) |
 
 `ᾱ_aigus` est la moyenne des absorptions des surfaces touchées, sans les rayons ouverts.
@@ -158,6 +159,7 @@ Un `ReverbScheduler` voisin de `OcclusionScheduler`, après lui :
 - **Budget** de voxels par tick, distinct de celui de l'occlusion, fixé par l'option « Qualité de l'occlusion » (basse 1 500, moyenne 3 000, haute 6 000). Une mesure en cours garde l'ancienne valeur publiée jusqu'à sa fin.
 - Les résultats (`ReverbParams`, écho, affectations S1/S2) sont publiés vers le thread audio par champs volatils, comme l'occlusion.
 - Jamais d'exception hors du tick : un échec est journalisé au plus une fois par minute, l'ancienne mesure reste.
+- **Écran de debug** : l'entrée `ravecraft:reverb` (désactivée par défaut, à activer dans F3 + F6) affiche la dernière mesure de ton espace (ouverture, libre parcours, absorption, irrégularité), les réglages EAX qui en sortent (décroissance, diffusion, réflexions, gain) et l'écho ; dans un fluide, le préréglage utilisé.
 
 ## 7. Tests
 
@@ -166,6 +168,7 @@ Un `ReverbScheduler` voisin de `OcclusionScheduler`, après lui :
 - Salle fermée 9×5×9 en pierre : ouverture 0, RT60 dans l'intervalle attendu. La même salle en laine : RT60 bien plus court, `DECAY_HFRATIO` plus bas.
 - Plein air (sol seul) : ouverture > 0,4, gain de réverbération presque nul.
 - Petite salle contre grande salle : délai des réflexions et densité ordonnés.
+- Irrégularité : boîte de pierre → 0 ; même salle couverte de bosses → au-dessus de 0,4 ; trop peu d'impacts → 0,5. Salle lisse : diffusion 0,4 et réflexions égales au gain ; salle irrégulière : diffusion 1 et réflexions à la moitié du gain.
 - Écho : paroi de pierre à 25 blocs → délai 2·25/343 s ; paroi à 50 blocs → aucun écho ; paroi en laine à 25 blocs → aucun écho.
 - Surface d'eau : un rayon s'arrête à la surface avec l'absorption de l'eau.
 - Budget : une mesure interrompue puis reprise donne le même résultat qu'une mesure d'un trait.
@@ -183,6 +186,7 @@ Un `ReverbScheduler` voisin de `OcclusionScheduler`, après lui :
 - [ ] Ravin de 20 à 35 blocs : écho net et discret.
 - [ ] Tête sous l'eau : son épais et enfermé ; chorus activé dans la config : léger flottement.
 - [ ] Changer de pièce : transition sans saut ni clic.
+- [ ] Grande salle lisse contre grotte de même taille : la salle sonne plus dure et plus nette, la grotte plus douce (F3 : irrégularité basse contre haute).
 - [ ] 16 enceintes : pas de baisse de FPS perceptible.
 
 ## 9. Points à vérifier pendant le plan

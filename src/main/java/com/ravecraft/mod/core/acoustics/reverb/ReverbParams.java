@@ -16,17 +16,20 @@ public record ReverbParams(double decayTime, double decayHfRatio, double gain, d
 	public static ReverbParams of(RoomShape shape, ReverbSettings settings) {
 		double l = Math.max(0, shape.meanFreePath());
 		double openness = Math.clamp(shape.openness(), 0, 1);
+		double irregularity = Math.clamp(shape.irregularity(), 0, 1);
 		double gain = Math.clamp(settings.maxWetGain() * Math.pow(1 - openness, 1.5), 0, 1);
 		double travel = l / SPEED_OF_SOUND;
 		return new ReverbParams(
 				Math.clamp(shape.rt60(settings.maxDecaySeconds()), 0.1, 20),
 				Math.clamp(1 - 0.6 * shape.hitAbsorption(), 0.1, 1),
 				gain,
-				Math.clamp(0.5 * gain, 0, 3.16),
+				// Flat walls send back strong early reflections; a rugged space scatters them.
+				Math.clamp(gain * (1 - 0.5 * irregularity), 0, 3.16),
 				Math.clamp(travel, 0, 0.3),
 				Math.clamp(travel, 0, 0.1),
 				l <= 0 ? 1 : Math.clamp(8 / l, 0, 1),
-				Math.clamp(0.5 + 0.5 * (1 - openness), 0, 1),
+				// Flat walls give a grainy, ringing tail; a rugged space a smooth one.
+				Math.clamp(0.4 + 0.6 * irregularity, 0, 1),
 				AIR_ABSORPTION);
 	}
 

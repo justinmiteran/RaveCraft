@@ -2,6 +2,8 @@ package com.ravecraft.mod.client;
 
 import com.ravecraft.mod.client.audio.render.AcousticRenderer;
 import com.ravecraft.mod.client.audio.render.AcousticSettingsClient;
+import com.ravecraft.mod.client.audio.render.OcclusionScheduler;
+import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.block.SpeakerScreenOpener;
 import com.ravecraft.mod.client.audio.LocalPlayback;
 import com.ravecraft.mod.client.audio.stream.ClientRelay;
@@ -10,6 +12,7 @@ import com.ravecraft.mod.client.screen.SpeakerBrowserScreen;
 import com.ravecraft.mod.registry.ModBlocks;
 import java.util.List;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.client.rendering.v1.BlockColorRegistry;
 import net.minecraft.client.Minecraft;
 
@@ -22,6 +25,10 @@ public class RaveCraftClient implements ClientModInitializer {
 		ClientRelay.init();
 		AcousticSettingsClient.register();
 		AcousticRenderer.register();
+		OcclusionScheduler.register();
+		if (FabricLoader.getInstance().isModLoaded("sound_physics_remastered")) {
+			RaveCraft.LOGGER.info("Sound Physics Remastered is loaded: RaveCraft speakers keep their own occlusion");
+		}
 		SpeakerTooltip.register();
 		SpeakerScreenOpener.set(pos -> Minecraft.getInstance().gui.setScreen(new SpeakerBrowserScreen(pos)));
 		BlockColorRegistry.register(List.of(new SpeakerFabricTint()), ModBlocks.PORTABLE_SPEAKER);

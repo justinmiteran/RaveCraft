@@ -22,7 +22,7 @@ abstract class SoundOptionsScreenMixin extends OptionsSubScreen {
 	private void ravecraft$addOptions(CallbackInfo ci) {
 		if (this.list != null) {
 			this.list.addSmall(RaveCraftOptions.volume(), RaveCraftOptions.maxSources());
-			this.list.addSmall(RaveCraftOptions.acousticEffects());
+			this.list.addSmall(RaveCraftOptions.acousticEffects(), RaveCraftOptions.occlusionQuality());
 		}
 	}
 }

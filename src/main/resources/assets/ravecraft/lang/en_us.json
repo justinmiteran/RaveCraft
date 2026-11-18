@@ -24,7 +24,12 @@
   "options.ravecraft.volume": "RaveCraft",
   "options.ravecraft.maxSources": "Simultaneous speakers",
   "options.ravecraft.acousticEffects": "Acoustic effects",
-  "options.ravecraft.acousticEffects.tooltip": "Air absorption filter. Turn off if your audio driver has trouble.",
+  "options.ravecraft.acousticEffects.tooltip": "Muffled treble through walls and water, air absorption. Turn off if your audio driver has trouble.",
+  "options.ravecraft.occlusionQuality": "Occlusion quality",
+  "options.ravecraft.occlusionQuality.low": "Low",
+  "options.ravecraft.occlusionQuality.medium": "Medium",
+  "options.ravecraft.occlusionQuality.high": "High",
+  "options.ravecraft.occlusionQuality.tooltip": "How much work is spent finding how sound gets around walls. Lower it if your frame rate drops near many speakers.",
   "tooltip.ravecraft.speaker.specs": "%s W · %s dB (1 W, 1 m)",
   "tooltip.ravecraft.speaker.range": "Range: %s blocks at %s%% volume"
 }

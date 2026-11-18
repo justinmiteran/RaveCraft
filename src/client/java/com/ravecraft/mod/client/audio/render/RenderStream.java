@@ -5,6 +5,8 @@ import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.Equalizer;
 import com.ravecraft.mod.core.acoustics.VirtualPacer;
+import com.ravecraft.mod.core.acoustics.occlusion.LossSmoother;
+import com.ravecraft.mod.core.acoustics.occlusion.OcclusionFilter;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
@@ -22,6 +24,9 @@ import org.jspecify.annotations.Nullable;
  * and the audio-thread side (equalizer, virtual pacing, source).
  */
 final class RenderStream {
+	/** How long an occlusion change takes to be heard in full. */
+	static final double OCCLUSION_RAMP_MS = 200;
+
 	final int sessionId;
 	final BlockPos pos;
 	final StreamPlayout playout;
@@ -33,13 +38,30 @@ final class RenderStream {
 	volatile double facingX;
 	volatile double facingZ = 1;
 
+	// Written on the client thread by the occlusion scheduler, read on the audio thread: both losses are published
+	// before occlusionKnown is set.
+	volatile double occlusionLossDb;
+	volatile double occlusionHighLossDb;
+	volatile boolean occlusionKnown;
+
+	/** Written on the audio thread each step, read by the occlusion scheduler to trace the loudest streams first. */
+	volatile double heardGain;
+	/** Client thread only: {@code heardGain} as the scheduler read it before sorting, stable during the sort. */
+	double sortGain;
+
 	// Audio thread only.
 	@Nullable Equalizer eq;
+	final OcclusionFilter occlusionFilter = new OcclusionFilter(StreamFormat.SAMPLE_RATE);
 	final VirtualPacer pacer;
 	@Nullable AlSource source;
-	/** This step's distance to the listener and propagation gain. */
+	/** This step's distance to the listener, and its gain (propagation, then occlusion). */
 	double distance;
 	double gain;
+	/** This step's smoothed occlusion losses, in dB. */
+	double lossDb;
+	double highLossDb;
+	final LossSmoother lossRamp = new LossSmoother(OCCLUSION_RAMP_MS);
+	final LossSmoother highRamp = new LossSmoother(OCCLUSION_RAMP_MS);
 
 	RenderStream(int sessionId, BlockPos pos, StreamPlayout playout, BooleanSupplier alive, long nowMs) {
 		this.sessionId = sessionId;
@@ -77,10 +99,11 @@ final class RenderStream {
 	}
 
 	/**
-	 * Audio thread: takes the next 100 ms from the playout, through the equalizer. Written as 16-bit PCM into
-	 * {@code out} (cleared and flipped) when given; only consumed otherwise.
+	 * Audio thread: takes the next 100 ms from the playout, through the equalizer and the occlusion low-pass at
+	 * {@code highLossDb}. Written as 16-bit PCM into {@code out} (cleared and flipped) when given; only consumed
+	 * otherwise (still filtered, so the filter's state follows the stream).
 	 */
-	void nextBlock(float[] scratch, @Nullable ByteBuffer out) {
+	void nextBlock(float[] scratch, @Nullable ByteBuffer out, double highLossDb) {
 		byte[] block = playout.nextBlock();
 		int samples = block.length / 2;
 		for (int i = 0; i < samples; i++) {
@@ -90,6 +113,7 @@ final class RenderStream {
 		if (eq != null) {
 			eq.process(scratch, samples);
 		}
+		occlusionFilter.process(scratch, samples, highLossDb);
 		if (out != null) {
 			out.clear();
 			for (int i = 0; i < samples; i++) {

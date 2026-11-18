@@ -8,8 +8,10 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -50,11 +52,49 @@ public final class AcousticConfig {
 			}
 			return;
 		}
+		boolean complete;
 		try (Reader in = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-			settings = AcousticSettingsJson.read(in, warning -> RaveCraft.LOGGER.warn("{}: {}", FILE_NAME, warning));
+			AcousticSettingsJson.Result result =
+					AcousticSettingsJson.read(in, warning -> RaveCraft.LOGGER.warn("{}: {}", FILE_NAME, warning));
+			settings = result.settings();
+			complete = result.complete();
 		} catch (IOException e) {
-			RaveCraft.LOGGER.warn("{}: unreadable ({}), using defaults", FILE_NAME, e.toString());
+			RaveCraft.LOGGER.warn("{}: unreadable ({}), using the defaults until the file is fixed", FILE_NAME, e.toString());
 			settings = AcousticSettings.DEFAULT;
+			return;
+		}
+		// Rewrite only once the file is closed: Windows refuses to replace a file that is still open.
+		if (!complete) {
+			rewrite(file);
+		}
+	}
+
+	/**
+	 * Brings an incomplete file up to date: the old text is kept as {@code <name>.bak}, then the new text is written to
+	 * {@code <name>.tmp} and moved over the file, so a failure never leaves a half-written config.
+	 */
+	private static void rewrite(Path file) {
+		Path backup = file.resolveSibling(file.getFileName() + ".bak");
+		Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
+		try {
+			Files.copy(file, backup, StandardCopyOption.REPLACE_EXISTING);
+			try (Writer out = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
+				AcousticSettingsJson.write(settings, out);
+			}
+			try {
+				Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+			} catch (AtomicMoveNotSupportedException e) {
+				Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING);
+			}
+			RaveCraft.LOGGER.info("{}: added the missing settings, the previous file is kept as {}", FILE_NAME,
+					backup.getFileName());
+		} catch (IOException | RuntimeException e) {
+			RaveCraft.LOGGER.warn("{}: cannot update the file, leaving it as it is: {}", FILE_NAME, e.toString());
+			try {
+				Files.deleteIfExists(tmp);
+			} catch (IOException ignored) {
+				// nothing more to do
+			}
 		}
 	}
 }

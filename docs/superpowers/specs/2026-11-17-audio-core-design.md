@@ -242,6 +242,7 @@ Branches successives, chacune avec un build vert et une pull request (ordre déf
    - 3b. `feat/shared-queue` : file partagée et gestionnaire de lecture côté serveur (`StreamOrder` piloté par le serveur, absents, illisibles : D10–D12).
 4. `feat/acoustic-engine` : profils, distance, étouffement, réverbération, échos, limite de sources.
 5. `feat/speaker-ui` : interface complète, configuration, notifications.
+6. `feat/soundbox` : deuxième enceinte portable, de type soundbox (plus grosse et plus puissante), avec son propre profil d'appareil ; fiche technique, modèle et recette fixés dans une spec dédiée.
 
 Puis mise à jour de `docs/SPEC.md` et release **`v0.1.0`** (procédure [docs/RELEASING.md](../../RELEASING.md)).
 

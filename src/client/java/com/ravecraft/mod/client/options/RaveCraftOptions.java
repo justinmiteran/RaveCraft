@@ -1,5 +1,6 @@
 package com.ravecraft.mod.client.options;
 
+import java.util.List;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.Options;
 import net.minecraft.network.chat.Component;
@@ -29,6 +30,14 @@ public final class RaveCraftOptions {
 			"options.ravecraft.acousticEffects",
 			OptionInstance.cachedConstantTooltip(Component.translatable("options.ravecraft.acousticEffects.tooltip")),
 			true);
+	private static final OptionInstance<OcclusionQuality> OCCLUSION_QUALITY = new OptionInstance<>(
+			"options.ravecraft.occlusionQuality",
+			OptionInstance.cachedConstantTooltip(Component.translatable("options.ravecraft.occlusionQuality.tooltip")),
+			(caption, value) -> value.caption(),
+			new OptionInstance.Enum<>(List.of(OcclusionQuality.values()), OcclusionQuality.CODEC),
+			OcclusionQuality.MEDIUM,
+			value -> {
+			});
 
 	private RaveCraftOptions() {
 	}
@@ -43,9 +52,14 @@ public final class RaveCraftOptions {
 		return MAX_SOURCES;
 	}
 
-	/** Whether the EFX air absorption filter is used. */
+	/** Whether the EFX filter is used: air absorption and treble muffled through blocks. */
 	public static OptionInstance<Boolean> acousticEffects() {
 		return ACOUSTIC_EFFECTS;
+	}
+
+	/** How much tracing is spent per tick finding how sound gets through and around blocks. */
+	public static OptionInstance<OcclusionQuality> occlusionQuality() {
+		return OCCLUSION_QUALITY;
 	}
 
 	/** Loads or saves the options, from the {@code Options.processOptions} mixin. */
@@ -53,5 +67,6 @@ public final class RaveCraftOptions {
 		access.process("ravecraft_volume", VOLUME);
 		access.process("ravecraft_maxSources", MAX_SOURCES);
 		access.process("ravecraft_efx", ACOUSTIC_EFFECTS);
+		access.process("ravecraft_occlusionQuality", OCCLUSION_QUALITY);
 	}
 }

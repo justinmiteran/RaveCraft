@@ -24,7 +24,12 @@
   "options.ravecraft.volume": "RaveCraft",
   "options.ravecraft.maxSources": "Enceintes simultanées",
   "options.ravecraft.acousticEffects": "Effets acoustiques",
-  "options.ravecraft.acousticEffects.tooltip": "Filtre d'absorption de l'air. À désactiver si ton pilote audio pose problème.",
+  "options.ravecraft.acousticEffects.tooltip": "Aigus étouffés par les murs et l'eau, absorption de l'air. Désactivez en cas de souci avec le pilote audio.",
+  "options.ravecraft.occlusionQuality": "Qualité de l'occlusion",
+  "options.ravecraft.occlusionQuality.low": "Basse",
+  "options.ravecraft.occlusionQuality.medium": "Moyenne",
+  "options.ravecraft.occlusionQuality.high": "Haute",
+  "options.ravecraft.occlusionQuality.tooltip": "Effort consacré à trouver comment le son contourne les murs. Baissez-la si les FPS chutent près de nombreuses enceintes.",
   "tooltip.ravecraft.speaker.specs": "%s W · %s dB (1 W, 1 m)",
   "tooltip.ravecraft.speaker.range": "Portée : %s blocs à %s %% de volume"
 }

@@ -388,8 +388,9 @@ public final class AcousticSettingsJson {
 				    // The loudest the reverb may be, as a share of the dry sound. Bounds: 0 to 1.
 				    "maxWetGain": %s,
 
-				    // Level lost, in dB, by the reverb of a speaker in the same room as the listener when it is
-				    // heard through the wall of another one. Bounds: 0 to 60.
+				    // A speaker whose sound loses less than this many dB through walls on its way to the listener
+				    // is in the listener's room and shares its reverb; above it, it rings with its own room's
+				    // reverb. Bounds: 0 to 60.
 				    "sameSpaceLossDb": %s,
 
 				    // The distinct echo thrown back by a far, hard surface.

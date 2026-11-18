@@ -51,4 +51,18 @@ class SpaceSlotsTest {
 		assertFalse(SpaceSlots.sameSpace(true, 6, 6));
 		assertFalse(SpaceSlots.sameSpace(true, 12, 6));
 	}
+
+	@Test
+	void hysteresisKeepsSameUntilThresholdPlusOne() {
+		assertTrue(SpaceSlots.sameSpace(true, 6.5, 6, true));
+		assertFalse(SpaceSlots.sameSpace(true, 7.0, 6, true));
+		assertTrue(SpaceSlots.sameSpace(false, 99, 6, false));
+	}
+
+	@Test
+	void hysteresisJoinsOnlyBelowThresholdMinusOne() {
+		assertFalse(SpaceSlots.sameSpace(true, 5.5, 6, false));
+		assertFalse(SpaceSlots.sameSpace(true, 5.0, 6, false));
+		assertTrue(SpaceSlots.sameSpace(true, 4.9, 6, false));
+	}
 }

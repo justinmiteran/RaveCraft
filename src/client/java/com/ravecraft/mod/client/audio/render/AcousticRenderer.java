@@ -10,6 +10,7 @@ import com.ravecraft.mod.core.acoustics.occlusion.ListenerPerception;
 import com.ravecraft.mod.core.acoustics.occlusion.LossSmoother;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionGate;
 import com.ravecraft.mod.core.acoustics.reverb.Echo;
+import com.ravecraft.mod.core.acoustics.reverb.EchoRamp;
 import com.ravecraft.mod.core.acoustics.reverb.EchoSettings;
 import com.ravecraft.mod.core.acoustics.reverb.ParamGlide;
 import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
@@ -217,7 +218,10 @@ public final class AcousticRenderer {
 				new ParamGlide(ReverbParams.SILENT), new ParamGlide(ReverbParams.SILENT)};
 		private final ReverbParams[] reverbNow = {ReverbParams.SILENT, ReverbParams.SILENT, ReverbParams.SILENT};
 		private Efx.@Nullable Slot echoSlot;
-		private Echo echoNow = Echo.NONE;
+		private final EchoRamp echoRamp = new EchoRamp();
+		private double echoDelayApplied;
+		private double echoGainApplied;
+		private long lastEchoMs = -1;
 		private EchoSettings echoSettingsNow = EchoSettings.DEFAULT;
 		/** When the slots last glided; negative before the first glide. */
 		private long lastGlide = -1;
@@ -444,11 +448,20 @@ public final class AcousticRenderer {
 					reverbNow[i] = next;
 				}
 			}
+			double dtMs = lastEchoMs < 0 ? 0 : now - lastEchoMs;
+			lastEchoMs = now;
+			echoRamp.step(targets.echo(), dtMs);
 			Efx.Slot echo = echoSlot;
-			if (echo != null && (!targets.echo().equals(echoNow) || !targets.echoSettings().equals(echoSettingsNow))) {
-				Efx.applyEcho(echo, targets.echo(), targets.echoSettings());
+			boolean changed = Math.abs(echoRamp.delaySeconds() - echoDelayApplied) > 1e-4
+					|| Math.abs(echoRamp.gain() - echoGainApplied) > 1e-4
+					|| !targets.echoSettings().equals(echoSettingsNow);
+			if (echo != null && changed) {
+				Efx.applyEcho(echo, new Echo(echoRamp.delaySeconds(), echoRamp.gain()), targets.echoSettings());
 			}
-			echoNow = targets.echo();
+			if (changed) {
+				echoDelayApplied = echoRamp.delaySeconds();
+				echoGainApplied = echoRamp.gain();
+			}
 			echoSettingsNow = targets.echoSettings();
 		}
 

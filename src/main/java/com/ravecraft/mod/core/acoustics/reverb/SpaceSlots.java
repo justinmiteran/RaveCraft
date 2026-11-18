@@ -63,4 +63,16 @@ public final class SpaceSlots {
 	public static boolean sameSpace(boolean occlusionKnown, double occlusionLossDb, double sameSpaceLossDb) {
 		return !occlusionKnown || occlusionLossDb < sameSpaceLossDb;
 	}
+
+	/**
+	 * Same-space test with a 1 dB hysteresis: a speaker already in the listener's space stays there until its loss
+	 * reaches {@code threshold + 1}, and joins only below {@code threshold - 1}. Unknown occlusion counts as same.
+	 */
+	public static boolean sameSpace(boolean occlusionKnown, double occlusionLossDb, double sameSpaceLossDb,
+			boolean wasSame) {
+		if (!occlusionKnown) {
+			return true;
+		}
+		return wasSame ? occlusionLossDb < sameSpaceLossDb + 1 : occlusionLossDb < sameSpaceLossDb - 1;
+	}
 }

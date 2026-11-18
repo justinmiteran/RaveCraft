@@ -51,6 +51,9 @@ public final class ReverbScheduler {
 
 	private static final Map<Integer, Double> OUTSIDE = new HashMap<>();
 	private static final Map<Integer, RenderStream> BY_ID = new HashMap<>();
+	/** Whether each audible session was in the listener's space last tick (hysteresis memory). */
+	private static final Map<Integer, Boolean> WAS_SAME = new HashMap<>();
+	private static final Map<Integer, Boolean> SAME_NOW = new HashMap<>();
 
 	/** The grid the probes were built on, and the settings their results were measured with. */
 	private static @Nullable WorldAcousticGrid probedGrid;
@@ -189,12 +192,21 @@ public final class ReverbScheduler {
 		BY_ID.clear();
 		double sameSpaceLossDb = reverb.sameSpaceLossDb();
 		for (RenderStream stream : AcousticRenderer.streams()) {
-			if (OcclusionScheduler.isAudible(settings, stream, ear)
-					&& !SpaceSlots.sameSpace(stream.occlusionKnown, stream.occlusionLossDb, sameSpaceLossDb)) {
-				OUTSIDE.put(stream.sessionId, stream.heardGain);
-				BY_ID.put(stream.sessionId, stream);
+			if (OcclusionScheduler.isAudible(settings, stream, ear)) {
+				Boolean was = WAS_SAME.get(stream.sessionId);
+				boolean same = was == null
+						? SpaceSlots.sameSpace(stream.occlusionKnown, stream.occlusionLossDb, sameSpaceLossDb)
+						: SpaceSlots.sameSpace(stream.occlusionKnown, stream.occlusionLossDb, sameSpaceLossDb, was);
+				SAME_NOW.put(stream.sessionId, same);
+				if (!same) {
+					OUTSIDE.put(stream.sessionId, stream.heardGain);
+					BY_ID.put(stream.sessionId, stream);
+				}
 			}
 		}
+		WAS_SAME.clear();
+		WAS_SAME.putAll(SAME_NOW);
+		SAME_NOW.clear();
 		Integer[] assigned = SpaceSlots.assign(OUTSIDE, slotSessions);
 		for (RenderStream stream : AcousticRenderer.streams()) {
 			stream.reverbSlot = slotOf(assigned, stream.sessionId);

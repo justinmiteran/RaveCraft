@@ -78,8 +78,9 @@ OcclusionScheduler                                AcousticRenderer
 Une matière de base retirée de la config reprend ses valeurs par défaut. Une matière ajoutée ne s'applique qu'aux blocs de son tag.
 
 ### 4.2 Remplissage (par axe X, Y, Z)
-- **Panneau étanche** : si la projection de la forme de collision couvre toute la face perpendiculaire à l'axe et que son épaisseur le long de l'axe est d'au moins 3/16, le remplissage vaut 1 (porte et trappe fermées, vitre de face).
-- **Sinon** : part du volume du bloc occupée par la forme (dalle 0,5, escalier 0,75, barrière ≈ 0,2, porte ouverte vue de côté ≈ 0,19, tapis 1/16).
+- **Panneau étanche** : si une boîte de la forme de collision tient entièrement dans le bloc, couvre toute la face perpendiculaire à l'axe et mesure entre 2/16 et 4/16 d'épaisseur le long de l'axe, le remplissage vaut 1 (porte et trappe fermées, vitre de face). Le seuil bas est 2/16 et non 3/16, car une vitre ne fait que 2/16 d'épaisseur. Le plafond de 4/16 évite qu'une dalle compte comme un mur plein. Une boîte qui dépasse du bloc (barrière, muret : 1,5 de haut) ne ferme jamais un axe.
+- **Sans collision** (herbe haute, torche) : aucune matière, sauf si le bloc porte un tag `#ravecraft:acoustic/<nom>` ; la table des sons de pas ne s'applique qu'aux blocs qui ont une collision.
+- **Sinon** : part du volume du bloc occupée par la forme, chaque boîte étant d'abord rognée au bloc, plafonnée à 1 (dalle 0,5, escalier 0,75, barrière 0,25, muret ≈ 0,44, porte ouverte vue de côté ≈ 0,19, tapis 1/16).
 
 ### 4.3 Valeurs par défaut (par bloc plein)
 
@@ -126,7 +127,14 @@ Un bloc gorgé d'eau compte à la fois comme matière et comme milieu. Les totau
 2. **Points candidats** : 26 directions × distances {3, 6} blocs, autour de l'auditeur et autour de l'enceinte (52 de chaque côté). Gardés s'ils sont dans un voxel sans matière, dans le même milieu que leur extrémité, et reliés à elle par un segment de moins de 3 dB de perte. On retient les 6 plus proches de l'autre extrémité, de chaque côté.
 3. **Chemins essayés** : un coude (enceinte → P → auditeur, P de l'un ou l'autre côté) et deux coudes (enceinte → Q → P → auditeur, Q près de l'enceinte, P près de l'auditeur).
 4. **Coût d'un chemin** : somme des pertes des segments + `20·log10(longueur / distance directe) × rolloff` + par coude `bendLossDb × angle/90°` (global) et `bendHighLossDb × angle/90°` (aigus), l'angle étant la déviation à ce coude. Un chemin plus long que la portée de l'enceinte est écarté.
-5. **Résultat** : somme en énergie du chemin direct et des 3 meilleurs détours, `−10·log10(Σ 10^(−perteᵢ/10))`, pour la perte globale comme pour les aigus.
+5. **Chemins retenus** :
+   - Un chemin dont un point coïncide avec une extrémité ou avec l'autre point est écarté, tout comme un segment de longueur nulle. Ainsi, un coude n'est jamais gratuit.
+   - Les chemins identiques (mêmes voxels de passage) ne comptent qu'une fois.
+   - Un détour qui n'est pas plus long que le chemin direct est écarté. C'est en fait le chemin direct.
+   - Un détour n'est gardé que si sa perte est strictement inférieure à celle du chemin direct.
+   - Un chemin dont la longueur et les coudes coûtent déjà autant que le chemin direct n'est pas tracé.
+6. **Une ouverture compte une fois** : les détours sont pris par perte croissante. Un détour n'entre dans la somme que si son dernier segment (point → auditeur) arrive à au moins 45° de ceux des détours déjà retenus. Limite connue : vues de loin, deux vraies ouvertures à moins de 45° l'une de l'autre comptent comme une seule (≈ 3 dB de moins), à régler en jeu si besoin.
+7. **Résultat** : somme en énergie du chemin direct et des 3 meilleurs détours retenus, `−10·log10(Σ 10^(−perteᵢ/10))`, pour la perte globale comme pour les aigus.
 
 Défauts : `detours` = true, `bendLossDb` = 6, `bendHighLossDb` = 10.
 
@@ -185,7 +193,7 @@ Chaque réglage est précédé d'un commentaire dans le fichier écrit, comme en
 - Le milieu `air` est toujours présent (ajouté avec ses défauts s'il manque).
 - Nom invalide ou milieu inconnu dans `dimensions` : entrée ignorée, avertissement.
 - Listes trop longues : tronquées dans l'ordre du fichier, avertissement. Le plafonnement a lieu **avant l'envoi** ; le client borne aussi chaque valeur et chaque taille reçue.
-- Ancien fichier sans section `"occlusion"` ou sans un réglage : les manquants prennent leur défaut, et le fichier est réécrit complet et commenté avec les valeurs actuelles, l'ancien étant copié dans `ravecraft-server.json5.bak`.
+- Ancien fichier sans section `"occlusion"` ou sans un réglage : les manquants prennent leur défaut, et le fichier est réécrit complet et commenté avec les valeurs actuelles, l'ancien étant copié dans `ravecraft-server.json5.bak`. La réécriture passe par un fichier temporaire, déplacé d'un coup sur l'original. Un fichier illisible (erreur de syntaxe, valeur du mauvais type) n'est jamais réécrit : le serveur prend les valeurs par défaut et l'indique dans le journal, jusqu'à ce que l'admin corrige le fichier.
 - Ancienne clé `airAbsorptionDbPerBlock` : si `media.air` n'est pas défini, elle devient son `highLossDbPerBlock`. Elle n'est plus écrite.
 
 ### 7.2 Réseau

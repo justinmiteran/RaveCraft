@@ -93,6 +93,10 @@ final class Efx {
 			AL10.alGetError();
 			return null;
 		}
+		if (!eax) {
+			// The refused EAX type left an error pending: clear it before vanilla's sound thread reports it.
+			AL10.alGetError();
+		}
 		Slot slot = slotFor(effect, eax);
 		if (slot != null) {
 			applyReverb(slot, ReverbParams.SILENT);

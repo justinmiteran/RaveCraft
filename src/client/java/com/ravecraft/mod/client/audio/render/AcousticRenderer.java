@@ -11,6 +11,7 @@ import com.ravecraft.mod.core.acoustics.occlusion.LossSmoother;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionGate;
 import com.ravecraft.mod.core.acoustics.reverb.Echo;
 import com.ravecraft.mod.core.acoustics.reverb.EchoSettings;
+import com.ravecraft.mod.core.acoustics.reverb.ParamGlide;
 import com.ravecraft.mod.core.acoustics.reverb.ReverbParams;
 import com.ravecraft.mod.core.acoustics.reverb.SendRoute;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
@@ -48,8 +49,6 @@ public final class AcousticRenderer {
 	private static final double MAX_RAMP_STEP_MS = 100;
 	/** The reverb slots glide toward their targets at most this often. */
 	private static final long GLIDE_PERIOD_MS = 100;
-	/** A glide covers {@code elapsed / GLIDE_MS} of the way to the target. */
-	private static final double GLIDE_MS = 1000;
 	/** Reverb slots: the listener's space (L), then two speaker spaces (S1, S2). */
 	private static final int REVERB_SLOTS = 3;
 
@@ -205,13 +204,17 @@ public final class AcousticRenderer {
 		private int sends;
 		/** L, S1, S2; an entry is null when its slot could not be created. */
 		private final Efx.@Nullable Slot[] reverbSlots = new Efx.Slot[REVERB_SLOTS];
-		/** The reverb each slot currently plays, gliding toward its target. */
+		/** Each slot's linear glide toward its target, and the reverb last loaded in the slot. */
+		private final ParamGlide[] reverbGlides = {new ParamGlide(ReverbParams.SILENT),
+				new ParamGlide(ReverbParams.SILENT), new ParamGlide(ReverbParams.SILENT)};
 		private final ReverbParams[] reverbNow = {ReverbParams.SILENT, ReverbParams.SILENT, ReverbParams.SILENT};
 		private Efx.@Nullable Slot echoSlot;
 		private Echo echoNow = Echo.NONE;
 		private EchoSettings echoSettingsNow = EchoSettings.DEFAULT;
 		/** When the slots last glided; negative before the first glide. */
 		private long lastGlide = -1;
+		/** When the game was paused, to hold the glides meanwhile. */
+		private long pausedAt;
 
 		Worker() {
 			super("RaveCraft audio");
@@ -243,13 +246,8 @@ public final class AcousticRenderer {
 			// Streams kept playing out while no worker ran (engine reload): start their clocks afresh.
 			long start = Util.getMillis();
 			STREAMS.values().forEach(stream -> stream.pacer.reset(start));
-			efx = Efx.detect();
-			if (!efx) {
-				RaveCraft.LOGGER.warn("OpenAL EFX is not available: speakers play without air absorption or muffled treble");
-			} else {
-				createSlots();
-			}
 			try {
+				setUpEfx();
 				while (running) {
 					try {
 						step(Util.getMillis());
@@ -260,6 +258,22 @@ public final class AcousticRenderer {
 				}
 			} finally {
 				releaseAll();
+			}
+		}
+
+		/** Detects EFX and creates the reverb slots; a failure leaves the speakers without reverb, never stops them. */
+		private void setUpEfx() {
+			try {
+				efx = Efx.detect();
+				if (!efx) {
+					RaveCraft.LOGGER.warn("OpenAL EFX is not available: speakers play without air absorption or muffled treble");
+				} else {
+					createSlots();
+				}
+			} catch (RuntimeException e) {
+				// Slots created before the failure are deleted by releaseAll(); without sends none is used.
+				sends = 0;
+				RaveCraft.LOGGER.error("Could not set up OpenAL EFX reverb: speakers play without reverb", e);
 			}
 		}
 
@@ -278,6 +292,16 @@ public final class AcousticRenderer {
 			}
 			if (paused != wasPaused) {
 				wasPaused = paused;
+				if (paused) {
+					pausedAt = now;
+				} else if (lastGlide >= 0) {
+					// A pause holds the glides where they were.
+					long held = Math.max(0, now - pausedAt);
+					lastGlide += held;
+					for (ParamGlide glide : reverbGlides) {
+						glide.shift(held);
+					}
+				}
 				for (RenderStream stream : streams) {
 					if (stream.source != null) {
 						if (paused) {
@@ -394,18 +418,17 @@ public final class AcousticRenderer {
 		}
 
 		/**
-		 * Moves every slot toward its target, at most every {@link #GLIDE_PERIOD_MS}, by the share of the way the
-		 * elapsed time covers; the echo is loaded as soon as it changes.
+		 * Moves every slot linearly toward its target over {@link ParamGlide#GLIDE_MS}, updated at most every
+		 * {@link #GLIDE_PERIOD_MS}; the echo is loaded as soon as it changes.
 		 */
 		private void glide(ReverbTargets targets, long now) {
 			if (lastGlide < 0) {
 				lastGlide = now;
 			} else if (now - lastGlide >= GLIDE_PERIOD_MS) {
-				double fraction = (now - lastGlide) / GLIDE_MS;
 				lastGlide = now;
 				for (int i = 0; i < REVERB_SLOTS; i++) {
 					Efx.Slot slot = reverbSlots[i];
-					ReverbParams next = reverbNow[i].toward(targets.slot(i), fraction);
+					ReverbParams next = reverbGlides[i].at(targets.slot(i), now);
 					if (slot != null && !next.equals(reverbNow[i])) {
 						Efx.applyReverb(slot, next);
 					}

@@ -1,0 +1,144 @@
+package com.ravecraft.mod.gametest;
+
+import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
+import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
+import com.ravecraft.mod.world.acoustics.BlockAcoustics;
+import com.ravecraft.mod.world.acoustics.MediumResolver;
+import net.fabricmc.fabric.api.gametest.v1.GameTest;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.CrossCollisionBlock;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.material.Fluids;
+
+public class BlockAcousticsGameTest {
+	private static final String OVERWORLD = "minecraft:overworld";
+
+	private final BlockAcoustics acoustics = new BlockAcoustics(OcclusionSettings.DEFAULT);
+	private final MediumResolver media = new MediumResolver(OcclusionSettings.DEFAULT);
+
+	private void assertMaterial(GameTestHelper h, Block block, String expected) {
+		AcousticMaterial m = acoustics.material(block.defaultBlockState());
+		h.assertTrue(m != null && m.name().equals(expected), block + " should be " + expected + " but is " + m);
+		h.succeed();
+	}
+
+	private void assertNoMaterial(GameTestHelper h, Block block) {
+		h.assertTrue(acoustics.material(block.defaultBlockState()) == null, block + " should have no material");
+	}
+
+	private void assertFill(GameTestHelper h, BlockState state, Direction.Axis axis, double expected) {
+		double fill = acoustics.fill(state, axis);
+		h.assertTrue(Math.abs(fill - expected) < 1e-6, state + " fill " + axis + " should be " + expected + " but is " + fill);
+	}
+
+	@GameTest
+	public void stoneIsStone(GameTestHelper h) {
+		assertMaterial(h, Blocks.STONE, "stone");
+	}
+
+	@GameTest
+	public void planksAreWood(GameTestHelper h) {
+		assertMaterial(h, Blocks.OAK_PLANKS, "wood");
+	}
+
+	@GameTest
+	public void glassIsGlass(GameTestHelper h) {
+		assertMaterial(h, Blocks.GLASS, "glass");
+	}
+
+	@GameTest
+	public void ironBlockIsMetal(GameTestHelper h) {
+		assertMaterial(h, Blocks.IRON_BLOCK, "metal");
+	}
+
+	@GameTest
+	public void whiteWoolIsWool(GameTestHelper h) {
+		assertMaterial(h, Blocks.WOOL.white(), "wool");
+	}
+
+	@GameTest
+	public void sandIsEarth(GameTestHelper h) {
+		assertMaterial(h, Blocks.SAND, "earth");
+	}
+
+	@GameTest
+	public void snowBlockIsSnow(GameTestHelper h) {
+		assertMaterial(h, Blocks.SNOW_BLOCK, "snow");
+	}
+
+	@GameTest
+	public void leavesAreFoliageDespiteGrassSound(GameTestHelper h) {
+		assertMaterial(h, Blocks.OAK_LEAVES, "foliage");
+	}
+
+	@GameTest
+	public void unknownSolidFallsBackToStone(GameTestHelper h) {
+		assertMaterial(h, Blocks.SHROOMLIGHT, "stone");
+	}
+
+	@GameTest
+	public void noCollisionNoMaterial(GameTestHelper h) {
+		assertNoMaterial(h, Blocks.SHORT_GRASS);
+		assertNoMaterial(h, Blocks.TORCH);
+		assertNoMaterial(h, Blocks.AIR);
+		h.succeed();
+	}
+
+	@GameTest
+	public void bottomSlabFillsHalf(GameTestHelper h) {
+		BlockState slab = Blocks.STONE_SLAB.defaultBlockState();
+		assertFill(h, slab, Direction.Axis.Y, 0.5);
+		assertFill(h, slab, Direction.Axis.X, 0.5);
+		h.succeed();
+	}
+
+	@GameTest
+	public void closedDoorSealsItsAxis(GameTestHelper h) {
+		BlockState closed = Blocks.OAK_DOOR.defaultBlockState().setValue(DoorBlock.FACING, Direction.NORTH)
+				.setValue(DoorBlock.OPEN, false);
+		assertFill(h, closed, Direction.Axis.Z, 1.0);
+		BlockState open = closed.setValue(DoorBlock.OPEN, true);
+		double fill = acoustics.fill(open, Direction.Axis.Z);
+		h.assertTrue(fill < 0.25, "open door fill Z should be < 0.25 but is " + fill);
+		h.succeed();
+	}
+
+	@GameTest
+	public void glassPaneSealsFaceOn(GameTestHelper h) {
+		BlockState pane = Blocks.GLASS_PANE.defaultBlockState().setValue(CrossCollisionBlock.EAST, true)
+				.setValue(CrossCollisionBlock.WEST, true);
+		assertFill(h, pane, Direction.Axis.Z, 1.0);
+		h.succeed();
+	}
+
+	@GameTest
+	public void carpetCountsByVolume(GameTestHelper h) {
+		assertFill(h, Blocks.CARPET.white().defaultBlockState(), Direction.Axis.Y, 1.0 / 16.0);
+		h.succeed();
+	}
+
+	@GameTest
+	public void waterloggedSlabIsWoodInWater(GameTestHelper h) {
+		BlockPos pos = new BlockPos(1, 1, 1);
+		h.setBlock(pos, Blocks.OAK_SLAB.defaultBlockState().setValue(BlockStateProperties.WATERLOGGED, true));
+		BlockState state = h.getBlockState(pos);
+		AcousticMaterial m = acoustics.material(state);
+		h.assertTrue(m != null && m.name().equals("wood"), "slab is wood but is " + m);
+		h.assertValueEqual(media.medium(state.getFluidState(), OVERWORLD).name(), "water", "medium");
+		h.succeed();
+	}
+
+	@GameTest
+	public void lavaIsLava(GameTestHelper h) {
+		h.assertValueEqual(media.medium(Blocks.LAVA.defaultBlockState().getFluidState(), OVERWORLD).name(), "lava",
+				"lava medium");
+		h.assertValueEqual(media.medium(Fluids.EMPTY.defaultFluidState(), OVERWORLD).name(), "air", "empty fluid");
+		h.succeed();
+	}
+}

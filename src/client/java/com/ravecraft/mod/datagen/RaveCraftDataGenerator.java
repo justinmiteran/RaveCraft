@@ -16,6 +16,7 @@ public class RaveCraftDataGenerator implements DataGeneratorEntrypoint {
 		pack.addProvider(RaveCraftModelProvider::new);
 		pack.addProvider(RaveCraftBlockLootProvider::new);
 		pack.addProvider(RaveCraftBlockTagProvider::new);
+		pack.addProvider(RaveCraftFluidTagProvider::new);
 		pack.addProvider(RaveCraftRecipeProvider::new);
 	}
 }

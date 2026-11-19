@@ -1,17 +1,20 @@
 package com.ravecraft.mod.component;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
 import com.ravecraft.mod.core.queue.QueueEntry;
+import com.ravecraft.mod.core.queue.RepeatMode;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.core.UUIDUtil;
 import org.junit.jupiter.api.Test;
@@ -67,5 +70,56 @@ class SpeakerDataTest {
 		queue.add("entries", entries);
 		SpeakerData data = SpeakerData.CODEC.parse(JsonOps.INSTANCE, json).getOrThrow();
 		assertEquals(SpeakerQueue.MAX_ENTRIES, data.queue().entries().size());
+	}
+
+	@Test
+	void loadsQueueWithoutStep5Fields() {
+		UUID id = UUID.randomUUID();
+		JsonObject entry = new JsonObject();
+		entry.add("id", UUIDUtil.CODEC.encodeStart(JsonOps.INSTANCE, id).getOrThrow());
+		entry.add("owner", UUIDUtil.CODEC.encodeStart(JsonOps.INSTANCE, UUID.randomUUID()).getOrThrow());
+		entry.addProperty("owner_name", "Alex");
+		entry.addProperty("title", "old");
+		JsonArray entries = new JsonArray();
+		entries.add(entry);
+		JsonObject queueJson = new JsonObject();
+		queueJson.add("entries", entries);
+		queueJson.add("current", UUIDUtil.CODEC.encodeStart(JsonOps.INSTANCE, id).getOrThrow());
+		queueJson.addProperty("position_ms", 5L);
+		SpeakerQueue queue = QueueCodecs.QUEUE.parse(JsonOps.INSTANCE, queueJson).getOrThrow();
+		assertEquals(RepeatMode.ALL, queue.repeat());
+		assertEquals(false, queue.shuffle());
+		assertTrue(queue.pending().isEmpty());
+		assertEquals(QueueEntry.UNKNOWN_DURATION, queue.entries().get(0).durationMs());
+		assertEquals(5L, queue.positionMs());
+	}
+
+	private static SpeakerQueue withModes() {
+		QueueEntry a = new QueueEntry(UUID.randomUUID(), UUID.randomUUID(), "Alex", "a", 61_000);
+		QueueEntry b = new QueueEntry(UUID.randomUUID(), UUID.randomUUID(), "Alex", "b", QueueEntry.UNKNOWN_DURATION);
+		return new SpeakerQueue(List.of(a, b), Optional.of(a.entryId()), 7, RepeatMode.ONE, true, List.of(b.entryId()));
+	}
+
+	@Test
+	void roundTripsModesAndDurations() {
+		SpeakerQueue queue = withModes();
+		JsonElement json = QueueCodecs.QUEUE.encodeStart(JsonOps.INSTANCE, queue).getOrThrow();
+		assertEquals(queue, QueueCodecs.QUEUE.parse(JsonOps.INSTANCE, json).getOrThrow());
+		ByteBuf buf = Unpooled.buffer();
+		QueueCodecs.QUEUE_STREAM.encode(buf, queue);
+		assertEquals(queue, QueueCodecs.QUEUE_STREAM.decode(buf));
+		for (RepeatMode mode : RepeatMode.values()) {
+			SpeakerQueue q = new SpeakerQueue(List.of(), Optional.empty(), 0, mode, false, List.of());
+			ByteBuf b = Unpooled.buffer();
+			QueueCodecs.QUEUE_STREAM.encode(b, q);
+			assertEquals(q, QueueCodecs.QUEUE_STREAM.decode(b));
+		}
+	}
+
+	@Test
+	void unknownRepeatFallsBackToAll() {
+		JsonObject json = QueueCodecs.QUEUE.encodeStart(JsonOps.INSTANCE, withModes()).getOrThrow().getAsJsonObject();
+		json.addProperty("repeat", "bogus");
+		assertEquals(RepeatMode.ALL, QueueCodecs.QUEUE.parse(JsonOps.INSTANCE, json).getOrThrow().repeat());
 	}
 }

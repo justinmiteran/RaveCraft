@@ -115,6 +115,24 @@ class FlatScanTest {
 	}
 
 	@Test
+	void anUnreadableAliasDoesNotHideTheFolderItPointsTo() throws IOException {
+		// Like C:\Documents and Settings, a link to C:\Users that cannot be listed: C:\Users is still walked.
+		Path real = Files.createDirectory(dir.resolve("real"));
+		Files.createDirectory(dir.resolve("alias"));
+		Files.createFile(real.resolve("song.mp3"));
+		Path viaAlias = dir.resolve("alias").resolve("..").resolve("real");
+		FlatScan scan = new FlatScan(List.of(viaAlias, real), List.of(), FlatScan.PAGE, folder -> {
+			if (folder.equals(viaAlias)) {
+				throw new java.nio.file.AccessDeniedException(folder.toString());
+			}
+			return MusicLibrary.list(folder);
+		});
+		List<SourceNode> found = new ArrayList<>();
+		scan.run(found::addAll, 64);
+		assertEquals(List.of("song"), names(found));
+	}
+
+	@Test
 	void stopsWhenCancelled() throws IOException {
 		for (String folder : List.of("a", "b")) {
 			Files.createFile(Files.createDirectory(dir.resolve(folder)).resolve(folder + ".mp3"));

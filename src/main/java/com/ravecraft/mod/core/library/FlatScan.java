@@ -33,11 +33,17 @@ public final class FlatScan {
 			"node_modules", "steamapps");
 	private static final long FLUSH_NANOS = 100_000_000L;
 
+	/** Lists a folder's entries; {@link MusicLibrary#list} outside tests. */
+	interface Lister {
+		List<LibraryEntry> list(Path folder) throws IOException;
+	}
+
 	private final Deque<Path> pending = new ArrayDeque<>();
 	private final Set<Path> seen = new HashSet<>();
 	/** The folders the player excluded. */
 	private final Set<Path> hidden = new HashSet<>();
 	private final int page;
+	private final Lister lister;
 	private int found;
 	private volatile boolean cancelled;
 
@@ -55,7 +61,12 @@ public final class FlatScan {
 	}
 
 	FlatScan(List<Path> roots, List<Path> excluded, int page) {
+		this(roots, excluded, page, MusicLibrary::list);
+	}
+
+	FlatScan(List<Path> roots, List<Path> excluded, int page, Lister lister) {
 		this.page = page;
+		this.lister = lister;
 		pending.addAll(roots);
 		for (Path folder : excluded) {
 			hidden.add(folder.toAbsolutePath().normalize());
@@ -72,15 +83,18 @@ public final class FlatScan {
 		long lastFlush = System.nanoTime();
 		while (!cancelled && !pending.isEmpty() && found < page) {
 			Path folder = pending.poll();
-			if (!Files.isDirectory(folder) || !seen.add(realPath(folder))) {
+			Path real = realPath(folder);
+			if (!Files.isDirectory(folder) || seen.contains(real)) {
 				continue;
 			}
 			List<LibraryEntry> entries;
 			try {
-				entries = MusicLibrary.list(folder);
+				entries = lister.list(folder);
 			} catch (IOException | SecurityException e) {
+				// Not marked as seen: a link that cannot be listed must not hide the folder it points to.
 				continue;
 			}
+			seen.add(real);
 			for (LibraryEntry entry : entries) {
 				if (cancelled) {
 					break;

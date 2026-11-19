@@ -31,7 +31,7 @@ class PropagationTest {
 	private static final AcousticSettings S = AcousticSettings.DEFAULT;
 
 	private static AcousticSettings with(double rolloff, double thresholdDb, double maxRange) {
-		return new AcousticSettings(rolloff, S.fadeFraction(), thresholdDb, maxRange, S.portable(), S.occlusion());
+		return new AcousticSettings(rolloff, S.fadeFraction(), thresholdDb, maxRange, S.portable(), S.occlusion(), S.reverb());
 	}
 
 	@Test

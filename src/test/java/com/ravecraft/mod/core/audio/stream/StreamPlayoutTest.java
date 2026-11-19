@@ -86,4 +86,16 @@ class StreamPlayoutTest {
 		}
 		assertTrue(playout.isDrained());
 	}
+
+	@Test
+	void statsCountBytesBufferAndLosses() {
+		StreamPlayout playout = new StreamPlayout(0);
+		assertEquals(new PlayoutStats(0, 0, 0, 0), playout.stats());
+		playout.offer(0, List.of(new byte[10], new byte[20]), 0);
+		PlayoutStats stats = playout.stats();
+		assertEquals(30, stats.receivedBytes());
+		assertEquals(2 * StreamFormat.FRAME_MS, stats.bufferedMs());
+		assertEquals(0, stats.lostFrames());
+		assertEquals(0, stats.underruns());
+	}
 }

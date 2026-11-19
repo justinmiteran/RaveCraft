@@ -17,7 +17,7 @@ class ListenerPerceptionTest {
 	@Test
 	void takesTheMediumsPerception() {
 		AcousticMedium water = OcclusionSettings.DEFAULT.medium("water");
-		assertEquals(new ListenerPerception(10, 12, 0.8), ListenerPerception.of(water));
+		assertEquals(new ListenerPerception(6, 30, 0.8), ListenerPerception.of(water));
 	}
 
 	@Test

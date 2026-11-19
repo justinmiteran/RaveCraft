@@ -7,6 +7,9 @@ import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
+import com.ravecraft.mod.core.acoustics.reverb.EchoSettings;
+import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
+import com.ravecraft.mod.core.acoustics.reverb.ReverbSettings;
 import io.netty.buffer.ByteBuf;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,6 +35,7 @@ public record AcousticSettingsPayload(AcousticSettings settings) implements Cust
 			ByteBufCodecs.stringUtf8(OcclusionSettings.MAX_NAME), AcousticMaterial::name,
 			ByteBufCodecs.DOUBLE, AcousticMaterial::lossDb,
 			ByteBufCodecs.DOUBLE, AcousticMaterial::highLossDb,
+			ByteBufCodecs.DOUBLE, AcousticMaterial::absorption,
 			AcousticMaterial::new);
 	private static final StreamCodec<ByteBuf, AcousticMedium> MEDIUM = StreamCodec.composite(
 			ByteBufCodecs.stringUtf8(OcclusionSettings.MAX_NAME), AcousticMedium::name,
@@ -41,6 +45,7 @@ public record AcousticSettingsPayload(AcousticSettings settings) implements Cust
 			ByteBufCodecs.DOUBLE, AcousticMedium::listenerLossDb,
 			ByteBufCodecs.DOUBLE, AcousticMedium::listenerHighLossDb,
 			ByteBufCodecs.DOUBLE, AcousticMedium::listenerBlur,
+			ByteBufCodecs.DOUBLE, AcousticMedium::surfaceAbsorption,
 			AcousticMedium::new);
 	private static final StreamCodec<ByteBuf, Map.Entry<String, String>> DIMENSION = StreamCodec.composite(
 			ByteBufCodecs.stringUtf8(OcclusionSettings.MAX_DIMENSION_ID), Map.Entry::getKey,
@@ -64,6 +69,36 @@ public record AcousticSettingsPayload(AcousticSettings settings) implements Cust
 				return new OcclusionSettings(enabled, maxLoss, media, scale, highRatio, byId, materials, detours, bend,
 						bendHigh);
 			});
+	private static final StreamCodec<ByteBuf, EchoSettings> ECHO = StreamCodec.composite(
+			ByteBufCodecs.DOUBLE, EchoSettings::minDistance,
+			ByteBufCodecs.DOUBLE, EchoSettings::maxDistance,
+			ByteBufCodecs.VAR_INT, EchoSettings::minRays,
+			ByteBufCodecs.DOUBLE, EchoSettings::maxAbsorption,
+			ByteBufCodecs.DOUBLE, EchoSettings::gain,
+			ByteBufCodecs.DOUBLE, EchoSettings::feedback,
+			ByteBufCodecs.DOUBLE, EchoSettings::damping,
+			EchoSettings::new);
+	private static final StreamCodec<ByteBuf, FluidReverb> FLUID = StreamCodec.composite(
+			ByteBufCodecs.stringUtf8(OcclusionSettings.MAX_NAME), FluidReverb::medium,
+			ByteBufCodecs.DOUBLE, FluidReverb::decaySeconds,
+			ByteBufCodecs.DOUBLE, FluidReverb::density,
+			ByteBufCodecs.DOUBLE, FluidReverb::diffusion,
+			ByteBufCodecs.DOUBLE, FluidReverb::gain,
+			ByteBufCodecs.DOUBLE, FluidReverb::decayHfRatio,
+			ByteBufCodecs.BOOL, FluidReverb::chorus,
+			ByteBufCodecs.DOUBLE, FluidReverb::chorusRateHz,
+			ByteBufCodecs.DOUBLE, FluidReverb::chorusDepthMs,
+			FluidReverb::new);
+	/** The list is capped by {@code ReverbSettings.clamped}, which the server applies on load: encode only clamped settings. */
+	private static final StreamCodec<ByteBuf, ReverbSettings> REVERB = StreamCodec.composite(
+			ByteBufCodecs.BOOL, ReverbSettings::enabled,
+			ByteBufCodecs.DOUBLE, ReverbSettings::rayLength,
+			ByteBufCodecs.DOUBLE, ReverbSettings::maxDecaySeconds,
+			ByteBufCodecs.DOUBLE, ReverbSettings::maxWetGain,
+			ByteBufCodecs.DOUBLE, ReverbSettings::sameSpaceLossDb,
+			ECHO, ReverbSettings::echo,
+			FLUID.apply(ByteBufCodecs.list(ReverbSettings.MAX_MEDIA)), ReverbSettings::media,
+			ReverbSettings::new);
 	public static final StreamCodec<ByteBuf, AcousticSettingsPayload> CODEC = StreamCodec.composite(
 			ByteBufCodecs.DOUBLE, p -> p.settings().rolloff(),
 			ByteBufCodecs.DOUBLE, p -> p.settings().fadeFraction(),
@@ -71,8 +106,9 @@ public record AcousticSettingsPayload(AcousticSettings settings) implements Cust
 			ByteBufCodecs.DOUBLE, p -> p.settings().maxRange(),
 			PROFILE, p -> p.settings().portable(),
 			OCCLUSION, p -> p.settings().occlusion(),
-			(rolloff, fade, threshold, maxRange, portable, occlusion) -> new AcousticSettingsPayload(
-					new AcousticSettings(rolloff, fade, threshold, maxRange, portable, occlusion)
+			REVERB, p -> p.settings().reverb(),
+			(rolloff, fade, threshold, maxRange, portable, occlusion, reverb) -> new AcousticSettingsPayload(
+					new AcousticSettings(rolloff, fade, threshold, maxRange, portable, occlusion, reverb)
 							.clamped(RaveCraft.LOGGER::warn)));
 
 	@Override

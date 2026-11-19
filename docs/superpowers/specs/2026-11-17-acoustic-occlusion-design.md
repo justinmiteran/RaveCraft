@@ -127,7 +127,7 @@ Chaque milieu a donc trois réglages pour un joueur dont **la tête** y est (`Li
 | Milieu | `listenerLossDb` | `listenerHighLossDb` (à 4 kHz) | `listenerBlur` |
 |---|---|---|---|
 | air, vacuum | 0 | 0 | 0 |
-| water | 10 | 12 (coupure ≈ 1 kHz) | 0,8 |
+| water | 6 | 30 (coupure ≈ 130 Hz : son sourd, comme la tête sous l'eau) | 0,8 |
 | lava | 20 | 24 | 0,9 |
 
 - La tête est dans un fluide quand l'œil (position de la caméra) est sous sa surface (hauteur du fluide dans le bloc) ; sinon le milieu de la dimension compte. Chunk non chargé : aucun effet.

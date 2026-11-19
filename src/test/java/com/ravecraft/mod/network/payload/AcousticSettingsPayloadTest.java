@@ -8,6 +8,9 @@ import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
+import com.ravecraft.mod.core.acoustics.reverb.EchoSettings;
+import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
+import com.ravecraft.mod.core.acoustics.reverb.ReverbSettings;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.util.ArrayList;
@@ -19,14 +22,14 @@ class AcousticSettingsPayloadTest {
 	private static AcousticSettings with(OcclusionSettings occlusion) {
 		AcousticSettings d = AcousticSettings.DEFAULT;
 		return new AcousticSettings(d.rolloff(), d.fadeFraction(), d.audibilityThresholdDb(), d.maxRange(), d.portable(),
-				occlusion);
+				occlusion, d.reverb());
 	}
 
 	@Test
 	void codecRoundTrip() {
 		AcousticSettingsPayload payload = new AcousticSettingsPayload(
 				new AcousticSettings(0.5, 0.3, 60, 128, new DeviceProfile(40, 90, -9, 120, Directivity.OMNI),
-						OcclusionSettings.DEFAULT));
+						OcclusionSettings.DEFAULT, ReverbSettings.DEFAULT));
 		ByteBuf buf = Unpooled.buffer();
 		AcousticSettingsPayload.CODEC.encode(buf, payload);
 		assertEquals(payload, AcousticSettingsPayload.CODEC.decode(buf));
@@ -37,7 +40,7 @@ class AcousticSettingsPayloadTest {
 	void decodeBoundsValuesFromServer() {
 		AcousticSettingsPayload payload = new AcousticSettingsPayload(
 				new AcousticSettings(Double.NaN, 0.3, 68, 9999, new DeviceProfile(20, 85, -9, 30_000, Directivity.OMNI),
-						OcclusionSettings.DEFAULT));
+						OcclusionSettings.DEFAULT, ReverbSettings.DEFAULT));
 		ByteBuf buf = Unpooled.buffer();
 		AcousticSettingsPayload.CODEC.encode(buf, payload);
 		AcousticSettings decoded = AcousticSettingsPayload.CODEC.decode(buf).settings();
@@ -49,12 +52,27 @@ class AcousticSettingsPayloadTest {
 	@Test
 	void roundTripsOcclusion() {
 		List<AcousticMedium> media = new ArrayList<>(OcclusionSettings.DEFAULT.media());
-		media.add(new AcousticMedium("slime", 2_000_000, 1.5, 2.5, 7, 9, 0.5));
+		media.add(new AcousticMedium("slime", 2_000_000, 1.5, 2.5, 7, 9, 0.5, 0.3));
 		List<AcousticMaterial> materials = new ArrayList<>(OcclusionSettings.DEFAULT.materials());
-		materials.add(new AcousticMaterial("rubber", 25, 30));
+		materials.add(new AcousticMaterial("slime", 3, 4, 0.6));
 		OcclusionSettings custom = new OcclusionSettings(false, 45, media, 0.5, 1.25,
 				Map.of("ad_astra:moon", "vacuum"), materials, false, 3, 7);
 		AcousticSettingsPayload payload = new AcousticSettingsPayload(with(custom));
+		ByteBuf buf = Unpooled.buffer();
+		AcousticSettingsPayload.CODEC.encode(buf, payload);
+		assertEquals(payload, AcousticSettingsPayload.CODEC.decode(buf));
+		assertEquals(0, buf.readableBytes());
+	}
+
+	@Test
+	void roundTripsReverb() {
+		List<FluidReverb> media = new ArrayList<>(ReverbSettings.DEFAULT.media());
+		media.add(new FluidReverb("slime", 2.5, 0.5, 0.6, 0.2, 0.7, true, 0.8, 3));
+		ReverbSettings custom = new ReverbSettings(false, 90, 8, 0.5, 12,
+				new EchoSettings(20, 30, 6, 0.3, 0.4, 0.25, 0.7), media);
+		AcousticSettings d = AcousticSettings.DEFAULT;
+		AcousticSettingsPayload payload = new AcousticSettingsPayload(new AcousticSettings(d.rolloff(),
+				d.fadeFraction(), d.audibilityThresholdDb(), d.maxRange(), d.portable(), d.occlusion(), custom));
 		ByteBuf buf = Unpooled.buffer();
 		AcousticSettingsPayload.CODEC.encode(buf, payload);
 		assertEquals(payload, AcousticSettingsPayload.CODEC.decode(buf));

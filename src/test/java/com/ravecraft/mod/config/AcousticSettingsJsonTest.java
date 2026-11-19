@@ -8,6 +8,9 @@ import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
+import com.ravecraft.mod.core.acoustics.reverb.EchoSettings;
+import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
+import com.ravecraft.mod.core.acoustics.reverb.ReverbSettings;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -110,7 +113,7 @@ class AcousticSettingsJsonTest {
 				""");
 		OcclusionSettings o = r.settings().occlusion();
 		assertEquals(40, o.maxLossDb());
-		assertEquals(new AcousticMaterial("stone", 10, 5), material(o, "stone"));
+		assertEquals(new AcousticMaterial("stone", 10, 5, 0.02), material(o, "stone"));
 		assertEquals(new AcousticMaterial("rubber", 25, 30), material(o, "rubber"));
 		assertEquals("vacuum", o.dimensionMedium("ad_astra:moon").name());
 		assertFalse(r.complete());
@@ -152,19 +155,55 @@ class AcousticSettingsJsonTest {
 	void customListsRoundTrip() {
 		OcclusionSettings d = OcclusionSettings.DEFAULT;
 		List<AcousticMaterial> materials = new ArrayList<>(d.materials());
-		materials.add(new AcousticMaterial("rubber", 25, 30));
+		materials.add(new AcousticMaterial("rubber", 25, 30, 0.6));
 		List<AcousticMedium> media = new ArrayList<>(d.media());
-		media.add(new AcousticMedium("slime", 2_000_000, 1.5, 2.5, 7, 9, 0.5));
+		media.add(new AcousticMedium("slime", 2_000_000, 1.5, 2.5, 7, 9, 0.5, 0.3));
 		OcclusionSettings custom = new OcclusionSettings(d.enabled(), d.maxLossDb(), media, d.interfaceScale(),
 				d.interfaceHighRatio(), Map.of("ad_astra:moon", "vacuum"), materials, d.detours(), d.bendLossDb(),
 				d.bendHighLossDb());
 		AcousticSettings s = AcousticSettings.DEFAULT;
 		AcousticSettings withCustom = new AcousticSettings(s.rolloff(), s.fadeFraction(), s.audibilityThresholdDb(),
-				s.maxRange(), s.portable(), custom);
+				s.maxRange(), s.portable(), custom, s.reverb());
 		StringWriter out = new StringWriter();
 		AcousticSettingsJson.write(withCustom, out);
 		AcousticSettingsJson.Result r = result(out.toString());
 		assertEquals(withCustom, r.settings());
 		assertTrue(r.complete());
+	}
+
+	@Test
+	void reverbRoundTrips() {
+		List<FluidReverb> media = new ArrayList<>(ReverbSettings.DEFAULT.media());
+		media.add(new FluidReverb("slime", 2.5, 0.5, 0.6, 0.2, 0.7, true, 0.8, 3));
+		ReverbSettings custom = new ReverbSettings(false, 90, 8, 0.5, 12,
+				new EchoSettings(20, 30, 6, 0.3, 0.4, 0.25, 0.7), media);
+		AcousticSettings s = AcousticSettings.DEFAULT;
+		AcousticSettings withCustom = new AcousticSettings(s.rolloff(), s.fadeFraction(), s.audibilityThresholdDb(),
+				s.maxRange(), s.portable(), s.occlusion(), custom);
+		StringWriter out = new StringWriter();
+		AcousticSettingsJson.write(withCustom, out);
+		AcousticSettingsJson.Result r = result(out.toString());
+		assertEquals(withCustom, r.settings());
+		assertTrue(r.complete());
+	}
+
+	@Test
+	void fileWithoutReverbIsIncompleteAndTakesDefaults() {
+		AcousticSettingsJson.Result r = result("{ \"rolloff\": 1 }");
+		assertEquals(ReverbSettings.DEFAULT, r.settings().reverb());
+		assertFalse(r.complete());
+	}
+
+	@Test
+	void fileWithoutAbsorptionIsIncompleteAndTakesDefaults() {
+		AcousticSettingsJson.Result r = result("""
+				{ "occlusion": {
+				  "media": { "water": { "impedance": 1480000, "lossDbPerBlock": 0, "highLossDbPerBlock": 0.02 } },
+				  "materials": { "stone": { "lossDb": 15, "highLossDb": 30 } } } }
+				""");
+		OcclusionSettings o = r.settings().occlusion();
+		assertEquals(0.02, material(o, "stone").absorption());
+		assertEquals(0.01, o.medium("water").surfaceAbsorption());
+		assertFalse(r.complete());
 	}
 }

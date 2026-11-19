@@ -37,6 +37,9 @@ public final class JitterBuffer {
 	private boolean draining;
 	/** Playback ran dry: the next start skips the backlog that piled up meanwhile. */
 	private boolean underran;
+	/** Frames never received when their turn came, and the times the buffer ran empty while playing. */
+	private long lostFrames;
+	private long underruns;
 
 	public JitterBuffer(int targetFrames, int maxAheadFrames) {
 		this.targetFrames = targetFrames;
@@ -79,11 +82,16 @@ public final class JitterBuffer {
 		if (frames.isEmpty()) {
 			playing = false;
 			underran = true;
+			underruns++;
 			return WAITING;
 		}
 		byte[] frame = frames.remove(cursor);
 		cursor++;
-		return frame == null ? LOST : new Audio(frame);
+		if (frame == null) {
+			lostFrames++;
+			return LOST;
+		}
+		return new Audio(frame);
 	}
 
 	/** No more frames will come: play what is buffered without waiting for the target. */
@@ -93,5 +101,15 @@ public final class JitterBuffer {
 
 	public int bufferedFrames() {
 		return frames.size();
+	}
+
+	/** Frames that were missing when their turn came, since the start. */
+	public long lostFrames() {
+		return lostFrames;
+	}
+
+	/** Times the buffer ran empty while playing (each stall counts once), since the start. */
+	public long underruns() {
+		return underruns;
 	}
 }

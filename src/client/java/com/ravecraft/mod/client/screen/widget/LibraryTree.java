@@ -1,15 +1,19 @@
 package com.ravecraft.mod.client.screen.widget;
 
+import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.client.audio.LocalPlayback;
 import com.ravecraft.mod.client.library.OffThread;
 import com.ravecraft.mod.client.screen.SpeakerStates;
+import com.ravecraft.mod.core.library.FlatScan;
 import com.ravecraft.mod.core.library.LibraryTreeModel;
+import com.ravecraft.mod.core.library.LibraryTreeModel.FlatStatus;
 import com.ravecraft.mod.core.library.LibraryTreeModel.Row;
 import com.ravecraft.mod.core.library.MusicSource;
 import com.ravecraft.mod.core.library.SourceNode;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -21,6 +25,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import net.minecraft.util.Util;
 
 /**
  * The library as an expandable tree in a recessed panel: the source's roots (the chosen folders), then the
@@ -28,7 +33,8 @@ import net.minecraft.util.Mth;
  * its result is applied on the client thread, only if the tree has not been reloaded since. Rows show the
  * indentation, an expand arrow, the type icon, the name, the track count of folders and a {@code +} that queues
  * the node's tracks on the speaker. The flat view lists every track and playlist instead, without folders, each
- * with its folder as a tooltip. The state and the search filter live in {@link LibraryTreeModel}.
+ * with its folder as a tooltip; a {@link FlatScan} fills it in while it walks the disk, and a last row shows the
+ * scan's progress or offers to load the next page. The state and the search filter live in {@link LibraryTreeModel}.
  */
 public final class LibraryTree extends AbstractWidget {
 	private static final int ROW_H = 11;
@@ -39,11 +45,16 @@ public final class LibraryTree extends AbstractWidget {
 	private static final int ADD_W = SpeakerSprites.ICON + 1;
 	private static final int HOVER = 0x30FFFFFF;
 	private static final int ARROW = 0xFF3A3A3A;
+	private static final int SEPARATOR = 0xFF6A6A6A;
+	private static final int LINK = 0xFFFFE07A;
+	private static final int BATCH = 64;
 
 	private final MusicSource source;
 	private final BlockPos pos;
 	private final LibraryTreeModel model = new LibraryTreeModel();
 	private int scroll;
+	/** The flat view's walk, cancelled whenever its list is dropped or the screen closes. */
+	private @org.jspecify.annotations.Nullable FlatScan scan;
 
 	public LibraryTree(int x, int y, int width, int height, MusicSource source, BlockPos pos) {
 		super(x, y, width, height, Component.translatable(SpeakerSprites.KEY + "library"));
@@ -54,6 +65,7 @@ public final class LibraryTree extends AbstractWidget {
 
 	/** Forgets the loaded tree and lists the roots again (after the chosen folders changed). */
 	public void reload() {
+		cancelScan();
 		model.startLoading();
 		int generation = model.generation();
 		OffThread.run(source::roots, roots -> model.setRoots(generation, roots), () -> model.setRoots(generation, List.of()));
@@ -63,17 +75,57 @@ public final class LibraryTree extends AbstractWidget {
 	/** Switches between the folder tree and the flat list, loading the list the first time it is shown. */
 	public void setFlat(boolean flat) {
 		if (flat != model.flat()) {
+			if (!flat) {
+				cancelScan();
+			}
 			model.setFlat(flat);
 			scroll = 0;
 		}
 		loadFlat();
 	}
 
+	/** Stops the disk walk; called when the screen closes or is rebuilt. */
+	public void close() {
+		cancelScan();
+	}
+
 	private void loadFlat() {
 		if (model.claimFlatLoad()) {
-			int generation = model.generation();
-			OffThread.run(source::allTracks, nodes -> model.setFlatNodes(generation, nodes),
-					() -> model.setFlatNodes(generation, List.of()));
+			cancelScan();
+			scan = source.flatScan();
+			runScan();
+		}
+	}
+
+	private void loadMore() {
+		if (scan != null && model.claimLoadMore()) {
+			scan.nextPage();
+			runScan();
+		}
+	}
+
+	/** Runs one page of the walk on the IO pool; each batch and the end are applied on the client thread. */
+	private void runScan() {
+		FlatScan walk = scan;
+		int generation = model.flatGeneration();
+		Minecraft minecraft = Minecraft.getInstance();
+		CompletableFuture.runAsync(() -> {
+			boolean more;
+			try {
+				more = walk.run(batch -> minecraft.execute(() -> model.addFlatNodes(generation, batch)), BATCH);
+			} catch (RuntimeException e) {
+				RaveCraft.LOGGER.warn("Could not walk the music library", e);
+				more = false;
+			}
+			boolean left = more;
+			minecraft.execute(() -> model.finishFlat(generation, left));
+		}, Util.ioPool());
+	}
+
+	private void cancelScan() {
+		if (scan != null) {
+			scan.cancel();
+			scan = null;
 		}
 	}
 
@@ -122,6 +174,15 @@ public final class LibraryTree extends AbstractWidget {
 		return model.rows();
 	}
 
+	/** The flat view's last row: the scan's progress, or {@code Load more} when a page is full. */
+	private boolean footerShown() {
+		return model.flat() && (model.flatStatus() == FlatStatus.SCANNING || model.flatStatus() == FlatStatus.MORE);
+	}
+
+	private int rowCount() {
+		return rows().size() + (footerShown() ? 1 : 0);
+	}
+
 	private int innerTop() {
 		return getY() + PAD;
 	}
@@ -131,7 +192,7 @@ public final class LibraryTree extends AbstractWidget {
 	}
 
 	private int maxScroll() {
-		return Math.max(0, rows().size() * ROW_H - innerHeight());
+		return Math.max(0, rowCount() * ROW_H - innerHeight());
 	}
 
 	private int rowLeft() {
@@ -148,7 +209,7 @@ public final class LibraryTree extends AbstractWidget {
 			return -1;
 		}
 		int index = (int) ((mouseY - innerTop() + scroll) / ROW_H);
-		return index >= 0 && index < rows().size() ? index : -1;
+		return index >= 0 && index < rowCount() ? index : -1;
 	}
 
 	private static boolean addable(Row row) {
@@ -169,6 +230,14 @@ public final class LibraryTree extends AbstractWidget {
 		int index = rowAt(event.x(), event.y());
 		if (index < 0) {
 			return false;
+		}
+		if (index == rows().size()) {
+			if (model.flatStatus() != FlatStatus.MORE) {
+				return false;
+			}
+			playDownSound(Minecraft.getInstance().getSoundManager());
+			loadMore();
+			return true;
 		}
 		Row row = rows().get(index);
 		if (!addable(row)) {
@@ -220,15 +289,20 @@ public final class LibraryTree extends AbstractWidget {
 		int right = rowRight();
 		int hovered = isHovered() ? rowAt(mouseX, mouseY) : -1;
 		graphics.enableScissor(getX() + 1, innerTop(), getX() + width - 1, innerTop() + innerHeight());
-		for (int i = scroll / ROW_H; i < rows.size(); i++) {
+		int count = rowCount();
+		for (int i = scroll / ROW_H; i < count; i++) {
 			int rowY = innerTop() + i * ROW_H - scroll;
 			if (rowY >= innerTop() + innerHeight()) {
 				break;
 			}
-			drawRow(graphics, font, rows.get(i), left, right, rowY, i == hovered, mouseX, mouseY);
+			if (i == rows.size()) {
+				drawFooter(graphics, font, left, right, rowY, i == hovered, mouseX, mouseY);
+			} else {
+				drawRow(graphics, font, rows.get(i), left, right, rowY, i == hovered, mouseX, mouseY);
+			}
 		}
 		graphics.disableScissor();
-		drawScrollbar(graphics, rows.size());
+		drawScrollbar(graphics, count);
 	}
 
 	private void drawRow(GuiGraphicsExtractor graphics, Font font, Row row, int left, int right, int rowY,
@@ -287,6 +361,32 @@ public final class LibraryTree extends AbstractWidget {
 		}
 		String name = SpeakerSprites.fit(font, node.name(), end - nameX);
 		graphics.text(font, name, nameX, textY, missing ? SpeakerSprites.ABSENT : SpeakerSprites.TEXT, !missing);
+	}
+
+	private void drawFooter(GuiGraphicsExtractor graphics, Font font, int left, int right, int rowY, boolean hovered,
+			int mouseX, int mouseY) {
+		boolean more = model.flatStatus() == FlatStatus.MORE;
+		if (hovered && more) {
+			graphics.fill(left, rowY, right, rowY + ROW_H, HOVER);
+			graphics.setTooltipForNextFrame(font, Component.translatable(SpeakerSprites.KEY + "flat.incomplete"), mouseX,
+					mouseY);
+		}
+		graphics.fill(left + 1, rowY, right - 1, rowY + 1, SEPARATOR);
+		int textY = rowY + 2;
+		String found = Integer.toString(model.flatCount());
+		if (more) {
+			String link = Component.translatable(SpeakerSprites.KEY + "flat.more").getString();
+			int linkX = right - 2 - font.width(link);
+			graphics.text(font, found + "+", left + 2, textY, SpeakerSprites.MUTED, true);
+			graphics.text(font, link, linkX, textY, LINK, true);
+			graphics.fill(linkX, rowY + ROW_H - 1, right - 2, rowY + ROW_H, LINK);
+		} else {
+			int countX = right - 2 - font.width(found);
+			String searching = Component.translatable(SpeakerSprites.KEY + "flat.searching").getString();
+			graphics.text(font, SpeakerSprites.fit(font, searching, countX - left - 6), left + 2, textY,
+					SpeakerSprites.MUTED, true);
+			graphics.text(font, found, countX, textY, SpeakerSprites.MUTED, true);
+		}
 	}
 
 	private static Identifier icon(SourceNode node) {

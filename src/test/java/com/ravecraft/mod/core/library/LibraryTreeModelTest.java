@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.ravecraft.mod.core.library.LibraryTreeModel.FlatStatus;
 import com.ravecraft.mod.core.library.LibraryTreeModel.Row;
 import com.ravecraft.mod.core.library.SourceNode.Kind;
 import java.util.List;
@@ -126,25 +127,48 @@ class LibraryTreeModelTest {
 		assertFalse(first == model.rows());
 	}
 
-	@Test
-	void flatViewShowsALoadingRowUntilItsListArrives() {
+
+	/** A model in the flat view whose scan has been claimed. */
+	private static LibraryTreeModel scanning() {
 		LibraryTreeModel model = loaded();
 		model.setFlat(true);
-		assertTrue(model.flat());
 		assertTrue(model.claimFlatLoad());
-		assertFalse(model.claimFlatLoad(), "already loading");
-		assertEquals(List.of("…"), render(model));
-		assertTrue(model.setFlatNodes(model.generation(), List.of(INTRO, NIGHT)));
+		return model;
+	}
+
+	@Test
+	void flatViewShowsTracksAsTheyAreFoundSortedByName() {
+		LibraryTreeModel model = scanning();
+		assertFalse(model.claimFlatLoad(), "already scanning");
+		assertEquals(FlatStatus.SCANNING, model.flatStatus());
+		assertEquals(List.of(), render(model));
+		assertTrue(model.addFlatNodes(model.flatGeneration(), List.of(NIGHT)));
+		assertEquals(List.of("Night Drive"), render(model));
+		model.addFlatNodes(model.flatGeneration(), List.of(INTRO));
 		assertEquals(List.of("Intro", "Night Drive"), render(model));
+		assertEquals(2, model.flatCount());
+		assertTrue(model.finishFlat(model.flatGeneration(), false));
+		assertEquals(FlatStatus.DONE, model.flatStatus());
 		assertFalse(model.claimFlatLoad(), "already loaded");
 	}
 
 	@Test
+	void aFullPageOffersToLoadMore() {
+		LibraryTreeModel model = scanning();
+		model.addFlatNodes(model.flatGeneration(), List.of(INTRO));
+		model.finishFlat(model.flatGeneration(), true);
+		assertEquals(FlatStatus.MORE, model.flatStatus());
+		assertTrue(model.claimLoadMore());
+		assertEquals(FlatStatus.SCANNING, model.flatStatus());
+		assertFalse(model.claimLoadMore(), "already scanning");
+		model.addFlatNodes(model.flatGeneration(), List.of(NIGHT));
+		assertEquals(List.of("Intro", "Night Drive"), render(model), "the next page is added to the first");
+	}
+
+	@Test
 	void flatViewIsFilteredByName() {
-		LibraryTreeModel model = loaded();
-		model.setFlat(true);
-		model.claimFlatLoad();
-		model.setFlatNodes(model.generation(), List.of(INTRO, NIGHT));
+		LibraryTreeModel model = scanning();
+		model.addFlatNodes(model.flatGeneration(), List.of(INTRO, NIGHT));
 		model.setFilter(" night ");
 		assertEquals(List.of("Night Drive"), render(model));
 	}
@@ -153,18 +177,32 @@ class LibraryTreeModelTest {
 	void treeViewDoesNotClaimTheFlatList() {
 		LibraryTreeModel model = loaded();
 		assertFalse(model.claimFlatLoad());
+		assertFalse(model.claimLoadMore());
 	}
 
 	@Test
-	void reloadDropsTheFlatListAndStaleResults() {
-		LibraryTreeModel model = loaded();
-		model.setFlat(true);
-		model.claimFlatLoad();
-		int old = model.generation();
+	void reloadDropsTheFlatListAndStaleBatches() {
+		LibraryTreeModel model = scanning();
+		int old = model.flatGeneration();
 		model.startLoading();
-		assertFalse(model.setFlatNodes(old, List.of(INTRO)));
-		assertTrue(model.claimFlatLoad(), "the new generation loads its own list");
-		assertEquals(List.of("…"), render(model));
+		assertFalse(model.addFlatNodes(old, List.of(INTRO)));
+		assertFalse(model.finishFlat(old, false));
+		assertEquals(FlatStatus.IDLE, model.flatStatus());
+		assertTrue(model.claimFlatLoad(), "the new generation scans again");
+		assertEquals(0, model.flatCount());
+	}
+
+	@Test
+	void leavingTheFlatViewDropsItsScan() {
+		LibraryTreeModel model = scanning();
+		int old = model.flatGeneration();
+		model.addFlatNodes(old, List.of(INTRO));
+		model.setFlat(false);
+		assertFalse(model.addFlatNodes(old, List.of(NIGHT)), "batches of the stopped scan are ignored");
+		model.setFlat(true);
+		assertEquals(FlatStatus.IDLE, model.flatStatus());
+		assertEquals(0, model.flatCount());
+		assertTrue(model.claimFlatLoad());
 	}
 
 	@Test
@@ -174,7 +212,6 @@ class LibraryTreeModelTest {
 		model.setChildren(model.generation(), MUSIC.id(), List.of(CHILL, INTRO));
 		model.setFlat(true);
 		model.claimFlatLoad();
-		model.setFlatNodes(model.generation(), List.of(INTRO));
 		model.setFlat(false);
 		assertEquals(List.of("Musique/", "  Chill", "  Intro", "Sets DJ"), render(model));
 	}

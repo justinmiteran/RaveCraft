@@ -16,8 +16,8 @@ public interface MusicSource {
 
 	List<Path> tracksOf(SourceNode node) throws IOException;
 
-	/** Every track and playlist under the roots, subfolders included, sorted by name, for the flat view. */
-	List<SourceNode> allTracks() throws IOException;
+	/** A new walk of every track and playlist under the roots, for the flat view. */
+	FlatScan flatScan();
 
 	/** The name of the folder holding {@code node}, or an empty string when there is none to show. */
 	String parentName(SourceNode node);

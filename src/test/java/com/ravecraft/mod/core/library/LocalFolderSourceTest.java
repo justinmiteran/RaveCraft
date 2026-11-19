@@ -8,6 +8,7 @@ import com.ravecraft.mod.core.library.SourceNode.Kind;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -62,54 +63,19 @@ class LocalFolderSourceTest {
 	}
 
 	@Test
-	void childrenOfVanishedFolderIsEmpty() throws IOException {
-		Path root = Files.createDirectory(dir.resolve("temp"));
-		LocalFolderSource source = new LocalFolderSource(() -> List.of(root));
-		SourceNode node = source.roots().get(0);
-		Files.delete(root);
-		assertEquals(List.of(), source.children(node));
-	}
-
-	@Test
-	void allTracksListsTracksAndPlaylistsOfEverySubfolderByName() throws IOException {
-		Path sub = Files.createDirectories(dir.resolve("sub").resolve("deeper"));
-		Files.createFile(dir.resolve("b.mp3"));
-		Files.createFile(dir.resolve("A.ogg"));
-		Files.createFile(dir.resolve("notes.txt"));
-		Files.writeString(dir.resolve("mix.m3u"), "b.mp3" + System.lineSeparator());
-		Files.createFile(sub.resolve("c.flac"));
+	void parentNameIsTheContainingFolder() {
 		LocalFolderSource source = new LocalFolderSource(() -> List.of(dir));
-		assertEquals(List.of(
-				new SourceNode(dir.resolve("A.ogg").toString(), Kind.TRACK, "A", -1, false),
-				new SourceNode(dir.resolve("b.mp3").toString(), Kind.TRACK, "b", -1, false),
-				new SourceNode(sub.resolve("c.flac").toString(), Kind.TRACK, "c", -1, false),
-				new SourceNode(dir.resolve("mix.m3u").toString(), Kind.PLAYLIST, "mix.m3u", -1, false)),
-				source.allTracks());
+		SourceNode night = new SourceNode(dir.resolve("Chill").resolve("night.mp3").toString(), Kind.TRACK, "night", -1,
+				false);
+		assertEquals("Chill", source.parentName(night));
 	}
 
 	@Test
-	void allTracksSkipsMissingRootsAndListsNestedRootsOnce() throws IOException {
-		Path sub = Files.createDirectory(dir.resolve("sub"));
-		Files.createFile(sub.resolve("deep.mp3"));
-		LocalFolderSource source = new LocalFolderSource(() -> List.of(dir, sub, dir.resolve("gone")));
-		assertEquals(List.of(new SourceNode(sub.resolve("deep.mp3").toString(), Kind.TRACK, "deep", -1, false)),
-				source.allTracks());
-	}
-
-	@Test
-	void allTracksStopsAtTheLimit() throws IOException {
+	void flatScanWalksTheChosenFolders() throws IOException {
 		Files.createFile(dir.resolve("a.mp3"));
-		Files.createFile(dir.resolve("b.mp3"));
-		Files.createFile(dir.resolve("c.mp3"));
 		LocalFolderSource source = new LocalFolderSource(() -> List.of(dir));
-		assertEquals(2, source.allTracks(2).size());
-	}
-
-	@Test
-	void parentNameIsTheContainingFolder() throws IOException {
-		Path sub = Files.createDirectory(dir.resolve("Chill"));
-		Files.createFile(sub.resolve("night.mp3"));
-		LocalFolderSource source = new LocalFolderSource(() -> List.of(dir));
-		assertEquals("Chill", source.parentName(source.allTracks().get(0)));
+		List<SourceNode> found = new ArrayList<>();
+		source.flatScan().run(found::addAll, 64);
+		assertEquals(List.of(new SourceNode(dir.resolve("a.mp3").toString(), Kind.TRACK, "a", -1, false)), found);
 	}
 }

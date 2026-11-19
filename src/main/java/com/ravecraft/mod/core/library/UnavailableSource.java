@@ -26,8 +26,8 @@ public record UnavailableSource(String id) implements MusicSource {
 	}
 
 	@Override
-	public List<SourceNode> allTracks() {
-		return List.of();
+	public FlatScan flatScan() {
+		return new FlatScan(List.of());
 	}
 
 	@Override

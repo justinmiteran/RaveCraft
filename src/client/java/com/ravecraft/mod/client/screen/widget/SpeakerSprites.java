@@ -30,6 +30,7 @@ public final class SpeakerSprites {
 	public static final Identifier VOLUME = sprite("volume");
 	public static final Identifier VIEW_TREE = sprite("view_tree");
 	public static final Identifier VIEW_LIST = sprite("view_list");
+	public static final Identifier REFRESH = sprite("refresh");
 	public static final Identifier PLUS = sprite("plus");
 	public static final Identifier REMOVE = sprite("remove");
 	public static final Identifier LED_ON = sprite("led_on");

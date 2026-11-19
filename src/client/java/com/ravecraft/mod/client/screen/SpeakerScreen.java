@@ -122,14 +122,19 @@ public final class SpeakerScreen extends Screen {
 		List<MusicSource> sources = List.of(new LocalFolderSource(() -> LibraryFoldersStore.get().paths()),
 				new UnavailableSource("usb"), new UnavailableSource("stream"));
 		addRenderableWidget(new SourceTabs(left, top + PANEL_Y, sources, 0));
-		search = addRenderableWidget(new EditBox(font, left + 7, top + PANEL_Y, PANEL_W - SEARCH_H - 2, SEARCH_H,
+		search = addRenderableWidget(new EditBox(font, left + 7, top + PANEL_Y, PANEL_W - 2 * SEARCH_H - 4, SEARCH_H,
 				Component.translatable(SpeakerSprites.KEY + "search")));
 		search.setHint(Component.translatable(SpeakerSprites.KEY + "search"));
 		search.setValue(filter);
+		if (library != null) {
+			library.close(); // the screen is being rebuilt (resize)
+		}
 		library = addRenderableWidget(new LibraryTree(left + 7, top + TREE_Y, PANEL_W, PANEL_H - (TREE_Y - PANEL_Y),
 				sources.get(0), pos));
 		library.setFilter(filter);
 		library.setFlat(flatView);
+		addRenderableWidget(new IconButton(left + 7 + PANEL_W - 2 * SEARCH_H - 2, top + PANEL_Y, SEARCH_H,
+				SpeakerSprites.REFRESH, Component.translatable(SpeakerSprites.KEY + "refresh"), this::reloadLibrary));
 		viewButton = addRenderableWidget(new IconButton(left + 7 + PANEL_W - SEARCH_H, top + PANEL_Y, SEARCH_H,
 				viewIcon(), viewLabel(), this::toggleView));
 		search.setResponder(text -> {
@@ -190,6 +195,7 @@ public final class SpeakerScreen extends Screen {
 	public void removed() {
 		super.removed();
 		closeFolders();
+		library.close();
 		if (ClientPlayNetworking.canSend(SpeakerWatchPayload.TYPE)) {
 			ClientPlayNetworking.send(new SpeakerWatchPayload(pos, false));
 		}

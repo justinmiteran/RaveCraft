@@ -1,6 +1,7 @@
 package com.ravecraft.mod.core.library;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -12,7 +13,8 @@ import java.util.Set;
  * The state of a library tree, without any I/O: the roots, the children loaded so far, which folders are expanded
  * or loading, and the search filter. The caller loads roots and children itself (off the render thread) and hands
  * them back with the {@link #generation()} it started from, so results arriving after {@link #startLoading()} are
- * dropped. In the flat view the rows are every track and playlist instead, loaded once per generation.
+ * dropped. In the flat view the rows are the tracks and playlists a scan found so far instead, added batch by
+ * batch.
  * {@link #rows()} is the flattened list of visible rows, rebuilt only after a change.
  */
 public final class LibraryTreeModel {
@@ -24,6 +26,8 @@ public final class LibraryTreeModel {
 	}
 
 	private static final Row ROOTS_LOADING = new Row(null, 0, false);
+	private static final Comparator<SourceNode> BY_NAME =
+			Comparator.comparing(SourceNode::name, String.CASE_INSENSITIVE_ORDER).thenComparing(SourceNode::id);
 
 	private int generation;
 	private boolean loadingRoots;
@@ -32,9 +36,15 @@ public final class LibraryTreeModel {
 	private final Set<String> expanded = new HashSet<>();
 	private final Set<String> loading = new HashSet<>();
 	private String filter = "";
+	/** Where the flat list's scan stands: not started, running, paused at a full page, or finished. */
+	public enum FlatStatus {
+		IDLE, SCANNING, MORE, DONE
+	}
+
 	private boolean flat;
-	private boolean flatLoading;
-	private List<SourceNode> flatNodes;
+	private int flatGeneration;
+	private FlatStatus flatStatus = FlatStatus.IDLE;
+	private final List<SourceNode> flatNodes = new ArrayList<>();
 	private List<Row> rows = List.of();
 	private boolean dirty = true;
 
@@ -51,8 +61,7 @@ public final class LibraryTreeModel {
 		children.clear();
 		expanded.clear();
 		loading.clear();
-		flatNodes = null;
-		flatLoading = false;
+		resetFlat();
 		dirty = true;
 	}
 
@@ -111,6 +120,10 @@ public final class LibraryTreeModel {
 	public void setFlat(boolean flat) {
 		if (flat != this.flat) {
 			this.flat = flat;
+			if (!flat) {
+				// Leaving the flat view stops its scan; coming back starts a new one.
+				resetFlat();
+			}
 			dirty = true;
 		}
 	}
@@ -119,27 +132,63 @@ public final class LibraryTreeModel {
 		return flat;
 	}
 
-	/**
-	 * True once when the flat view is on and its list is neither loaded nor loading: the caller then loads it and
-	 * hands it back with {@link #setFlatNodes}.
-	 */
+	/** Changes whenever the flat list is dropped; batches from an older flat generation are ignored. */
+	public int flatGeneration() {
+		return flatGeneration;
+	}
+
+	public FlatStatus flatStatus() {
+		return flatStatus;
+	}
+
+	/** Tracks and playlists found so far, before the search filter. */
+	public int flatCount() {
+		return flatNodes.size();
+	}
+
+	/** True once when the flat view is on and its scan has not started: the caller then starts it. */
 	public boolean claimFlatLoad() {
-		if (!flat || flatNodes != null || flatLoading) {
+		if (!flat || flatStatus != FlatStatus.IDLE) {
 			return false;
 		}
-		flatLoading = true;
+		flatStatus = FlatStatus.SCANNING;
 		return true;
 	}
 
-	/** Applies the flat list; false (and nothing changes) when it belongs to an older generation. */
-	public boolean setFlatNodes(int generation, List<SourceNode> nodes) {
-		if (generation != this.generation) {
+	/** True once when the scan paused at a full page: the caller then runs its next page. */
+	public boolean claimLoadMore() {
+		if (!flat || flatStatus != FlatStatus.MORE) {
 			return false;
 		}
-		flatNodes = List.copyOf(nodes);
-		flatLoading = false;
+		flatStatus = FlatStatus.SCANNING;
+		return true;
+	}
+
+	/** Adds a batch found by the scan, kept sorted by name; false when it belongs to an older flat generation. */
+	public boolean addFlatNodes(int flatGeneration, List<SourceNode> nodes) {
+		if (flatGeneration != this.flatGeneration || flatStatus != FlatStatus.SCANNING) {
+			return false;
+		}
+		flatNodes.addAll(nodes);
+		flatNodes.sort(BY_NAME);
 		dirty = true;
 		return true;
+	}
+
+	/** Ends a scan run: paused at a full page when {@code more}, finished otherwise. */
+	public boolean finishFlat(int flatGeneration, boolean more) {
+		if (flatGeneration != this.flatGeneration || flatStatus != FlatStatus.SCANNING) {
+			return false;
+		}
+		flatStatus = more ? FlatStatus.MORE : FlatStatus.DONE;
+		return true;
+	}
+
+	private void resetFlat() {
+		flatGeneration++;
+		flatStatus = FlatStatus.IDLE;
+		flatNodes.clear();
+		dirty = true;
 	}
 
 	/**
@@ -159,13 +208,9 @@ public final class LibraryTreeModel {
 		if (dirty) {
 			List<Row> built = new ArrayList<>();
 			if (flat) {
-				if (flatNodes == null) {
-					built.add(ROOTS_LOADING);
-				} else {
-					for (SourceNode node : flatNodes) {
-						if (node.name().toLowerCase(Locale.ROOT).contains(filter)) {
-							built.add(new Row(node, 0, false));
-						}
+				for (SourceNode node : flatNodes) {
+					if (node.name().toLowerCase(Locale.ROOT).contains(filter)) {
+						built.add(new Row(node, 0, false));
 					}
 				}
 			} else if (loadingRoots) {

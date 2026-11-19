@@ -1,7 +1,6 @@
 package com.ravecraft.mod.core.library;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -13,8 +12,8 @@ import java.util.Set;
  * The state of a library tree, without any I/O: the roots, the children loaded so far, which folders are expanded
  * or loading, and the search filter. The caller loads roots and children itself (off the render thread) and hands
  * them back with the {@link #generation()} it started from, so results arriving after {@link #startLoading()} are
- * dropped. In the flat view the rows are the tracks and playlists a scan found so far instead, added batch by
- * batch.
+ * dropped. In the flat view the rows are the tracks and playlists of the library index instead, replaced whole
+ * whenever the index changes.
  * {@link #rows()} is the flattened list of visible rows, rebuilt only after a change.
  */
 public final class LibraryTreeModel {
@@ -26,8 +25,6 @@ public final class LibraryTreeModel {
 	}
 
 	private static final Row ROOTS_LOADING = new Row(null, 0, false);
-	private static final Comparator<SourceNode> BY_NAME =
-			Comparator.comparing(SourceNode::name, String.CASE_INSENSITIVE_ORDER).thenComparing(SourceNode::id);
 
 	private int generation;
 	private boolean loadingRoots;
@@ -36,15 +33,8 @@ public final class LibraryTreeModel {
 	private final Set<String> expanded = new HashSet<>();
 	private final Set<String> loading = new HashSet<>();
 	private String filter = "";
-	/** Where the flat list's scan stands: not started, running, paused at a full page, or finished. */
-	public enum FlatStatus {
-		IDLE, SCANNING, MORE, DONE
-	}
-
 	private boolean flat;
-	private int flatGeneration;
-	private FlatStatus flatStatus = FlatStatus.IDLE;
-	private final List<SourceNode> flatNodes = new ArrayList<>();
+	private List<SourceNode> flatNodes = List.of();
 	private List<Row> rows = List.of();
 	private boolean dirty = true;
 
@@ -61,8 +51,21 @@ public final class LibraryTreeModel {
 		children.clear();
 		expanded.clear();
 		loading.clear();
-		resetFlat();
 		dirty = true;
+	}
+
+	/**
+	 * Starts listing everything again while the current tree stays shown: results of before are dropped, the new
+	 * roots replace the old ones when they arrive. Returns the folders whose children are loaded, to load again.
+	 */
+	public List<String> refresh() {
+		generation++;
+		loading.clear();
+		List<String> reload = new ArrayList<>(children.keySet());
+		reload.removeIf(id -> !expanded.contains(id));
+		children.keySet().retainAll(reload);
+		loading.addAll(reload);
+		return reload;
 	}
 
 	public boolean loadingRoots() {
@@ -132,14 +135,10 @@ public final class LibraryTreeModel {
 		return true;
 	}
 
-	/** Switches between the tree and the flat list of every track; the tree keeps its expanded folders. */
+	/** Switches between the tree and the flat list; the tree keeps its expanded folders. */
 	public void setFlat(boolean flat) {
 		if (flat != this.flat) {
 			this.flat = flat;
-			if (!flat) {
-				// Leaving the flat view stops its scan; coming back starts a new one.
-				resetFlat();
-			}
 			dirty = true;
 		}
 	}
@@ -148,63 +147,15 @@ public final class LibraryTreeModel {
 		return flat;
 	}
 
-	/** Changes whenever the flat list is dropped; batches from an older flat generation are ignored. */
-	public int flatGeneration() {
-		return flatGeneration;
+	/** Replaces the flat list with the index's entries, already sorted. */
+	public void setFlatNodes(List<SourceNode> nodes) {
+		flatNodes = nodes;
+		dirty = true;
 	}
 
-	public FlatStatus flatStatus() {
-		return flatStatus;
-	}
-
-	/** Tracks and playlists found so far, before the search filter. */
+	/** Tracks and playlists in the flat list, before the search filter. */
 	public int flatCount() {
 		return flatNodes.size();
-	}
-
-	/** True once when the flat view is on and its scan has not started: the caller then starts it. */
-	public boolean claimFlatLoad() {
-		if (!flat || flatStatus != FlatStatus.IDLE) {
-			return false;
-		}
-		flatStatus = FlatStatus.SCANNING;
-		return true;
-	}
-
-	/** True once when the scan paused at a full page: the caller then runs its next page. */
-	public boolean claimLoadMore() {
-		if (!flat || flatStatus != FlatStatus.MORE) {
-			return false;
-		}
-		flatStatus = FlatStatus.SCANNING;
-		return true;
-	}
-
-	/** Adds a batch found by the scan, kept sorted by name; false when it belongs to an older flat generation. */
-	public boolean addFlatNodes(int flatGeneration, List<SourceNode> nodes) {
-		if (flatGeneration != this.flatGeneration || flatStatus != FlatStatus.SCANNING) {
-			return false;
-		}
-		flatNodes.addAll(nodes);
-		flatNodes.sort(BY_NAME);
-		dirty = true;
-		return true;
-	}
-
-	/** Ends a scan run: paused at a full page when {@code more}, finished otherwise. */
-	public boolean finishFlat(int flatGeneration, boolean more) {
-		if (flatGeneration != this.flatGeneration || flatStatus != FlatStatus.SCANNING) {
-			return false;
-		}
-		flatStatus = more ? FlatStatus.MORE : FlatStatus.DONE;
-		return true;
-	}
-
-	private void resetFlat() {
-		flatGeneration++;
-		flatStatus = FlatStatus.IDLE;
-		flatNodes.clear();
-		dirty = true;
 	}
 
 	/**

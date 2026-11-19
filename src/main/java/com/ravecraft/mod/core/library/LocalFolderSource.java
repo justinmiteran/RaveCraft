@@ -92,7 +92,12 @@ public final class LocalFolderSource implements MusicSource {
 
 	@Override
 	public FlatScan flatScan() {
-		return new FlatScan(roots.get(), excluded.get());
+		return new FlatScan(roots.get(), excluded.get(), LibraryIndex.LIMIT);
+	}
+
+	@Override
+	public LibraryIndex.Scope indexScope() {
+		return new LibraryIndex.Scope(roots.get(), excluded.get());
 	}
 
 	@Override

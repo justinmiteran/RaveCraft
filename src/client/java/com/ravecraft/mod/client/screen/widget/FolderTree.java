@@ -1,5 +1,6 @@
 package com.ravecraft.mod.client.screen.widget;
 
+import com.ravecraft.mod.client.library.LibraryIndexStore;
 import com.ravecraft.mod.client.library.OffThread;
 import com.ravecraft.mod.core.library.LibraryFolders;
 import com.ravecraft.mod.core.library.LibraryTreeModel;
@@ -231,7 +232,7 @@ public final class FolderTree extends RowList {
 		}
 		if (!excluded) {
 			String count = missing ? Component.translatable(SpeakerSprites.KEY + "missing").getString()
-					: Integer.toString(node.trackCount());
+					: LibraryIndexStore.countLabel("local", node.id()).orElse(Integer.toString(node.trackCount()));
 			end -= font.width(count);
 			graphics.text(font, count, end, y + 2, SpeakerSprites.MUTED, false);
 			end -= 3;

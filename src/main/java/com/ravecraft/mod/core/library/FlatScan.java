@@ -60,7 +60,8 @@ public final class FlatScan {
 		this(roots, List.of(), page);
 	}
 
-	FlatScan(List<Path> roots, List<Path> excluded, int page) {
+	/** {@code page}: how many tracks and playlists one {@link #run} finds at most. */
+	public FlatScan(List<Path> roots, List<Path> excluded, int page) {
 		this(roots, excluded, page, MusicLibrary::list);
 	}
 

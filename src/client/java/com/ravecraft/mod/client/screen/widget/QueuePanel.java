@@ -7,6 +7,7 @@ import com.ravecraft.mod.network.payload.SpeakerStatePayload.StateEntry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import com.ravecraft.mod.core.ui.Scrollbar;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -39,6 +40,7 @@ public final class QueuePanel extends AbstractWidget {
 	private final BlockPos pos;
 	private List<Row> rows = List.of();
 	private int scroll;
+	private final Scrollbar bar = new Scrollbar();
 
 	public QueuePanel(int x, int y, int width, int height, BlockPos pos) {
 		super(x, y, width, height, Component.translatable(SpeakerSprites.KEY + "queue"));
@@ -100,6 +102,10 @@ public final class QueuePanel extends AbstractWidget {
 		if (!isActive() || !isValidClickButton(event.buttonInfo())) {
 			return false;
 		}
+		if (onBar(event.x(), event.y())) {
+			scroll = bar.press(event.y(), innerTop(), innerHeight(), rows.size() * ROW_H, scroll);
+			return true;
+		}
 		int index = rowAt(event.x(), event.y());
 		if (index < 0 || rows.get(index).entry() == null || !overRemove(event.x())) {
 			return false;
@@ -107,6 +113,27 @@ public final class QueuePanel extends AbstractWidget {
 		playDownSound(Minecraft.getInstance().getSoundManager());
 		SpeakerStates.send(pos, Command.REMOVE, Optional.of(rows.get(index).entry().entryId()));
 		return true;
+	}
+
+	/** True when a press at {@code (x, y)} lands on the scrollbar while there is something to scroll. */
+	private boolean onBar(double x, double y) {
+		return maxScroll() > 0 && Scrollbar.hits(x, getX() + width - PAD - SCROLLBAR_W, getX() + width) && y >= innerTop()
+				&& y < innerTop() + innerHeight();
+	}
+
+	@Override
+	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+		if (bar.dragging()) {
+			scroll = bar.drag(event.y(), innerTop(), innerHeight(), rows.size() * ROW_H);
+			return true;
+		}
+		return super.mouseDragged(event, dx, dy);
+	}
+
+	@Override
+	public boolean mouseReleased(MouseButtonEvent event) {
+		bar.release();
+		return super.mouseReleased(event);
 	}
 
 	@Override
@@ -149,7 +176,7 @@ public final class QueuePanel extends AbstractWidget {
 			}
 		}
 		graphics.disableScissor();
-		drawScrollbar(graphics);
+		drawScrollbar(graphics, mouseX, mouseY);
 	}
 
 	private void drawSeparator(GuiGraphicsExtractor graphics, Font font, int left, int right, int rowY) {
@@ -196,19 +223,11 @@ public final class QueuePanel extends AbstractWidget {
 		}
 	}
 
-	private void drawScrollbar(GuiGraphicsExtractor graphics) {
-		int max = maxScroll();
-		if (max == 0) {
-			return;
+	private void drawScrollbar(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+		if (maxScroll() > 0) {
+			ScrollbarView.draw(graphics, getX() + width - PAD - SCROLLBAR_W, innerTop(), innerHeight(),
+					rows.size() * ROW_H, scroll, bar.dragging() || isHovered() && onBar(mouseX, mouseY));
 		}
-		int trackTop = innerTop();
-		int trackH = innerHeight();
-		int contentH = rows.size() * ROW_H;
-		int thumbH = Math.max(8, trackH * trackH / contentH);
-		int thumbY = trackTop + (trackH - thumbH) * scroll / max;
-		int x = getX() + width - PAD - SCROLLBAR_W;
-		graphics.fill(x, trackTop, x + SCROLLBAR_W, trackTop + trackH, 0xFF555555);
-		graphics.fill(x, thumbY, x + SCROLLBAR_W, thumbY + thumbH, 0xFFE0E0E0);
 	}
 
 	@Override

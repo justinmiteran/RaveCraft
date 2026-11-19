@@ -1,5 +1,6 @@
 package com.ravecraft.mod.client.screen.widget;
 
+import com.ravecraft.mod.core.ui.Scrollbar;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -21,6 +22,7 @@ public abstract class RowList extends AbstractWidget {
 
 	private final int rowH;
 	private int scroll;
+	private final Scrollbar bar = new Scrollbar();
 
 	protected RowList(int x, int y, int width, int height, int rowH, Component label) {
 		super(x, y, width, height, label);
@@ -73,12 +75,37 @@ public abstract class RowList extends AbstractWidget {
 		if (!isActive() || !isValidClickButton(event.buttonInfo())) {
 			return false;
 		}
+		if (onBar(event.x(), event.y())) {
+			scroll = bar.press(event.y(), innerTop(), innerHeight(), rowCount() * rowH, scroll);
+			return true;
+		}
 		int index = rowAt(event.x(), event.y());
 		if (index >= 0 && clickRow(index, event.x())) {
 			playDownSound(Minecraft.getInstance().getSoundManager());
 			return true;
 		}
 		return false;
+	}
+
+	/** True when a press at {@code (x, y)} lands on the scrollbar while there is something to scroll. */
+	private boolean onBar(double x, double y) {
+		return maxScroll() > 0 && Scrollbar.hits(x, getX() + width - PAD - SCROLLBAR_W, getX() + width) && y >= innerTop()
+				&& y < innerTop() + innerHeight();
+	}
+
+	@Override
+	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+		if (bar.dragging()) {
+			scroll = bar.drag(event.y(), innerTop(), innerHeight(), rowCount() * rowH);
+			return true;
+		}
+		return super.mouseDragged(event, dx, dy);
+	}
+
+	@Override
+	public boolean mouseReleased(MouseButtonEvent event) {
+		bar.release();
+		return super.mouseReleased(event);
 	}
 
 	@Override
@@ -115,12 +142,8 @@ public abstract class RowList extends AbstractWidget {
 		}
 		graphics.disableScissor();
 		if (max > 0) {
-			int trackH = innerHeight();
-			int thumbH = Math.max(8, trackH * trackH / (count * rowH));
-			int thumbY = innerTop() + (trackH - thumbH) * scroll / max;
-			int x = getX() + width - PAD - SCROLLBAR_W;
-			graphics.fill(x, innerTop(), x + SCROLLBAR_W, innerTop() + trackH, 0xFF555555);
-			graphics.fill(x, thumbY, x + SCROLLBAR_W, thumbY + thumbH, 0xFFE0E0E0);
+			ScrollbarView.draw(graphics, getX() + width - PAD - SCROLLBAR_W, innerTop(), innerHeight(), count * rowH,
+					scroll, bar.dragging() || isHovered() && onBar(mouseX, mouseY));
 		}
 	}
 

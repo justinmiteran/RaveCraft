@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
  * The band at the top of the speaker screen, on the speaker's fabric tinted with its colour: the copper equaliser
  * logo, the current title and who added it, the elapsed time, the progress bar and the duration, and the power LED.
  * Dragging the knob only moves it here; one {@code SEEK} goes out on release. The knob is disabled when the
- * duration is unknown (-1).
+ * duration is unknown (-1) or the speaker is off.
  */
 public final class PlayerBand extends AbstractWidget {
 	public static final int HEIGHT = 44;
@@ -93,7 +93,7 @@ public final class PlayerBand extends AbstractWidget {
 	}
 
 	private boolean seekable() {
-		return duration() > 0;
+		return duration() > 0 && state().map(SpeakerStatePayload::powered).orElse(false);
 	}
 
 	private long msAt(double mouseX) {
@@ -230,7 +230,7 @@ public final class PlayerBand extends AbstractWidget {
 		}
 		if (hasCurrent) {
 			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PROGRESS_KNOB, knobX, ty - 2, KNOB_W, KNOB_H,
-					known ? 1.0F : 0.4F);
+					seekable() ? 1.0F : 0.4F);
 		}
 	}
 

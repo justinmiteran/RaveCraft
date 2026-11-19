@@ -59,7 +59,7 @@ public final class ControlRow {
 		this.state = state;
 		this.powered = powered;
 		boolean known = state != null;
-		// Off, only the volume and the power button work; play explains why it does nothing.
+		// Off, only the volume and the power button work; play says the speaker is off.
 		boolean on = known && powered;
 		boolean queued = known && !state.entries().isEmpty();
 		boolean playing = known && state.playing();
@@ -69,7 +69,7 @@ public final class ControlRow {
 		shuffle.active = on;
 		previous.active = on && queued;
 		play.show(playing ? SpeakerSprites.PAUSE : SpeakerSprites.PLAY,
-				label(known && !powered ? "play.off" : playing ? "pause" : "play"));
+				known && !powered ? label("off") : label(playing ? "pause" : "play"));
 		play.active = on && queued;
 		next.active = on && state.current().isPresent();
 		RepeatMode mode = known ? state.repeat() : RepeatMode.OFF;

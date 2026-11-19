@@ -11,8 +11,11 @@ import com.ravecraft.mod.core.library.LibraryTreeModel.Row;
 import com.ravecraft.mod.core.library.MusicSource;
 import com.ravecraft.mod.core.library.SourceNode;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import com.ravecraft.mod.core.ui.Scrollbar;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -355,12 +358,8 @@ public final class LibraryTree extends AbstractWidget {
 						? Component.translatable(SpeakerSprites.KEY + "queue_full", SpeakerQueue.MAX_ENTRIES)
 						: Component.translatable(SpeakerSprites.KEY + "add");
 				graphics.setTooltipForNextFrame(font, tip, mouseX, mouseY);
-			} else if (hovered && model.flat()) {
-				String folder = source.parentName(node);
-				if (!folder.isEmpty()) {
-					graphics.setTooltipForNextFrame(font,
-							Component.translatable(SpeakerSprites.KEY + "in_folder", folder), mouseX, mouseY);
-				}
+			} else if (hovered) {
+				graphics.setTooltipForNextFrame(font, rowTooltip(node), Optional.empty(), mouseX, mouseY);
 			}
 			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PLUS, addX, rowY + 1, SpeakerSprites.ICON,
 					SpeakerSprites.ICON, full() ? 0.4F : 1.0F);
@@ -374,6 +373,25 @@ public final class LibraryTree extends AbstractWidget {
 		}
 		String name = SpeakerSprites.fit(font, node.name(), end - nameX);
 		graphics.text(font, name, nameX, textY, missing ? SpeakerSprites.ABSENT : SpeakerSprites.TEXT, !missing);
+	}
+
+	/**
+	 * The tooltip of a hovered row, in both views: the full name (rows cut long names short), then the track count of a
+	 * folder, or in the flat list the folder a track or playlist is in.
+	 */
+	private List<Component> rowTooltip(SourceNode node) {
+		List<Component> lines = new ArrayList<>();
+		lines.add(Component.literal(node.name()));
+		if (node.kind() == SourceNode.Kind.FOLDER) {
+			lines.add(Component.translatable(SpeakerSprites.KEY + "folders.tracks", countLabel(node))
+					.withStyle(ChatFormatting.GRAY));
+		} else if (model.flat()) {
+			String folder = source.parentName(node);
+			if (!folder.isEmpty()) {
+				lines.add(Component.translatable(SpeakerSprites.KEY + "in_folder", folder).withStyle(ChatFormatting.GRAY));
+			}
+		}
+		return lines;
 	}
 
 	/** The tracks under a folder; {@code …} while the index has not seen it yet. */

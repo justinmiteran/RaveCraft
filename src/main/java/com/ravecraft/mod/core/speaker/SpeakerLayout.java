@@ -9,7 +9,7 @@ package com.ravecraft.mod.core.speaker;
  * band, the controls and the library share the left column, and the queue runs down the whole right side.
  */
 public record SpeakerLayout(boolean wide, int width, int height, int bandWidth, int controlsWidth, Rect library,
-		Rect queue, int queueLabelY, int titleWidth, int buttonsY) {
+		Rect queue, int queueLabelY, int titleWidth, int buttonsY, int buttonsHeight) {
 
 	/** A rectangle relative to the window. */
 	public record Rect(int x, int y, int w, int h) {
@@ -28,7 +28,9 @@ public record SpeakerLayout(boolean wide, int width, int height, int bandWidth, 
 	private static final int GAP = 6;
 	private static final int LIBRARY_Y = 98;
 	private static final int BAND_Y = 17;
-	private static final int BUTTONS_FROM_BOTTOM = 18;
+	/** The compact window's bottom buttons are short; a wide one has room for vanilla's full height. */
+	private static final int COMPACT_BUTTONS_H = 14;
+	private static final int WIDE_BUTTONS_H = 20;
 	private static final int LIST_GAP = 4;
 	private static final int QUEUE_MIN_WIDTH = 120;
 	private static final double QUEUE_SHARE = 0.34;
@@ -39,7 +41,7 @@ public record SpeakerLayout(boolean wide, int width, int height, int bandWidth, 
 			return compact();
 		}
 		int height = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, screenHeight - 2 * TOP_MARGIN));
-		int buttonsY = height - BUTTONS_FROM_BOTTOM;
+		int buttonsY = height - EDGE - WIDE_BUTTONS_H;
 		int listsBottom = buttonsY - LIST_GAP;
 		int inner = width - 2 * EDGE - GAP;
 		int queueWidth = Math.max(QUEUE_MIN_WIDTH, (int) Math.round(inner * QUEUE_SHARE));
@@ -47,16 +49,16 @@ public record SpeakerLayout(boolean wide, int width, int height, int bandWidth, 
 		return new SpeakerLayout(true, width, height, column, column + 2 * EDGE,
 				new Rect(EDGE, LIBRARY_Y, column, listsBottom - LIBRARY_Y),
 				new Rect(EDGE + column + GAP, BAND_Y, queueWidth, listsBottom - BAND_Y),
-				BAND_Y - 10, column - 1, buttonsY);
+				BAND_Y - 10, column - 1, buttonsY, WIDE_BUTTONS_H);
 	}
 
 	private static SpeakerLayout compact() {
-		int buttonsY = MIN_HEIGHT - BUTTONS_FROM_BOTTOM;
+		int buttonsY = MIN_HEIGHT - 4 - COMPACT_BUTTONS_H;
 		int listHeight = buttonsY - LIST_GAP - LIBRARY_Y;
 		int panel = 116;
 		return new SpeakerLayout(false, MIN_WIDTH, MIN_HEIGHT, MIN_WIDTH - 2 * EDGE, MIN_WIDTH,
 				new Rect(EDGE, LIBRARY_Y, panel, listHeight),
 				new Rect(MIN_WIDTH - EDGE - panel, LIBRARY_Y, panel, listHeight),
-				LIBRARY_Y - 10, MIN_WIDTH - 16, buttonsY);
+				LIBRARY_Y - 10, MIN_WIDTH - 16, buttonsY, COMPACT_BUTTONS_H);
 	}
 }

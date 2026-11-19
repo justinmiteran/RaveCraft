@@ -18,7 +18,10 @@ import org.jspecify.annotations.Nullable;
  */
 public final class ControlRow {
 	private static final String KEY = SpeakerSprites.KEY;
-	private static final int BUTTON = 20;
+	/** Odd, so the 9 px icons sit exactly in the middle of the button's face. */
+	private static final int BUTTON = 21;
+	private static final int STEP = BUTTON + 2;
+	private static final int VOLUME_X = 7 + 5 * STEP + 3;
 	private static final int SMALL = 14;
 
 	private final BlockPos pos;
@@ -40,12 +43,12 @@ public final class ControlRow {
 		this.pos = pos;
 		int smallY = top + (BUTTON - SMALL) / 2;
 		shuffle = new IconButton(left + 7, top, BUTTON, SpeakerSprites.SHUFFLE, label("shuffle.off"), this::toggleShuffle);
-		previous = new IconButton(left + 29, top, BUTTON, SpeakerSprites.PREVIOUS, label("previous"), () -> send(Command.PREVIOUS));
-		play = new IconButton(left + 51, top, BUTTON, SpeakerSprites.PLAY, label("play"), this::togglePlay).copper();
-		next = new IconButton(left + 73, top, BUTTON, SpeakerSprites.NEXT, label("next"), () -> send(Command.NEXT));
-		repeat = new IconButton(left + 95, top, BUTTON, SpeakerSprites.REPEAT_ALL, label("repeat.all"), this::cycleRepeat);
+		previous = new IconButton(left + 7 + STEP, top, BUTTON, SpeakerSprites.PREVIOUS, label("previous"), () -> send(Command.PREVIOUS));
+		play = new IconButton(left + 7 + 2 * STEP, top, BUTTON, SpeakerSprites.PLAY, label("play"), this::togglePlay).copper();
+		next = new IconButton(left + 7 + 3 * STEP, top, BUTTON, SpeakerSprites.NEXT, label("next"), () -> send(Command.NEXT));
+		repeat = new IconButton(left + 7 + 4 * STEP, top, BUTTON, SpeakerSprites.REPEAT_ALL, label("repeat.all"), this::cycleRepeat);
 		// The speaker icon sits in the slider's left margin; the track fills the rest up to the power button.
-		volume = new VolumeSlider(left + 121, smallY, width - 7 - BUTTON - 4 - 121, SMALL, pos);
+		volume = new VolumeSlider(left + VOLUME_X, smallY, width - 7 - BUTTON - 4 - VOLUME_X, SMALL, pos);
 		power = new IconButton(left + width - 7 - BUTTON, top, BUTTON, SpeakerSprites.POWER_OFF, label("power.on"), this::togglePower);
 		for (AbstractWidget widget : new AbstractWidget[] {shuffle, previous, play, next, repeat, volume, power}) {
 			add.accept(widget);

@@ -20,6 +20,7 @@ class SpeakerLayoutTest {
 		assertEquals(new Rect(133, 98, 116, 96), layout.queue());
 		assertEquals(88, layout.queueLabelY());
 		assertEquals(198, layout.buttonsY());
+		assertEquals(14, layout.buttonsHeight());
 	}
 
 	@Test
@@ -31,10 +32,12 @@ class SpeakerLayoutTest {
 		// Player and library on the left, the queue on the whole right side.
 		assertEquals(409, layout.bandWidth());
 		assertEquals(423, layout.controlsWidth());
-		assertEquals(new Rect(7, 98, 409, 300), layout.library());
-		assertEquals(new Rect(422, 17, 211, 381), layout.queue());
+		assertEquals(new Rect(7, 98, 409, 291), layout.library());
+		assertEquals(new Rect(422, 17, 211, 372), layout.queue());
 		assertEquals(7, layout.queueLabelY());
-		assertEquals(402, layout.buttonsY());
+		// Full-height vanilla buttons at the bottom of a wide window.
+		assertEquals(393, layout.buttonsY());
+		assertEquals(20, layout.buttonsHeight());
 	}
 
 	@Test
@@ -51,7 +54,7 @@ class SpeakerLayoutTest {
 		assertTrue(layout.wide());
 		assertEquals(368, layout.width());
 		assertEquals(244, layout.height());
-		assertEquals(new Rect(241, 17, 120, 205), layout.queue());
+		assertEquals(new Rect(241, 17, 120, 196), layout.queue());
 	}
 
 	@Test

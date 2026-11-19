@@ -46,10 +46,10 @@ import org.jspecify.annotations.Nullable;
  * {@link SpeakerLayout}). It watches the speaker's state while open and closes when the speaker is gone.
  */
 public final class SpeakerScreen extends Screen {
-	private static final int BOTTOM_H = 14;
 	private static final int BAND_Y = 17;
 	private static final int CONTROLS_Y = 65;
-	private static final int SEARCH_H = 12;
+	/** Odd, like every icon button, so the 9 px icons sit exactly in the middle of the button's face. */
+	private static final int SEARCH_H = 15;
 	private static final int CHOOSE_H = 14;
 
 	private final BlockPos pos;
@@ -101,9 +101,9 @@ public final class SpeakerScreen extends Screen {
 		int buttonW = (q.w() - 4) / 2;
 		clearButton = addRenderableWidget(Button.builder(Component.translatable(SpeakerSprites.KEY + "clear"),
 						b -> SpeakerStates.send(pos, Command.CLEAR, Optional.empty()))
-				.bounds(left + q.x(), top + layout.buttonsY(), buttonW, BOTTOM_H).build());
+				.bounds(left + q.x(), top + layout.buttonsY(), buttonW, layout.buttonsHeight()).build());
 		addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-				.bounds(left + q.x() + q.w() - buttonW, top + layout.buttonsY(), buttonW, BOTTOM_H).build());
+				.bounds(left + q.x() + q.w() - buttonW, top + layout.buttonsY(), buttonW, layout.buttonsHeight()).build());
 		shownState = null;
 		if (folders != null) {
 			folders.layout(width, height);
@@ -151,7 +151,7 @@ public final class SpeakerScreen extends Screen {
 				.bounds(libX + 6, treeY + 20, lib.w() - 12, CHOOSE_H).build());
 		chooseButton.visible = false;
 		addRenderableWidget(Button.builder(Component.translatable(SpeakerSprites.KEY + "folders"), b -> openFolders())
-				.bounds(libX, top + layout.buttonsY(), lib.w(), BOTTOM_H).build());
+				.bounds(libX, top + layout.buttonsY(), lib.w(), layout.buttonsHeight()).build());
 	}
 
 	/** The view button shows the current view: the tree or the flat list. */

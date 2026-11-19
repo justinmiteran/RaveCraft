@@ -69,6 +69,12 @@ dependencies {
 	include(implementation("org.jflac:jflac-codec:1.5.2"))
 	include(implementation("io.github.jaredmdobson:concentus:1.0.2"))
 
+	// Native folder dialog (tinyfd), bundled jar-in-jar with its natives
+	include(implementation("org.lwjgl:lwjgl-tinyfd:${project.lwjgl_version}"))
+	['windows', 'windows-arm64', 'linux', 'linux-arm64', 'macos', 'macos-arm64'].each { os ->
+		include(runtimeOnly("org.lwjgl:lwjgl-tinyfd:${project.lwjgl_version}:natives-${os}"))
+	}
+
 	testImplementation platform("org.junit:junit-bom:${project.junit_version}")
 	testImplementation "org.junit.jupiter:junit-jupiter"
 	testRuntimeOnly "org.junit.platform:junit-platform-launcher"

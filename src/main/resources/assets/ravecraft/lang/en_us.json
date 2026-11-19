@@ -21,8 +21,6 @@
   "screen.ravecraft.speaker.repeat.all": "Repeat: whole queue",
   "screen.ravecraft.speaker.repeat.one": "Repeat: one track",
   "screen.ravecraft.speaker.volume": "Volume: %s%%",
-  "screen.ravecraft.speaker.volume_down": "Volume down",
-  "screen.ravecraft.speaker.volume_up": "Volume up",
   "screen.ravecraft.speaker.power.on": "Switch on",
   "screen.ravecraft.speaker.power.off": "Switch off",
   "screen.ravecraft.speaker.loading": "Loading…",

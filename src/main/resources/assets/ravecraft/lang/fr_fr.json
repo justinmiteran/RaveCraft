@@ -21,8 +21,6 @@
   "screen.ravecraft.speaker.repeat.all": "Répétition : toute la file",
   "screen.ravecraft.speaker.repeat.one": "Répétition : un morceau",
   "screen.ravecraft.speaker.volume": "Volume : %s %%",
-  "screen.ravecraft.speaker.volume_down": "Baisser le volume",
-  "screen.ravecraft.speaker.volume_up": "Monter le volume",
   "screen.ravecraft.speaker.power.on": "Allumer",
   "screen.ravecraft.speaker.power.off": "Éteindre",
   "screen.ravecraft.speaker.loading": "Chargement…",

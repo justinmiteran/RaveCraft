@@ -8,8 +8,6 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Consumer;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
@@ -29,9 +27,7 @@ public final class ControlRow {
 	private final IconButton play;
 	private final IconButton next;
 	private final IconButton repeat;
-	private final Button volumeDown;
 	private final VolumeSlider volume;
-	private final Button volumeUp;
 	private final IconButton power;
 	private @Nullable SpeakerStatePayload state;
 	private boolean powered;
@@ -45,13 +41,10 @@ public final class ControlRow {
 		play = new IconButton(left + 51, top, BUTTON, SpeakerSprites.PLAY, label("play"), this::togglePlay).copper();
 		next = new IconButton(left + 73, top, BUTTON, SpeakerSprites.NEXT, label("next"), () -> send(Command.NEXT));
 		repeat = new IconButton(left + 95, top, BUTTON, SpeakerSprites.REPEAT_ALL, label("repeat.all"), this::cycleRepeat);
-		volume = new VolumeSlider(left + 137, smallY, 66, SMALL, pos);
-		volumeDown = Button.builder(Component.literal("-"), b -> volume.nudge(-VolumeSlider.STEP))
-				.bounds(left + 121, smallY, SMALL, SMALL).tooltip(Tooltip.create(label("volume_down"))).build();
-		volumeUp = Button.builder(Component.literal("+"), b -> volume.nudge(VolumeSlider.STEP))
-				.bounds(left + 205, smallY, SMALL, SMALL).tooltip(Tooltip.create(label("volume_up"))).build();
+		// The speaker icon sits in the slider's left margin; the track fills the rest up to the power button.
+		volume = new VolumeSlider(left + 121, smallY, 104, SMALL, pos);
 		power = new IconButton(left + 229, top, BUTTON, SpeakerSprites.POWER_OFF, label("power.on"), this::togglePower);
-		for (AbstractWidget widget : new AbstractWidget[] {shuffle, previous, play, next, repeat, volumeDown, volume, volumeUp, power}) {
+		for (AbstractWidget widget : new AbstractWidget[] {shuffle, previous, play, next, repeat, volume, power}) {
 			add.accept(widget);
 		}
 		update(null, false);
@@ -83,9 +76,7 @@ public final class ControlRow {
 			case ONE -> SpeakerSprites.REPEAT_ONE;
 		}, label("repeat." + mode.name().toLowerCase(Locale.ROOT)));
 		repeat.active = known;
-		volumeDown.active = known;
 		volume.active = known;
-		volumeUp.active = known;
 		if (known) {
 			volume.sync(state.volume());
 		}

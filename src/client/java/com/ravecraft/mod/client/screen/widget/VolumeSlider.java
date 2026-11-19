@@ -15,17 +15,18 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.Util;
 
 /**
- * The speaker's volume, 0–100, as a copper bar with a knob. While dragging it sends at most one {@code VOLUME} per
+ * The speaker's volume, 0–100, as a speaker icon followed by a copper bar with a knob. While dragging it sends at most one {@code VOLUME} per
  * {@link #SEND_INTERVAL_MS}, plus one on release; for a moment after a local change it ignores the server's older
  * value so the knob does not jump back.
  */
 public final class VolumeSlider extends AbstractWidget {
-	public static final int STEP = 5;
 	private static final long SEND_INTERVAL_MS = 250;
 	private static final long HOLD_LOCAL_MS = 1000;
 	private static final int KNOB_W = 5;
 	private static final int KNOB_H = 9;
 	private static final int TRACK_H = 5;
+	/** The track starts after the speaker icon and a small gap. */
+	private static final int TRACK_X = SpeakerSprites.ICON + 5;
 
 	private final BlockPos pos;
 	private int volume = SpeakerSettings.DEFAULT_VOLUME;
@@ -47,12 +48,6 @@ public final class VolumeSlider extends AbstractWidget {
 			sentVolume = serverVolume;
 			updateLabel();
 		}
-	}
-
-	/** −/+ buttons: moves by {@code delta} and sends it at once. */
-	public void nudge(int delta) {
-		set(volume + delta);
-		send();
 	}
 
 	@Override
@@ -79,7 +74,7 @@ public final class VolumeSlider extends AbstractWidget {
 	}
 
 	private int valueAt(double mouseX) {
-		double t = (mouseX - (getX() + KNOB_W / 2.0)) / (width - KNOB_W);
+		double t = (mouseX - (trackX() + KNOB_W / 2.0)) / (trackWidth() - KNOB_W);
 		return (int) Math.round(Mth.clamp(t, 0, 1) * SpeakerSettings.MAX_VOLUME);
 	}
 
@@ -115,15 +110,27 @@ public final class VolumeSlider extends AbstractWidget {
 
 	@Override
 	protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.VOLUME, getX(),
+				getY() + (height - SpeakerSprites.ICON) / 2, SpeakerSprites.ICON, SpeakerSprites.ICON, active ? 1.0F : 0.4F);
+		int x = trackX();
+		int w = trackWidth();
 		int trackY = getY() + (height - TRACK_H) / 2;
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PROGRESS_TRACK, getX(), trackY, width, TRACK_H);
-		int knobX = getX() + Math.round((width - KNOB_W) * volume / (float) SpeakerSettings.MAX_VOLUME);
-		if (knobX > getX() + 1) {
-			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PROGRESS_FILL, getX() + 1, trackY + 1,
-					knobX - getX() - 1 + KNOB_W / 2, TRACK_H - 2);
+		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PROGRESS_TRACK, x, trackY, w, TRACK_H);
+		int knobX = x + Math.round((w - KNOB_W) * volume / (float) SpeakerSettings.MAX_VOLUME);
+		if (knobX > x + 1) {
+			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PROGRESS_FILL, x + 1, trackY + 1,
+					knobX - x - 1 + KNOB_W / 2, TRACK_H - 2);
 		}
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PROGRESS_KNOB, knobX, getY() + (height - KNOB_H) / 2,
 				KNOB_W, KNOB_H);
+	}
+
+	private int trackX() {
+		return getX() + TRACK_X;
+	}
+
+	private int trackWidth() {
+		return width - TRACK_X;
 	}
 
 	@Override

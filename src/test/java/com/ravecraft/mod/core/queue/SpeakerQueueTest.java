@@ -282,4 +282,44 @@ class SpeakerQueueTest {
 		SpeakerQueue q = at(List.of(a, b, c), a, RepeatMode.OFF);
 		assertEquals(Optional.of(c), q.next(ONLINE, true, new Random(42)));
 	}
+
+	@Test
+	void removeCurrentUnderShuffleKeepsPendingClean() {
+		Random rng = new Random(42);
+		List<QueueEntry> l = entries(4);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(l).withCurrent(l.get(1).entryId(), 0).withShuffle(true, rng);
+		q = q.remove(l.get(1).entryId());
+		assertFalse(q.pending().contains(q.current().orElseThrow()));
+		List<UUID> ids = q.displayOrder().stream().map(QueueEntry::entryId).toList();
+		assertEquals(ids.size(), new HashSet<>(ids).size());
+	}
+
+	@Test
+	void repeatOneReplayKeepsShuffleRound() {
+		Random rng = new Random(42);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(entries(4)).withRepeat(RepeatMode.ONE).withShuffle(true, rng);
+		q = q.afterAdvance(q.pending().get(0), rng);
+		SpeakerQueue replay = q.afterAdvance(q.current().orElseThrow(), rng);
+		assertEquals(q.pending(), replay.pending());
+		assertEquals(0, replay.positionMs());
+	}
+
+	@Test
+	void withCurrentDropsFromPending() {
+		Random rng = new Random(42);
+		List<QueueEntry> l = entries(3);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(l).withShuffle(true, rng).withCurrent(l.get(2).entryId(), 0);
+		assertFalse(q.pending().contains(l.get(2).entryId()));
+		assertEquals(2, q.pending().size());
+	}
+
+	@Test
+	void nextPlayableFollowsShuffleRound() {
+		Random rng = new Random(42);
+		QueueEntry off = entry("off", OFF);
+		List<QueueEntry> l = new ArrayList<>(entries(3));
+		l.add(off);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(l).withCurrent(off.entryId(), 0).withShuffle(true, rng);
+		assertEquals(q.entry(q.pending().get(0)), q.nextPlayable(ONLINE, rng));
+	}
 }

@@ -99,6 +99,9 @@ public record SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, lon
 
 	/** The queue once {@code nextId} becomes current from its start, with the shuffle round updated. */
 	public SpeakerQueue afterAdvance(UUID nextId, RandomGenerator rng) {
+		if (current.map(nextId::equals).orElse(false)) {
+			return new SpeakerQueue(entries, current, 0, repeat, shuffle, pending);
+		}
 		List<UUID> newPending = List.of();
 		if (shuffle) {
 			if (pending.contains(nextId)) {
@@ -146,21 +149,19 @@ public record SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, lon
 	 * round. Without a current entry the scan starts at the head. Empty when no owner is online.
 	 */
 	public Optional<QueueEntry> nextPlayable(Predicate<UUID> ownerOnline) {
-		if (entries.isEmpty()) {
-			return Optional.empty();
-		}
-		int start = Math.max(0, indexOfCurrent());
-		for (int i = 0; i < entries.size(); i++) {
-			QueueEntry entry = entries.get((start + i) % entries.size());
-			if (ownerOnline.test(entry.owner())) {
-				return Optional.of(entry);
-			}
-		}
-		return Optional.empty();
+		return nextPlayable(ownerOnline, new Random(0));
+	}
+
+	/** As {@link #nextPlayable(Predicate)}, following the shuffle round and repeat mode when the current is not playable. */
+	public Optional<QueueEntry> nextPlayable(Predicate<UUID> ownerOnline, RandomGenerator rng) {
+		Optional<QueueEntry> now = current.flatMap(this::entry).filter(e -> ownerOnline.test(e.owner()));
+		return now.isPresent() ? now : next(ownerOnline, false, rng);
 	}
 
 	public SpeakerQueue withCurrent(UUID entryId, long positionMs) {
-		return new SpeakerQueue(entries, Optional.of(entryId), positionMs, repeat, shuffle, pending);
+		List<UUID> newPending = new ArrayList<>(pending);
+		newPending.remove(entryId);
+		return new SpeakerQueue(entries, Optional.of(entryId), positionMs, repeat, shuffle, newPending);
 	}
 
 	public SpeakerQueue withPosition(long positionMs) {
@@ -186,6 +187,7 @@ public record SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, lon
 		Optional<UUID> following = list.isEmpty()
 				? Optional.empty()
 				: Optional.of(list.get(index % list.size()).entryId());
+		following.ifPresent(newPending::remove);
 		return new SpeakerQueue(list, following, 0, repeat, shuffle, newPending);
 	}
 

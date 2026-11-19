@@ -1,15 +1,17 @@
 package com.ravecraft.mod.client.library;
 
+import com.ravecraft.mod.core.library.SingleFlight;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import org.jspecify.annotations.Nullable;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 /**
  * Opens the operating system's native folder dialog off the render thread.
  *
- * <p>At most one dialog is open at a time: a second call while one is pending returns the pending
- * future. Callers must hop back to the client thread with {@code Minecraft.getInstance().execute}.
+ * <p>At most one dialog is open at a time: a call while one is still up returns the pending future, which
+ * completes when that dialog closes. There is no timeout, since a dialog cannot be closed from here. Callers must
+ * hop back to the client thread with {@code Minecraft.getInstance().execute}.
  */
 public final class FolderPicker {
 
@@ -22,29 +24,24 @@ public final class FolderPicker {
 		record Unavailable(String reason) implements PickResult {}
 	}
 
-	private static final long TIMEOUT_MINUTES = 5;
-
-	private static CompletableFuture<PickResult> pending;
+	private static final SingleFlight<PickResult> DIALOG = new SingleFlight<>();
 
 	private FolderPicker() {}
 
-	public static synchronized CompletableFuture<PickResult> pick(String title, Path start) {
-		if (pending != null && !pending.isDone()) {
-			return pending;
-		}
-		CompletableFuture<PickResult> future = new CompletableFuture<>();
-		pending = future;
-		Thread thread = new Thread(() -> {
-			try {
-				String chosen = TinyFileDialogs.tinyfd_selectFolderDialog(title, start.toString());
-				future.complete(chosen == null ? new PickResult.Cancelled() : new PickResult.Chosen(Path.of(chosen)));
-			} catch (Throwable t) {
-				future.complete(new PickResult.Unavailable(String.valueOf(t.getMessage())));
-			}
-		}, "ravecraft-folder-picker");
-		thread.setDaemon(true);
-		thread.start();
-		// The dialog thread may stay blocked; the caller is released with a timeout result.
-		return pending = future.completeOnTimeout(new PickResult.Unavailable("timeout"), TIMEOUT_MINUTES, TimeUnit.MINUTES);
+	/** Opens the dialog on {@code start}, or on the user's home folder when it is null. */
+	public static CompletableFuture<PickResult> pick(String title, @Nullable Path start) {
+		String defaultPath = start != null ? start.toString() : System.getProperty("user.home");
+		return DIALOG.run(() -> {
+			String chosen = TinyFileDialogs.tinyfd_selectFolderDialog(title, defaultPath);
+			return chosen == null ? new PickResult.Cancelled() : new PickResult.Chosen(Path.of(chosen));
+		}, FolderPicker::unavailable, task -> {
+			Thread thread = new Thread(task, "ravecraft-folder-picker");
+			thread.setDaemon(true);
+			thread.start();
+		});
+	}
+
+	private static PickResult unavailable(Throwable t) {
+		return new PickResult.Unavailable(t.getMessage() != null ? t.getMessage() : t.toString());
 	}
 }

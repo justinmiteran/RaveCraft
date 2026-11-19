@@ -58,5 +58,22 @@
   "tooltip.ravecraft.speaker.queue.one": "1 morceau en file",
   "tooltip.ravecraft.speaker.shift_hint": "Maj : plus d'infos",
   "tooltip.ravecraft.speaker.directivity.omni": "omnidirectionnelle",
-  "tooltip.ravecraft.speaker.directivity.directional": "directionnelle"
+  "tooltip.ravecraft.speaker.directivity.directional": "directionnelle",
+  "screen.ravecraft.speaker.folders.title": "Dossiers de musique",
+  "screen.ravecraft.speaker.folders.add": "Ajouter un dossier…",
+  "screen.ravecraft.speaker.folders.browser": "Navigateur intégré",
+  "screen.ravecraft.speaker.folders.cancel": "Annuler",
+  "screen.ravecraft.speaker.folders.add_this": "Ajouter ce dossier",
+  "screen.ravecraft.speaker.folders.done": "Terminé",
+  "screen.ravecraft.speaker.folders.waiting": "Choisis un dossier dans la fenêtre du système…",
+  "screen.ravecraft.speaker.folders.dialog_title": "Choisis un dossier de musique",
+  "screen.ravecraft.speaker.folders.tracks": "%s morceaux",
+  "screen.ravecraft.speaker.folders.add_to": "Ajouter : %s",
+  "screen.ravecraft.speaker.folders.drives": "Choisis un disque ou un dossier",
+  "screen.ravecraft.speaker.folders.added": "Dossier ajouté",
+  "screen.ravecraft.speaker.folders.replaced": "Ajouté, il remplace ses sous-dossiers",
+  "screen.ravecraft.speaker.folders.duplicate": "Déjà dans la liste",
+  "screen.ravecraft.speaker.folders.inside_existing": "Déjà inclus dans un dossier choisi",
+  "screen.ravecraft.speaker.folders.full": "%s dossiers au maximum",
+  "screen.ravecraft.speaker.folders.unavailable": "Fenêtre du système indisponible : navigateur intégré"
 }

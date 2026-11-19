@@ -1,17 +1,13 @@
 package com.ravecraft.mod.client.screen.widget;
 
-import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.client.audio.LocalPlayback;
+import com.ravecraft.mod.client.library.OffThread;
 import com.ravecraft.mod.core.library.LibraryTreeModel;
 import com.ravecraft.mod.core.library.LibraryTreeModel.Row;
 import com.ravecraft.mod.core.library.MusicSource;
 import com.ravecraft.mod.core.library.SourceNode;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -23,11 +19,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import net.minecraft.util.Util;
 
 /**
  * The library as an expandable tree in a recessed panel: the source's roots (the chosen folders), then the
- * children of each expanded folder. Every source call may touch the disk, so it runs on {@link Util#ioPool()} and
+ * children of each expanded folder. Every source call may touch the disk, so it runs on the IO pool and
  * its result is applied on the client thread, only if the tree has not been reloaded since. Rows show the
  * indentation, an expand arrow, the type icon, the name, the track count of folders and a {@code +} that queues
  * the node's tracks on the speaker. The state and the search filter live in {@link LibraryTreeModel}.
@@ -58,7 +53,7 @@ public final class LibraryTree extends AbstractWidget {
 	public void reload() {
 		model.startLoading();
 		int generation = model.generation();
-		offThread(source::roots, roots -> model.setRoots(generation, roots), () -> model.setRoots(generation, List.of()));
+		OffThread.run(source::roots, roots -> model.setRoots(generation, roots), () -> model.setRoots(generation, List.of()));
 	}
 
 	/** Filters the loaded rows by name; never reads the disk. */
@@ -72,34 +67,16 @@ public final class LibraryTree extends AbstractWidget {
 		return model.isEmpty();
 	}
 
-	/** Runs {@code task} on the IO pool, then {@code apply} (or {@code failed}) on the client thread. */
-	private static <T> void offThread(Callable<T> task, Consumer<T> apply, Runnable failed) {
-		CompletableFuture.supplyAsync(() -> {
-			try {
-				return task.call();
-			} catch (Exception e) {
-				throw new CompletionException(e);
-			}
-		}, Util.ioPool()).whenComplete((result, error) -> Minecraft.getInstance().execute(() -> {
-			if (error == null) {
-				apply.accept(result);
-			} else {
-				RaveCraft.LOGGER.warn("Could not read the music library", error);
-				failed.run();
-			}
-		}));
-	}
-
 	private void toggle(SourceNode folder) {
 		if (model.toggle(folder)) {
 			int generation = model.generation();
-			offThread(() -> source.children(folder), nodes -> model.setChildren(generation, folder.id(), nodes),
+			OffThread.run(() -> source.children(folder), nodes -> model.setChildren(generation, folder.id(), nodes),
 					() -> model.setChildren(generation, folder.id(), List.of()));
 		}
 	}
 
 	private void add(SourceNode node) {
-		offThread(() -> source.tracksOf(node), tracks -> {
+		OffThread.run(() -> source.tracksOf(node), tracks -> {
 			if (!tracks.isEmpty()) {
 				LocalPlayback.add(pos, tracks);
 			}

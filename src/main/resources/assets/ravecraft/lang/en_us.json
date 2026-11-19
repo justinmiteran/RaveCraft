@@ -58,5 +58,22 @@
   "tooltip.ravecraft.speaker.queue.one": "1 track queued",
   "tooltip.ravecraft.speaker.shift_hint": "Shift: more info",
   "tooltip.ravecraft.speaker.directivity.omni": "omnidirectional",
-  "tooltip.ravecraft.speaker.directivity.directional": "directional"
+  "tooltip.ravecraft.speaker.directivity.directional": "directional",
+  "screen.ravecraft.speaker.folders.title": "Music folders",
+  "screen.ravecraft.speaker.folders.add": "Add a folder…",
+  "screen.ravecraft.speaker.folders.browser": "Built-in browser",
+  "screen.ravecraft.speaker.folders.cancel": "Cancel",
+  "screen.ravecraft.speaker.folders.add_this": "Add this folder",
+  "screen.ravecraft.speaker.folders.done": "Done",
+  "screen.ravecraft.speaker.folders.waiting": "Choose a folder in the system window…",
+  "screen.ravecraft.speaker.folders.dialog_title": "Choose a music folder",
+  "screen.ravecraft.speaker.folders.tracks": "%s tracks",
+  "screen.ravecraft.speaker.folders.add_to": "Add: %s",
+  "screen.ravecraft.speaker.folders.drives": "Choose a drive or a folder",
+  "screen.ravecraft.speaker.folders.added": "Folder added",
+  "screen.ravecraft.speaker.folders.replaced": "Added; it replaces its sub-folders",
+  "screen.ravecraft.speaker.folders.duplicate": "Already in the list",
+  "screen.ravecraft.speaker.folders.inside_existing": "Already inside a chosen folder",
+  "screen.ravecraft.speaker.folders.full": "At most %s folders",
+  "screen.ravecraft.speaker.folders.unavailable": "System window unavailable: built-in browser"
 }

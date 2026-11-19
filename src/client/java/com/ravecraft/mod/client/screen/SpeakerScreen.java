@@ -25,7 +25,9 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
@@ -64,6 +66,8 @@ public final class SpeakerScreen extends Screen {
 	/** The search text, kept when the screen is rebuilt (resize). */
 	private String filter = "";
 	private @Nullable SpeakerStatePayload shownState;
+	/** The {@code Folders…} popup while it is open; it then gets all the input. */
+	private @Nullable FoldersPopup folders;
 
 	public SpeakerScreen(BlockPos pos) {
 		super(titleOf(pos));
@@ -96,6 +100,9 @@ public final class SpeakerScreen extends Screen {
 		addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
 				.bounds(left + QUEUE_X + PANEL_W - 56, top + BOTTOM_Y, 56, BOTTOM_H).build());
 		shownState = null;
+		if (folders != null) {
+			folders.layout(width, height);
+		}
 		if (ClientPlayNetworking.canSend(SpeakerWatchPayload.TYPE)) {
 			ClientPlayNetworking.send(new SpeakerWatchPayload(pos, true));
 		}
@@ -129,9 +136,21 @@ public final class SpeakerScreen extends Screen {
 				.bounds(left + 7, top + BOTTOM_Y, PANEL_W, BOTTOM_H).build());
 	}
 
-	/** Opens the {@code Folders…} popup. */
+	/** Opens the {@code Folders…} popup, which reloads the library whenever the chosen folders change. */
 	public void openFolders() {
-		// Filled by the folders popup (task 12), which calls reloadLibrary() when the chosen folders change.
+		if (folders == null) {
+			clearFocus();
+			folders = new FoldersPopup(this, this::reloadLibrary);
+			folders.layout(width, height);
+		}
+	}
+
+	/** Closes the {@code Folders…} popup, back to the speaker screen. */
+	public void closeFolders() {
+		if (folders != null) {
+			folders.close();
+			folders = null;
+		}
 	}
 
 	/** Lists the chosen folders again, after they changed. */
@@ -147,6 +166,7 @@ public final class SpeakerScreen extends Screen {
 	@Override
 	public void removed() {
 		super.removed();
+		closeFolders();
 		if (ClientPlayNetworking.canSend(SpeakerWatchPayload.TYPE)) {
 			ClientPlayNetworking.send(new SpeakerWatchPayload(pos, false));
 		}
@@ -170,6 +190,15 @@ public final class SpeakerScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
+		if (folders != null) {
+			// Escape closes the popup only; nothing reaches the screen underneath.
+			if (event.isEscape()) {
+				closeFolders();
+			} else {
+				folders.keyPressed(event);
+			}
+			return true;
+		}
 		if (super.keyPressed(event)) {
 			return true;
 		}
@@ -178,6 +207,56 @@ public final class SpeakerScreen extends Screen {
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public boolean keyReleased(KeyEvent event) {
+		if (folders != null) {
+			folders.keyReleased(event);
+			return true;
+		}
+		return super.keyReleased(event);
+	}
+
+	@Override
+	public boolean charTyped(CharacterEvent event) {
+		return folders != null || super.charTyped(event);
+	}
+
+	@Override
+	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		if (folders != null) {
+			folders.mouseClicked(event, doubleClick);
+			return true;
+		}
+		return super.mouseClicked(event, doubleClick);
+	}
+
+	@Override
+	public boolean mouseReleased(MouseButtonEvent event) {
+		if (folders != null) {
+			folders.mouseReleased(event);
+			return true;
+		}
+		return super.mouseReleased(event);
+	}
+
+	@Override
+	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+		if (folders != null) {
+			folders.mouseDragged(event, dx, dy);
+			return true;
+		}
+		return super.mouseDragged(event, dx, dy);
+	}
+
+	@Override
+	public boolean mouseScrolled(double x, double y, double scrollX, double scrollY) {
+		if (folders != null) {
+			folders.mouseScrolled(x, y, scrollX, scrollY);
+			return true;
+		}
+		return super.mouseScrolled(x, y, scrollX, scrollY);
 	}
 
 	@Override
@@ -193,12 +272,18 @@ public final class SpeakerScreen extends Screen {
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+		// Under the popup, nothing is hovered.
+		int screenX = folders != null ? -1 : mouseX;
+		int screenY = folders != null ? -1 : mouseY;
 		graphics.text(font, SpeakerSprites.fit(font, title.getString(), WIDTH - 16), left + 8, top + 6, SpeakerSprites.LABEL, false);
 		graphics.text(font, Component.translatable(SpeakerSprites.KEY + "library"), left + 8, top + PANEL_Y - 10,
 				SpeakerSprites.LABEL, false);
 		graphics.text(font, Component.translatable(SpeakerSprites.KEY + "queue"), left + QUEUE_X + 1, top + PANEL_Y - 10,
 				SpeakerSprites.LABEL, false);
-		super.extractRenderState(graphics, mouseX, mouseY, a);
+		super.extractRenderState(graphics, screenX, screenY, a);
+		if (folders != null) {
+			folders.extract(graphics, mouseX, mouseY, a);
+		}
 	}
 
 	private boolean speakerPresent() {

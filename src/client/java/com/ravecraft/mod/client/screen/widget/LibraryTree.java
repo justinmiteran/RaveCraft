@@ -350,7 +350,7 @@ public final class LibraryTree extends AbstractWidget {
 			int addX = right - ADD_W;
 			boolean overAdd = hovered && overAdd(mouseX);
 			if (overAdd) {
-				graphics.fill(addX, rowY + 1, right - 1, rowY + ROW_H - 1, HOVER);
+				SpeakerSprites.cellHover(graphics, addX - 1, rowY, right, rowY + ROW_H);
 				Component tip = full()
 						? Component.translatable(SpeakerSprites.KEY + "queue_full", SpeakerQueue.MAX_ENTRIES)
 						: Component.translatable(SpeakerSprites.KEY + "add");

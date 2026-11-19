@@ -204,7 +204,7 @@ public final class QueuePanel extends AbstractWidget {
 		}
 		int removeX = right - REMOVE_W;
 		if (overRemove) {
-			graphics.fill(removeX, rowY + 1, right - 1, rowY + ROW_H - 1, HOVER);
+			SpeakerSprites.cellHover(graphics, removeX - 1, rowY, right, rowY + ROW_H);
 			graphics.setTooltipForNextFrame(font, Component.translatable(SpeakerSprites.KEY + "remove"), mouseX, rowY);
 		}
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.REMOVE, removeX, rowY + 1, SpeakerSprites.ICON,

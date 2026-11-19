@@ -24,8 +24,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The {@code Folders…} popup over the speaker screen: the chosen library folders as a tree of their subfolders, where
- * a subfolder is excluded from the library on hover (see {@link FolderTree}), and below it either the actions ({@code Add a folder…} through the system dialog, {@code Built-in browser}), the wait for
- * the system dialog, or the in-game folder browser. Every change is saved and reported through {@code onChanged}.
+ * a subfolder is excluded from the library on hover (see {@link FolderTree}), and below it either {@code Add a
+ * folder…}, the wait for the system dialog, or the in-game folder browser, shown only when the system dialog cannot
+ * open. Every change is saved and reported through {@code onChanged}.
  * The screen routes all input here while the popup is open.
  */
 public final class FoldersPopup extends AbstractContainerEventHandler {
@@ -53,7 +54,6 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 	private final FolderTree tree;
 	private final FolderBrowser browser;
 	private final Button addButton;
-	private final Button browserButton;
 	private final Button cancelButton;
 	private final Button addThisButton;
 	private final Button doneButton;
@@ -91,7 +91,6 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 		});
 		browser = new FolderBrowser(INNER_W, BUTTON_Y - 4 - BROWSER_Y);
 		addButton = Button.builder(text("add"), b -> pickWithDialog()).size(ACTION_W, BUTTON_H).build();
-		browserButton = Button.builder(text("browser"), b -> openBrowser()).size(ACTION_W, BUTTON_H).build();
 		cancelButton = Button.builder(text("cancel"), b -> cancelPick()).size(ACTION_W / 2, BUTTON_H).build();
 		addThisButton = Button.builder(text("add_this"), b -> addCurrent()).size(ACTION_W - 20, BUTTON_H).build();
 		doneButton = Button.builder(text("done"), b -> parent.closeFolders()).size(DONE_W, BUTTON_H).build();
@@ -111,8 +110,7 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 		tree.setPosition(left + 7, top + LIST_Y);
 		browser.setPosition(left + 7, top + BROWSER_Y);
 		int areaMid = top + (areaY() + BUTTON_Y - 4) / 2;
-		addButton.setPosition(left + (WIDTH - ACTION_W) / 2, areaMid - BUTTON_H - 2);
-		browserButton.setPosition(left + (WIDTH - ACTION_W) / 2, areaMid + 2);
+		addButton.setPosition(left + (WIDTH - ACTION_W) / 2, areaMid - BUTTON_H / 2);
 		cancelButton.setPosition(left + (WIDTH - ACTION_W / 2) / 2, areaMid + 6);
 		addThisButton.setPosition(left + 7, top + BUTTON_Y);
 		doneButton.setPosition(left + WIDTH - 7 - DONE_W, top + BUTTON_Y);
@@ -143,10 +141,7 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 		List<AbstractWidget> widgets = new ArrayList<>();
 		widgets.add(tree);
 		switch (mode) {
-			case ACTIONS -> {
-				widgets.add(addButton);
-				widgets.add(browserButton);
-			}
+			case ACTIONS -> widgets.add(addButton);
 			case WAITING -> widgets.add(cancelButton);
 			case BROWSER -> {
 				widgets.add(browser);

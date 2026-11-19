@@ -2,6 +2,7 @@ package com.ravecraft.mod.client.screen.widget;
 
 import com.ravecraft.mod.RaveCraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.resources.Identifier;
 
@@ -67,6 +68,18 @@ public final class SpeakerSprites {
 
 	private static Identifier sprite(String name) {
 		return RaveCraft.id("speaker/" + name);
+	}
+
+	/**
+	 * The hover of a small button inside a list row (add, remove): brighter than the row's own hover, with a light
+	 * outline, so it stands out over a hovered row.
+	 */
+	public static void cellHover(GuiGraphicsExtractor graphics, int x, int y, int right, int bottom) {
+		graphics.fill(x, y, right, bottom, 0x50FFFFFF);
+		graphics.fill(x, y, right, y + 1, 0x90FFFFFF);
+		graphics.fill(x, bottom - 1, right, bottom, 0x90FFFFFF);
+		graphics.fill(x, y + 1, x + 1, bottom - 1, 0x90FFFFFF);
+		graphics.fill(right - 1, y + 1, right, bottom - 1, 0x90FFFFFF);
 	}
 
 	/** {@code text} cut to {@code maxWidth} pixels, ending with an ellipsis when it had to be cut. */

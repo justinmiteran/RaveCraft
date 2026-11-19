@@ -252,6 +252,14 @@ public final class LibraryTree extends AbstractWidget {
 			toggle(node);
 			return true;
 		}
+		if (doubleClick) {
+			// A track or playlist (a file, not a folder) is queued by a double click, like its + button.
+			if (!full()) {
+				playDownSound(Minecraft.getInstance().getSoundManager());
+				add(node);
+			}
+			return true;
+		}
 		return false;
 	}
 

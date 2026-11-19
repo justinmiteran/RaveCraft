@@ -103,7 +103,15 @@ public final class LibraryFolders {
 					continue;
 				}
 				try {
-					Path path = Path.of(element.getAsString()).toAbsolutePath().normalize();
+					String text = element.getAsString();
+					if (text.isBlank()) {
+						continue;
+					}
+					Path raw = Path.of(text);
+					if (!raw.isAbsolute()) {
+						continue;
+					}
+					Path path = raw.normalize();
 					if (!list.contains(path)) {
 						list.add(path);
 					}

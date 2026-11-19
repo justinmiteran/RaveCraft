@@ -46,7 +46,13 @@ public final class LocalFolderSource implements MusicSource {
 			return List.of();
 		}
 		List<SourceNode> nodes = new ArrayList<>();
-		for (LibraryEntry entry : MusicLibrary.list(path)) {
+		List<LibraryEntry> entries;
+		try {
+			entries = MusicLibrary.list(path);
+		} catch (IOException e) {
+			return List.of();
+		}
+		for (LibraryEntry entry : entries) {
 			nodes.add(switch (entry.kind()) {
 				case ROOT, FOLDER -> new SourceNode(entry.path().toString(), SourceNode.Kind.FOLDER, entry.name(),
 						countTracks(entry.path()), false);

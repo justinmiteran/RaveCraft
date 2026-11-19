@@ -106,4 +106,24 @@ class LibraryFoldersTest {
 		Files.createDirectory(dir.resolve("Music"));
 		assertEquals(List.of(dir.resolve("Music")), LibraryFolders.firstRun(dir).paths());
 	}
+
+	@Test
+	void siblingWithSharedPrefixIsNotInside() {
+		LibraryFolders a = LibraryFolders.empty().add(dir.resolve("a")).folders();
+		assertEquals(Result.ADDED, a.add(dir.resolve("ab")).result());
+		LibraryFolders ab = LibraryFolders.empty().add(dir.resolve("ab")).folders();
+		assertEquals(Result.ADDED, ab.add(dir.resolve("a")).result());
+	}
+
+	@Test
+	void addNormalizesPath() {
+		LibraryFolders a = LibraryFolders.empty().add(dir.resolve("a")).folders();
+		assertEquals(Result.DUPLICATE, a.add(dir.resolve("x").resolve("..").resolve("a")).result());
+	}
+
+	@Test
+	void fromJsonSkipsBlankAndRelative() {
+		String json = "{\"folders\":[\"\",\"   \",\"music\",\"../up\"," + quoted(dir.resolve("a")) + "]}";
+		assertEquals(List.of(dir.resolve("a")), LibraryFolders.fromJson(json).paths());
+	}
 }

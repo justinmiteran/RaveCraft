@@ -60,4 +60,13 @@ class LocalFolderSourceTest {
 		assertEquals(1, source.children(root).get(0).trackCount());
 		assertEquals(List.of(dir.resolve("one.mp3"), dir.resolve("two.flac")), source.tracksOf(root));
 	}
+
+	@Test
+	void childrenOfVanishedFolderIsEmpty() throws IOException {
+		Path root = Files.createDirectory(dir.resolve("temp"));
+		LocalFolderSource source = new LocalFolderSource(() -> List.of(root));
+		SourceNode node = source.roots().get(0);
+		Files.delete(root);
+		assertEquals(List.of(), source.children(node));
+	}
 }

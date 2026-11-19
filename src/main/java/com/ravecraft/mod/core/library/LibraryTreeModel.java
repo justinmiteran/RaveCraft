@@ -105,6 +105,22 @@ public final class LibraryTreeModel {
 		return true;
 	}
 
+	/**
+	 * Expands every folder of {@code ids} (open ones stay open). Returns the ids whose children must now be loaded,
+	 * then handed back with {@link #setChildren}.
+	 */
+	public List<String> expand(List<String> ids) {
+		List<String> toLoad = new ArrayList<>();
+		for (String id : ids) {
+			expanded.add(id);
+			if (!children.containsKey(id) && loading.add(id)) {
+				toLoad.add(id);
+			}
+		}
+		dirty = true;
+		return toLoad;
+	}
+
 	/** Applies a folder's children; false (and nothing changes) when they belong to an older generation. */
 	public boolean setChildren(int generation, String id, List<SourceNode> nodes) {
 		if (generation != this.generation) {

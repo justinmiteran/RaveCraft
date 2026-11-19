@@ -1,6 +1,7 @@
 package com.ravecraft.mod.core.library;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.ravecraft.mod.core.library.LibraryFolders.Added;
@@ -125,5 +126,82 @@ class LibraryFoldersTest {
 	void fromJsonSkipsBlankAndRelative() {
 		String json = "{\"folders\":[\"\",\"   \",\"music\",\"../up\"," + quoted(dir.resolve("a")) + "]}";
 		assertEquals(List.of(dir.resolve("a")), LibraryFolders.fromJson(json).paths());
+	}
+
+	@Test
+	void excludeKeepsASubfolderOfAChosenFolder() {
+		LibraryFolders music = LibraryFolders.empty().add(dir).folders();
+		Added jingles = music.exclude(dir.resolve("Jingles"));
+		assertEquals(Result.ADDED, jingles.result());
+		assertEquals(List.of(dir.resolve("Jingles")), jingles.folders().excluded());
+		assertEquals(List.of(dir), jingles.folders().paths());
+	}
+
+	@Test
+	void excludeRejectsAFolderOutsideTheChosenOnes() {
+		LibraryFolders music = LibraryFolders.empty().add(dir.resolve("Music")).folders();
+		assertEquals(Result.OUTSIDE_CHOSEN, music.exclude(dir.resolve("Videos")).result());
+		assertEquals(Result.OUTSIDE_CHOSEN, music.exclude(dir.resolve("Music")).result(), "a chosen folder itself");
+	}
+
+	@Test
+	void excludeRejectsDuplicatesAndFoldersAlreadyExcluded() {
+		LibraryFolders one = LibraryFolders.empty().add(dir).folders().exclude(dir.resolve("a")).folders();
+		assertEquals(Result.DUPLICATE, one.exclude(dir.resolve("a")).result());
+		assertEquals(Result.INSIDE_EXISTING, one.exclude(dir.resolve("a").resolve("b")).result());
+	}
+
+	@Test
+	void excludeReplacesTheExclusionsItContains() {
+		LibraryFolders two = LibraryFolders.empty().add(dir).folders()
+				.exclude(dir.resolve("a").resolve("b")).folders()
+				.exclude(dir.resolve("a").resolve("c")).folders();
+		Added parent = two.exclude(dir.resolve("a"));
+		assertEquals(Result.REPLACED_CHILDREN, parent.result());
+		assertEquals(List.of(dir.resolve("a")), parent.folders().excluded());
+	}
+
+	@Test
+	void includeDropsAnExclusion() {
+		LibraryFolders one = LibraryFolders.empty().add(dir).folders().exclude(dir.resolve("a")).folders();
+		assertEquals(List.of(), one.include(dir.resolve("a")).excluded());
+	}
+
+	@Test
+	void removingAChosenFolderDropsItsExclusions() {
+		LibraryFolders folders = LibraryFolders.empty().add(dir.resolve("m")).folders()
+				.add(dir.resolve("n")).folders()
+				.exclude(dir.resolve("m").resolve("x")).folders()
+				.exclude(dir.resolve("n").resolve("y")).folders();
+		assertEquals(List.of(dir.resolve("n").resolve("y")), folders.remove(dir.resolve("m")).excluded());
+	}
+
+	@Test
+	void exclusionsSurviveJson() {
+		LibraryFolders folders = LibraryFolders.empty().add(dir).folders().exclude(dir.resolve("a")).folders();
+		assertEquals(folders, LibraryFolders.fromJson(folders.toJson()));
+		assertEquals(List.of(), LibraryFolders.fromJson("{\"folders\":[" + quoted(dir) + "]}").excluded());
+	}
+
+	@Test
+	void knowsWhichFoldersAreExcludedOrHoldAnExclusion() {
+		Path deep = dir.resolve("a").resolve("b").resolve("c");
+		LibraryFolders folders = LibraryFolders.empty().add(dir).folders().exclude(deep).folders();
+		assertTrue(folders.isExcluded(deep));
+		assertFalse(folders.isExcluded(dir.resolve("a")));
+		assertTrue(folders.holdsExclusion(dir));
+		assertTrue(folders.holdsExclusion(dir.resolve("a").resolve("b")));
+		assertFalse(folders.holdsExclusion(deep), "an excluded folder does not hold itself");
+		assertFalse(folders.holdsExclusion(dir.resolve("z")));
+	}
+
+	@Test
+	void revealOpensEveryFolderDownToTheExclusionsInside() {
+		LibraryFolders folders = LibraryFolders.empty().add(dir).folders()
+				.exclude(dir.resolve("a").resolve("b").resolve("c")).folders()
+				.exclude(dir.resolve("a").resolve("x")).folders()
+				.exclude(dir.resolve("other")).folders();
+		assertEquals(List.of(dir.resolve("a"), dir.resolve("a").resolve("b")), folders.foldersToReveal(dir.resolve("a")));
+		assertEquals(List.of(dir, dir.resolve("a"), dir.resolve("a").resolve("b")), folders.foldersToReveal(dir));
 	}
 }

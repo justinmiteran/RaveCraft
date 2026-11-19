@@ -58,6 +58,17 @@ class FlatScanTest {
 	}
 
 	@Test
+	void skipsTheFoldersThePlayerExcludedAndTheirSubfolders() throws IOException {
+		Path jingles = Files.createDirectories(dir.resolve("Jingles").resolve("Old"));
+		Files.createFile(dir.resolve("Jingles").resolve("ding.mp3"));
+		Files.createFile(jingles.resolve("dong.mp3"));
+		Files.createFile(Files.createDirectory(dir.resolve("Chill")).resolve("calm.mp3"));
+		List<SourceNode> found = new ArrayList<>();
+		new FlatScan(List.of(dir), List.of(dir.resolve("Jingles"))).run(found::addAll, 64);
+		assertEquals(List.of("calm"), names(found));
+	}
+
+	@Test
 	void walksAnExcludedFolderThePlayerChoseThemself() throws IOException {
 		Path media = Files.createDirectory(dir.resolve("Windows"));
 		Files.createFile(media.resolve("chimes.wav"));

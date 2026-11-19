@@ -16,7 +16,7 @@ import java.util.function.Consumer;
  * Walks the chosen folders breadth first for the flat view, one page at a time, handing the tracks and playlists it
  * finds to a sink in batches so the list fills in while the walk goes on. Each folder is walked once (nested roots
  * and links back up are skipped), unreadable folders are skipped, and system or software folders met on the way are
- * not entered; a root the player chose is always walked, whatever its name.
+ * not entered, nor are the folders the player excluded; a root the player chose is always walked, whatever its name.
  *
  * <p>{@link #run} blocks and is meant for one IO thread; {@link #cancel} may be called from any thread.
  * {@link #nextPage} is called between runs, never during one.
@@ -35,18 +35,32 @@ public final class FlatScan {
 
 	private final Deque<Path> pending = new ArrayDeque<>();
 	private final Set<Path> seen = new HashSet<>();
+	/** The folders the player excluded. */
+	private final Set<Path> hidden = new HashSet<>();
 	private final int page;
 	private int found;
 	private int walked;
 	private volatile boolean cancelled;
 
 	public FlatScan(List<Path> roots) {
-		this(roots, PAGE);
+		this(roots, List.of());
+	}
+
+	/** {@code excluded}: folders not entered when met on the way, so nothing under them is walked either. */
+	public FlatScan(List<Path> roots, List<Path> excluded) {
+		this(roots, excluded, PAGE);
 	}
 
 	FlatScan(List<Path> roots, int page) {
+		this(roots, List.of(), page);
+	}
+
+	FlatScan(List<Path> roots, List<Path> excluded, int page) {
 		this.page = page;
 		pending.addAll(roots);
+		for (Path folder : excluded) {
+			hidden.add(folder.toAbsolutePath().normalize());
+		}
 	}
 
 	/**
@@ -75,7 +89,7 @@ public final class FlatScan {
 				}
 				switch (entry.kind()) {
 					case ROOT, FOLDER -> {
-						if (!excluded(entry.path())) {
+						if (!excluded(entry.path()) && !hidden.contains(entry.path().toAbsolutePath().normalize())) {
 							pending.add(entry.path());
 						}
 					}

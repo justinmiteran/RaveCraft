@@ -8,12 +8,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-/** The player's own folders on disk, limited to the roots they chose. */
+/** The player's own folders on disk, limited to the roots they chose, without the folders they excluded. */
 public final class LocalFolderSource implements MusicSource {
 	private final Supplier<List<Path>> roots;
+	private final Supplier<List<Path>> excluded;
 
 	public LocalFolderSource(Supplier<List<Path>> roots) {
+		this(roots, List::of);
+	}
+
+	/** {@code excluded}: folders hidden from the tree and the flat view, with everything under them. */
+	public LocalFolderSource(Supplier<List<Path>> roots, Supplier<List<Path>> excluded) {
 		this.roots = roots;
+		this.excluded = excluded;
 	}
 
 	@Override
@@ -52,7 +59,12 @@ public final class LocalFolderSource implements MusicSource {
 		} catch (IOException e) {
 			return List.of();
 		}
+		List<Path> hidden = excluded.get();
 		for (LibraryEntry entry : entries) {
+			if ((entry.kind() == Kind.FOLDER || entry.kind() == Kind.ROOT)
+					&& hidden.contains(entry.path().toAbsolutePath().normalize())) {
+				continue;
+			}
 			nodes.add(switch (entry.kind()) {
 				case ROOT, FOLDER -> new SourceNode(entry.path().toString(), SourceNode.Kind.FOLDER, entry.name(),
 						countTracks(entry.path()), false);
@@ -80,7 +92,7 @@ public final class LocalFolderSource implements MusicSource {
 
 	@Override
 	public FlatScan flatScan() {
-		return new FlatScan(roots.get());
+		return new FlatScan(roots.get(), excluded.get());
 	}
 
 	@Override

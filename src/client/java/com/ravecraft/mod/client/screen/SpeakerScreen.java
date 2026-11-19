@@ -119,7 +119,8 @@ public final class SpeakerScreen extends Screen {
 	 * folder…} button shown over an empty tree, and {@code Folders…} at the bottom.
 	 */
 	private void initLibrary() {
-		List<MusicSource> sources = List.of(new LocalFolderSource(() -> LibraryFoldersStore.get().paths()),
+		List<MusicSource> sources = List.of(new LocalFolderSource(() -> LibraryFoldersStore.get().paths(),
+				() -> LibraryFoldersStore.get().excluded()),
 				new UnavailableSource("usb"), new UnavailableSource("stream"));
 		addRenderableWidget(new SourceTabs(left, top + PANEL_Y, sources, 0));
 		search = addRenderableWidget(new EditBox(font, left + 7, top + PANEL_Y, PANEL_W - 2 * SEARCH_H - 4, SEARCH_H,

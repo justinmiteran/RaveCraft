@@ -215,4 +215,15 @@ class LibraryTreeModelTest {
 		model.setFlat(false);
 		assertEquals(List.of("Musique/", "  Chill", "  Intro", "Sets DJ"), render(model));
 	}
+
+	@Test
+	void expandOpensSeveralFoldersAndAsksOnlyForTheUnloadedOnes() {
+		LibraryTreeModel model = loaded();
+		assertTrue(model.toggle(MUSIC));
+		model.setChildren(model.generation(), MUSIC.id(), List.of(CHILL, INTRO));
+		model.toggle(MUSIC);
+		assertEquals(List.of(CHILL.id()), model.expand(List.of(MUSIC.id(), CHILL.id())));
+		assertEquals(List.of("Musique/", "  Chill/", "    …", "  Intro", "Sets DJ"), render(model));
+		assertEquals(List.of(), model.expand(List.of(CHILL.id())), "already loading");
+	}
 }

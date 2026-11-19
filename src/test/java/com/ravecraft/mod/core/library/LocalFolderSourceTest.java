@@ -78,4 +78,16 @@ class LocalFolderSourceTest {
 		source.flatScan().run(found::addAll, 64);
 		assertEquals(List.of(new SourceNode(dir.resolve("a.mp3").toString(), Kind.TRACK, "a", -1, false)), found);
 	}
+
+	@Test
+	void excludedFoldersAreHiddenAndNotWalked() throws IOException {
+		Files.createFile(Files.createDirectory(dir.resolve("Jingles")).resolve("ding.mp3"));
+		Files.createDirectory(dir.resolve("Chill"));
+		LocalFolderSource source = new LocalFolderSource(() -> List.of(dir), () -> List.of(dir.resolve("Jingles")));
+		assertEquals(List.of(new SourceNode(dir.resolve("Chill").toString(), Kind.FOLDER, "Chill", 0, false)),
+				source.children(source.roots().get(0)));
+		List<SourceNode> found = new ArrayList<>();
+		source.flatScan().run(found::addAll, 64);
+		assertEquals(List.of(), found);
+	}
 }

@@ -81,5 +81,13 @@
   "screen.ravecraft.speaker.folders.duplicate": "Déjà dans la liste",
   "screen.ravecraft.speaker.folders.inside_existing": "Déjà inclus dans un dossier choisi",
   "screen.ravecraft.speaker.folders.full": "%s dossiers au maximum",
-  "screen.ravecraft.speaker.folders.unavailable": "Fenêtre du système indisponible : navigateur intégré"
+  "screen.ravecraft.speaker.folders.unavailable": "Fenêtre du système indisponible : navigateur intégré",
+  "screen.ravecraft.speaker.folders.include": "Afficher à nouveau",
+  "screen.ravecraft.speaker.folders.excluded": "Dossier exclu",
+  "screen.ravecraft.speaker.folders.excluded_replaced": "Exclu ; il remplace ses sous-dossiers",
+  "screen.ravecraft.speaker.folders.already_excluded": "Déjà exclu",
+  "screen.ravecraft.speaker.folders.inside_excluded": "Déjà dans un dossier exclu",
+  "screen.ravecraft.speaker.folders.exclude_hint": "Masquer de la bibliothèque",
+  "screen.ravecraft.speaker.folders.reveal": "Contient un dossier exclu : clique pour le montrer",
+  "screen.ravecraft.speaker.folders.hint": "Survole un sous-dossier pour l'exclure."
 }

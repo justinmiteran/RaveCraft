@@ -33,6 +33,8 @@ public final class SpeakerSprites {
 	public static final Identifier REFRESH = sprite("refresh");
 	public static final Identifier PLUS = sprite("plus");
 	public static final Identifier REMOVE = sprite("remove");
+	public static final Identifier EXCLUDED = sprite("excluded");
+	public static final Identifier EXCLUDE = sprite("exclude");
 	public static final Identifier LED_ON = sprite("led_on");
 	public static final Identifier LED_OFF = sprite("led_off");
 	public static final Identifier FOLDER = sprite("folder");

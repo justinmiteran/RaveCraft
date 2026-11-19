@@ -81,5 +81,13 @@
   "screen.ravecraft.speaker.folders.duplicate": "Already in the list",
   "screen.ravecraft.speaker.folders.inside_existing": "Already inside a chosen folder",
   "screen.ravecraft.speaker.folders.full": "At most %s folders",
-  "screen.ravecraft.speaker.folders.unavailable": "System window unavailable: built-in browser"
+  "screen.ravecraft.speaker.folders.unavailable": "System window unavailable: built-in browser",
+  "screen.ravecraft.speaker.folders.include": "Show again",
+  "screen.ravecraft.speaker.folders.excluded": "Folder excluded",
+  "screen.ravecraft.speaker.folders.excluded_replaced": "Excluded; it replaces its sub-folders",
+  "screen.ravecraft.speaker.folders.already_excluded": "Already excluded",
+  "screen.ravecraft.speaker.folders.inside_excluded": "Already inside an excluded folder",
+  "screen.ravecraft.speaker.folders.exclude_hint": "Hide from the library",
+  "screen.ravecraft.speaker.folders.reveal": "Holds an excluded folder: click to show it",
+  "screen.ravecraft.speaker.folders.hint": "Hover a sub-folder to exclude it."
 }

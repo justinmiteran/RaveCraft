@@ -164,6 +164,17 @@ public record SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, lon
 		return new SpeakerQueue(entries, Optional.of(entryId), positionMs, repeat, shuffle, newPending);
 	}
 
+	/** Sets the duration of one entry; an unknown id leaves the queue unchanged. */
+	public SpeakerQueue withDuration(UUID entryId, long durationMs) {
+		int index = indexOf(entryId);
+		if (index < 0) {
+			return this;
+		}
+		List<QueueEntry> list = new ArrayList<>(entries);
+		list.set(index, list.get(index).withDuration(durationMs));
+		return new SpeakerQueue(list, current, positionMs, repeat, shuffle, pending);
+	}
+
 	public SpeakerQueue withPosition(long positionMs) {
 		return new SpeakerQueue(entries, current, positionMs, repeat, shuffle, pending);
 	}

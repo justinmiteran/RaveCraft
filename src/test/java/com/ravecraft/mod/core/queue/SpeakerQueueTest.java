@@ -322,4 +322,23 @@ class SpeakerQueueTest {
 		SpeakerQueue q = SpeakerQueue.EMPTY.add(l).withCurrent(off.entryId(), 0).withShuffle(true, rng);
 		assertEquals(q.entry(q.pending().get(0)), q.nextPlayable(ONLINE, rng));
 	}
+
+	@Test
+	void withDurationSetsEntryDuration() {
+		List<QueueEntry> l = entries(2);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(l).withCurrent(l.get(0).entryId(), 5);
+		SpeakerQueue updated = q.withDuration(l.get(1).entryId(), 1234);
+		assertEquals(1234, updated.entry(l.get(1).entryId()).orElseThrow().durationMs());
+		assertEquals(QueueEntry.UNKNOWN_DURATION, updated.entry(l.get(0).entryId()).orElseThrow().durationMs());
+		assertEquals(q.current(), updated.current());
+		assertEquals(q.positionMs(), updated.positionMs());
+		assertEquals(q, q.withDuration(UUID.randomUUID(), 99));
+	}
+
+	@Test
+	void negativeDurationIsUnknown() {
+		QueueEntry e = entry("t", ON).withDuration(-50);
+		assertEquals(QueueEntry.UNKNOWN_DURATION, e.durationMs());
+		assertEquals(QueueEntry.UNKNOWN_DURATION, entry("t", ON).durationMs());
+	}
 }

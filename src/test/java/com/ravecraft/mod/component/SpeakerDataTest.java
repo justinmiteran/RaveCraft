@@ -122,4 +122,28 @@ class SpeakerDataTest {
 		json.addProperty("repeat", "bogus");
 		assertEquals(RepeatMode.ALL, QueueCodecs.QUEUE.parse(JsonOps.INSTANCE, json).getOrThrow().repeat());
 	}
+
+	@Test
+	void oversizedPendingStillStreams() {
+		JsonObject json = QueueCodecs.QUEUE.encodeStart(JsonOps.INSTANCE, withModes()).getOrThrow().getAsJsonObject();
+		JsonArray pending = new JsonArray();
+		for (int i = 0; i < 250; i++) {
+			pending.add(UUIDUtil.CODEC.encodeStart(JsonOps.INSTANCE, UUID.randomUUID()).getOrThrow());
+		}
+		json.add("pending", pending);
+		SpeakerQueue queue = QueueCodecs.QUEUE.parse(JsonOps.INSTANCE, json).getOrThrow();
+		assertTrue(queue.pending().size() <= 3);
+		ByteBuf buf = Unpooled.buffer();
+		QueueCodecs.QUEUE_STREAM.encode(buf, queue);
+		assertEquals(queue, QueueCodecs.QUEUE_STREAM.decode(buf));
+	}
+
+	@Test
+	void invalidShuffleFallsBackToDefault() {
+		JsonObject json = QueueCodecs.QUEUE.encodeStart(JsonOps.INSTANCE, withModes()).getOrThrow().getAsJsonObject();
+		json.addProperty("shuffle", "yes");
+		SpeakerQueue queue = QueueCodecs.QUEUE.parse(JsonOps.INSTANCE, json).getOrThrow();
+		assertEquals(false, queue.shuffle());
+		assertEquals(2, queue.entries().size());
+	}
 }

@@ -341,4 +341,22 @@ class SpeakerQueueTest {
 		assertEquals(QueueEntry.UNKNOWN_DURATION, e.durationMs());
 		assertEquals(QueueEntry.UNKNOWN_DURATION, entry("t", ON).durationMs());
 	}
+
+	@Test
+	void pendingDropsUnknownIdsAndDuplicates() {
+		List<QueueEntry> l = entries(3);
+		UUID known = l.get(1).entryId();
+		SpeakerQueue q = new SpeakerQueue(l, Optional.empty(), 0, RepeatMode.ALL, true,
+				List.of(UUID.randomUUID(), known, known, UUID.randomUUID()));
+		assertEquals(List.of(known), q.pending());
+	}
+
+	@Test
+	void pendingNeverContainsCurrent() {
+		List<QueueEntry> l = entries(3);
+		UUID cur = l.get(0).entryId();
+		SpeakerQueue q = new SpeakerQueue(l, Optional.of(cur), 0, RepeatMode.ALL, true,
+				List.of(cur, l.get(1).entryId(), l.get(2).entryId()));
+		assertEquals(List.of(l.get(1).entryId(), l.get(2).entryId()), q.pending());
+	}
 }

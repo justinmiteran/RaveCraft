@@ -27,7 +27,16 @@ public record SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, lon
 		entries = List.copyOf(entries.size() > MAX_ENTRIES ? entries.subList(0, MAX_ENTRIES) : entries);
 		positionMs = Math.max(0, positionMs);
 		Objects.requireNonNull(repeat, "repeat");
-		pending = List.copyOf(pending);
+		Set<UUID> allowed = new HashSet<>();
+		entries.forEach(e -> allowed.add(e.entryId()));
+		current.ifPresent(allowed::remove);
+		List<UUID> kept = new ArrayList<>();
+		for (UUID id : pending) {
+			if (allowed.remove(id)) {
+				kept.add(id);
+			}
+		}
+		pending = List.copyOf(kept);
 	}
 
 	public SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, long positionMs) {

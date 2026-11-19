@@ -33,9 +33,9 @@ public final class QueueCodecs {
 			ENTRY.listOf().optionalFieldOf("entries", List.of()).forGetter(SpeakerQueue::entries),
 			UUIDUtil.CODEC.optionalFieldOf("current").forGetter(SpeakerQueue::current),
 			Codec.LONG.optionalFieldOf("position_ms", 0L).forGetter(SpeakerQueue::positionMs),
-			REPEAT.optionalFieldOf("repeat", RepeatMode.ALL).forGetter(SpeakerQueue::repeat),
-			Codec.BOOL.optionalFieldOf("shuffle", false).forGetter(SpeakerQueue::shuffle),
-			UUIDUtil.CODEC.listOf().optionalFieldOf("pending", List.of()).forGetter(SpeakerQueue::pending)
+			REPEAT.lenientOptionalFieldOf("repeat", RepeatMode.ALL).forGetter(SpeakerQueue::repeat),
+			Codec.BOOL.lenientOptionalFieldOf("shuffle", false).forGetter(SpeakerQueue::shuffle),
+			UUIDUtil.CODEC.listOf().lenientOptionalFieldOf("pending", List.of()).forGetter(SpeakerQueue::pending)
 	).apply(instance, SpeakerQueue::new));
 
 	public static final StreamCodec<ByteBuf, QueueEntry> ENTRY_STREAM = StreamCodec.composite(

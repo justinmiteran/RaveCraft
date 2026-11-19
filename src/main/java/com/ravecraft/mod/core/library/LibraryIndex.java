@@ -117,6 +117,64 @@ public final class LibraryIndex {
 	}
 
 	/**
+	 * Up to {@code max} tracks under the folder {@code id}, subfolders included: a folder's own tracks by name, then
+	 * each subfolder's in name order, depth first.
+	 */
+	public List<Path> tracksUnder(String id, int max) {
+		Optional<Path> folder = path(id);
+		if (folder.isEmpty() || max <= 0) {
+			return List.of();
+		}
+		List<String> base = parts(folder.get());
+		record Found(Path path, List<String> parts) {
+		}
+		List<Found> found = new ArrayList<>();
+		for (SourceNode node : entries) {
+			if (node.kind() == SourceNode.Kind.TRACK) {
+				path(node.id()).ifPresent(p -> {
+					List<String> parts = parts(p);
+					if (isUnder(parts, base)) {
+						found.add(new Found(p, parts));
+					}
+				});
+			}
+		}
+		found.sort((a, b) -> IN_FOLDER_ORDER.compare(a.parts(), b.parts()));
+		return found.stream().limit(max).map(Found::path).toList();
+	}
+
+	private static final Comparator<List<String>> IN_FOLDER_ORDER = (pa, pb) -> {
+		int shared = Math.min(pa.size(), pb.size()) - 1;
+		for (int i = 0; i < shared; i++) {
+			int c = pa.get(i).compareTo(pb.get(i));
+			if (c != 0) {
+				return c;
+			}
+		}
+		if (pa.size() != pb.size()) {
+			// A file sits beside folders: the folder's own files come before its subfolders.
+			return Integer.compare(pa.size(), pb.size());
+		}
+		return pa.get(shared).compareTo(pb.get(shared));
+	};
+
+	/** The lowercase name of each part of {@code path}, root first. */
+	private static List<String> parts(Path path) {
+		List<String> parts = new ArrayList<>();
+		if (path.getRoot() != null) {
+			parts.add(key(path.getRoot().toString()));
+		}
+		for (Path part : path) {
+			parts.add(key(part.toString()));
+		}
+		return parts;
+	}
+
+	private static boolean isUnder(List<String> track, List<String> folder) {
+		return track.size() > folder.size() && track.subList(0, folder.size()).equals(folder);
+	}
+
+	/**
 	 * A copy holding only what {@code newScope} still covers. It stays complete only for the same scope: a folder
 	 * added since was never walked.
 	 */

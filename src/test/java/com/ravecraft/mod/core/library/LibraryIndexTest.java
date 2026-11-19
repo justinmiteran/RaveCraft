@@ -105,4 +105,14 @@ class LibraryIndexTest {
 		index.finish(false);
 		assertTrue(index.restrictTo(index.scope()).complete());
 	}
+
+	@Test
+	void tracksUnderAFolderComeFolderByFolderInNameOrderUpToTheMax() {
+		LibraryIndex index = sample();
+		assertEquals(List.of(ROOT.resolve("a.ogg"), CHILL.resolve("c.flac"), DEEP.resolve("b.mp3")),
+				index.tracksUnder(ROOT.toString(), 10), "a folder's own tracks first, then each subfolder's");
+		assertEquals(List.of(CHILL.resolve("c.flac"), DEEP.resolve("b.mp3")), index.tracksUnder(CHILL.toString(), 10));
+		assertEquals(List.of(ROOT.resolve("a.ogg")), index.tracksUnder(ROOT.toString(), 1));
+		assertEquals(List.of(), index.tracksUnder(ROOT.resolve("Empty").toString(), 10));
+	}
 }

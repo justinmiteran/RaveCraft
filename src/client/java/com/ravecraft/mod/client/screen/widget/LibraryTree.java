@@ -132,6 +132,15 @@ public final class LibraryTree extends AbstractWidget {
 	}
 
 	private void add(SourceNode node) {
+		if (node.kind() == SourceNode.Kind.FOLDER) {
+			// A folder brings its subfolders' tracks too, as found by the library walk.
+			List<java.nio.file.Path> indexed =
+					LibraryIndexStore.get(source).tracksUnder(node.id(), SpeakerQueue.roomLeft(queued()));
+			if (!indexed.isEmpty()) {
+				LocalPlayback.add(pos, indexed);
+				return;
+			}
+		}
 		OffThread.run(() -> source.tracksOf(node), tracks -> {
 			// Cap to the room left now, so no entry is registered for an id the server would drop.
 			int room = Math.min(tracks.size(), SpeakerQueue.roomLeft(queued()));

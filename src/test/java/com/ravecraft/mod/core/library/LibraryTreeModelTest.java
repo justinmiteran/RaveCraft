@@ -125,4 +125,57 @@ class LibraryTreeModelTest {
 		model.toggle(MUSIC);
 		assertFalse(first == model.rows());
 	}
+
+	@Test
+	void flatViewShowsALoadingRowUntilItsListArrives() {
+		LibraryTreeModel model = loaded();
+		model.setFlat(true);
+		assertTrue(model.flat());
+		assertTrue(model.claimFlatLoad());
+		assertFalse(model.claimFlatLoad(), "already loading");
+		assertEquals(List.of("…"), render(model));
+		assertTrue(model.setFlatNodes(model.generation(), List.of(INTRO, NIGHT)));
+		assertEquals(List.of("Intro", "Night Drive"), render(model));
+		assertFalse(model.claimFlatLoad(), "already loaded");
+	}
+
+	@Test
+	void flatViewIsFilteredByName() {
+		LibraryTreeModel model = loaded();
+		model.setFlat(true);
+		model.claimFlatLoad();
+		model.setFlatNodes(model.generation(), List.of(INTRO, NIGHT));
+		model.setFilter(" night ");
+		assertEquals(List.of("Night Drive"), render(model));
+	}
+
+	@Test
+	void treeViewDoesNotClaimTheFlatList() {
+		LibraryTreeModel model = loaded();
+		assertFalse(model.claimFlatLoad());
+	}
+
+	@Test
+	void reloadDropsTheFlatListAndStaleResults() {
+		LibraryTreeModel model = loaded();
+		model.setFlat(true);
+		model.claimFlatLoad();
+		int old = model.generation();
+		model.startLoading();
+		assertFalse(model.setFlatNodes(old, List.of(INTRO)));
+		assertTrue(model.claimFlatLoad(), "the new generation loads its own list");
+		assertEquals(List.of("…"), render(model));
+	}
+
+	@Test
+	void switchingBackToTheTreeKeepsItsExpansion() {
+		LibraryTreeModel model = loaded();
+		model.toggle(MUSIC);
+		model.setChildren(model.generation(), MUSIC.id(), List.of(CHILL, INTRO));
+		model.setFlat(true);
+		model.claimFlatLoad();
+		model.setFlatNodes(model.generation(), List.of(INTRO));
+		model.setFlat(false);
+		assertEquals(List.of("Musique/", "  Chill", "  Intro", "Sets DJ"), render(model));
+	}
 }

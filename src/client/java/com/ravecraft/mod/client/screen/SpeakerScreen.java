@@ -8,6 +8,7 @@ import com.ravecraft.mod.client.screen.widget.LibraryTree;
 import com.ravecraft.mod.client.screen.widget.PlayerBand;
 import com.ravecraft.mod.client.screen.widget.QueuePanel;
 import com.ravecraft.mod.client.screen.widget.SourceTabs;
+import com.ravecraft.mod.client.screen.widget.IconButton;
 import com.ravecraft.mod.client.screen.widget.SpeakerSprites;
 import com.ravecraft.mod.core.library.LocalFolderSource;
 import com.ravecraft.mod.core.library.MusicSource;
@@ -33,6 +34,7 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
@@ -63,6 +65,9 @@ public final class SpeakerScreen extends Screen {
 	private LibraryTree library;
 	private EditBox search;
 	private Button chooseButton;
+	/** Whether the library shows the flat list instead of the tree; kept for the game session. */
+	private static boolean flatView;
+	private IconButton viewButton;
 	/** The search text, kept when the screen is rebuilt (resize). */
 	private String filter = "";
 	private @Nullable SpeakerStatePayload shownState;
@@ -117,13 +122,16 @@ public final class SpeakerScreen extends Screen {
 		List<MusicSource> sources = List.of(new LocalFolderSource(() -> LibraryFoldersStore.get().paths()),
 				new UnavailableSource("usb"), new UnavailableSource("stream"));
 		addRenderableWidget(new SourceTabs(left, top + PANEL_Y, sources, 0));
-		search = addRenderableWidget(new EditBox(font, left + 7, top + PANEL_Y, PANEL_W, SEARCH_H,
+		search = addRenderableWidget(new EditBox(font, left + 7, top + PANEL_Y, PANEL_W - SEARCH_H - 2, SEARCH_H,
 				Component.translatable(SpeakerSprites.KEY + "search")));
 		search.setHint(Component.translatable(SpeakerSprites.KEY + "search"));
 		search.setValue(filter);
 		library = addRenderableWidget(new LibraryTree(left + 7, top + TREE_Y, PANEL_W, PANEL_H - (TREE_Y - PANEL_Y),
 				sources.get(0), pos));
 		library.setFilter(filter);
+		library.setFlat(flatView);
+		viewButton = addRenderableWidget(new IconButton(left + 7 + PANEL_W - SEARCH_H, top + PANEL_Y, SEARCH_H,
+				viewIcon(), viewLabel(), this::toggleView));
 		search.setResponder(text -> {
 			filter = text;
 			library.setFilter(text);
@@ -134,6 +142,21 @@ public final class SpeakerScreen extends Screen {
 		chooseButton.visible = false;
 		addRenderableWidget(Button.builder(Component.translatable(SpeakerSprites.KEY + "folders"), b -> openFolders())
 				.bounds(left + 7, top + BOTTOM_Y, PANEL_W, BOTTOM_H).build());
+	}
+
+	/** The view button shows the current view: the tree or the flat list. */
+	private void toggleView() {
+		flatView = !flatView;
+		library.setFlat(flatView);
+		viewButton.show(viewIcon(), viewLabel());
+	}
+
+	private static Identifier viewIcon() {
+		return flatView ? SpeakerSprites.VIEW_LIST : SpeakerSprites.VIEW_TREE;
+	}
+
+	private static Component viewLabel() {
+		return Component.translatable(SpeakerSprites.KEY + (flatView ? "view.flat" : "view.tree"));
 	}
 
 	/** Opens the {@code Folders…} popup, which reloads the library whenever the chosen folders change. */

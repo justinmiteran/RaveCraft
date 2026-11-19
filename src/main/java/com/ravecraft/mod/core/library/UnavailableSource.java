@@ -24,4 +24,14 @@ public record UnavailableSource(String id) implements MusicSource {
 	public List<Path> tracksOf(SourceNode node) {
 		return List.of();
 	}
+
+	@Override
+	public List<SourceNode> allTracks() {
+		return List.of();
+	}
+
+	@Override
+	public String parentName(SourceNode node) {
+		return "";
+	}
 }

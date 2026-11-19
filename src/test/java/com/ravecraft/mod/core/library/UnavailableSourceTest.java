@@ -17,5 +17,7 @@ class UnavailableSourceTest {
 		assertEquals(List.of(), usb.roots());
 		assertEquals(List.of(), usb.children(node));
 		assertEquals(List.of(), usb.tracksOf(node));
+		assertEquals(List.of(), usb.allTracks());
+		assertEquals("", usb.parentName(node));
 	}
 }

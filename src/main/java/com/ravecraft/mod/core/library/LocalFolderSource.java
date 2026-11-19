@@ -4,12 +4,22 @@ import com.ravecraft.mod.core.library.LibraryEntry.Kind;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /** The player's own folders on disk, limited to the roots they chose. */
 public final class LocalFolderSource implements MusicSource {
+	/** Most entries the flat view lists, and most folders it walks, so a huge disk cannot stall the screen. */
+	public static final int FLAT_LIMIT = MusicLibrary.MAX_ENTRIES;
+	private static final Comparator<SourceNode> BY_NAME =
+			Comparator.comparing(SourceNode::name, String.CASE_INSENSITIVE_ORDER).thenComparing(SourceNode::id);
+
 	private final Supplier<List<Path>> roots;
 
 	public LocalFolderSource(Supplier<List<Path>> roots) {
@@ -76,6 +86,67 @@ public final class LocalFolderSource implements MusicSource {
 					? MusicLibrary.tracksOf(new LibraryEntry(path, Kind.PLAYLIST, node.name()))
 					: List.of();
 		};
+	}
+
+	@Override
+	public List<SourceNode> allTracks() {
+		return allTracks(FLAT_LIMIT);
+	}
+
+	/**
+	 * Walks the roots breadth first, each folder once (nested roots and links back up are not walked twice),
+	 * keeping at most {@code limit} tracks and playlists. Missing roots and unreadable folders are skipped.
+	 */
+	List<SourceNode> allTracks(int limit) {
+		List<SourceNode> nodes = new ArrayList<>();
+		Set<Path> seen = new HashSet<>();
+		Deque<Path> pending = new ArrayDeque<>(roots.get());
+		int walked = 0;
+		while (!pending.isEmpty() && nodes.size() < limit && walked < FLAT_LIMIT) {
+			Path folder = pending.poll();
+			if (!Files.isDirectory(folder) || !seen.add(realPath(folder))) {
+				continue;
+			}
+			walked++;
+			List<LibraryEntry> entries;
+			try {
+				entries = MusicLibrary.list(folder);
+			} catch (IOException e) {
+				continue;
+			}
+			for (LibraryEntry entry : entries) {
+				switch (entry.kind()) {
+					case ROOT, FOLDER -> pending.add(entry.path());
+					case PLAYLIST, TRACK -> {
+						if (nodes.size() < limit) {
+							nodes.add(fileNode(entry));
+						}
+					}
+				}
+			}
+		}
+		nodes.sort(BY_NAME);
+		return nodes;
+	}
+
+	@Override
+	public String parentName(SourceNode node) {
+		Path parent = Path.of(node.id()).getParent();
+		Path name = parent == null ? null : parent.getFileName();
+		return name == null ? "" : name.toString();
+	}
+
+	private static SourceNode fileNode(LibraryEntry entry) {
+		SourceNode.Kind kind = entry.kind() == Kind.PLAYLIST ? SourceNode.Kind.PLAYLIST : SourceNode.Kind.TRACK;
+		return new SourceNode(entry.path().toString(), kind, entry.name(), -1, false);
+	}
+
+	private static Path realPath(Path folder) {
+		try {
+			return folder.toRealPath();
+		} catch (IOException e) {
+			return folder.toAbsolutePath().normalize();
+		}
 	}
 
 	/** Direct audio files only; an unreadable folder counts as empty. */

@@ -15,4 +15,10 @@ public interface MusicSource {
 	List<SourceNode> children(SourceNode folder) throws IOException;
 
 	List<Path> tracksOf(SourceNode node) throws IOException;
+
+	/** Every track and playlist under the roots, subfolders included, sorted by name, for the flat view. */
+	List<SourceNode> allTracks() throws IOException;
+
+	/** The name of the folder holding {@code node}, or an empty string when there is none to show. */
+	String parentName(SourceNode node);
 }

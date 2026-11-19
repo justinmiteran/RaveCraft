@@ -27,7 +27,8 @@ import net.minecraft.util.Mth;
  * children of each expanded folder. Every source call may touch the disk, so it runs on the IO pool and
  * its result is applied on the client thread, only if the tree has not been reloaded since. Rows show the
  * indentation, an expand arrow, the type icon, the name, the track count of folders and a {@code +} that queues
- * the node's tracks on the speaker. The state and the search filter live in {@link LibraryTreeModel}.
+ * the node's tracks on the speaker. The flat view lists every track and playlist instead, without folders, each
+ * with its folder as a tooltip. The state and the search filter live in {@link LibraryTreeModel}.
  */
 public final class LibraryTree extends AbstractWidget {
 	private static final int ROW_H = 11;
@@ -56,6 +57,24 @@ public final class LibraryTree extends AbstractWidget {
 		model.startLoading();
 		int generation = model.generation();
 		OffThread.run(source::roots, roots -> model.setRoots(generation, roots), () -> model.setRoots(generation, List.of()));
+		loadFlat();
+	}
+
+	/** Switches between the folder tree and the flat list, loading the list the first time it is shown. */
+	public void setFlat(boolean flat) {
+		if (flat != model.flat()) {
+			model.setFlat(flat);
+			scroll = 0;
+		}
+		loadFlat();
+	}
+
+	private void loadFlat() {
+		if (model.claimFlatLoad()) {
+			int generation = model.generation();
+			OffThread.run(source::allTracks, nodes -> model.setFlatNodes(generation, nodes),
+					() -> model.setFlatNodes(generation, List.of()));
+		}
 	}
 
 	/** Filters the loaded rows by name; never reads the disk. */
@@ -230,7 +249,8 @@ public final class LibraryTree extends AbstractWidget {
 		if (node.kind() == SourceNode.Kind.FOLDER && !missing) {
 			drawArrow(graphics, x + 1, rowY + 3, row.expanded());
 		}
-		int iconX = x + ARROW_W;
+		// The flat list has no folders, so no arrow column either.
+		int iconX = model.flat() ? x + 1 : x + ARROW_W;
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, icon(node), iconX, rowY + 1, SpeakerSprites.ICON,
 				SpeakerSprites.ICON, missing ? 0.4F : 1.0F);
 		int nameX = iconX + SpeakerSprites.ICON + 2;
@@ -248,6 +268,12 @@ public final class LibraryTree extends AbstractWidget {
 						? Component.translatable(SpeakerSprites.KEY + "queue_full", SpeakerQueue.MAX_ENTRIES)
 						: Component.translatable(SpeakerSprites.KEY + "add");
 				graphics.setTooltipForNextFrame(font, tip, mouseX, mouseY);
+			} else if (hovered && model.flat()) {
+				String folder = source.parentName(node);
+				if (!folder.isEmpty()) {
+					graphics.setTooltipForNextFrame(font,
+							Component.translatable(SpeakerSprites.KEY + "in_folder", folder), mouseX, mouseY);
+				}
 			}
 			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PLUS, addX, rowY + 1, SpeakerSprites.ICON,
 					SpeakerSprites.ICON, full() ? 0.4F : 1.0F);

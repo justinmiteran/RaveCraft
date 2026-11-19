@@ -12,7 +12,8 @@ import java.util.Set;
  * The state of a library tree, without any I/O: the roots, the children loaded so far, which folders are expanded
  * or loading, and the search filter. The caller loads roots and children itself (off the render thread) and hands
  * them back with the {@link #generation()} it started from, so results arriving after {@link #startLoading()} are
- * dropped. {@link #rows()} is the flattened list of visible rows, rebuilt only after a change.
+ * dropped. In the flat view the rows are every track and playlist instead, loaded once per generation.
+ * {@link #rows()} is the flattened list of visible rows, rebuilt only after a change.
  */
 public final class LibraryTreeModel {
 	/** One visible line: a node, or a {@code Loading…} placeholder when {@code node} is null. */
@@ -31,6 +32,9 @@ public final class LibraryTreeModel {
 	private final Set<String> expanded = new HashSet<>();
 	private final Set<String> loading = new HashSet<>();
 	private String filter = "";
+	private boolean flat;
+	private boolean flatLoading;
+	private List<SourceNode> flatNodes;
 	private List<Row> rows = List.of();
 	private boolean dirty = true;
 
@@ -47,6 +51,8 @@ public final class LibraryTreeModel {
 		children.clear();
 		expanded.clear();
 		loading.clear();
+		flatNodes = null;
+		flatLoading = false;
 		dirty = true;
 	}
 
@@ -101,6 +107,41 @@ public final class LibraryTreeModel {
 		return true;
 	}
 
+	/** Switches between the tree and the flat list of every track; the tree keeps its expanded folders. */
+	public void setFlat(boolean flat) {
+		if (flat != this.flat) {
+			this.flat = flat;
+			dirty = true;
+		}
+	}
+
+	public boolean flat() {
+		return flat;
+	}
+
+	/**
+	 * True once when the flat view is on and its list is neither loaded nor loading: the caller then loads it and
+	 * hands it back with {@link #setFlatNodes}.
+	 */
+	public boolean claimFlatLoad() {
+		if (!flat || flatNodes != null || flatLoading) {
+			return false;
+		}
+		flatLoading = true;
+		return true;
+	}
+
+	/** Applies the flat list; false (and nothing changes) when it belongs to an older generation. */
+	public boolean setFlatNodes(int generation, List<SourceNode> nodes) {
+		if (generation != this.generation) {
+			return false;
+		}
+		flatNodes = List.copyOf(nodes);
+		flatLoading = false;
+		dirty = true;
+		return true;
+	}
+
 	/**
 	 * Keeps only the loaded nodes whose name contains {@code filter} (trimmed, case-insensitive), with their
 	 * ancestors. Children loaded under a collapsed folder are searched too; nothing new is loaded.
@@ -117,7 +158,17 @@ public final class LibraryTreeModel {
 	public List<Row> rows() {
 		if (dirty) {
 			List<Row> built = new ArrayList<>();
-			if (loadingRoots) {
+			if (flat) {
+				if (flatNodes == null) {
+					built.add(ROOTS_LOADING);
+				} else {
+					for (SourceNode node : flatNodes) {
+						if (node.name().toLowerCase(Locale.ROOT).contains(filter)) {
+							built.add(new Row(node, 0, false));
+						}
+					}
+				}
+			} else if (loadingRoots) {
 				built.add(ROOTS_LOADING);
 			} else if (filter.isEmpty()) {
 				for (SourceNode root : roots) {

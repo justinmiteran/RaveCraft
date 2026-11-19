@@ -60,4 +60,13 @@ class MusicLibraryTest {
 		}
 		assertEquals(MusicLibrary.MAX_ENTRIES, MusicLibrary.list(big).size());
 	}
+
+	@Test
+	void folderNodesAreTheSubfoldersOnlyByName() throws IOException {
+		Files.createDirectory(dir.resolve("Alpha"));
+		assertEquals(List.of(
+				new SourceNode(dir.resolve("Alpha").toString(), SourceNode.Kind.FOLDER, "Alpha", -1, false),
+				new SourceNode(dir.resolve("zeta").toString(), SourceNode.Kind.FOLDER, "zeta", -1, false)),
+				MusicLibrary.folderNodes(dir));
+	}
 }

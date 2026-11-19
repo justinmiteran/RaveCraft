@@ -204,4 +204,14 @@ class LibraryFoldersTest {
 		assertEquals(List.of(dir.resolve("a"), dir.resolve("a").resolve("b")), folders.foldersToReveal(dir.resolve("a")));
 		assertEquals(List.of(dir, dir.resolve("a"), dir.resolve("a").resolve("b")), folders.foldersToReveal(dir));
 	}
+
+	@Test
+	void aFolderIsCoveredWhenChosenOrInsideAChosenOne() {
+		Path music = Path.of("music").toAbsolutePath();
+		LibraryFolders folders = LibraryFolders.of(List.of(music));
+		assertTrue(folders.covers(music));
+		assertTrue(folders.covers(music.resolve("Chill")));
+		assertFalse(folders.covers(music.getParent()), "a parent can still be added: it replaces its children");
+		assertFalse(folders.covers(Path.of("other").toAbsolutePath()));
+	}
 }

@@ -61,6 +61,20 @@ public final class MusicLibrary {
 		return entries;
 	}
 
+	/** The drives and home folders of {@link #roots()} as folder nodes, for a folder tree. */
+	public static List<SourceNode> rootNodes() {
+		return roots().stream().map(MusicLibrary::folderNode).toList();
+	}
+
+	/** The subfolders of {@code folder} as folder nodes sorted by name, for a folder tree. */
+	public static List<SourceNode> folderNodes(Path folder) throws IOException {
+		return list(folder).stream().filter(LibraryEntry::isBrowsable).map(MusicLibrary::folderNode).toList();
+	}
+
+	private static SourceNode folderNode(LibraryEntry entry) {
+		return new SourceNode(entry.path().toString(), SourceNode.Kind.FOLDER, entry.name(), -1, false);
+	}
+
 	/** The tracks an entry stands for: a track itself, a folder's direct tracks, or a playlist's existing tracks. */
 	public static List<Path> tracksOf(LibraryEntry entry) throws IOException {
 		return switch (entry.kind()) {

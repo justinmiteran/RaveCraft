@@ -46,7 +46,6 @@ public final class LibraryTree extends AbstractWidget {
 	private static final int SCROLLBAR_W = 2;
 	private static final int ADD_W = SpeakerSprites.ICON + 1;
 	private static final int HOVER = 0x30FFFFFF;
-	private static final int ARROW = 0xFF3A3A3A;
 	private static final int SEPARATOR = 0xFF6A6A6A;
 
 	private final MusicSource source;
@@ -345,7 +344,7 @@ public final class LibraryTree extends AbstractWidget {
 			graphics.fill(left, rowY, right, rowY + ROW_H, HOVER);
 		}
 		if (node.kind() == SourceNode.Kind.FOLDER && !missing) {
-			drawArrow(graphics, x + 1, rowY + 3, row.expanded());
+			SpeakerSprites.drawArrow(graphics, x + 1, rowY + 3, row.expanded());
 		}
 		// The flat list has no folders, so no arrow column either.
 		int iconX = model.flat() ? x + 1 : x + ARROW_W;
@@ -437,15 +436,6 @@ public final class LibraryTree extends AbstractWidget {
 	}
 
 	/** A 5 px triangle: pointing right when collapsed, down when expanded. */
-	private static void drawArrow(GuiGraphicsExtractor graphics, int x, int y, boolean expanded) {
-		for (int i = 0; i < 3; i++) {
-			if (expanded) {
-				graphics.fill(x + i, y + 1 + i, x + 5 - i, y + 2 + i, ARROW);
-			} else {
-				graphics.fill(x + 1 + i, y + i, x + 2 + i, y + 5 - i, ARROW);
-			}
-		}
-	}
 
 	private void drawScrollbar(GuiGraphicsExtractor graphics, int rowCount, int mouseX, int mouseY) {
 		if (maxScroll() > 0) {

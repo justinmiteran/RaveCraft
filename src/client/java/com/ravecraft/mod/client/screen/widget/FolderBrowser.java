@@ -1,111 +1,138 @@
 package com.ravecraft.mod.client.screen.widget;
 
 import com.ravecraft.mod.client.library.OffThread;
-import com.ravecraft.mod.core.library.LibraryEntry;
+import com.ravecraft.mod.core.library.LibraryTreeModel;
+import com.ravecraft.mod.core.library.LibraryTreeModel.Row;
 import com.ravecraft.mod.core.library.MusicLibrary;
+import com.ravecraft.mod.core.library.SourceNode;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import org.jspecify.annotations.Nullable;
 
 /**
- * The in-game folder browser, used when the system dialog is unavailable or chosen on purpose. It shows folders
- * only: first the drives and the home folders, then, inside a folder, {@code ..} and its sub-folders sorted by
- * name. Listing runs off the render thread; a result is applied only if the player has not moved on since.
+ * The in-game folder browser, used when the system dialog cannot open: the drives and home folders as an
+ * expandable tree of folders, like the library, with a {@code +} on each folder to add it. A folder already
+ * covered by a chosen one has its {@code +} greyed out. Listing runs off the render thread.
  */
 public final class FolderBrowser extends RowList {
 	private static final int ROW_H = 11;
+	private static final int INDENT = 8;
+	private static final int ARROW_W = 7;
+	private static final int ADD_W = SpeakerSprites.ICON + 1;
 
-	private @Nullable Path current;
-	private List<LibraryEntry> entries = List.of();
-	private boolean loading;
-	private int generation;
+	private final LibraryTreeModel model = new LibraryTreeModel();
+	private final Consumer<Path> onAdd;
+	private Predicate<Path> covered = path -> false;
 
-	public FolderBrowser(int width, int height) {
+	public FolderBrowser(int width, int height, Consumer<Path> onAdd) {
 		super(0, 0, width, height, ROW_H, Component.translatable(SpeakerSprites.KEY + "folders.browser"));
+		this.onAdd = onAdd;
 	}
 
-	/** The folder shown, or null on the list of drives. */
-	public @Nullable Path current() {
-		return current;
+	/** Which folders already are in the library: their {@code +} is greyed out. */
+	public void setCovered(Predicate<Path> covered) {
+		this.covered = covered;
 	}
 
-	/** Shows {@code folder}'s sub-folders, or the drives when it is null. */
-	public void open(@Nullable Path folder) {
-		current = folder;
-		entries = List.of();
-		loading = true;
+	/** Lists the drives and home folders again, everything folded. */
+	public void open() {
+		model.startLoading();
 		resetScroll();
-		int requested = ++generation;
-		OffThread.run(() -> folder == null ? MusicLibrary.roots() : subFolders(folder),
-				list -> show(requested, list), () -> show(requested, List.of()));
+		int generation = model.generation();
+		OffThread.run(MusicLibrary::rootNodes, roots -> model.setRoots(generation, roots),
+				() -> model.setRoots(generation, List.of()));
 	}
 
-	private static List<LibraryEntry> subFolders(Path folder) throws Exception {
-		List<LibraryEntry> folders = new ArrayList<>();
-		for (LibraryEntry entry : MusicLibrary.list(folder)) {
-			if (entry.isBrowsable()) {
-				folders.add(entry);
-			}
-		}
-		return folders;
-	}
-
-	private void show(int requested, List<LibraryEntry> list) {
-		if (requested == generation) {
-			entries = List.copyOf(list);
-			loading = false;
+	private void toggle(SourceNode folder) {
+		if (model.toggle(folder)) {
+			int generation = model.generation();
+			Optional<Path> path = path(folder);
+			OffThread.run(() -> path.isPresent() ? MusicLibrary.folderNodes(path.get()) : List.<SourceNode>of(),
+					nodes -> model.setChildren(generation, folder.id(), nodes),
+					() -> model.setChildren(generation, folder.id(), List.of()));
 		}
 	}
 
-	private boolean hasParentRow() {
-		return current != null;
+	private static Optional<Path> path(SourceNode node) {
+		try {
+			return Optional.of(Path.of(node.id()));
+		} catch (InvalidPathException e) {
+			return Optional.empty();
+		}
+	}
+
+	private boolean addable(SourceNode node) {
+		return path(node).filter(covered.negate()).isPresent();
+	}
+
+	private boolean overAdd(double mouseX) {
+		return mouseX >= rowRight() - ADD_W && mouseX < rowRight();
 	}
 
 	@Override
 	protected int rowCount() {
-		return (hasParentRow() ? 1 : 0) + (loading ? 1 : entries.size());
+		return model.rows().size();
 	}
 
 	@Override
 	protected boolean clickRow(int index, double mouseX) {
-		if (hasParentRow() && index == 0) {
-			open(current.getParent());
-			return true;
-		}
-		if (loading) {
+		Row row = model.rows().get(index);
+		if (row.loading()) {
 			return false;
 		}
-		open(entries.get(index - (hasParentRow() ? 1 : 0)).path());
+		if (overAdd(mouseX)) {
+			if (!addable(row.node())) {
+				return false;
+			}
+			onAdd.accept(path(row.node()).orElseThrow());
+			return true;
+		}
+		toggle(row.node());
 		return true;
-	}
-
-	@Override
-	protected void drawEmpty(GuiGraphicsExtractor graphics, Font font) {
-		// Only the drive list can be empty (a folder always has its ".." row).
 	}
 
 	@Override
 	protected void drawRow(GuiGraphicsExtractor graphics, Font font, int index, int left, int right, int y,
 			boolean hovered, int mouseX, int mouseY) {
-		int iconX = left + 2;
-		int textX = iconX + SpeakerSprites.ICON + 3;
-		boolean parent = hasParentRow() && index == 0;
-		if (!parent && loading) {
-			String text = Component.translatable(SpeakerSprites.KEY + "loading").getString();
-			graphics.text(font, SpeakerSprites.fit(font, text, right - textX), textX, y + 2, SpeakerSprites.MUTED, false);
+		Row row = model.rows().get(index);
+		int x = left + 1 + row.depth() * INDENT;
+		if (row.loading()) {
+			String loading = Component.translatable(SpeakerSprites.KEY + "loading").getString();
+			graphics.text(font, SpeakerSprites.fit(font, loading, right - x - ARROW_W), x + ARROW_W, y + 2,
+					SpeakerSprites.MUTED, false);
 			return;
 		}
+		SourceNode node = row.node();
 		if (hovered) {
 			graphics.fill(left, y, right, y + ROW_H, HOVER);
 		}
+		SpeakerSprites.drawArrow(graphics, x + 1, y + 3, row.expanded());
+		int iconX = x + ARROW_W;
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.FOLDER, iconX, y + 1, SpeakerSprites.ICON,
-				SpeakerSprites.ICON, parent ? 0.5F : 1.0F);
-		String name = parent ? ".." : entries.get(index - (hasParentRow() ? 1 : 0)).name();
-		graphics.text(font, SpeakerSprites.fit(font, name, right - 2 - textX), textX, y + 2, SpeakerSprites.TEXT, true);
+				SpeakerSprites.ICON);
+		int addX = right - ADD_W;
+		boolean addable = addable(node);
+		if (hovered && overAdd(mouseX)) {
+			if (addable) {
+				SpeakerSprites.cellHover(graphics, addX - 1, y, right, y + ROW_H);
+			}
+			Component tip = Component.translatable(SpeakerSprites.KEY + (addable ? "folders.add_this"
+					: "folders.inside_existing"));
+			graphics.setTooltipForNextFrame(font, tip, mouseX, mouseY);
+		} else if (hovered) {
+			graphics.setTooltipForNextFrame(font, Component.literal(node.id()), mouseX, mouseY);
+		}
+		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PLUS, addX, y + 1, SpeakerSprites.ICON,
+				SpeakerSprites.ICON, addable ? 1.0F : 0.3F);
+		int nameX = iconX + SpeakerSprites.ICON + 2;
+		graphics.text(font, SpeakerSprites.fit(font, node.name(), addX - 2 - nameX), nameX, y + 2,
+				SpeakerSprites.TEXT, true);
 	}
 }

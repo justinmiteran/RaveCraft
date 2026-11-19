@@ -70,6 +70,17 @@ public final class SpeakerSprites {
 		return RaveCraft.id("speaker/" + name);
 	}
 
+	/** The 5 px arrow of a folder row in a tree: pointing right when folded, down when open. */
+	public static void drawArrow(GuiGraphicsExtractor graphics, int x, int y, boolean expanded) {
+		for (int i = 0; i < 3; i++) {
+			if (expanded) {
+				graphics.fill(x + i, y + 1 + i, x + 5 - i, y + 2 + i, 0xFF3A3A3A);
+			} else {
+				graphics.fill(x + 1 + i, y + i, x + 2 + i, y + 5 - i, 0xFF3A3A3A);
+			}
+		}
+	}
+
 	/**
 	 * The hover of a small button inside a list row (add, remove): brighter than the row's own hover, with a light
 	 * outline, so it stands out over a hovered row.

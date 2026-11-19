@@ -81,6 +81,17 @@ public final class LibraryFolders {
 						new LibraryFolders(paths, added));
 	}
 
+	/** True when {@code folder} is a chosen folder or lies inside one, so adding it would change nothing. */
+	public boolean covers(Path folder) {
+		Path at = folder.toAbsolutePath().normalize();
+		for (Path chosen : paths) {
+			if (at.startsWith(chosen)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public boolean isExcluded(Path folder) {
 		return excluded.contains(folder.toAbsolutePath().normalize());
 	}

@@ -55,7 +55,6 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 	private final FolderBrowser browser;
 	private final Button addButton;
 	private final Button cancelButton;
-	private final Button addThisButton;
 	private final Button doneButton;
 	private Mode mode = Mode.ACTIONS;
 	private int left;
@@ -89,10 +88,10 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 				setMessage(null, false);
 			}
 		});
-		browser = new FolderBrowser(INNER_W, BUTTON_Y - 4 - BROWSER_Y);
+		browser = new FolderBrowser(INNER_W, BUTTON_Y - 4 - BROWSER_Y, this::add);
+		browser.setCovered(folder -> LibraryFoldersStore.get().covers(folder));
 		addButton = Button.builder(text("add"), b -> pickWithDialog()).size(ACTION_W, BUTTON_H).build();
 		cancelButton = Button.builder(text("cancel"), b -> cancelPick()).size(ACTION_W / 2, BUTTON_H).build();
-		addThisButton = Button.builder(text("add_this"), b -> addCurrent()).size(ACTION_W - 20, BUTTON_H).build();
 		doneButton = Button.builder(text("done"), b -> parent.closeFolders()).size(DONE_W, BUTTON_H).build();
 		tree.setFolders(LibraryFoldersStore.get());
 	}
@@ -112,7 +111,6 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 		int areaMid = top + (areaY() + BUTTON_Y - 4) / 2;
 		addButton.setPosition(left + (WIDTH - ACTION_W) / 2, areaMid - BUTTON_H / 2);
 		cancelButton.setPosition(left + (WIDTH - ACTION_W / 2) / 2, areaMid + 6);
-		addThisButton.setPosition(left + 7, top + BUTTON_Y);
 		doneButton.setPosition(left + WIDTH - 7 - DONE_W, top + BUTTON_Y);
 	}
 
@@ -145,7 +143,6 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 			case WAITING -> widgets.add(cancelButton);
 			case BROWSER -> {
 				widgets.add(browser);
-				widgets.add(addThisButton);
 			}
 		}
 		widgets.add(doneButton);
@@ -190,14 +187,7 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 	private void openBrowser() {
 		setMode(Mode.BROWSER);
 		setMessage(null, false);
-		browser.open(browser.current());
-	}
-
-	private void addCurrent() {
-		Path folder = browser.current();
-		if (folder != null) {
-			add(folder);
-		}
+		browser.open();
 	}
 
 	private void add(Path folder) {
@@ -283,36 +273,12 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 			graphics.textWithWordWrap(font, text("waiting"), left + 12, top + areaY() + 10, WIDTH - 24,
 					SpeakerSprites.LABEL, false);
 		} else if (mode == Mode.BROWSER) {
-			Path current = browser.current();
-			String where = current == null ? text("drives").getString()
-					: text("add_to", breadcrumb(font, current, INNER_W - font.width(text("add_to", "").getString())))
-					.getString();
-			graphics.text(font, SpeakerSprites.fit(font, where, INNER_W), left + 8, top + areaY(), SpeakerSprites.LABEL,
-					false);
-			addThisButton.active = current != null;
+			graphics.text(font, SpeakerSprites.fit(font, text("drives").getString(), INNER_W), left + 8, top + areaY(),
+					SpeakerSprites.LABEL, false);
 		}
 		for (GuiEventListener child : children()) {
 			((AbstractWidget) child).extractRenderState(graphics, mouseX, mouseY, a);
 		}
 	}
 
-	/** {@code C: > Users > Alex}, dropping the leading folders ({@code … >}) when it is wider than {@code maxWidth}. */
-	private static String breadcrumb(Font font, Path path, int maxWidth) {
-		List<String> parts = new ArrayList<>();
-		Path root = path.getRoot();
-		if (root != null) {
-			String drive = root.toString().replaceAll("[\\\\/]+$", "");
-			parts.add(drive.isEmpty() ? root.toString() : drive);
-		}
-		for (Path name : path) {
-			parts.add(name.toString());
-		}
-		String separator = " > ";
-		String text = String.join(separator, parts);
-		while (font.width(text) > maxWidth && parts.size() > 1) {
-			parts.remove(0);
-			text = "…" + separator + String.join(separator, parts);
-		}
-		return text;
-	}
 }

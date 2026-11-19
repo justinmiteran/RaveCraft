@@ -28,7 +28,6 @@ public final class FolderTree extends RowList {
 	private static final int ARROW_W = 7;
 	private static final int ACTION_W = SpeakerSprites.ICON + 2;
 	private static final int MARK_W = SpeakerSprites.ICON + 2;
-	private static final int ARROW = 0xFF3A3A3A;
 
 	public interface Actions {
 		void remove(Path chosen);
@@ -188,7 +187,7 @@ public final class FolderTree extends RowList {
 			graphics.fill(left, y, right, y + ROW_H, HOVER);
 		}
 		if (!grey) {
-			drawArrow(graphics, x + 1, y + 3, row.expanded());
+			SpeakerSprites.drawArrow(graphics, x + 1, y + 3, row.expanded());
 		}
 		int iconX = x + ARROW_W;
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.FOLDER, iconX, y + 1, SpeakerSprites.ICON,
@@ -244,13 +243,4 @@ public final class FolderTree extends RowList {
 	}
 
 	/** A 5 px triangle: pointing right when collapsed, down when expanded. */
-	private static void drawArrow(GuiGraphicsExtractor graphics, int x, int y, boolean expanded) {
-		for (int i = 0; i < 3; i++) {
-			if (expanded) {
-				graphics.fill(x + i, y + 1 + i, x + 5 - i, y + 2 + i, ARROW);
-			} else {
-				graphics.fill(x + 1 + i, y + i, x + 2 + i, y + 5 - i, ARROW);
-			}
-		}
-	}
 }

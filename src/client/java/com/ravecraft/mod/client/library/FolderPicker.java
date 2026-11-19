@@ -41,11 +41,20 @@ public final class FolderPicker {
 		WindowsFolderDialog.coolDown();
 	}
 
+	/**
+	 * For testing the fallbacks: {@code -Dravecraft.folderDialog=builtin} reports the system dialog unavailable, so
+	 * the in-game browser opens; {@code classic} skips the modern Windows dialog for tinyfd's.
+	 */
+	private static final String FORCED = System.getProperty("ravecraft.folderDialog", "");
+
 	/** Opens the dialog on {@code start}, or on the user's home folder when it is null. */
 	public static CompletableFuture<PickResult> pick(String title, @Nullable Path start) {
+		if (FORCED.equals("builtin")) {
+			return CompletableFuture.completedFuture(new PickResult.Unavailable("forced by -Dravecraft.folderDialog"));
+		}
 		String defaultPath = start != null ? start.toString() : System.getProperty("user.home");
 		return DIALOG.run(() -> {
-			if (WindowsFolderDialog.supported()) {
+			if (WindowsFolderDialog.supported() && !FORCED.equals("classic")) {
 				try {
 					return WindowsFolderDialog.pick(title, defaultPath)
 							.<PickResult>map(PickResult.Chosen::new)

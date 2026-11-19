@@ -50,6 +50,12 @@ fabricApi {
 // Write GameTest results as JUnit XML next to the JUnit ones, so CI can report both.
 loom {
 	runs {
+		client {
+			// ./gradlew runClient -PfolderDialog=builtin (or classic) tests the folder dialog fallbacks.
+			if (project.hasProperty("folderDialog")) {
+				property("ravecraft.folderDialog", project.property("folderDialog").toString())
+			}
+		}
 		gameTest {
 			property("fabric-api.gametest.report-file", file("build/test-results/gameTest/TEST-gametest.xml").absolutePath)
 		}

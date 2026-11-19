@@ -14,6 +14,7 @@ import net.minecraft.resources.Identifier;
  * button (play/pause) fills the vanilla frame with copper while active.
  */
 public final class IconButton extends AbstractButton {
+	private static final int COPPER_DULL = 0xFF8A7666;
 	private final Runnable onPress;
 	private Identifier icon;
 	private Component label;
@@ -65,6 +66,10 @@ public final class IconButton extends AbstractButton {
 			graphics.fill(x + 1, y + 1, x + 2, bottom, SpeakerSprites.COPPER_LIGHT);
 			graphics.fill(x + 1, bottom - 1, right, bottom, SpeakerSprites.COPPER_DARK);
 			graphics.fill(right - 1, y + 1, right, bottom, SpeakerSprites.COPPER_DARK);
+		}
+		if (copper && !active) {
+			// Dull copper: the dark play/pause glyph, drawn for copper, would vanish on the disabled grey.
+			graphics.fill(x + 1, y + 1, right, bottom, COPPER_DULL);
 		}
 		int iconX = x + (width - SpeakerSprites.ICON) / 2;
 		int iconY = y + (height - SpeakerSprites.ICON) / 2;

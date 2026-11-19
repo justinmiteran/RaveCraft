@@ -13,6 +13,8 @@ import com.ravecraft.mod.client.screen.widget.SpeakerSprites;
 import com.ravecraft.mod.core.library.LocalFolderSource;
 import com.ravecraft.mod.core.library.MusicSource;
 import com.ravecraft.mod.core.library.UnavailableSource;
+import com.ravecraft.mod.core.speaker.SpeakerLayout;
+import com.ravecraft.mod.core.speaker.SpeakerLayout.Rect;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload;
 import com.ravecraft.mod.network.payload.SpeakerWatchPayload;
@@ -40,23 +42,18 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The speaker's screen, a vanilla-style window: the player band on the speaker's fabric, the controls, the library
- * on the left (source tabs, search and tree) and the shared queue on the right. It watches the speaker's state while
- * open and closes when the speaker is gone.
+ * on the left (source tabs, search and tree) and the shared queue on the right. Its size follows the screen's (see
+ * {@link SpeakerLayout}). It watches the speaker's state while open and closes when the speaker is gone.
  */
 public final class SpeakerScreen extends Screen {
-	public static final int WIDTH = 256;
-	public static final int HEIGHT = 216;
-	private static final int PANEL_Y = 98;
-	private static final int PANEL_W = 116;
-	private static final int PANEL_H = 96;
-	private static final int QUEUE_X = WIDTH - 7 - PANEL_W;
-	private static final int BOTTOM_Y = 198;
 	private static final int BOTTOM_H = 14;
+	private static final int BAND_Y = 17;
+	private static final int CONTROLS_Y = 65;
 	private static final int SEARCH_H = 12;
-	private static final int TREE_Y = PANEL_Y + SEARCH_H + 2;
 	private static final int CHOOSE_H = 14;
 
 	private final BlockPos pos;
+	private SpeakerLayout layout = SpeakerLayout.of(0, 0);
 	private int left;
 	private int top;
 	private ControlRow controls;
@@ -93,17 +90,20 @@ public final class SpeakerScreen extends Screen {
 
 	@Override
 	protected void init() {
-		left = (width - WIDTH) / 2;
-		top = (height - HEIGHT) / 2;
-		addRenderableWidget(new PlayerBand(left + 7, top + 17, WIDTH - 14, pos));
-		controls = new ControlRow(left, top + 65, pos, this::addRenderableWidget);
+		layout = SpeakerLayout.of(width, height);
+		left = (width - layout.width()) / 2;
+		top = (height - layout.height()) / 2;
+		addRenderableWidget(new PlayerBand(left + 7, top + BAND_Y, layout.bandWidth(), pos));
+		controls = new ControlRow(left, top + CONTROLS_Y, layout.controlsWidth(), pos, this::addRenderableWidget);
 		initLibrary();
-		queue = addRenderableWidget(new QueuePanel(left + QUEUE_X, top + PANEL_Y, PANEL_W, PANEL_H, pos));
+		Rect q = layout.queue();
+		queue = addRenderableWidget(new QueuePanel(left + q.x(), top + q.y(), q.w(), q.h(), pos));
+		int buttonW = (q.w() - 4) / 2;
 		clearButton = addRenderableWidget(Button.builder(Component.translatable(SpeakerSprites.KEY + "clear"),
 						b -> SpeakerStates.send(pos, Command.CLEAR, Optional.empty()))
-				.bounds(left + QUEUE_X, top + BOTTOM_Y, 56, BOTTOM_H).build());
+				.bounds(left + q.x(), top + layout.buttonsY(), buttonW, BOTTOM_H).build());
 		addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-				.bounds(left + QUEUE_X + PANEL_W - 56, top + BOTTOM_Y, 56, BOTTOM_H).build());
+				.bounds(left + q.x() + q.w() - buttonW, top + layout.buttonsY(), buttonW, BOTTOM_H).build());
 		shownState = null;
 		if (folders != null) {
 			folders.layout(width, height);
@@ -122,21 +122,25 @@ public final class SpeakerScreen extends Screen {
 		List<MusicSource> sources = List.of(new LocalFolderSource(() -> LibraryFoldersStore.get().paths(),
 				() -> LibraryFoldersStore.get().excluded()),
 				new UnavailableSource("usb"), new UnavailableSource("stream"));
-		addRenderableWidget(new SourceTabs(left, top + PANEL_Y, sources, 0));
-		search = addRenderableWidget(new EditBox(font, left + 7, top + PANEL_Y, PANEL_W - 2 * SEARCH_H - 4, SEARCH_H,
+		Rect lib = layout.library();
+		int libX = left + lib.x();
+		int libY = top + lib.y();
+		int treeY = libY + SEARCH_H + 2;
+		addRenderableWidget(new SourceTabs(left, libY, sources, 0));
+		search = addRenderableWidget(new EditBox(font, libX, libY, lib.w() - 2 * SEARCH_H - 4, SEARCH_H,
 				Component.translatable(SpeakerSprites.KEY + "search")));
 		search.setHint(Component.translatable(SpeakerSprites.KEY + "search"));
 		search.setValue(filter);
 		if (library != null) {
 			library.close(); // the screen is being rebuilt (resize)
 		}
-		library = addRenderableWidget(new LibraryTree(left + 7, top + TREE_Y, PANEL_W, PANEL_H - (TREE_Y - PANEL_Y),
-				sources.get(0), pos));
+		library = addRenderableWidget(new LibraryTree(libX, treeY, lib.w(), lib.h() - (treeY - libY), sources.get(0),
+				pos));
 		library.setFilter(filter);
 		library.setFlat(flatView);
-		addRenderableWidget(new IconButton(left + 7 + PANEL_W - 2 * SEARCH_H - 2, top + PANEL_Y, SEARCH_H,
+		addRenderableWidget(new IconButton(libX + lib.w() - 2 * SEARCH_H - 2, libY, SEARCH_H,
 				SpeakerSprites.REFRESH, Component.translatable(SpeakerSprites.KEY + "refresh"), this::reloadLibrary));
-		viewButton = addRenderableWidget(new IconButton(left + 7 + PANEL_W - SEARCH_H, top + PANEL_Y, SEARCH_H,
+		viewButton = addRenderableWidget(new IconButton(libX + lib.w() - SEARCH_H, libY, SEARCH_H,
 				viewIcon(), viewLabel(), this::toggleView));
 		search.setResponder(text -> {
 			filter = text;
@@ -144,10 +148,10 @@ public final class SpeakerScreen extends Screen {
 		});
 		chooseButton = addRenderableWidget(Button.builder(Component.translatable(SpeakerSprites.KEY + "choose_folder"),
 						b -> openFolders())
-				.bounds(left + 13, top + TREE_Y + 20, PANEL_W - 12, CHOOSE_H).build());
+				.bounds(libX + 6, treeY + 20, lib.w() - 12, CHOOSE_H).build());
 		chooseButton.visible = false;
 		addRenderableWidget(Button.builder(Component.translatable(SpeakerSprites.KEY + "folders"), b -> openFolders())
-				.bounds(left + 7, top + BOTTOM_Y, PANEL_W, BOTTOM_H).build());
+				.bounds(libX, top + layout.buttonsY(), lib.w(), BOTTOM_H).build());
 	}
 
 	/** The view button shows the current view: the tree or the flat list. */
@@ -189,7 +193,8 @@ public final class SpeakerScreen extends Screen {
 
 	/** The library column (search field and tree), in screen coordinates. */
 	public ScreenRectangle libraryArea() {
-		return new ScreenRectangle(left + 7, top + PANEL_Y, PANEL_W, PANEL_H);
+		Rect lib = layout.library();
+		return new ScreenRectangle(left + lib.x(), top + lib.y(), lib.w(), lib.h());
 	}
 
 	@Override
@@ -297,7 +302,8 @@ public final class SpeakerScreen extends Screen {
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 		super.extractBackground(graphics, mouseX, mouseY, a);
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.WINDOW, left, top, WIDTH, HEIGHT);
+		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.WINDOW, left, top, layout.width(),
+				layout.height());
 	}
 
 	@Override
@@ -305,11 +311,14 @@ public final class SpeakerScreen extends Screen {
 		// Under the popup, nothing is hovered.
 		int screenX = folders != null ? -1 : mouseX;
 		int screenY = folders != null ? -1 : mouseY;
-		graphics.text(font, SpeakerSprites.fit(font, title.getString(), WIDTH - 16), left + 8, top + 6, SpeakerSprites.LABEL, false);
-		graphics.text(font, Component.translatable(SpeakerSprites.KEY + "library"), left + 8, top + PANEL_Y - 10,
+		Rect lib = layout.library();
+		Rect q = layout.queue();
+		graphics.text(font, SpeakerSprites.fit(font, title.getString(), layout.titleWidth()), left + 8, top + 6,
 				SpeakerSprites.LABEL, false);
-		graphics.text(font, Component.translatable(SpeakerSprites.KEY + "queue"), left + QUEUE_X + 1, top + PANEL_Y - 10,
-				SpeakerSprites.LABEL, false);
+		graphics.text(font, Component.translatable(SpeakerSprites.KEY + "library"), left + lib.x() + 1,
+				top + lib.y() - 10, SpeakerSprites.LABEL, false);
+		graphics.text(font, Component.translatable(SpeakerSprites.KEY + "queue"), left + q.x() + 1,
+				top + layout.queueLabelY(), SpeakerSprites.LABEL, false);
 		super.extractRenderState(graphics, screenX, screenY, a);
 		if (folders != null) {
 			folders.extract(graphics, mouseX, mouseY, a);

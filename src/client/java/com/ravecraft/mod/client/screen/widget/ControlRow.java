@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The player's controls under the band: shuffle, previous, play/pause (copper), next and repeat; volume −, slider
- * and +; then power. Positions are relative to the window's top-left corner.
+ * and +; then power at the row's right end, the slider taking the room in between.
  */
 public final class ControlRow {
 	private static final String KEY = SpeakerSprites.KEY;
@@ -32,8 +32,11 @@ public final class ControlRow {
 	private @Nullable SpeakerStatePayload state;
 	private boolean powered;
 
-	/** Creates the controls with the row's top at {@code (left + 7, top)} and hands each one to {@code add}. */
-	public ControlRow(int left, int top, BlockPos pos, Consumer<AbstractWidget> add) {
+	/**
+	 * Creates the controls with the row's top at {@code (left + 7, top)}, power ending 7 px before
+	 * {@code left + width}, and hands each one to {@code add}.
+	 */
+	public ControlRow(int left, int top, int width, BlockPos pos, Consumer<AbstractWidget> add) {
 		this.pos = pos;
 		int smallY = top + (BUTTON - SMALL) / 2;
 		shuffle = new IconButton(left + 7, top, BUTTON, SpeakerSprites.SHUFFLE, label("shuffle.off"), this::toggleShuffle);
@@ -42,8 +45,8 @@ public final class ControlRow {
 		next = new IconButton(left + 73, top, BUTTON, SpeakerSprites.NEXT, label("next"), () -> send(Command.NEXT));
 		repeat = new IconButton(left + 95, top, BUTTON, SpeakerSprites.REPEAT_ALL, label("repeat.all"), this::cycleRepeat);
 		// The speaker icon sits in the slider's left margin; the track fills the rest up to the power button.
-		volume = new VolumeSlider(left + 121, smallY, 104, SMALL, pos);
-		power = new IconButton(left + 229, top, BUTTON, SpeakerSprites.POWER_OFF, label("power.on"), this::togglePower);
+		volume = new VolumeSlider(left + 121, smallY, width - 7 - BUTTON - 4 - 121, SMALL, pos);
+		power = new IconButton(left + width - 7 - BUTTON, top, BUTTON, SpeakerSprites.POWER_OFF, label("power.on"), this::togglePower);
 		for (AbstractWidget widget : new AbstractWidget[] {shuffle, previous, play, next, repeat, volume, power}) {
 			add.accept(widget);
 		}

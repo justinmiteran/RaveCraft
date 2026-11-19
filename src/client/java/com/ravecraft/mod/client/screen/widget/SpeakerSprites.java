@@ -31,6 +31,13 @@ public final class SpeakerSprites {
 	public static final Identifier REMOVE = sprite("remove");
 	public static final Identifier LED_ON = sprite("led_on");
 	public static final Identifier LED_OFF = sprite("led_off");
+	public static final Identifier FOLDER = sprite("folder");
+	public static final Identifier PLAYLIST = sprite("playlist");
+	public static final Identifier TRACK = sprite("track");
+	public static final Identifier PC = sprite("pc");
+	public static final Identifier USB = sprite("usb");
+	public static final Identifier STREAM = sprite("stream");
+	public static final Identifier LOCK = sprite("lock");
 
 	/** Size of the square icons. */
 	public static final int ICON = 9;

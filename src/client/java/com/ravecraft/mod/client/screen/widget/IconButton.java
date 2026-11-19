@@ -71,9 +71,9 @@ public final class IconButton extends AbstractButton {
 			// Dull copper: the dark play/pause glyph, drawn for copper, would vanish on the disabled grey.
 			graphics.fill(x + 1, y + 1, right, bottom, COPPER_DULL);
 		}
-		// Centred on the face: inside the 1 px frame, above the vanilla sprite's 2 px bottom shadow.
-		int iconX = x + 1 + (width - 2 - SpeakerSprites.ICON) / 2;
-		int iconY = y + 1 + (height - 4 - SpeakerSprites.ICON) / 2;
+		// Centred on the whole button, frame and bottom shadow included, as vanilla centres its icons.
+		int iconX = x + (width - SpeakerSprites.ICON) / 2;
+		int iconY = y + (height - SpeakerSprites.ICON) / 2;
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, icon, iconX, iconY, SpeakerSprites.ICON, SpeakerSprites.ICON,
 				active ? 1.0F : 0.4F);
 	}

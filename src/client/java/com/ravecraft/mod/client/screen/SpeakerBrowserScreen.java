@@ -5,7 +5,6 @@ import com.ravecraft.mod.client.audio.LocalPlayback;
 import com.ravecraft.mod.core.library.LibraryEntry;
 import com.ravecraft.mod.core.library.LibraryEntry.Kind;
 import com.ravecraft.mod.core.library.MusicLibrary;
-import com.ravecraft.mod.network.payload.SpeakerCommandPayload;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload.StateEntry;
@@ -273,9 +272,7 @@ public final class SpeakerBrowserScreen extends Screen {
 	}
 
 	private void send(Command command, @Nullable UUID entryId) {
-		if (ClientPlayNetworking.canSend(SpeakerCommandPayload.TYPE)) {
-			ClientPlayNetworking.send(new SpeakerCommandPayload(pos, command, Optional.ofNullable(entryId)));
-		}
+		SpeakerStates.send(pos, command, Optional.ofNullable(entryId));
 	}
 
 	/** Runs file access on the IO pool and applies the result only while this screen is still open. */

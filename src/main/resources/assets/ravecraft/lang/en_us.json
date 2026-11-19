@@ -67,6 +67,7 @@
   "tooltip.ravecraft.speaker.directivity.directional": "directional",
   "screen.ravecraft.speaker.folders.title": "Music folders",
   "screen.ravecraft.speaker.folders.add": "Add a folder…",
+  "screen.ravecraft.speaker.folders.browser": "Built-in browser",
   "screen.ravecraft.speaker.folders.cancel": "Cancel",
   "screen.ravecraft.speaker.folders.add_this": "Add this folder",
   "screen.ravecraft.speaker.folders.done": "Done",

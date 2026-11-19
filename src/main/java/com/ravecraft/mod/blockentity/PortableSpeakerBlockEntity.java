@@ -15,6 +15,8 @@ import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.component.DyedItemColor;
@@ -28,10 +30,13 @@ import org.jspecify.annotations.Nullable;
 public class PortableSpeakerBlockEntity extends BlockEntity {
 	public static final String KEY = "speaker";
 	private static final String COLOR_KEY = "color";
+	private static final String NAME_KEY = "CustomName";
 
 	private SpeakerData data = SpeakerData.create();
 	/** Dye applied to the fabric, or null when undyed ({@link PortableSpeakerBlock#DEFAULT_COLOR}). */
 	private @Nullable DyedItemColor color;
+	/** The name given to the item in an anvil, shown as the screen's title; null when unnamed. */
+	private @Nullable Component customName;
 
 	public PortableSpeakerBlockEntity(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.PORTABLE_SPEAKER, pos, state);
@@ -53,6 +58,10 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 	/** RGB colour of the fabric, as tinted by the client. */
 	public int fabricColor() {
 		return color != null ? color.rgb() : PortableSpeakerBlock.DEFAULT_COLOR;
+	}
+
+	public @Nullable Component customName() {
+		return customName;
 	}
 
 	public void setDyedColor(@Nullable DyedItemColor color) {
@@ -90,6 +99,7 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 		// A chunk is saved before its block entities are removed: while playing, save where the track is now.
 		output.store(KEY, SpeakerData.CODEC, level instanceof ServerLevel ? data.withQueue(SpeakerPlayback.liveQueue(this)) : data);
 		output.storeNullable(COLOR_KEY, DyedItemColor.CODEC, color);
+		output.storeNullable(NAME_KEY, ComponentSerialization.CODEC, customName);
 	}
 
 	@Override
@@ -103,6 +113,7 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 		});
 		DyedItemColor previous = color;
 		color = input.read(COLOR_KEY, DyedItemColor.CODEC).orElse(null);
+		customName = parseCustomNameSafe(input, NAME_KEY);
 		// The fabric tint is baked into the chunk mesh: rebuild it when the server sends a new colour.
 		if (level != null && level.isClientSide() && !Objects.equals(previous, color)) {
 			level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_IMMEDIATE);
@@ -117,6 +128,7 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 			data = fromItem;
 		}
 		color = components.get(DataComponents.DYED_COLOR);
+		customName = components.get(DataComponents.CUSTOM_NAME);
 	}
 
 	@Override
@@ -127,12 +139,16 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 		if (color != null) {
 			components.set(DataComponents.DYED_COLOR, color);
 		}
+		if (customName != null) {
+			components.set(DataComponents.CUSTOM_NAME, customName);
+		}
 	}
 
 	@Override
 	public void removeComponentsFromTag(ValueOutput output) {
 		output.discard(KEY);
 		output.discard(COLOR_KEY);
+		output.discard(NAME_KEY);
 	}
 
 	/** The client needs the colour to tint the fabric. */

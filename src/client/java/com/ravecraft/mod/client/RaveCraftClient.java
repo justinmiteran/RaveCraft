@@ -10,7 +10,7 @@ import com.ravecraft.mod.client.audio.LocalPlayback;
 import com.ravecraft.mod.client.audio.stream.ClientRelay;
 import com.ravecraft.mod.client.debug.AcousticDebugEntry;
 import com.ravecraft.mod.client.item.SpeakerPowered;
-import com.ravecraft.mod.client.screen.SpeakerBrowserScreen;
+import com.ravecraft.mod.client.screen.SpeakerScreen;
 import com.ravecraft.mod.registry.ModBlocks;
 import java.util.List;
 import net.fabricmc.api.ClientModInitializer;
@@ -34,7 +34,7 @@ public class RaveCraftClient implements ClientModInitializer {
 			RaveCraft.LOGGER.info("Sound Physics Remastered is loaded: RaveCraft speakers keep their own occlusion");
 		}
 		SpeakerTooltip.register();
-		SpeakerScreenOpener.set(pos -> Minecraft.getInstance().gui.setScreen(new SpeakerBrowserScreen(pos)));
+		SpeakerScreenOpener.set(pos -> Minecraft.getInstance().gui.setScreen(new SpeakerScreen(pos)));
 		BlockColorRegistry.register(List.of(new SpeakerFabricTint()), ModBlocks.PORTABLE_SPEAKER);
 	}
 }

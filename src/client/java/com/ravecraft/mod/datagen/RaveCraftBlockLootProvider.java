@@ -28,6 +28,7 @@ public class RaveCraftBlockLootProvider extends FabricBlockLootSubProvider {
 						.add(LootItem.lootTableItem(ModBlocks.PORTABLE_SPEAKER)
 								.apply(CopyComponentsFunction.copyComponentsFromBlockEntity(LootContextParams.BLOCK_ENTITY)
 										.include(ModDataComponents.SPEAKER)
-										.include(DataComponents.DYED_COLOR))))));
+										.include(DataComponents.DYED_COLOR)
+										.include(DataComponents.CUSTOM_NAME))))));
 	}
 }

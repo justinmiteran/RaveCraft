@@ -202,3 +202,4 @@ Chaque sous-projet aura sa propre spec, son plan et sa réalisation. L'ordre res
 ### Prévu plus tard (décidé pendant le socle audio)
 - Contrôle des appareils par **propriétaire + invités + verrou** (pour l'instant, contrôle ouvert à tous).
 - Recette définitive de l'enceinte portable avec les matériaux du mod (pour l'instant, recette provisoire vanilla).
+- Lecture des **tags** des fichiers (artiste, pochette) et **durées** affichées dans la bibliothèque ; à rapprocher des infobulles de l'étape 5b.

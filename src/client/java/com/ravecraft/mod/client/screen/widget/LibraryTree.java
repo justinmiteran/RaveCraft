@@ -11,7 +11,6 @@ import com.ravecraft.mod.core.library.LibraryTreeModel.Row;
 import com.ravecraft.mod.core.library.MusicSource;
 import com.ravecraft.mod.core.library.SourceNode;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
@@ -138,6 +137,12 @@ public final class LibraryTree extends AbstractWidget {
 	/** True once the roots are known and there are none: the screen then offers to choose a folder. */
 	public boolean isEmptyLibrary() {
 		return model.isEmpty();
+	}
+
+	/** An empty library lets clicks through to the screen's {@code Choose a folder…} button drawn over it. */
+	@Override
+	public boolean isMouseOver(double mouseX, double mouseY) {
+		return !model.isEmpty() && super.isMouseOver(mouseX, mouseY);
 	}
 
 	private void toggle(SourceNode folder) {

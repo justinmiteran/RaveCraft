@@ -103,6 +103,18 @@ class FlatScanTest {
 	}
 
 	@Test
+	void aPageEndsOnlyWhenItFoundEnoughEntriesNotAfterManyFolders() throws IOException {
+		for (int i = 0; i < 5; i++) {
+			Files.createDirectory(dir.resolve("empty" + i));
+		}
+		Files.createFile(Files.createDirectory(dir.resolve("z")).resolve("z1.mp3"));
+		FlatScan scan = new FlatScan(List.of(dir), 2);
+		List<SourceNode> found = new ArrayList<>();
+		assertFalse(scan.run(found::addAll, 64), "walking many empty folders does not end the page");
+		assertEquals(List.of("z1"), names(found));
+	}
+
+	@Test
 	void stopsWhenCancelled() throws IOException {
 		for (String folder : List.of("a", "b")) {
 			Files.createFile(Files.createDirectory(dir.resolve(folder)).resolve(folder + ".mp3"));

@@ -1,13 +1,16 @@
 package com.ravecraft.mod.client.library;
 
+import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.core.library.SingleFlight;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.Nullable;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 /**
- * Opens the operating system's native folder dialog off the render thread.
+ * Opens the operating system's native folder dialog off the render thread: on Windows the modern Explorer-style
+ * one (see {@link WindowsFolderDialog}), elsewhere or when it fails the one tinyfd offers.
  *
  * <p>At most one dialog is open at a time: a call while one is still up returns the pending future, which
  * completes when that dialog closes. There is no timeout, since a dialog cannot be closed from here. Callers must
@@ -32,6 +35,18 @@ public final class FolderPicker {
 	public static CompletableFuture<PickResult> pick(String title, @Nullable Path start) {
 		String defaultPath = start != null ? start.toString() : System.getProperty("user.home");
 		return DIALOG.run(() -> {
+			if (WindowsFolderDialog.supported()) {
+				try {
+					return WindowsFolderDialog.pick(title, defaultPath)
+							.<PickResult>map(PickResult.Chosen::new)
+							.orElseGet(PickResult.Cancelled::new);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return new PickResult.Cancelled();
+				} catch (IOException | RuntimeException e) {
+					RaveCraft.LOGGER.warn("Modern folder dialog unavailable, using the classic one", e);
+				}
+			}
 			String chosen = TinyFileDialogs.tinyfd_selectFolderDialog(title, defaultPath);
 			return chosen == null ? new PickResult.Cancelled() : new PickResult.Chosen(Path.of(chosen));
 		}, FolderPicker::unavailable, task -> {

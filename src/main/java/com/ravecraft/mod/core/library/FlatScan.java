@@ -22,7 +22,7 @@ import java.util.function.Consumer;
  * {@link #nextPage} is called between runs, never during one.
  */
 public final class FlatScan {
-	/** A page stops once it found this many entries or walked this many folders. */
+	/** A page stops once it found this many tracks and playlists, however many folders that takes. */
 	public static final int PAGE = MusicLibrary.MAX_ENTRIES;
 	/** Folder names (lower case) not entered on the way down: system, program and tool folders. */
 	public static final Set<String> EXCLUDED = Set.of(
@@ -39,7 +39,6 @@ public final class FlatScan {
 	private final Set<Path> hidden = new HashSet<>();
 	private final int page;
 	private int found;
-	private int walked;
 	private volatile boolean cancelled;
 
 	public FlatScan(List<Path> roots) {
@@ -71,12 +70,11 @@ public final class FlatScan {
 	public boolean run(Consumer<List<SourceNode>> sink, int batchSize) {
 		List<SourceNode> batch = new ArrayList<>();
 		long lastFlush = System.nanoTime();
-		while (!cancelled && !pending.isEmpty() && found < page && walked < page) {
+		while (!cancelled && !pending.isEmpty() && found < page) {
 			Path folder = pending.poll();
 			if (!Files.isDirectory(folder) || !seen.add(realPath(folder))) {
 				continue;
 			}
-			walked++;
 			List<LibraryEntry> entries;
 			try {
 				entries = MusicLibrary.list(folder);
@@ -115,7 +113,6 @@ public final class FlatScan {
 	/** Opens the next page after {@link #run} returned true. */
 	public void nextPage() {
 		found = 0;
-		walked = 0;
 	}
 
 	public void cancel() {

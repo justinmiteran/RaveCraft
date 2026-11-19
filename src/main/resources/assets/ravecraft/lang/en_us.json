@@ -15,6 +15,7 @@
   "screen.ravecraft.speaker.shuffle.on": "Shuffle: on",
   "screen.ravecraft.speaker.previous": "Previous",
   "screen.ravecraft.speaker.play": "Play",
+  "screen.ravecraft.speaker.play.off": "The speaker is off: turn it on with the power button on the right",
   "screen.ravecraft.speaker.pause": "Pause",
   "screen.ravecraft.speaker.next": "Next",
   "screen.ravecraft.speaker.repeat.off": "Repeat: off",

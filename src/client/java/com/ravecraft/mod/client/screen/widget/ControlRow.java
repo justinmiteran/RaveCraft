@@ -59,23 +59,26 @@ public final class ControlRow {
 		this.state = state;
 		this.powered = powered;
 		boolean known = state != null;
+		// Off, only the volume and the power button work; play explains why it does nothing.
+		boolean on = known && powered;
 		boolean queued = known && !state.entries().isEmpty();
 		boolean playing = known && state.playing();
 
 		boolean shuffled = known && state.shuffle();
 		shuffle.show(shuffled ? SpeakerSprites.SHUFFLE_ON : SpeakerSprites.SHUFFLE, label(shuffled ? "shuffle.on" : "shuffle.off"));
-		shuffle.active = known;
-		previous.active = queued;
-		play.show(playing ? SpeakerSprites.PAUSE : SpeakerSprites.PLAY, label(playing ? "pause" : "play"));
-		play.active = queued && (playing || powered);
-		next.active = known && state.current().isPresent();
+		shuffle.active = on;
+		previous.active = on && queued;
+		play.show(playing ? SpeakerSprites.PAUSE : SpeakerSprites.PLAY,
+				label(known && !powered ? "play.off" : playing ? "pause" : "play"));
+		play.active = on && queued;
+		next.active = on && state.current().isPresent();
 		RepeatMode mode = known ? state.repeat() : RepeatMode.OFF;
 		repeat.show(switch (mode) {
 			case OFF -> SpeakerSprites.REPEAT_OFF;
 			case ALL -> SpeakerSprites.REPEAT_ALL;
 			case ONE -> SpeakerSprites.REPEAT_ONE;
 		}, label("repeat." + mode.name().toLowerCase(Locale.ROOT)));
-		repeat.active = known;
+		repeat.active = on;
 		volume.active = known;
 		if (known) {
 			volume.sync(state.volume());

@@ -241,11 +241,22 @@ class SpeakerQueueTest {
 		SpeakerQueue q = SpeakerQueue.EMPTY.add(l).withCurrent(l.get(1).entryId(), 700).withShuffle(true, rng);
 		assertEquals(Optional.of(l.get(1).entryId()), q.current());
 		assertEquals(700, q.positionMs());
-		assertEquals(3, q.pending().size());
+		assertEquals(2, q.pending().size());
 		assertFalse(q.pending().contains(l.get(1).entryId()));
 		SpeakerQueue off = q.withShuffle(false, rng);
 		assertEquals(Optional.of(l.get(1).entryId()), off.current());
 		assertTrue(off.pending().isEmpty());
+	}
+
+	@Test
+	void turningShuffleOnMixesOnlyWhatIsStillToPlay() {
+		Random rng = new Random(42);
+		List<QueueEntry> l = entries(5);
+		SpeakerQueue q = at(l, l.get(2), RepeatMode.ALL).withShuffle(true, rng);
+		assertEquals(Set.of(l.get(3).entryId(), l.get(4).entryId()), Set.copyOf(q.pending()),
+				"the tracks before the current one already played this round");
+		assertEquals(List.of(l.get(0), l.get(1)), q.displayOrder().subList(3, 5), "they stay after the next round mark");
+		assertEquals(3, q.nextRoundIndex());
 	}
 
 	@Test
@@ -318,8 +329,9 @@ class SpeakerQueueTest {
 		Random rng = new Random(42);
 		QueueEntry off = entry("off", OFF);
 		List<QueueEntry> l = new ArrayList<>(entries(3));
-		l.add(off);
+		l.add(0, off); // current first, so the other three are still to play
 		SpeakerQueue q = SpeakerQueue.EMPTY.add(l).withCurrent(off.entryId(), 0).withShuffle(true, rng);
+		assertEquals(3, q.pending().size());
 		assertEquals(q.entry(q.pending().get(0)), q.nextPlayable(ONLINE, rng));
 	}
 

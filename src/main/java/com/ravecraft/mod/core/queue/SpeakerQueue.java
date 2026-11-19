@@ -133,10 +133,22 @@ public record SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, lon
 		return new SpeakerQueue(entries, current, positionMs, mode, shuffle, pending);
 	}
 
-	/** Turning shuffle on draws a round of everything but the current entry; turning it off drops the round. */
+	/**
+	 * Turning shuffle on mixes only what is still to play this round (the entries after the current one): those
+	 * already played stay played. Turning it on again keeps the round; turning it off drops it.
+	 */
 	public SpeakerQueue withShuffle(boolean on, RandomGenerator rng) {
-		List<UUID> newPending = on ? shuffledIdsExcept(current.orElse(null), rng) : List.of();
-		return new SpeakerQueue(entries, current, positionMs, repeat, on, newPending);
+		if (on == shuffle) {
+			return this;
+		}
+		List<UUID> newPending = new ArrayList<>();
+		if (on) {
+			for (QueueEntry e : upcoming()) {
+				newPending.add(e.entryId());
+			}
+			Collections.shuffle(newPending, rng);
+		}
+		return new SpeakerQueue(entries, current, positionMs, repeat, on, List.copyOf(newPending));
 	}
 
 	/** The current entry, then what plays next, then (repeat all only) the entries already played this round. */

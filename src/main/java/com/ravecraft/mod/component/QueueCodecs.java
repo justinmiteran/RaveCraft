@@ -26,7 +26,8 @@ public final class QueueCodecs {
 	public static final Codec<RepeatMode> REPEAT = Codec.STRING.xmap(
 			QueueCodecs::repeatFromName, mode -> mode.name().toLowerCase(Locale.ROOT));
 
-	private static final StreamCodec<ByteBuf, RepeatMode> REPEAT_STREAM = ByteBufCodecs.VAR_INT.map(
+	/** VAR_INT ordinal on the wire; an out-of-range value reads as {@link RepeatMode#ALL}. */
+	public static final StreamCodec<ByteBuf, RepeatMode> REPEAT_STREAM = ByteBufCodecs.VAR_INT.map(
 			QueueCodecs::repeatFromIndex, RepeatMode::ordinal);
 
 	public static final Codec<SpeakerQueue> QUEUE = RecordCodecBuilder.create(instance -> instance.group(

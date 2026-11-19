@@ -5,7 +5,9 @@ import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
 import com.ravecraft.mod.core.audio.stream.SessionTable.Session;
 import com.ravecraft.mod.core.queue.PlaybackClock;
 import com.ravecraft.mod.core.queue.QueueEntry;
+import com.ravecraft.mod.core.queue.RepeatMode;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
+import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import com.ravecraft.mod.network.Net;
 import com.ravecraft.mod.network.payload.QueueAddPayload.NewEntry;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
@@ -96,6 +98,8 @@ public final class SpeakerPlayback {
 			case CLEAR -> {
 				stop(be);
 				update(be, SpeakerQueue.EMPTY);
+			}
+			default -> {
 			}
 		}
 	}
@@ -216,16 +220,19 @@ public final class SpeakerPlayback {
 	/** What watchers of the speaker at {@code pos} see. */
 	public static SpeakerStatePayload stateOf(ServerLevel level, BlockPos pos) {
 		if (!(level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity be)) {
-			return new SpeakerStatePayload(pos, false, Optional.empty(), 0, List.of());
+			return new SpeakerStatePayload(pos, false, Optional.empty(), 0, List.of(), RepeatMode.ALL, false,
+					SpeakerSettings.DEFAULT_VOLUME, false, -1);
 		}
 		SpeakerQueue queue = liveQueue(be);
 		MinecraftServer server = level.getServer();
 		List<StateEntry> entries = new ArrayList<>();
-		for (QueueEntry entry : queue.entries()) {
+		for (QueueEntry entry : queue.displayOrder()) {
 			boolean online = server.getPlayerList().getPlayer(entry.owner()) != null;
-			entries.add(new StateEntry(entry.entryId(), entry.ownerName(), entry.title(), online));
+			entries.add(new StateEntry(entry.entryId(), entry.ownerName(), entry.title(), online, entry.durationMs()));
 		}
-		return new SpeakerStatePayload(pos, isPlaying(be), queue.current(), queue.positionMs(), entries);
+		return new SpeakerStatePayload(pos, isPlaying(be), queue.current(), queue.positionMs(), entries,
+				queue.repeat(), queue.shuffle(), be.data().settings().volume(), be.data().settings().powered(),
+				queue.nextRoundIndex());
 	}
 
 	// --- Internals ---------------------------------------------------------------------------------------------

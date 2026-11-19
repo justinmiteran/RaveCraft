@@ -2,7 +2,7 @@
 
 > Sous-projet : **Socle audio**, étape 5a, branche `feat/speaker-ui`.
 > Spec parente : [2026-11-17-audio-core-design.md](2026-11-17-audio-core-design.md). Prolonge la file partagée de l'étape 3b ([2026-11-17-shared-queue-design.md](2026-11-17-shared-queue-design.md)).
-> Maquettes de travail (non versionnées) : `art/proposals/speaker_ui_mc_speaker.png` (concept 2), `speaker_ui_library.png` (bibliothèque et popup).
+> Concepts retenus, dans `art/concepts/speaker-ui/` : `1-window-style.png` (concept 2, style de la fenêtre), `2-source-tabs.png` (variante C, onglets de source sur le côté), `3-library-and-folders.png` (arborescence des dossiers choisis et popup P2). Ce sont des maquettes : les textes et icônes définitifs viennent du rendu en jeu.
 
 ## 1. Objectif
 

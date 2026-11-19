@@ -7,6 +7,7 @@ import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.registry.ModBlockEntities;
 import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.world.audio.SpeakerPlayback;
+import com.ravecraft.mod.world.audio.SpeakerWatchers;
 import java.util.Objects;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponentGetter;
@@ -51,6 +52,17 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 		setChanged();
 	}
 
+	/**
+	 * Sets the volume and sends it to everyone tracking the chunk: listeners read it from their own copy of the
+	 * block entity (gain and range). Unlike queue changes, which only go to the screen's watchers.
+	 */
+	public void setVolume(int volume) {
+		setData(data.withSettings(data.settings().withVolume(volume)));
+		if (level != null && !level.isClientSide()) {
+			level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+		}
+	}
+
 	public @Nullable DyedItemColor dyedColor() {
 		return color;
 	}
@@ -79,8 +91,12 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 			level.setBlock(worldPosition, getBlockState().setValue(PortableSpeakerBlock.POWERED, data.settings().powered()), 3);
 		}
 		setChanged();
-		if (!data.settings().powered() && level instanceof ServerLevel) {
-			SpeakerPlayback.pauseAt(this);
+		if (level instanceof ServerLevel serverLevel) {
+			if (!data.settings().powered()) {
+				SpeakerPlayback.pauseAt(this);
+			}
+			// Open screens show the power state, whoever toggled it (the POWER command or a sneak-click).
+			SpeakerWatchers.markDirty(serverLevel, worldPosition);
 		}
 	}
 

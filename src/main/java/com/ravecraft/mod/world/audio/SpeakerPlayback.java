@@ -120,7 +120,7 @@ public final class SpeakerPlayback {
 			case SEEK -> seek(be, value);
 			case VOLUME -> {
 				int volume = Math.clamp(value, SpeakerSettings.MIN_VOLUME, SpeakerSettings.MAX_VOLUME);
-				be.setData(be.data().withSettings(be.data().settings().withVolume(volume)));
+				be.setVolume(volume);
 				markDirty(be);
 			}
 			case POWER -> {

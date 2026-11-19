@@ -16,12 +16,15 @@ import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.network.SpeakerNetwork;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
 import com.ravecraft.mod.world.audio.SpeakerPlayback;
+import com.ravecraft.mod.world.audio.SpeakerWatchers;
 import java.util.Optional;
 import java.util.UUID;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
 
 public class SpeakerPlayerGameTest {
 	private static void command(ServerPlayer player, BlockPos pos, Command command, long value) {
@@ -166,6 +169,44 @@ public class SpeakerPlayerGameTest {
 		command(player, pos, Command.VOLUME, 42);
 		h.assertValueEqual(be(h).data().settings().volume(), 42, "set");
 		finish(h, pos, player);
+	}
+
+	@GameTest
+	public void volumeChangeIsSentToClients(GameTestHelper h) {
+		BlockPos pos = poweredSpeaker(h);
+		ServerPlayer player = online(h, 2);
+		ChunkHolder holder = h.getLevel().getChunkSource().chunkMap.getUpdatingChunkIfPresent(ChunkPos.pack(pos));
+		h.assertTrue(holder != null, "chunk holder");
+		holder.broadcastChanges(h.getLevel().getChunkAt(pos));
+		h.assertFalse(holder.hasChangesToBroadcast(), "nothing pending before the command");
+		command(player, pos, Command.VOLUME, 42);
+		h.assertTrue(holder.hasChangesToBroadcast(), "the block entity update is queued for the clients");
+		finish(h, pos, player);
+	}
+
+	@GameTest
+	public void queueUpdatesDoNotResendTheBlockEntity(GameTestHelper h) {
+		BlockPos pos = poweredSpeaker(h);
+		ServerPlayer player = online(h, 2);
+		ChunkHolder holder = h.getLevel().getChunkSource().chunkMap.getUpdatingChunkIfPresent(ChunkPos.pack(pos));
+		holder.broadcastChanges(h.getLevel().getChunkAt(pos));
+		SpeakerPlayback.add(player, pos, newEntries(1));
+		h.assertFalse(holder.hasChangesToBroadcast(), "queue changes only go to the watchers");
+		finish(h, pos, player);
+	}
+
+	@GameTest
+	public void sneakTogglingPowerRefreshesWatchers(GameTestHelper h) {
+		BlockPos pos = poweredSpeaker(h);
+		ServerPlayer watcher = online(h, 2);
+		SpeakerWatchers.watch(watcher, pos, true);
+		SpeakerWatchers.flush(h.getLevel().getServer());
+		h.assertFalse(SpeakerWatchers.isDirty(h.getLevel(), pos), "clean after the flush");
+		be(h).togglePower();
+		h.assertTrue(SpeakerWatchers.isDirty(h.getLevel(), pos), "power toggled while paused marks the screen stale");
+		SpeakerWatchers.flush(h.getLevel().getServer());
+		SpeakerWatchers.watch(watcher, pos, false);
+		finish(h, pos, watcher);
 	}
 
 	@GameTest

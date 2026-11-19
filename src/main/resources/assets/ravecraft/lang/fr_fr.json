@@ -30,7 +30,16 @@
   "options.ravecraft.occlusionQuality.medium": "Moyenne",
   "options.ravecraft.occlusionQuality.high": "Haute",
   "options.ravecraft.occlusionQuality.tooltip": "Effort consacré à trouver comment le son contourne les murs. Baissez-la si les FPS chutent près de nombreuses enceintes.",
-  "tooltip.ravecraft.speaker.specs": "%s W · %s dB (1 W, 1 m)",
-  "tooltip.ravecraft.speaker.range": "Portée : %s blocs à %s %% de volume",
-  "debug.options.category.ravecraft": "RaveCraft"
+  "debug.options.category.ravecraft": "RaveCraft",
+  "tooltip.ravecraft.speaker.base": "%s W · portée %s blocs · %s",
+  "tooltip.ravecraft.speaker.base_short": "%s W · %s",
+  "tooltip.ravecraft.speaker.sensitivity": "Sensibilité : %s dB",
+  "tooltip.ravecraft.speaker.bass_cut": "Basses : %s dB sous %s Hz",
+  "tooltip.ravecraft.speaker.volume_range": "Volume enregistré : %s %% → portée %s blocs",
+  "tooltip.ravecraft.speaker.now_playing": "En cours : %s",
+  "tooltip.ravecraft.speaker.queue": "%s morceaux en file",
+  "tooltip.ravecraft.speaker.queue.one": "1 morceau en file",
+  "tooltip.ravecraft.speaker.shift_hint": "Maj : plus d'infos",
+  "tooltip.ravecraft.speaker.directivity.omni": "omnidirectionnelle",
+  "tooltip.ravecraft.speaker.directivity.directional": "directionnelle"
 }

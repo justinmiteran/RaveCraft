@@ -30,7 +30,16 @@
   "options.ravecraft.occlusionQuality.medium": "Medium",
   "options.ravecraft.occlusionQuality.high": "High",
   "options.ravecraft.occlusionQuality.tooltip": "How much work is spent finding how sound gets around walls. Lower it if your frame rate drops near many speakers.",
-  "tooltip.ravecraft.speaker.specs": "%s W · %s dB (1 W, 1 m)",
-  "tooltip.ravecraft.speaker.range": "Range: %s blocks at %s%% volume",
-  "debug.options.category.ravecraft": "RaveCraft"
+  "debug.options.category.ravecraft": "RaveCraft",
+  "tooltip.ravecraft.speaker.base": "%s W · range %s blocks · %s",
+  "tooltip.ravecraft.speaker.base_short": "%s W · %s",
+  "tooltip.ravecraft.speaker.sensitivity": "Sensitivity: %s dB",
+  "tooltip.ravecraft.speaker.bass_cut": "Bass: %s dB below %s Hz",
+  "tooltip.ravecraft.speaker.volume_range": "Saved volume: %s%% → range %s blocks",
+  "tooltip.ravecraft.speaker.now_playing": "Now playing: %s",
+  "tooltip.ravecraft.speaker.queue": "%s tracks queued",
+  "tooltip.ravecraft.speaker.queue.one": "1 track queued",
+  "tooltip.ravecraft.speaker.shift_hint": "Shift: more info",
+  "tooltip.ravecraft.speaker.directivity.omni": "omnidirectional",
+  "tooltip.ravecraft.speaker.directivity.directional": "directional"
 }

@@ -71,6 +71,7 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 	public FoldersPopup(SpeakerScreen parent, Runnable onChanged) {
 		this.parent = parent;
 		this.onChanged = onChanged;
+		FolderPicker.warmUp();
 		tree = new FolderTree(INNER_W, LIST_H, new FolderTree.Actions() {
 			@Override
 			public void remove(Path chosen) {
@@ -122,6 +123,7 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 		closed = true;
 		pickRequest++;
 		tree.close();
+		FolderPicker.coolDown();
 	}
 
 	private int listHeight() {

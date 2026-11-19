@@ -31,6 +31,16 @@ public final class FolderPicker {
 
 	private FolderPicker() {}
 
+	/** Gets the dialog ready in the background so the next {@link #pick} opens it at once (Windows only). */
+	public static void warmUp() {
+		WindowsFolderDialog.warmUp();
+	}
+
+	/** Lets go of what {@link #warmUp} prepared. */
+	public static void coolDown() {
+		WindowsFolderDialog.coolDown();
+	}
+
 	/** Opens the dialog on {@code start}, or on the user's home folder when it is null. */
 	public static CompletableFuture<PickResult> pick(String title, @Nullable Path start) {
 		String defaultPath = start != null ? start.toString() : System.getProperty("user.home");
@@ -40,9 +50,6 @@ public final class FolderPicker {
 					return WindowsFolderDialog.pick(title, defaultPath)
 							.<PickResult>map(PickResult.Chosen::new)
 							.orElseGet(PickResult.Cancelled::new);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					return new PickResult.Cancelled();
 				} catch (IOException | RuntimeException e) {
 					RaveCraft.LOGGER.warn("Modern folder dialog unavailable, using the classic one", e);
 				}

@@ -1,9 +1,12 @@
 # Opens the modern Windows folder dialog (IFileOpenDialog with FOS_PICKFOLDERS), which follows the system theme.
-# Input: RAVECRAFT_DIALOG_TITLE and RAVECRAFT_DIALOG_START environment variables (passed this way to avoid quoting).
-# Output: the chosen folder on stdout (UTF-8) and exit code 0; exit code 1 when cancelled; anything else is a failure.
+# Started ahead of time so a click opens the dialog at once: it compiles the interop below, then serves requests on
+# stdin until stdin closes. A request is two lines, the title and the start folder (possibly empty); the answer is
+# one line on stdout: "1" followed by the chosen folder, or "0" when cancelled. A failure ends the process.
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$utf8 = New-Object System.Text.UTF8Encoding $false
+[Console]::InputEncoding = $utf8
+[Console]::OutputEncoding = $utf8
 Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
@@ -89,12 +92,17 @@ public static class RaveCraftFolderDialog {
 	}
 }
 '@
-if ($env:RAVECRAFT_DIALOG_COMPILE_ONLY) {
-	exit 0
+while ($true) {
+	$title = [Console]::In.ReadLine()
+	$start = [Console]::In.ReadLine()
+	if ($null -eq $title -or $null -eq $start) {
+		exit 0
+	}
+	$chosen = [RaveCraftFolderDialog]::Pick($title, $start)
+	if ($null -eq $chosen) {
+		[Console]::Out.WriteLine('0')
+	} else {
+		[Console]::Out.WriteLine('1' + $chosen)
+	}
+	[Console]::Out.Flush()
 }
-$chosen = [RaveCraftFolderDialog]::Pick($env:RAVECRAFT_DIALOG_TITLE, $env:RAVECRAFT_DIALOG_START)
-if ($null -eq $chosen) {
-	exit 1
-}
-[Console]::Out.Write($chosen)
-exit 0

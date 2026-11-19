@@ -37,5 +37,12 @@
   "debug.ravecraft.sound_view.none": "Vue sonore : désactivée",
   "debug.ravecraft.sound_view.paths": "Vue sonore : chemins",
   "debug.ravecraft.sound_view.rooms": "Vue sonore : pièces",
-  "debug.ravecraft.sound_view.all": "Vue sonore : chemins et pièces"
+  "debug.ravecraft.sound_view.all": "Vue sonore : chemins et pièces",
+  "debug.ravecraft.sound_view.source": "S%s −%s dB (aigus −%s)",
+  "debug.ravecraft.sound_view.source_mute": "S%s muet",
+  "debug.ravecraft.sound_view.room": "ouvert %s %% | parcours %s | absorption %s | irrégulier %s",
+  "debug.ravecraft.sound_view.reverb": "RT60 %s s | écho %s s (gain %s)",
+  "debug.ravecraft.sound_view.reverb_no_echo": "RT60 %s s | écho : aucun",
+  "debug.ravecraft.sound_view.fluid": "dans %s (préréglage)",
+  "debug.ravecraft.sound_view.slot": "S%s · RT60 %s s"
 }

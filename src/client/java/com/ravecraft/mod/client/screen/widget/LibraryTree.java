@@ -2,10 +2,12 @@ package com.ravecraft.mod.client.screen.widget;
 
 import com.ravecraft.mod.client.audio.LocalPlayback;
 import com.ravecraft.mod.client.library.OffThread;
+import com.ravecraft.mod.client.screen.SpeakerStates;
 import com.ravecraft.mod.core.library.LibraryTreeModel;
 import com.ravecraft.mod.core.library.LibraryTreeModel.Row;
 import com.ravecraft.mod.core.library.MusicSource;
 import com.ravecraft.mod.core.library.SourceNode;
+import com.ravecraft.mod.core.queue.SpeakerQueue;
 import java.nio.file.Path;
 import java.util.List;
 import net.minecraft.client.Minecraft;
@@ -77,11 +79,22 @@ public final class LibraryTree extends AbstractWidget {
 
 	private void add(SourceNode node) {
 		OffThread.run(() -> source.tracksOf(node), tracks -> {
-			if (!tracks.isEmpty()) {
-				LocalPlayback.add(pos, tracks);
+			// Cap to the room left now, so no entry is registered for an id the server would drop.
+			int room = Math.min(tracks.size(), SpeakerQueue.roomLeft(queued()));
+			if (room > 0) {
+				LocalPlayback.add(pos, tracks.subList(0, room));
 			}
 		}, () -> {
 		});
+	}
+
+	/** Entries in the queue as last reported by the server. */
+	private int queued() {
+		return SpeakerStates.get(pos).map(state -> state.entries().size()).orElse(0);
+	}
+
+	private boolean full() {
+		return SpeakerQueue.roomLeft(queued()) == 0;
 	}
 
 	// --- Layout -----------------------------------------------------------------------------------------------
@@ -144,6 +157,9 @@ public final class LibraryTree extends AbstractWidget {
 		}
 		SourceNode node = row.node();
 		if (overAdd(event.x())) {
+			if (full()) {
+				return true;
+			}
 			playDownSound(Minecraft.getInstance().getSoundManager());
 			add(node);
 			return true;
@@ -228,10 +244,13 @@ public final class LibraryTree extends AbstractWidget {
 			boolean overAdd = hovered && overAdd(mouseX);
 			if (overAdd) {
 				graphics.fill(addX, rowY + 1, right - 1, rowY + ROW_H - 1, HOVER);
-				graphics.setTooltipForNextFrame(font, Component.translatable(SpeakerSprites.KEY + "add"), mouseX, mouseY);
+				Component tip = full()
+						? Component.translatable(SpeakerSprites.KEY + "queue_full", SpeakerQueue.MAX_ENTRIES)
+						: Component.translatable(SpeakerSprites.KEY + "add");
+				graphics.setTooltipForNextFrame(font, tip, mouseX, mouseY);
 			}
 			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PLUS, addX, rowY + 1, SpeakerSprites.ICON,
-					SpeakerSprites.ICON);
+					SpeakerSprites.ICON, full() ? 0.4F : 1.0F);
 			end = addX - 2;
 			if (node.kind() == SourceNode.Kind.FOLDER && node.trackCount() >= 0) {
 				String count = Integer.toString(node.trackCount());

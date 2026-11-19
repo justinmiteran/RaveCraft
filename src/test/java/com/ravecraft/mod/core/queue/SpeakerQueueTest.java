@@ -359,4 +359,12 @@ class SpeakerQueueTest {
 				List.of(cur, l.get(1).entryId(), l.get(2).entryId()));
 		assertEquals(List.of(l.get(1).entryId(), l.get(2).entryId()), q.pending());
 	}
+
+	@Test
+	void roomLeftIsTheCapMinusTheSize() {
+		assertEquals(SpeakerQueue.MAX_ENTRIES, SpeakerQueue.roomLeft(0));
+		assertEquals(1, SpeakerQueue.roomLeft(SpeakerQueue.MAX_ENTRIES - 1));
+		assertEquals(0, SpeakerQueue.roomLeft(SpeakerQueue.MAX_ENTRIES));
+		assertEquals(0, SpeakerQueue.roomLeft(SpeakerQueue.MAX_ENTRIES + 5));
+	}
 }

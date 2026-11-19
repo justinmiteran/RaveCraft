@@ -33,6 +33,7 @@
   "screen.ravecraft.speaker.no_folders": "No folder chosen",
   "screen.ravecraft.speaker.search": "Search…",
   "screen.ravecraft.speaker.add": "Add to queue",
+  "screen.ravecraft.speaker.queue_full": "Queue full (%s)",
   "screen.ravecraft.speaker.source.local": "My PC",
   "screen.ravecraft.speaker.source.usb": "USB stick",
   "screen.ravecraft.speaker.source.stream": "Streaming",

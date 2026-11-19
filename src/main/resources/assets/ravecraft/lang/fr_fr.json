@@ -33,6 +33,7 @@
   "screen.ravecraft.speaker.no_folders": "Aucun dossier choisi",
   "screen.ravecraft.speaker.search": "Rechercher…",
   "screen.ravecraft.speaker.add": "Ajouter à la file",
+  "screen.ravecraft.speaker.queue_full": "File pleine (%s)",
   "screen.ravecraft.speaker.source.local": "Mon PC",
   "screen.ravecraft.speaker.source.usb": "Clé USB",
   "screen.ravecraft.speaker.source.stream": "Streaming",

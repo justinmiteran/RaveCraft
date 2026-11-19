@@ -43,6 +43,11 @@ public record SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, lon
 		this(entries, current, positionMs, RepeatMode.ALL, false, List.of());
 	}
 
+	/** How many more entries a queue holding {@code size} accepts. */
+	public static int roomLeft(int size) {
+		return Math.max(0, MAX_ENTRIES - size);
+	}
+
 	/** Appends {@code added} in order, skipping ids already queued and anything past {@link #MAX_ENTRIES}. */
 	public SpeakerQueue add(List<QueueEntry> added) {
 		return add(added, new Random(0));

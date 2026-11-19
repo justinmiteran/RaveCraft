@@ -23,18 +23,26 @@ class SpeakerLayoutTest {
 	}
 
 	@Test
-	void aLargeScreenGetsTheWideWindowCappedAt400By300() {
+	void aLargeScreenGetsTheWideWindowCappedAt640By420() {
 		SpeakerLayout layout = SpeakerLayout.of(1270, 670);
 		assertTrue(layout.wide());
-		assertEquals(400, layout.width());
-		assertEquals(300, layout.height());
+		assertEquals(640, layout.width());
+		assertEquals(420, layout.height());
 		// Player and library on the left, the queue on the whole right side.
-		assertEquals(251, layout.bandWidth());
-		assertEquals(265, layout.controlsWidth());
-		assertEquals(new Rect(7, 98, 251, 180), layout.library());
-		assertEquals(new Rect(264, 17, 129, 261), layout.queue());
+		assertEquals(409, layout.bandWidth());
+		assertEquals(423, layout.controlsWidth());
+		assertEquals(new Rect(7, 98, 409, 300), layout.library());
+		assertEquals(new Rect(422, 17, 211, 381), layout.queue());
 		assertEquals(7, layout.queueLabelY());
-		assertEquals(282, layout.buttonsY());
+		assertEquals(402, layout.buttonsY());
+	}
+
+	@Test
+	void aSmallGameWindowIsFilledAllButItsMargins() {
+		// 1146x750 pixels at GUI scale 2: the window used to stop at 400x300.
+		SpeakerLayout layout = SpeakerLayout.of(573, 375);
+		assertEquals(521, layout.width());
+		assertEquals(359, layout.height());
 	}
 
 	@Test

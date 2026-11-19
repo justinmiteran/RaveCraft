@@ -5,7 +5,7 @@ package com.ravecraft.mod.core.speaker;
  * window's top-left corner.
  *
  * <p>On a small screen the window stays compact (256×216): band and controls across the top, library and queue
- * side by side underneath. With room for it the window grows with the screen up to 400×300 and becomes wide: the
+ * side by side underneath. With room for it the window grows with the screen up to 640×420 and becomes wide: the
  * band, the controls and the library share the left column, and the queue runs down the whole right side.
  */
 public record SpeakerLayout(boolean wide, int width, int height, int bandWidth, int controlsWidth, Rect library,
@@ -17,8 +17,8 @@ public record SpeakerLayout(boolean wide, int width, int height, int bandWidth, 
 
 	public static final int MIN_WIDTH = 256;
 	public static final int MIN_HEIGHT = 216;
-	public static final int MAX_WIDTH = 400;
-	public static final int MAX_HEIGHT = 300;
+	public static final int MAX_WIDTH = 640;
+	public static final int MAX_HEIGHT = 420;
 	/** The narrowest wide window: its left column still holds the controls row. */
 	static final int WIDE_MIN_WIDTH = 360;
 	/** Room kept on each side: the source tabs stick out of the window's left edge. */

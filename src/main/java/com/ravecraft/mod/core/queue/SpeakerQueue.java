@@ -228,6 +228,36 @@ public record SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, lon
 		return new SpeakerQueue(list, following, 0, repeat, shuffle, newPending);
 	}
 
+	/**
+	 * Puts an entry at {@code index} of what is still to play this round (0: right after the current entry, or first
+	 * without one), {@code index} clamped. An entry already played this round comes back to play again. With shuffle
+	 * on, only the round's order changes. The current entry or an unknown id leaves the queue unchanged.
+	 */
+	public SpeakerQueue move(UUID entryId, int index) {
+		int from = indexOf(entryId);
+		if (from < 0 || current.map(entryId::equals).orElse(false)) {
+			return this;
+		}
+		if (shuffle) {
+			List<UUID> round = new ArrayList<>(pending);
+			round.remove(entryId);
+			round.add(Math.clamp(index, 0, round.size()), entryId);
+			return new SpeakerQueue(entries, current, positionMs, repeat, shuffle, round);
+		}
+		List<QueueEntry> list = new ArrayList<>(entries);
+		QueueEntry moved = list.remove(from);
+		int start = current.map(id -> {
+			for (int i = 0; i < list.size(); i++) {
+				if (list.get(i).entryId().equals(id)) {
+					return i + 1;
+				}
+			}
+			return 0;
+		}).orElse(0);
+		list.add(start + Math.clamp(index, 0, list.size() - start), moved);
+		return new SpeakerQueue(list, current, positionMs, repeat, shuffle, pending);
+	}
+
 	/** Empties the queue, keeping the repeat and shuffle modes. */
 	public SpeakerQueue clear() {
 		return new SpeakerQueue(List.of(), Optional.empty(), 0, repeat, shuffle, List.of());

@@ -94,8 +94,8 @@ public final class SpeakerPlayback {
 	}
 
 	/**
-	 * Applies a player's command; {@code value} is the argument of SEEK (ms), VOLUME, POWER, REPEAT (mode ordinal)
-	 * and SHUFFLE, validated here. Ignored out of reach.
+	 * Applies a player's command; {@code value} is the argument of SEEK (ms), VOLUME, POWER, REPEAT (mode ordinal),
+	 * SHUFFLE and MOVE (index among what is still to play), validated here. Ignored out of reach.
 	 */
 	public static void command(ServerPlayer player, BlockPos pos, Command command, Optional<UUID> entryId, long value) {
 		PortableSpeakerBlockEntity be = speakerInReach(player, pos);
@@ -139,6 +139,8 @@ public final class SpeakerPlayback {
 					update(be, queueOf(be).withShuffle(value != 0, RNG));
 				}
 			}
+			case MOVE -> entryId.filter(id -> queueOf(be).entry(id).isPresent())
+					.ifPresent(id -> update(be, queueOf(be).move(id, (int) Math.clamp(value, 0, SpeakerQueue.MAX_ENTRIES))));
 		}
 	}
 

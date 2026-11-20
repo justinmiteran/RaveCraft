@@ -12,13 +12,14 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 /**
- * C→S: a player's command on the speaker at {@code pos}; {@code entryId} names the entry to remove, {@code value}
- * carries the argument of SEEK (ms), VOLUME, POWER, REPEAT (mode ordinal) and SHUFFLE.
+ * C→S: a player's command on the speaker at {@code pos}; {@code entryId} names the entry to remove or move, {@code value}
+ * carries the argument of SEEK (ms), VOLUME, POWER, REPEAT (mode ordinal), SHUFFLE and MOVE (target index
+ * among what is still to play).
  */
 public record SpeakerCommandPayload(BlockPos pos, Command command, Optional<UUID> entryId, long value)
 		implements CustomPacketPayload {
 	public enum Command {
-		PLAY, PAUSE, NEXT, REMOVE, CLEAR, PREVIOUS, SEEK, VOLUME, POWER, REPEAT, SHUFFLE;
+		PLAY, PAUSE, NEXT, REMOVE, CLEAR, PREVIOUS, SEEK, VOLUME, POWER, REPEAT, SHUFFLE, MOVE;
 
 		private static final Command[] VALUES = values();
 		public static final StreamCodec<ByteBuf, Command> CODEC = ByteBufCodecs.idMapper(Command::byId, Command::ordinal);

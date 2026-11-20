@@ -87,10 +87,12 @@ public final class StreamSessions {
 	public static void clear() {
 		TABLE.endAll();
 		ENTRIES.clear();
+		NowPlaying.clear();
 	}
 
 	/** Tells the players tracking the speaker that the session is over, and its owner to stop when asked to. */
 	private static void notifyEnded(MinecraftServer server, Session<SpeakerKey> session, boolean tellOwner, boolean drain) {
+		NowPlaying.end(session.id());
 		UUID entryId = ENTRIES.remove(session.id());
 		if (tellOwner && entryId != null) {
 			ServerPlayer owner = server.getPlayerList().getPlayer(session.owner());

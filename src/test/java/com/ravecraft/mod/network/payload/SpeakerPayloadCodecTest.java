@@ -67,4 +67,10 @@ class SpeakerPayloadCodecTest {
 		StreamStartedPayload payload = new StreamStartedPayload(12, 215_000L);
 		assertEquals(payload, roundTrip(StreamStartedPayload.CODEC, payload));
 	}
+
+	@Test
+	void nowPlayingRoundTrips() {
+		NowPlayingPayload payload = new NowPlayingPayload(7, POS, UUID.randomUUID(), "Artist — Title", "Steve");
+		assertEquals(payload, roundTrip(NowPlayingPayload.CODEC, payload));
+	}
 }

@@ -12,6 +12,7 @@ import com.ravecraft.mod.network.payload.StreamClosePayload;
 import com.ravecraft.mod.network.payload.StreamOrderPayload;
 import com.ravecraft.mod.network.payload.StreamResultPayload;
 import com.ravecraft.mod.network.payload.StreamStartedPayload;
+import com.ravecraft.mod.network.payload.NowPlayingPayload;
 import com.ravecraft.mod.network.payload.TrackRemovedPayload;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 
@@ -33,6 +34,7 @@ public final class ModPayloads {
 		PayloadTypeRegistry.clientboundPlay().register(SessionEndPayload.TYPE, SessionEndPayload.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(SpeakerStatePayload.TYPE, SpeakerStatePayload.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(TrackRemovedPayload.TYPE, TrackRemovedPayload.CODEC);
+		PayloadTypeRegistry.clientboundPlay().register(NowPlayingPayload.TYPE, NowPlayingPayload.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(AcousticSettingsPayload.TYPE, AcousticSettingsPayload.CODEC);
 	}
 }

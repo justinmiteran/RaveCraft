@@ -2,9 +2,12 @@ package com.ravecraft.mod.client.audio.render;
 
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.client.audio.occlusion.WorldAcousticGrid;
+import com.ravecraft.mod.client.debug.SoundViewEntries;
 import com.ravecraft.mod.client.options.OcclusionQuality;
 import com.ravecraft.mod.client.options.RaveCraftOptions;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
+import com.ravecraft.mod.core.acoustics.debug.view.RoomView;
+import com.ravecraft.mod.core.acoustics.debug.view.Vec;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.TraceBudget;
 import com.ravecraft.mod.core.acoustics.reverb.Echo;
@@ -71,6 +74,8 @@ public final class ReverbScheduler {
 	private static boolean listenerRunning;
 	/** Whether a listener measure was ever started on this grid: if not, one starts at once. */
 	private static boolean listenerStarted;
+	/** Whether the sound view's rooms layer was on last tick. */
+	private static boolean roomsShown;
 	private static double listenerX;
 	private static double listenerY;
 	private static double listenerZ;
@@ -88,6 +93,8 @@ public final class ReverbScheduler {
 	private static final RoomProbe[] SLOT_PROBES = new RoomProbe[SpaceSlots.SLOTS];
 	private static final boolean[] SLOT_RUNNING = new boolean[SpaceSlots.SLOTS];
 	private static final long[] SLOT_START_TICK = new long[SpaceSlots.SLOTS];
+	/** Where each slot's probe started (the speaker's centre), for the sound view. */
+	private static final double[][] SLOT_ORIGINS = new double[SpaceSlots.SLOTS][3];
 	private static final ReverbParams[] SLOT_PARAMS = {ReverbParams.SILENT, ReverbParams.SILENT};
 	private static Integer[] slotSessions = new Integer[SpaceSlots.SLOTS];
 
@@ -130,6 +137,19 @@ public final class ReverbScheduler {
 		ReverbSettings reverb = settings.reverb();
 		ClientLevel level = minecraft.level;
 		WorldAcousticGrid grid = OcclusionScheduler.grid();
+		boolean showRooms = level != null && SoundViewEntries.mode().rooms();
+		if (!showRooms) {
+			SoundViewSnapshots.clearRooms();
+		} else if (!roomsShown) {
+			// The layer just turned on: measure every space now rather than when each is next due (up to 5 s).
+			listenerStarted = false;
+			for (int i = 0; i < SpaceSlots.SLOTS; i++) {
+				if (!SLOT_RUNNING[i]) {
+					SLOT_START_TICK[i] = tick - SPEAKER_PERIOD;
+				}
+			}
+		}
+		roomsShown = showRooms;
 		if (level == null || grid == null || grid.level() != level || !reverb.enabled()
 				|| !RaveCraftOptions.acousticEffects().get()) {
 			silence();
@@ -170,11 +190,18 @@ public final class ReverbScheduler {
 			}
 			targetL = headFluidParams;
 			echo = Echo.NONE;
+			if (showRooms) {
+				SoundViewSnapshots.listenerRoom(RoomView.fluid(new Vec(ear.x, ear.y, ear.z), fluid.medium()));
+			}
 			AcousticRenderer.headChorus(fluid);
 			// Out of the fluid, the space around is measured again at once.
 			listenerRunning = false;
 			listenerStarted = false;
 		} else {
+			if (headFluid != null && showRooms) {
+				// The fluid's view goes; the room shows again once the new measure ends.
+				SoundViewSnapshots.listenerRoom(null);
+			}
 			headFluid = null;
 			AcousticRenderer.headChorus(null);
 			RoomProbe probe = Objects.requireNonNull(listenerProbe);
@@ -192,6 +219,10 @@ public final class ReverbScheduler {
 				listenerShape = RoomShape.of(probe.hits(), rayLength);
 				listenerParams = ReverbParams.of(listenerShape, reverb);
 				listenerEcho = EchoFinder.find(probe.hits(), reverb.echo());
+				if (showRooms) {
+					SoundViewSnapshots.listenerRoom(RoomView.of(new Vec(listenerX, listenerY, listenerZ), probe.hits(),
+							reverb));
+				}
 			}
 			targetL = listenerParams;
 			echo = listenerEcho;
@@ -227,14 +258,20 @@ public final class ReverbScheduler {
 			if (session == null) {
 				SLOT_RUNNING[i] = false;
 				SLOT_PARAMS[i] = ReverbParams.SILENT;
+				if (showRooms) {
+					SoundViewSnapshots.slotRoom(i, null);
+				}
 				continue;
 			}
 			// A speaker entering the slot is measured at once, even if the previous one's probe was running; the
 			// slot keeps its last value until the probe ends.
 			if (entered || (!SLOT_RUNNING[i] && tick - SLOT_START_TICK[i] >= SPEAKER_PERIOD)) {
 				RenderStream stream = Objects.requireNonNull(BY_ID.get(session));
-				SLOT_PROBES[i].start(stream.pos.getX() + 0.5, stream.pos.getY() + 0.5, stream.pos.getZ() + 0.5, rays,
-						rayLength);
+				double[] origin = SLOT_ORIGINS[i];
+				origin[0] = stream.pos.getX() + 0.5;
+				origin[1] = stream.pos.getY() + 0.5;
+				origin[2] = stream.pos.getZ() + 0.5;
+				SLOT_PROBES[i].start(origin[0], origin[1], origin[2], rays, rayLength);
 				SLOT_START_TICK[i] = tick;
 				SLOT_RUNNING[i] = true;
 			}
@@ -244,6 +281,11 @@ public final class ReverbScheduler {
 			if (SLOT_RUNNING[i] && SLOT_PROBES[i].run(budget)) {
 				SLOT_RUNNING[i] = false;
 				SLOT_PARAMS[i] = ReverbParams.of(RoomShape.of(SLOT_PROBES[i].hits(), rayLength), reverb);
+				if (showRooms) {
+					double[] origin = SLOT_ORIGINS[i];
+					SoundViewSnapshots.slotRoom(i, RoomView.of(new Vec(origin[0], origin[1], origin[2]),
+							SLOT_PROBES[i].hits(), reverb));
+				}
 			}
 		}
 
@@ -302,6 +344,7 @@ public final class ReverbScheduler {
 	/** No world, no grid or reverb off: every space silent, no echo, no chorus, every stream on the listener slot. */
 	private static void silence() {
 		lastVoxels = 0;
+		SoundViewSnapshots.clearRooms();
 		probedGrid = null;
 		measured = null;
 		listenerProbe = null;

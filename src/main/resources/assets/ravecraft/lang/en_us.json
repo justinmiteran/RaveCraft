@@ -88,5 +88,19 @@
   "screen.ravecraft.speaker.folders.inside_excluded": "Already inside an excluded folder",
   "screen.ravecraft.speaker.folders.exclude_hint": "Hide from the library",
   "screen.ravecraft.speaker.folders.reveal": "Holds an excluded folder: click to show it",
-  "screen.ravecraft.speaker.folders.hint": "Hover a sub-folder to exclude it."
+  "screen.ravecraft.speaker.folders.hint": "Hover a sub-folder to exclude it.",
+  "key.ravecraft.debug.soundView": "Cycle sound view",
+  "debug.ravecraft.sound_view.none": "Sound view: off",
+  "debug.ravecraft.sound_view.paths": "Sound view: paths",
+  "debug.ravecraft.sound_view.rooms": "Sound view: rooms",
+  "debug.ravecraft.sound_view.all": "Sound view: paths and rooms",
+  "debug.ravecraft.sound_view.source": "S%s −%s dB (treble −%s)",
+  "debug.ravecraft.sound_view.source_mute": "S%s mute",
+  "debug.ravecraft.sound_view.room": "open %s %% | path %s | absorption %s | irregular %s",
+  "debug.ravecraft.sound_view.reverb": "RT60 %s s | echo %s s (gain %s)",
+  "debug.ravecraft.sound_view.reverb_no_echo": "RT60 %s s | echo: none",
+  "debug.ravecraft.sound_view.fluid": "in %s (preset)",
+  "debug.ravecraft.sound_view.slot": "S%s · RT60 %s s",
+  "debug.ravecraft.sound_view.measuring": "Measuring the room…",
+  "debug.ravecraft.sound_view.slots": "Speakers in another room: %s"
 }

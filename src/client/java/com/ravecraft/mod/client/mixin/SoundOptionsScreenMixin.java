@@ -23,6 +23,7 @@ abstract class SoundOptionsScreenMixin extends OptionsSubScreen {
 		if (this.list != null) {
 			this.list.addSmall(RaveCraftOptions.volume(), RaveCraftOptions.maxSources());
 			this.list.addSmall(RaveCraftOptions.acousticEffects(), RaveCraftOptions.occlusionQuality());
+			this.list.addSmall(RaveCraftOptions.notifications());
 		}
 	}
 }

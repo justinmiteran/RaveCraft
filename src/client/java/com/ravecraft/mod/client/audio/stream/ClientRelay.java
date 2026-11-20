@@ -1,6 +1,7 @@
 package com.ravecraft.mod.client.audio.stream;
 
 import com.ravecraft.mod.client.audio.LocalPlayback;
+import com.ravecraft.mod.client.options.RaveCraftOptions;
 import com.ravecraft.mod.client.screen.SpeakerStates;
 import com.ravecraft.mod.network.payload.RelayedChunkPayload;
 import com.ravecraft.mod.network.payload.SessionEndPayload;
@@ -27,9 +28,12 @@ public final class ClientRelay {
 		ClientPlayNetworking.registerGlobalReceiver(StreamOrderPayload.TYPE,
 				(payload, context) -> LocalPlayback.onOrder(payload));
 		ClientPlayNetworking.registerGlobalReceiver(SpeakerStatePayload.TYPE, (payload, context) -> SpeakerStates.put(payload));
-		ClientPlayNetworking.registerGlobalReceiver(TrackRemovedPayload.TYPE, (payload, context) ->
+		ClientPlayNetworking.registerGlobalReceiver(TrackRemovedPayload.TYPE, (payload, context) -> {
+			if (RaveCraftOptions.notifications().get().errors()) {
 				SystemToast.add(Minecraft.getInstance().gui.toastManager(), SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
 						Component.translatable("toast.ravecraft.track_removed.title"),
-						Component.translatable("toast.ravecraft.track_removed.message", payload.title())));
+						Component.translatable("toast.ravecraft.track_removed.message", payload.title()));
+			}
+		});
 	}
 }

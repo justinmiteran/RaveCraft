@@ -14,9 +14,11 @@ public final class EchoFinder {
 	}
 
 	/**
-	 * Candidates are the closed hits that absorb at most {@code maxAbsorption} and lie within
-	 * [{@code minDistance}, {@code maxDistance}]. They are sorted by distance; for each candidate c, its group is
-	 * every candidate within 15 % of c's distance (|d - c.d| &lt;= 0.15 * c.d). The group with the most members
+	 * Distances here are wall distances ({@link RayHit#wallDistance}): every ray that met a flat wall, whatever its
+	 * angle, tells the same distance, the one of the wall's mirror image. Candidates are the closed hits that absorb
+	 * at most {@code maxAbsorption} and lie within [{@code minDistance}, {@code maxDistance}]. They are sorted by
+	 * distance; for each candidate c, its group is every candidate within 15 % of c's distance
+	 * (|d - c.d| &lt;= 0.15 * c.d). The group with the most members
 	 * wins, ties going to the one whose centre c is nearest. The echo comes from that group's median distance d:
 	 * {@code delay = 2 d / 343} and {@code gain = clamp(gain * (1 - mean absorption) * (size / hits) * (17 / d), 0, 1)}.
 	 * Fewer than {@code minRays} members, or no candidate, gives {@link Echo#NONE}.
@@ -30,7 +32,7 @@ public final class EchoFinder {
 		for (int i : group) {
 			best.add(hits.get(i));
 		}
-		best.sort(Comparator.comparingDouble(RayHit::distance));
+		best.sort(Comparator.comparingDouble(RayHit::wallDistance));
 
 		double d = median(best);
 		double absorption = 0;
@@ -51,20 +53,20 @@ public final class EchoFinder {
 		List<Integer> candidates = new ArrayList<>();
 		for (int i = 0; i < hits.size(); i++) {
 			RayHit hit = hits.get(i);
-			if (!hit.open() && hit.absorption() <= settings.maxAbsorption() && hit.distance() >= settings.minDistance()
-					&& hit.distance() <= settings.maxDistance()) {
+			if (!hit.open() && hit.absorption() <= settings.maxAbsorption()
+					&& hit.wallDistance() >= settings.minDistance() && hit.wallDistance() <= settings.maxDistance()) {
 				candidates.add(i);
 			}
 		}
-		candidates.sort(Comparator.comparingDouble(i -> hits.get(i).distance()));
+		candidates.sort(Comparator.comparingDouble(i -> hits.get(i).wallDistance()));
 
 		List<Integer> best = List.of();
 		for (int center : candidates) {
-			double distance = hits.get(center).distance();
+			double distance = hits.get(center).wallDistance();
 			double limit = TOLERANCE * distance;
 			List<Integer> group = new ArrayList<>();
 			for (int other : candidates) {
-				if (Math.abs(hits.get(other).distance() - distance) <= limit) {
+				if (Math.abs(hits.get(other).wallDistance() - distance) <= limit) {
 					group.add(other);
 				}
 			}
@@ -81,10 +83,10 @@ public final class EchoFinder {
 		return List.copyOf(sorted);
 	}
 
-	/** The median distance of a group already sorted by distance. */
+	/** The median wall distance of a group already sorted by it. */
 	private static double median(List<RayHit> sorted) {
 		int n = sorted.size();
-		return n % 2 == 1 ? sorted.get(n / 2).distance()
-				: (sorted.get(n / 2 - 1).distance() + sorted.get(n / 2).distance()) / 2;
+		return n % 2 == 1 ? sorted.get(n / 2).wallDistance()
+				: (sorted.get(n / 2 - 1).wallDistance() + sorted.get(n / 2).wallDistance()) / 2;
 	}
 }

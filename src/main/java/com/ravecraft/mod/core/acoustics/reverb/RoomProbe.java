@@ -99,14 +99,24 @@ public final class RoomProbe {
 		AcousticMaterial material = sample.material;
 		int axis = walk.entryAxis();
 		if (material != null && sample.fill(axis) >= SOLID_FILL) {
-			return new RayHit(false, distance, material.absorption(), axis, facePlane(axis));
+			return new RayHit(false, distance, material.absorption(), axis, facePlane(axis), wallDistance(axis));
 		}
 		AcousticMedium own = sample.medium;
 		if (own != null && !own.equals(startMedium)) {
 			return new RayHit(false, distance, own.impedance() <= 0 ? 1 : own.surfaceAbsorption(), axis,
-					facePlane(axis));
+					facePlane(axis), wallDistance(axis));
 		}
 		return null;
+	}
+
+	/** The perpendicular distance from the probe origin to the face the ray crossed along {@code axis}. */
+	private double wallDistance(int axis) {
+		double origin = switch (axis) {
+			case VoxelSample.X -> ox;
+			case VoxelSample.Y -> oy;
+			default -> oz;
+		};
+		return Math.abs(facePlane(axis) - origin);
 	}
 
 	/** The block boundary the ray crossed along {@code axis} to enter the current voxel. */

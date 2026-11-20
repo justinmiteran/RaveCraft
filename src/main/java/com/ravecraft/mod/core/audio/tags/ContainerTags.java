@@ -133,6 +133,10 @@ final class ContainerTags {
 				}
 			}
 		}
+		if (index == 1 && packet.size() > 0) {
+			// The budget or the file ended inside the comment packet: keep the entries before the cut.
+			comments(packet.toByteArray(), out);
+		}
 		return codec;
 	}
 

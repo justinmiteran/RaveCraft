@@ -248,7 +248,29 @@ class TrackInfoReaderTest {
 	}
 
 	@Test
-	void oggOpusTags() throws IOException {
+	void oggHugeCommentStillReadsTitle() throws IOException {
+		byte[] packet = vorbisComments("TITLE=Big", "ARTIST=Cover", "METADATA_BLOCK_PICTURE=" + "A".repeat(3 * MIB / 2));
+		java.io.ByteArrayOutputStream pages = new java.io.ByteArrayOutputStream();
+		pages.writeBytes(oggPage(0, vorbisId()));
+		int per = 255 * 255;
+		int seq = 1;
+		for (int at = 0; at < packet.length; at += per, seq++) {
+			byte[] part = java.util.Arrays.copyOfRange(packet, at, Math.min(packet.length, at + per));
+			boolean full = part.length == per;
+			int[] lacing = new int[full ? 255 : part.length / 255 + 1];
+			java.util.Arrays.fill(lacing, 255);
+			if (!full) {
+				lacing[lacing.length - 1] = part.length % 255;
+			}
+			pages.writeBytes(oggRaw(seq, at == 0 ? 0 : 1, lacing, part));
+		}
+		TrackInfo info = TrackInfoReader.read(write("a.ogg", pages.toByteArray()));
+		assertEquals("Big", info.title());
+		assertEquals("Cover", info.artist());
+	}
+
+	@Test
+	void oggOpusTags()throws IOException {
 		byte[] head = concat(ascii("OpusHead"), le(11).put((byte) 1).put((byte) 2).putShort((short) 312)
 				.putInt(48000).putShort((short) 0).put((byte) 0).array());
 		byte[] tags = concat(ascii("OpusTags"), vorbisComment("TITLE=Op"));

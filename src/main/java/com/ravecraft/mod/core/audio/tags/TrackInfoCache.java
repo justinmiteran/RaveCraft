@@ -48,6 +48,12 @@ public final class TrackInfoCache {
 		return new Lookup(Optional.ofNullable(entry.info()), due, entry.modified());
 	}
 
+	/** The cached info, without scheduling anything. */
+	public Optional<TrackInfo> peek(String path) {
+		Cached entry = entries.get(path);
+		return entry == null ? Optional.empty() : Optional.ofNullable(entry.info());
+	}
+
 	public void loaded(String path, long modified, TrackInfo info, long nowMs) {
 		inFlight.remove(path);
 		entries.put(path, new Cached(info, modified, nowMs));

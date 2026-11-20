@@ -2,6 +2,7 @@ package com.ravecraft.mod.core.queue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -378,5 +379,97 @@ class SpeakerQueueTest {
 		assertEquals(1, SpeakerQueue.roomLeft(SpeakerQueue.MAX_ENTRIES - 1));
 		assertEquals(0, SpeakerQueue.roomLeft(SpeakerQueue.MAX_ENTRIES));
 		assertEquals(0, SpeakerQueue.roomLeft(SpeakerQueue.MAX_ENTRIES + 5));
+	}
+
+	private static List<String> titles(SpeakerQueue q) {
+		return q.displayOrder().stream().map(QueueEntry::title).toList();
+	}
+
+	/** Entries t0..t{count-1}, t{current} current, from its start. */
+	private static SpeakerQueue at(int count, int current, RepeatMode repeat) {
+		List<QueueEntry> list = entries(count);
+		return new SpeakerQueue(list, Optional.of(list.get(current).entryId()), 0, repeat, false, List.of());
+	}
+
+	private static UUID id(SpeakerQueue q, int index) {
+		return q.entries().get(index).entryId();
+	}
+
+	@Test
+	void moveReordersUpcoming() {
+		SpeakerQueue q = at(4, 0, RepeatMode.OFF);
+		assertEquals(List.of("t0", "t3", "t1", "t2"), titles(q.move(id(q, 3), 0)));
+	}
+
+	@Test
+	void moveDownwards() {
+		SpeakerQueue q = at(4, 0, RepeatMode.OFF);
+		assertEquals(List.of("t0", "t2", "t3", "t1"), titles(q.move(id(q, 1), 2)));
+	}
+
+	@Test
+	void moveClampsIndex() {
+		SpeakerQueue q = at(4, 0, RepeatMode.OFF);
+		assertEquals(List.of("t0", "t2", "t3", "t1"), titles(q.move(id(q, 1), 99)));
+		assertEquals(List.of("t0", "t3", "t1", "t2"), titles(q.move(id(q, 3), -5)));
+	}
+
+	@Test
+	void moveBringsPlayedEntryBack() {
+		SpeakerQueue base = at(4, 2, RepeatMode.ALL);
+		SpeakerQueue moved = base.move(id(base, 0), 0);
+		assertEquals(List.of("t2", "t0", "t3", "t1"), titles(moved));
+		assertEquals(3, moved.nextRoundIndex());
+	}
+
+	@Test
+	void moveLastPlayedRemovesSeparator() {
+		SpeakerQueue q = at(3, 1, RepeatMode.ALL);
+		SpeakerQueue moved = q.move(id(q, 0), 1);
+		assertEquals(List.of("t1", "t2", "t0"), titles(moved));
+		assertEquals(-1, moved.nextRoundIndex());
+	}
+
+	@Test
+	void moveWithShuffleReordersRound() {
+		Random rng = new Random(1);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(entries(5));
+		q = q.withCurrent(id(q, 0), 0).withShuffle(true, rng);
+		List<QueueEntry> upcoming = q.displayOrder().subList(1, q.displayOrder().size());
+		QueueEntry last = upcoming.getLast();
+		SpeakerQueue moved = q.move(last.entryId(), 0);
+		List<QueueEntry> expected = new ArrayList<>();
+		expected.add(q.displayOrder().getFirst());
+		expected.add(last);
+		expected.addAll(upcoming.subList(0, upcoming.size() - 1));
+		assertEquals(expected, moved.displayOrder());
+		assertEquals(q.entries(), moved.entries());
+	}
+
+	@Test
+	void moveWithShuffleBringsPlayedBack() {
+		Random rng = new Random(2);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(entries(4)).withRepeat(RepeatMode.ALL);
+		q = q.withCurrent(id(q, 0), 0).withShuffle(true, rng);
+		QueueEntry first = q.displayOrder().getFirst();
+		QueueEntry second = q.displayOrder().get(1);
+		q = q.afterAdvance(second.entryId(), rng);
+		SpeakerQueue moved = q.move(first.entryId(), 0);
+		assertEquals(first, moved.displayOrder().get(1));
+		assertEquals(Optional.of(first), moved.next(ONLINE, false, rng));
+	}
+
+	@Test
+	void moveWithoutCurrent() {
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(entries(3));
+		assertEquals(List.of("t0", "t1", "t2"), titles(q));
+		assertEquals(List.of("t2", "t0", "t1"), titles(q.move(id(q, 2), 0)));
+	}
+
+	@Test
+	void moveIgnoresCurrentAndUnknown() {
+		SpeakerQueue q = at(3, 0, RepeatMode.OFF);
+		assertSame(q, q.move(id(q, 0), 1));
+		assertSame(q, q.move(UUID.randomUUID(), 0));
 	}
 }

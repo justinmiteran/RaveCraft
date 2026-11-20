@@ -88,7 +88,7 @@ public final class SoundViewRenderer {
 			if (mode.rooms()) {
 				RoomView listener = SoundViewSnapshots.listenerRoom();
 				if (listener != null && listener.fluid() == null) {
-					rays(listener, 1f, true, camera);
+					rays(listener, 1f, true, false, camera);
 				}
 				for (int slot = 0; slot < 2; slot++) {
 					RoomView room = SoundViewSnapshots.slotRoom(slot);
@@ -229,17 +229,19 @@ public final class SoundViewRenderer {
 		return lines;
 	}
 
+	/** A speaker's room is another room than the player's: drawn on top of the walls that hide it. */
 	private static void slotRoom(int slot, RoomView room, Vec camera) {
-		rays(room, SLOT_ALPHA, false, camera);
+		rays(room, SLOT_ALPHA, false, true, camera);
 		text(I18n.get("debug.ravecraft.sound_view.slot", slot + 1, twoDecimals(room.rt60())),
-				vec3(room.origin()).add(0, ROOM_LABEL_HEIGHT, 0), LossColors.withAlpha(WHITE, SLOT_ALPHA + 0.3f));
+				vec3(room.origin()).add(0, ROOM_LABEL_HEIGHT, 0), LossColors.withAlpha(WHITE, SLOT_ALPHA + 0.3f))
+				.setAlwaysOnTop();
 	}
 
 	/**
 	 * At most {@value #MAX_RAYS} rays, evenly picked, plus every ray of the echo when {@code echo} is shown. Drawn from
 	 * below the eye when the camera is at the origin, else they would be seen end-on.
 	 */
-	private static void rays(RoomView room, float alpha, boolean echo, Vec camera) {
+	private static void rays(RoomView room, float alpha, boolean echo, boolean onTop, Vec camera) {
 		Vec3 measured = vec3(room.origin());
 		Vec3 origin = vec3(EyeAnchor.of(room.origin(), camera));
 		List<Ray> rays = room.rays();
@@ -252,14 +254,17 @@ public final class SoundViewRenderer {
 			}
 			Vec3 end = vec3(ray.end());
 			if (ray.open()) {
-				dashed(origin, end, LossColors.withAlpha(LossColors.OPEN_RAY, alpha), LINE_WIDTH, false,
+				dashed(origin, end, LossColors.withAlpha(LossColors.OPEN_RAY, alpha), LINE_WIDTH, onTop,
 						MAX_OPEN_RAY_DASHES);
 				continue;
 			}
 			int colour = LossColors.withAlpha(echoRay ? LossColors.ECHO : LossColors.forAbsorption(ray.absorption()),
 					alpha);
-			line(origin, end, colour, LINE_WIDTH, false);
-			Gizmos.point(end, colour, 4f);
+			line(origin, end, colour, LINE_WIDTH, onTop);
+			GizmoProperties point = Gizmos.point(end, colour, 4f);
+			if (onTop) {
+				point.setAlwaysOnTop();
+			}
 			if (echoRay) {
 				// Just past the hit, so that the frame is the block that was hit, not the air in front of it.
 				Vec3 into = end.add(end.subtract(measured).normalize().scale(0.01));

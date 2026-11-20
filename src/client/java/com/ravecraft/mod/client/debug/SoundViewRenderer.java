@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Locale;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelExtractionEvents;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -30,6 +31,7 @@ import net.minecraft.gizmos.TextGizmo;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3fc;
 
 /**
  * Draws the sound view with vanilla gizmos at the end of level extraction: the paths of the loudest speakers (on top
@@ -56,7 +58,12 @@ public final class SoundViewRenderer {
 	private static final int HUD_PADDING = 2;
 	private static final int HUD_BACKGROUND = 0x90000000;
 	private static final Identifier HUD_ID = Identifier.fromNamespaceAndPath(RaveCraft.MOD_ID, "sound_view");
+	/** Lines are cut this far in front of the camera, in blocks. */
+	private static final double NEAR_CLIP = 0.2;
 	private static final long FAILURE_LOG_MS = 60_000;
+	/** The camera of the frame being drawn. */
+	private static Vec camera = new Vec(0, 0, 0);
+	private static Vec forward = new Vec(0, 0, 1);
 	private static long lastFailureLog = Long.MIN_VALUE;
 
 	private SoundViewRenderer() {
@@ -102,8 +109,11 @@ public final class SoundViewRenderer {
 	}
 
 	private static Vec camera() {
-		Vec3 c = Minecraft.getInstance().gameRenderer.mainCamera().position();
-		return new Vec(c.x, c.y, c.z);
+		Camera c = Minecraft.getInstance().gameRenderer.mainCamera();
+		Vector3fc f = c.forwardVector();
+		forward = new Vec(f.x(), f.y(), f.z());
+		camera = vec(c.position());
+		return camera;
 	}
 
 	private static void path(PathView path, Vec camera) {
@@ -114,7 +124,7 @@ public final class SoundViewRenderer {
 		double cumulative = 0;
 		for (Crossing crossing : path.crossings()) {
 			Vec3 entry = entry(source, listener, crossing);
-			Gizmos.line(from, entry, LossColors.forLoss(cumulative), DIRECT_WIDTH).setAlwaysOnTop();
+			line(from, entry, LossColors.forLoss(cumulative), DIRECT_WIDTH, true);
 			from = entry;
 			cumulative = crossing.cumulativeDb();
 			BlockPos pos = new BlockPos(crossing.x(), crossing.y(), crossing.z());
@@ -123,7 +133,7 @@ public final class SoundViewRenderer {
 					.setAlwaysOnTop();
 		}
 		double last = path.directMute() ? Double.POSITIVE_INFINITY : cumulative;
-		Gizmos.line(from, listener, LossColors.forLoss(last), DIRECT_WIDTH).setAlwaysOnTop();
+		line(from, listener, LossColors.forLoss(last), DIRECT_WIDTH, true);
 
 		for (Detour detour : path.detours()) {
 			int colour = LossColors.forLoss(detour.lossDb());
@@ -256,7 +266,7 @@ public final class SoundViewRenderer {
 			}
 			int colour = LossColors.withAlpha(echoRay ? LossColors.ECHO : LossColors.forAbsorption(ray.absorption()),
 					alpha);
-			Gizmos.line(origin, end, colour, LINE_WIDTH);
+			line(origin, end, colour, LINE_WIDTH, false);
 			Gizmos.point(end, colour, 4f);
 			if (echoRay) {
 				// Just past the hit, so that the frame is the block that was hit, not the air in front of it.
@@ -275,12 +285,24 @@ public final class SoundViewRenderer {
 		double period = Math.max(DASH_PERIOD, length / maxDashes);
 		Vec3 d = b.subtract(a).scale(1 / length);
 		for (double s = 0; s < length; s += period) {
-			GizmoProperties dash = Gizmos.line(a.add(d.scale(s)), a.add(d.scale(Math.min(s + period / 2, length))),
-					argb, width);
-			if (onTop) {
-				dash.setAlwaysOnTop();
-			}
+			line(a.add(d.scale(s)), a.add(d.scale(Math.min(s + period / 2, length))), argb, width, onTop);
 		}
+	}
+
+	/** A line cut to what lies in front of the camera: an end on or behind its plane breaks the line on screen. */
+	private static void line(Vec3 a, Vec3 b, int argb, float width, boolean onTop) {
+		Vec[] kept = EyeAnchor.clip(vec(a), vec(b), camera, forward, NEAR_CLIP);
+		if (kept == null) {
+			return;
+		}
+		GizmoProperties line = Gizmos.line(vec3(kept[0]), vec3(kept[1]), argb, width);
+		if (onTop) {
+			line.setAlwaysOnTop();
+		}
+	}
+
+	private static Vec vec(Vec3 v) {
+		return new Vec(v.x, v.y, v.z);
 	}
 
 	private static GizmoProperties text(String text, Vec3 pos, int argb) {

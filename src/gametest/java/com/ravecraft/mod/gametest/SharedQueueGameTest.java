@@ -433,4 +433,46 @@ public class SharedQueueGameTest {
 		leave(h, player);
 		h.succeed();
 	}
+
+	private static List<String> order(GameTestHelper h) {
+		return queue(h).displayOrder().stream().map(QueueEntry::title).toList();
+	}
+
+	@GameTest
+	public void moveReordersQueue(GameTestHelper h) {
+		BlockPos pos = poweredSpeaker(h);
+		ServerPlayer player = online(h, 2);
+		SpeakerPlayback.add(player, pos, newEntries(3));
+		SpeakerPlayback.command(player, pos, Command.PLAY, Optional.empty());
+		SpeakerPlayback.command(player, pos, Command.MOVE, Optional.of(entryId(h, 2)), 0);
+		h.assertValueEqual(order(h), List.of("track 0", "track 2", "track 1"), "moved to the head of what is next");
+		finish(h, pos, player);
+	}
+
+	@GameTest
+	public void moveUnknownOrHugeIndexIsHarmless(GameTestHelper h) {
+		BlockPos pos = poweredSpeaker(h);
+		ServerPlayer player = online(h, 2);
+		SpeakerPlayback.add(player, pos, newEntries(4));
+		SpeakerPlayback.command(player, pos, Command.PLAY, Optional.empty());
+		SpeakerPlayback.command(player, pos, Command.MOVE, Optional.of(UUID.randomUUID()), 0);
+		h.assertValueEqual(order(h), List.of("track 0", "track 1", "track 2", "track 3"), "unknown id ignored");
+		UUID second = entryId(h, 1);
+		SpeakerPlayback.command(player, pos, Command.MOVE, Optional.of(second), Long.MAX_VALUE);
+		h.assertValueEqual(order(h), List.of("track 0", "track 2", "track 3", "track 1"), "huge index puts it last");
+		SpeakerPlayback.command(player, pos, Command.MOVE, Optional.of(second), -3);
+		h.assertValueEqual(order(h), List.of("track 0", "track 1", "track 2", "track 3"), "negative index puts it first");
+		finish(h, pos, player);
+	}
+
+	@GameTest
+	public void moveOutOfReachIgnored(GameTestHelper h) {
+		BlockPos pos = poweredSpeaker(h);
+		ServerPlayer near = online(h, 2);
+		ServerPlayer far = online(h, 20);
+		SpeakerPlayback.add(near, pos, newEntries(3));
+		SpeakerPlayback.command(far, pos, Command.MOVE, Optional.of(entryId(h, 2)), 0);
+		h.assertValueEqual(order(h), List.of("track 0", "track 1", "track 2"), "ignored out of reach");
+		finish(h, pos, near, far);
+	}
 }

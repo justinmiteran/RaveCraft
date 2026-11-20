@@ -9,6 +9,7 @@
 			"com.ravecraft.mod.gametest.PortableSpeakerGameTest",
 			"com.ravecraft.mod.gametest.AudioRelayGameTest",
 			"com.ravecraft.mod.gametest.SharedQueueGameTest",
+			"com.ravecraft.mod.gametest.SpeakerPlayerGameTest",
 			"com.ravecraft.mod.gametest.BlockAcousticsGameTest",
 			"com.ravecraft.mod.gametest.RoomProbeGameTest"
 		]

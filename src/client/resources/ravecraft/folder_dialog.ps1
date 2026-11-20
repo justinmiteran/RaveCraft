@@ -1,0 +1,108 @@
+# Opens the modern Windows folder dialog (IFileOpenDialog with FOS_PICKFOLDERS), which follows the system theme.
+# Started ahead of time so a click opens the dialog at once: it compiles the interop below, then serves requests on
+# stdin until stdin closes. A request is two lines, the title and the start folder (possibly empty); the answer is
+# one line on stdout: "1" followed by the chosen folder, or "0" when cancelled. A failure ends the process.
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+$utf8 = New-Object System.Text.UTF8Encoding $false
+[Console]::InputEncoding = $utf8
+[Console]::OutputEncoding = $utf8
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+
+public static class RaveCraftFolderDialog {
+	[ComImport, Guid("DC1C5A9C-E88A-4dde-A5A1-60F82A20AEF7")]
+	private class FileOpenDialog {}
+
+	[ComImport, Guid("42f85136-db7e-439c-85f1-e4075d135fc8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	private interface IFileDialog {
+		[PreserveSig] int Show(IntPtr parent);
+		void SetFileTypes(uint count, IntPtr filters);
+		void SetFileTypeIndex(uint index);
+		void GetFileTypeIndex(out uint index);
+		void Advise(IntPtr events, out uint cookie);
+		void Unadvise(uint cookie);
+		void SetOptions(uint options);
+		void GetOptions(out uint options);
+		void SetDefaultFolder(IShellItem item);
+		void SetFolder(IShellItem item);
+		void GetFolder(out IShellItem item);
+		void GetCurrentSelection(out IShellItem item);
+		void SetFileName([MarshalAs(UnmanagedType.LPWStr)] string name);
+		void GetFileName([MarshalAs(UnmanagedType.LPWStr)] out string name);
+		void SetTitle([MarshalAs(UnmanagedType.LPWStr)] string title);
+		void SetOkButtonLabel([MarshalAs(UnmanagedType.LPWStr)] string label);
+		void SetFileNameLabel([MarshalAs(UnmanagedType.LPWStr)] string label);
+		void GetResult(out IShellItem item);
+	}
+
+	[ComImport, Guid("43826D1E-E718-42EE-BC55-A1E261C37BFE"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	private interface IShellItem {
+		void BindToHandler(IntPtr bindContext, ref Guid handler, ref Guid riid, out IntPtr result);
+		void GetParent(out IShellItem parent);
+		void GetDisplayName(uint form, [MarshalAs(UnmanagedType.LPWStr)] out string name);
+	}
+
+	[DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
+	private static extern void SHCreateItemFromParsingName(string path, IntPtr bindContext, ref Guid riid,
+			out IShellItem item);
+
+	[DllImport("user32.dll")]
+	private static extern IntPtr GetForegroundWindow();
+
+	private const uint FOS_PICKFOLDERS = 0x20;
+	private const uint FOS_FORCEFILESYSTEM = 0x40;
+	private const uint SIGDN_FILESYSPATH = 0x80058000;
+	private const int ERROR_CANCELLED = unchecked((int) 0x800704C7);
+
+	/** The chosen folder, or null when cancelled. */
+	public static string Pick(string title, string start) {
+		IFileDialog dialog = (IFileDialog) new FileOpenDialog();
+		try {
+			uint options;
+			dialog.GetOptions(out options);
+			dialog.SetOptions(options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+			if (!String.IsNullOrEmpty(title)) {
+				dialog.SetTitle(title);
+			}
+			if (!String.IsNullOrEmpty(start)) {
+				try {
+					Guid shellItem = typeof(IShellItem).GUID;
+					IShellItem folder;
+					SHCreateItemFromParsingName(start, IntPtr.Zero, ref shellItem, out folder);
+					dialog.SetFolder(folder);
+				} catch (Exception) {
+					// a start folder that no longer exists: the dialog opens where it last was
+				}
+			}
+			int result = dialog.Show(GetForegroundWindow());
+			if (result == ERROR_CANCELLED) {
+				return null;
+			}
+			Marshal.ThrowExceptionForHR(result);
+			IShellItem chosen;
+			dialog.GetResult(out chosen);
+			string path;
+			chosen.GetDisplayName(SIGDN_FILESYSPATH, out path);
+			return path;
+		} finally {
+			Marshal.ReleaseComObject(dialog);
+		}
+	}
+}
+'@
+while ($true) {
+	$title = [Console]::In.ReadLine()
+	$start = [Console]::In.ReadLine()
+	if ($null -eq $title -or $null -eq $start) {
+		exit 0
+	}
+	$chosen = [RaveCraftFolderDialog]::Pick($title, $start)
+	if ($null -eq $chosen) {
+		[Console]::Out.WriteLine('0')
+	} else {
+		[Console]::Out.WriteLine('1' + $chosen)
+	}
+	[Console]::Out.Flush()
+}

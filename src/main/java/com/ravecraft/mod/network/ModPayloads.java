@@ -11,6 +11,7 @@ import com.ravecraft.mod.network.payload.SpeakerWatchPayload;
 import com.ravecraft.mod.network.payload.StreamClosePayload;
 import com.ravecraft.mod.network.payload.StreamOrderPayload;
 import com.ravecraft.mod.network.payload.StreamResultPayload;
+import com.ravecraft.mod.network.payload.StreamStartedPayload;
 import com.ravecraft.mod.network.payload.TrackRemovedPayload;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 
@@ -24,6 +25,7 @@ public final class ModPayloads {
 		PayloadTypeRegistry.serverboundPlay().register(SpeakerCommandPayload.TYPE, SpeakerCommandPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(SpeakerWatchPayload.TYPE, SpeakerWatchPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(StreamResultPayload.TYPE, StreamResultPayload.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(StreamStartedPayload.TYPE, StreamStartedPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(AudioChunkPayload.TYPE, AudioChunkPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(StreamClosePayload.TYPE, StreamClosePayload.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(StreamOrderPayload.TYPE, StreamOrderPayload.CODEC);

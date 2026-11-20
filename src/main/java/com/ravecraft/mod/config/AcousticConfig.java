@@ -2,13 +2,12 @@ package com.ravecraft.mod.config;
 
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
+import com.ravecraft.mod.core.io.AtomicFiles;
 import com.ravecraft.mod.network.Net;
 import com.ravecraft.mod.network.payload.AcousticSettingsPayload;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -45,8 +44,8 @@ public final class AcousticConfig {
 	static void load(Path file) {
 		if (Files.notExists(file)) {
 			settings = AcousticSettings.DEFAULT;
-			try (Writer out = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-				AcousticSettingsJson.write(settings, out);
+			try {
+				AtomicFiles.write(file, out -> AcousticSettingsJson.write(settings, out));
 			} catch (IOException e) {
 				RaveCraft.LOGGER.warn("{}: cannot write defaults: {}", FILE_NAME, e.toString());
 			}
@@ -70,31 +69,18 @@ public final class AcousticConfig {
 	}
 
 	/**
-	 * Brings an incomplete file up to date: the old text is kept as {@code <name>.bak}, then the new text is written to
-	 * {@code <name>.tmp} and moved over the file, so a failure never leaves a half-written config.
+	 * Brings an incomplete file up to date: the old text is kept as {@code <name>.bak}, then the new text replaces
+	 * the file as a whole, so a failure never leaves a half-written config.
 	 */
 	private static void rewrite(Path file) {
 		Path backup = file.resolveSibling(file.getFileName() + ".bak");
-		Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
 		try {
 			Files.copy(file, backup, StandardCopyOption.REPLACE_EXISTING);
-			try (Writer out = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
-				AcousticSettingsJson.write(settings, out);
-			}
-			try {
-				Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-			} catch (AtomicMoveNotSupportedException e) {
-				Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING);
-			}
+			AtomicFiles.write(file, out -> AcousticSettingsJson.write(settings, out));
 			RaveCraft.LOGGER.info("{}: added the missing settings, the previous file is kept as {}", FILE_NAME,
 					backup.getFileName());
 		} catch (IOException | RuntimeException e) {
 			RaveCraft.LOGGER.warn("{}: cannot update the file, leaving it as it is: {}", FILE_NAME, e.toString());
-			try {
-				Files.deleteIfExists(tmp);
-			} catch (IOException ignored) {
-				// nothing more to do
-			}
 		}
 	}
 }

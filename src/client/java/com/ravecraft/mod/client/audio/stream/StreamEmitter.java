@@ -5,6 +5,7 @@ import com.ravecraft.mod.core.audio.Pcm16;
 import com.ravecraft.mod.core.audio.decode.Decoders;
 import com.ravecraft.mod.core.audio.decode.PcmDecoder;
 import com.ravecraft.mod.core.audio.decode.PcmFormat;
+import com.ravecraft.mod.core.audio.decode.TrackDuration;
 import com.ravecraft.mod.core.audio.opus.OpusMonoEncoder;
 import com.ravecraft.mod.core.audio.stream.EmitterPacer;
 import com.ravecraft.mod.core.audio.stream.FrameSkipper;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -37,17 +39,20 @@ public final class StreamEmitter {
 	private final Path track;
 	/** Where to start in the track: everything before is decoded and dropped. */
 	private final long startMs;
+	/** Called on the client thread with the track's duration in ms (-1 if unknown), once its header was read. */
+	private final LongConsumer onStarted;
 	private final Runnable onFinished;
 	private final Consumer<Exception> onFailed;
 	private volatile boolean cancelled;
 	private Thread thread;
 
-	public StreamEmitter(int sessionId, ResourceKey<Level> dimension, BlockPos pos, Path track, long startMs, Runnable onFinished, Consumer<Exception> onFailed) {
+	public StreamEmitter(int sessionId, ResourceKey<Level> dimension, BlockPos pos, Path track, long startMs, LongConsumer onStarted, Runnable onFinished, Consumer<Exception> onFailed) {
 		this.sessionId = sessionId;
 		this.dimension = dimension;
 		this.pos = pos.immutable();
 		this.track = track;
 		this.startMs = startMs;
+		this.onStarted = onStarted;
 		this.onFinished = onFinished;
 		this.onFailed = onFailed;
 	}
@@ -67,6 +72,8 @@ public final class StreamEmitter {
 	}
 
 	private void run() {
+		long durationMs = TrackDuration.of(track).orElse(-1);
+		onClientThread(() -> onStarted.accept(durationMs));
 		long start = System.nanoTime();
 		try (PcmDecoder decoder = open(track)) {
 			PcmFormat format = decoder.format();

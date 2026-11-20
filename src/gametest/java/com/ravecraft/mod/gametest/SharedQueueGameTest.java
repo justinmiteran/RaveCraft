@@ -4,6 +4,7 @@ import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.core.audio.stream.SessionTable.Session;
 import com.ravecraft.mod.core.queue.QueueEntry;
+import com.ravecraft.mod.core.queue.RepeatMode;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.network.payload.QueueAddPayload.NewEntry;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
@@ -30,22 +31,22 @@ import net.minecraft.world.phys.Vec3;
 public class SharedQueueGameTest {
 	private static final BlockPos SPEAKER = new BlockPos(1, 1, 1);
 
-	private static BlockPos poweredSpeaker(GameTestHelper h) {
+	static BlockPos poweredSpeaker(GameTestHelper h) {
 		h.setBlock(SPEAKER, ModBlocks.PORTABLE_SPEAKER);
 		be(h).togglePower();
 		return h.absolutePos(SPEAKER);
 	}
 
-	private static PortableSpeakerBlockEntity be(GameTestHelper h) {
+	static PortableSpeakerBlockEntity be(GameTestHelper h) {
 		return h.getBlockEntity(SPEAKER, PortableSpeakerBlockEntity.class);
 	}
 
-	private static SpeakerQueue queue(GameTestHelper h) {
+	static SpeakerQueue queue(GameTestHelper h) {
 		return be(h).data().queue();
 	}
 
 	/** A player in the server's player list (so its entries are playable), {@code distance} blocks east. */
-	private static ServerPlayer online(GameTestHelper h, double distance) {
+	static ServerPlayer online(GameTestHelper h, double distance) {
 		ServerPlayer player = h.makeMockServerPlayerInLevel();
 		moveTo(h, player, distance);
 		return player;
@@ -56,12 +57,12 @@ public class SharedQueueGameTest {
 		player.setPos(centre.x + distance, centre.y, centre.z);
 	}
 
-	private static void leave(GameTestHelper h, ServerPlayer player) {
+	static void leave(GameTestHelper h, ServerPlayer player) {
 		h.getLevel().getServer().getPlayerList().remove(player);
 		SpeakerPlayback.onDisconnect(h.getLevel().getServer(), player.getUUID());
 	}
 
-	private static List<NewEntry> newEntries(int count) {
+	static List<NewEntry> newEntries(int count) {
 		List<NewEntry> list = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
 			list.add(new NewEntry(UUID.randomUUID(), "track " + i));
@@ -69,19 +70,19 @@ public class SharedQueueGameTest {
 		return list;
 	}
 
-	private static Optional<Session<SpeakerKey>> session(GameTestHelper h, BlockPos pos) {
+	static Optional<Session<SpeakerKey>> session(GameTestHelper h, BlockPos pos) {
 		return StreamSessions.table().byKey(new SpeakerKey(h.getLevel().dimension(), pos));
 	}
 
-	private static int sessionId(GameTestHelper h, BlockPos pos) {
+	static int sessionId(GameTestHelper h, BlockPos pos) {
 		return session(h, pos).orElseThrow().id();
 	}
 
-	private static UUID entryId(GameTestHelper h, int index) {
+	static UUID entryId(GameTestHelper h, int index) {
 		return queue(h).entries().get(index).entryId();
 	}
 
-	private static void finish(GameTestHelper h, BlockPos pos, ServerPlayer... players) {
+	static void finish(GameTestHelper h, BlockPos pos, ServerPlayer... players) {
 		SpeakerPlayback.command(players[0], pos, Command.CLEAR, Optional.empty());
 		for (ServerPlayer player : players) {
 			leave(h, player);
@@ -168,7 +169,7 @@ public class SharedQueueGameTest {
 	}
 
 	@GameTest
-	public void finishedCloseRemovesEntryAndAdvances(GameTestHelper h) {
+	public void finishedCloseKeepsEntryAndAdvances(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		ServerPlayer owner = online(h, 2);
 		SpeakerPlayback.add(owner, pos, newEntries(2));
@@ -176,7 +177,7 @@ public class SharedQueueGameTest {
 		SpeakerPlayback.command(owner, pos, Command.PLAY, Optional.empty());
 		int first = sessionId(h, pos);
 		SpeakerPlayback.onStreamClose(owner, first, true);
-		h.assertValueEqual(queue(h).entries().size(), 1, "played entry left");
+		h.assertValueEqual(queue(h).entries().size(), 2, "played entry kept in the playlist");
 		h.assertValueEqual(queue(h).current(), Optional.of(second), "next");
 		h.assertTrue(sessionId(h, pos) != first, "new session");
 		finish(h, pos, owner);
@@ -187,9 +188,11 @@ public class SharedQueueGameTest {
 		BlockPos pos = poweredSpeaker(h);
 		ServerPlayer owner = online(h, 2);
 		SpeakerPlayback.add(owner, pos, newEntries(1));
+		SpeakerPlayback.command(owner, pos, Command.REPEAT, Optional.empty(), RepeatMode.OFF.ordinal());
 		SpeakerPlayback.command(owner, pos, Command.PLAY, Optional.empty());
 		SpeakerPlayback.onStreamClose(owner, sessionId(h, pos), true);
-		h.assertTrue(queue(h).entries().isEmpty(), "empty");
+		h.assertValueEqual(queue(h).entries().size(), 1, "kept");
+		h.assertValueEqual(queue(h).positionMs(), 0L, "back to its start");
 		h.assertFalse(SpeakerPlayback.isPlaying(h.getLevel(), pos), "paused");
 		finish(h, pos, owner);
 	}
@@ -248,7 +251,7 @@ public class SharedQueueGameTest {
 		UUID second = entryId(h, 1);
 		SpeakerPlayback.command(owner, pos, Command.PLAY, Optional.empty());
 		SpeakerPlayback.command(owner, pos, Command.NEXT, Optional.empty());
-		h.assertValueEqual(queue(h).entries().size(), 2, "current left");
+		h.assertValueEqual(queue(h).entries().size(), 3, "skipped entry kept");
 		h.assertValueEqual(queue(h).current(), Optional.of(second), "next");
 		h.assertTrue(SpeakerPlayback.isPlaying(h.getLevel(), pos), "playing");
 		finish(h, pos, owner);

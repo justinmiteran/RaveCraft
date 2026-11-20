@@ -3,6 +3,7 @@ package com.ravecraft.mod.network.payload;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.ravecraft.mod.core.queue.RepeatMode;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.util.ArrayList;
@@ -39,7 +40,7 @@ class QueuePayloadsTest {
 	private static List<SpeakerStatePayload.StateEntry> stateEntries(int count) {
 		List<SpeakerStatePayload.StateEntry> list = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
-			list.add(new SpeakerStatePayload.StateEntry(UUID.randomUUID(), "Alex", "track " + i, i % 2 == 0));
+			list.add(new SpeakerStatePayload.StateEntry(UUID.randomUUID(), "Alex", "track " + i, i % 2 == 0, 1000L * i));
 		}
 		return list;
 	}
@@ -68,7 +69,8 @@ class QueuePayloadsTest {
 
 	@Test
 	void stateRoundTrips() {
-		SpeakerStatePayload payload = new SpeakerStatePayload(POS, true, Optional.of(UUID.randomUUID()), 90_000L, stateEntries(200));
+		SpeakerStatePayload payload = new SpeakerStatePayload(POS, true, Optional.of(UUID.randomUUID()), 90_000L, stateEntries(200),
+				RepeatMode.ALL, false, 70, true, -1);
 		assertEquals(payload, roundTrip(SpeakerStatePayload.CODEC, payload));
 	}
 
@@ -102,17 +104,17 @@ class QueuePayloadsTest {
 	}
 
 	@Test
-	void stateOver200Throws() {
+	void stateOver200IsCapped() {
 		assertEquals(200, SpeakerStatePayload.MAX_ENTRIES);
-		assertThrows(RuntimeException.class, () -> SpeakerStatePayload.CODEC.encode(Unpooled.buffer(),
-				new SpeakerStatePayload(POS, false, Optional.empty(), 0, stateEntries(201))));
+		assertEquals(200, new SpeakerStatePayload(POS, false, Optional.empty(), 0, stateEntries(201),
+				RepeatMode.ALL, false, 70, true, -1).entries().size());
 	}
 
 	@Test
 	void commandWithBadOrdinalThrowsOnDecode() {
 		ByteBuf buf = Unpooled.buffer();
 		BlockPos.STREAM_CODEC.encode(buf, POS);
-		VarInt.write(buf, 9);
+		VarInt.write(buf, 99);
 		buf.writeBoolean(false);
 		assertThrows(RuntimeException.class, () -> SpeakerCommandPayload.CODEC.decode(buf));
 	}

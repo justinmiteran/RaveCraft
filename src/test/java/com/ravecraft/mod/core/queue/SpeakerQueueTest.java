@@ -1,11 +1,14 @@
 package com.ravecraft.mod.core.queue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
@@ -150,5 +153,230 @@ class SpeakerQueueTest {
 		assertEquals(QueueEntry.MAX_TITLE, e.title().length());
 		assertEquals(16, QueueEntry.MAX_OWNER_NAME);
 		assertEquals(128, QueueEntry.MAX_TITLE);
+	}
+
+	private static SpeakerQueue at(List<QueueEntry> list, QueueEntry current, RepeatMode repeat) {
+		return new SpeakerQueue(list, Optional.of(current.entryId()), 0, repeat, false, List.of());
+	}
+
+	@Test
+	void repeatAllWrapsToFirst() {
+		List<QueueEntry> l = entries(3);
+		SpeakerQueue q = at(l, l.get(2), RepeatMode.ALL);
+		assertEquals(Optional.of(l.get(0)), q.next(ONLINE, true, new Random(42)));
+	}
+
+	@Test
+	void repeatOffStopsAfterLast() {
+		List<QueueEntry> l = entries(3);
+		SpeakerQueue q = at(l, l.get(2), RepeatMode.OFF);
+		assertTrue(q.next(ONLINE, true, new Random(42)).isEmpty());
+	}
+
+	@Test
+	void repeatOneReplaysOnNaturalEnd() {
+		List<QueueEntry> l = entries(3);
+		SpeakerQueue q = at(l, l.get(1), RepeatMode.ONE);
+		assertEquals(Optional.of(l.get(1)), q.next(ONLINE, true, new Random(42)));
+	}
+
+	@Test
+	void repeatOneNextSkipsAhead() {
+		List<QueueEntry> l = entries(3);
+		SpeakerQueue q = at(l, l.get(1), RepeatMode.ONE);
+		assertEquals(Optional.of(l.get(2)), q.next(ONLINE, false, new Random(42)));
+	}
+
+	@Test
+	void shuffleVisitsEachOnceBeforeRepeating() {
+		Random rng = new Random(42);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(entries(5)).withShuffle(true, rng);
+		Set<UUID> seen = new HashSet<>();
+		for (int i = 0; i < 5; i++) {
+			QueueEntry next = q.next(ONLINE, true, rng).orElseThrow();
+			assertTrue(seen.add(next.entryId()));
+			q = q.afterAdvance(next.entryId(), rng);
+		}
+		assertEquals(5, seen.size());
+	}
+
+	@Test
+	void shuffleAllSingleEntryReplays() {
+		Random rng = new Random(42);
+		QueueEntry only = entry("a", ON);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(List.of(only)).withCurrent(only.entryId(), 0).withShuffle(true, rng);
+		assertEquals(Optional.of(only), q.next(ONLINE, true, rng));
+	}
+
+	@Test
+	void shuffleAllAbsentStops() {
+		Random rng = new Random(42);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(List.of(entry("a", OFF), entry("b", OFF))).withShuffle(true, rng);
+		assertTrue(q.next(ONLINE, true, rng).isEmpty());
+	}
+
+	@Test
+	void addDuringShuffleRoundIsUnplayed() {
+		Random rng = new Random(42);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(entries(3)).withShuffle(true, rng);
+		QueueEntry added = entry("new", ON);
+		q = q.add(List.of(added), rng);
+		assertTrue(q.pending().contains(added.entryId()));
+		assertEquals(4, q.pending().size());
+	}
+
+	@Test
+	void removeDropsFromPending() {
+		Random rng = new Random(42);
+		List<QueueEntry> l = entries(3);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(l).withShuffle(true, rng).remove(l.get(1).entryId());
+		assertFalse(q.pending().contains(l.get(1).entryId()));
+		assertEquals(2, q.pending().size());
+	}
+
+	@Test
+	void toggleShuffleKeepsCurrent() {
+		Random rng = new Random(42);
+		List<QueueEntry> l = entries(4);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(l).withCurrent(l.get(1).entryId(), 700).withShuffle(true, rng);
+		assertEquals(Optional.of(l.get(1).entryId()), q.current());
+		assertEquals(700, q.positionMs());
+		assertEquals(2, q.pending().size());
+		assertFalse(q.pending().contains(l.get(1).entryId()));
+		SpeakerQueue off = q.withShuffle(false, rng);
+		assertEquals(Optional.of(l.get(1).entryId()), off.current());
+		assertTrue(off.pending().isEmpty());
+	}
+
+	@Test
+	void turningShuffleOnMixesOnlyWhatIsStillToPlay() {
+		Random rng = new Random(42);
+		List<QueueEntry> l = entries(5);
+		SpeakerQueue q = at(l, l.get(2), RepeatMode.ALL).withShuffle(true, rng);
+		assertEquals(Set.of(l.get(3).entryId(), l.get(4).entryId()), Set.copyOf(q.pending()),
+				"the tracks before the current one already played this round");
+		assertEquals(List.of(l.get(0), l.get(1)), q.displayOrder().subList(3, 5), "they stay after the next round mark");
+		assertEquals(3, q.nextRoundIndex());
+	}
+
+	@Test
+	void displayOrderShowsCurrentThenUpcoming() {
+		List<QueueEntry> l = entries(4);
+		SpeakerQueue q = at(l, l.get(1), RepeatMode.ALL);
+		assertEquals(List.of(l.get(1), l.get(2), l.get(3), l.get(0)), q.displayOrder());
+		assertEquals(3, q.nextRoundIndex());
+	}
+
+	@Test
+	void displayOrderOffHasNoSeparator() {
+		List<QueueEntry> l = entries(4);
+		SpeakerQueue q = at(l, l.get(1), RepeatMode.OFF);
+		assertEquals(List.of(l.get(1), l.get(2), l.get(3)), q.displayOrder());
+		assertEquals(-1, q.nextRoundIndex());
+	}
+
+	@Test
+	void clearKeepsModes() {
+		Random rng = new Random(42);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(entries(2)).withRepeat(RepeatMode.ONE).withShuffle(true, rng).clear();
+		assertEquals(RepeatMode.ONE, q.repeat());
+		assertTrue(q.shuffle());
+		assertTrue(q.entries().isEmpty());
+		assertTrue(q.pending().isEmpty());
+	}
+
+	@Test
+	void nextSkipsAbsentOwners() {
+		QueueEntry a = entry("a", ON);
+		QueueEntry b = entry("b", OFF);
+		QueueEntry c = entry("c", ON);
+		SpeakerQueue q = at(List.of(a, b, c), a, RepeatMode.OFF);
+		assertEquals(Optional.of(c), q.next(ONLINE, true, new Random(42)));
+	}
+
+	@Test
+	void removeCurrentUnderShuffleKeepsPendingClean() {
+		Random rng = new Random(42);
+		List<QueueEntry> l = entries(4);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(l).withCurrent(l.get(1).entryId(), 0).withShuffle(true, rng);
+		q = q.remove(l.get(1).entryId());
+		assertFalse(q.pending().contains(q.current().orElseThrow()));
+		List<UUID> ids = q.displayOrder().stream().map(QueueEntry::entryId).toList();
+		assertEquals(ids.size(), new HashSet<>(ids).size());
+	}
+
+	@Test
+	void repeatOneReplayKeepsShuffleRound() {
+		Random rng = new Random(42);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(entries(4)).withRepeat(RepeatMode.ONE).withShuffle(true, rng);
+		q = q.afterAdvance(q.pending().get(0), rng);
+		SpeakerQueue replay = q.afterAdvance(q.current().orElseThrow(), rng);
+		assertEquals(q.pending(), replay.pending());
+		assertEquals(0, replay.positionMs());
+	}
+
+	@Test
+	void withCurrentDropsFromPending() {
+		Random rng = new Random(42);
+		List<QueueEntry> l = entries(3);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(l).withShuffle(true, rng).withCurrent(l.get(2).entryId(), 0);
+		assertFalse(q.pending().contains(l.get(2).entryId()));
+		assertEquals(2, q.pending().size());
+	}
+
+	@Test
+	void nextPlayableFollowsShuffleRound() {
+		Random rng = new Random(42);
+		QueueEntry off = entry("off", OFF);
+		List<QueueEntry> l = new ArrayList<>(entries(3));
+		l.add(0, off); // current first, so the other three are still to play
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(l).withCurrent(off.entryId(), 0).withShuffle(true, rng);
+		assertEquals(3, q.pending().size());
+		assertEquals(q.entry(q.pending().get(0)), q.nextPlayable(ONLINE, rng));
+	}
+
+	@Test
+	void withDurationSetsEntryDuration() {
+		List<QueueEntry> l = entries(2);
+		SpeakerQueue q = SpeakerQueue.EMPTY.add(l).withCurrent(l.get(0).entryId(), 5);
+		SpeakerQueue updated = q.withDuration(l.get(1).entryId(), 1234);
+		assertEquals(1234, updated.entry(l.get(1).entryId()).orElseThrow().durationMs());
+		assertEquals(QueueEntry.UNKNOWN_DURATION, updated.entry(l.get(0).entryId()).orElseThrow().durationMs());
+		assertEquals(q.current(), updated.current());
+		assertEquals(q.positionMs(), updated.positionMs());
+		assertEquals(q, q.withDuration(UUID.randomUUID(), 99));
+	}
+
+	@Test
+	void negativeDurationIsUnknown() {
+		QueueEntry e = entry("t", ON).withDuration(-50);
+		assertEquals(QueueEntry.UNKNOWN_DURATION, e.durationMs());
+		assertEquals(QueueEntry.UNKNOWN_DURATION, entry("t", ON).durationMs());
+	}
+
+	@Test
+	void pendingDropsUnknownIdsAndDuplicates() {
+		List<QueueEntry> l = entries(3);
+		UUID known = l.get(1).entryId();
+		SpeakerQueue q = new SpeakerQueue(l, Optional.empty(), 0, RepeatMode.ALL, true,
+				List.of(UUID.randomUUID(), known, known, UUID.randomUUID()));
+		assertEquals(List.of(known), q.pending());
+	}
+
+	@Test
+	void pendingNeverContainsCurrent() {
+		List<QueueEntry> l = entries(3);
+		UUID cur = l.get(0).entryId();
+		SpeakerQueue q = new SpeakerQueue(l, Optional.of(cur), 0, RepeatMode.ALL, true,
+				List.of(cur, l.get(1).entryId(), l.get(2).entryId()));
+		assertEquals(List.of(l.get(1).entryId(), l.get(2).entryId()), q.pending());
+	}
+
+	@Test
+	void roomLeftIsTheCapMinusTheSize() {
+		assertEquals(SpeakerQueue.MAX_ENTRIES, SpeakerQueue.roomLeft(0));
+		assertEquals(1, SpeakerQueue.roomLeft(SpeakerQueue.MAX_ENTRIES - 1));
+		assertEquals(0, SpeakerQueue.roomLeft(SpeakerQueue.MAX_ENTRIES));
+		assertEquals(0, SpeakerQueue.roomLeft(SpeakerQueue.MAX_ENTRIES + 5));
 	}
 }

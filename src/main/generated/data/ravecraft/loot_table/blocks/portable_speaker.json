@@ -12,7 +12,8 @@
             "type": "minecraft:copy_components",
             "include": [
               "ravecraft:speaker",
-              "minecraft:dyed_color"
+              "minecraft:dyed_color",
+              "minecraft:custom_name"
             ],
             "source": "block_entity"
           },

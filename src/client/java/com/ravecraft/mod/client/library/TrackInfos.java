@@ -4,8 +4,11 @@ import com.ravecraft.mod.core.audio.tags.HoverDwell;
 import com.ravecraft.mod.core.audio.tags.TrackInfo;
 import com.ravecraft.mod.core.audio.tags.TrackInfoCache;
 import com.ravecraft.mod.core.audio.tags.TrackInfoReader;
+import com.ravecraft.mod.core.library.AudioFiles;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -13,6 +16,8 @@ import net.minecraft.util.Util;
 
 /** Track tag info for the screens: cached, and read off the client thread. */
 public final class TrackInfos {
+	/** Recorded as the modification date of a file that cannot be read. */
+	private static final long UNREADABLE = -1;
 	private static final TrackInfoCache CACHE = new TrackInfoCache();
 	private static final HoverDwell DWELL = new HoverDwell();
 	/** One thread for every tag read: hovering rows never starts more than one at a time. */
@@ -42,9 +47,18 @@ public final class TrackInfos {
 		if (lookup.load()) {
 			long known = lookup.knownModified();
 			OffThread.run(LOADER, () -> {
-				long modified = Files.getLastModifiedTime(track).toMillis();
+				long modified;
+				try {
+					modified = Files.getLastModifiedTime(track).toMillis();
+				} catch (IOException e) {
+					// deleted or unreadable: show the file name without details, and look again at the next recheck
+					modified = UNREADABLE;
+				}
 				if (modified == known) {
 					return new Result(true, modified, null);
+				}
+				if (modified == UNREADABLE) {
+					return new Result(false, modified, TrackInfo.empty(AudioFiles.extension(track).toUpperCase(Locale.ROOT)));
 				}
 				return new Result(false, modified, TrackInfoReader.read(track));
 			}, result -> {
@@ -56,6 +70,11 @@ public final class TrackInfos {
 			}, () -> CACHE.failed(key, Util.getMillis()));
 		}
 		return lookup.info();
+	}
+
+	/** Client thread only. The cached info of {@code track}, if any; never starts a load. */
+	public static Optional<TrackInfo> cached(Path track) {
+		return CACHE.peek(track.toString());
 	}
 
 	/** Any thread. Reads the file directly, bypassing the cache. */

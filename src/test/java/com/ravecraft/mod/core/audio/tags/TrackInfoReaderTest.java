@@ -20,6 +20,7 @@ import static com.ravecraft.mod.core.audio.tags.TagBytes.vorbisComment;
 import static com.ravecraft.mod.core.audio.tags.TagBytes.wavFmt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -308,5 +309,17 @@ class TrackInfoReaderTest {
 	@Test
 	void unknownExtensionIsEmpty() throws IOException {
 		assertEquals(TrackInfo.empty("XYZ"), TrackInfoReader.read(write("a.xyz", new byte[8])));
+	}
+
+	@Test
+	void queueTitleFallsBackAndCuts() {
+		TrackInfo both = new TrackInfo("T".repeat(100), "A".repeat(100), "", "", "", "MP3", 0, 0, 0, -1);
+		assertEquals(128, both.queueTitle("file", 128).length());
+		assertTrue(both.queueTitle("file", 128).startsWith("A".repeat(100) + " — "));
+		assertEquals("file", TrackInfo.empty("MP3").queueTitle("file", 128));
+		assertEquals("fi", TrackInfo.empty("MP3").queueTitle("file", 2));
+		// A cut between the two halves of a surrogate pair drops the lone high surrogate too.
+		assertEquals("a", TrackInfo.empty("MP3").queueTitle("a🎵b", 2));
+		assertEquals("a🎵", TrackInfo.empty("MP3").queueTitle("a🎵b", 3));
 	}
 }

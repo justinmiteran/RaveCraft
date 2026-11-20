@@ -3,6 +3,10 @@ package com.ravecraft.mod.client.audio;
 import com.ravecraft.mod.client.audio.stream.NowPlayingToasts;
 import com.ravecraft.mod.client.audio.stream.ReceivedStreams;
 import com.ravecraft.mod.client.audio.stream.StreamEmitter;
+import com.ravecraft.mod.client.library.OffThread;
+import com.ravecraft.mod.client.library.TrackInfos;
+import com.ravecraft.mod.core.audio.tags.TrackInfo;
+import com.ravecraft.mod.core.library.AudioFiles;
 import com.ravecraft.mod.core.queue.QueueEntry;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.network.payload.QueueAddPayload;
@@ -35,6 +39,12 @@ public final class LocalPlayback {
 	private static final int TICKS_PER_BATCH = 5;
 	private static final Map<Integer, StreamEmitter> EMITTERS = new HashMap<>();
 	private static final Deque<QueueAddPayload> PENDING = new ArrayDeque<>();
+	/** Adds whose tags are read, waiting for the earlier ones so the queue keeps the order of the calls. */
+	private static final Map<Long, Runnable> READY = new HashMap<>();
+	private static long nextTicket;
+	private static long nextToApply;
+	/** Bumped on leaving the world, so reads still running then are dropped. */
+	private static int addEpoch;
 	private static int cooldown;
 
 	private LocalPlayback() {
@@ -45,35 +55,67 @@ public final class LocalPlayback {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> sendPending());
 	}
 
-	/** Appends {@code tracks} (at most a full queue) to the queue of the speaker at {@code pos}. */
+	/**
+	 * Appends {@code tracks} (at most a full queue) to the queue of the speaker at {@code pos}. The tags are read off
+	 * the client thread; calls are enqueued in the order they were made even when their reads finish out of order.
+	 */
 	public static void add(BlockPos pos, List<Path> tracks) {
 		if (tracks.isEmpty() || !ClientPlayNetworking.canSend(QueueAddPayload.TYPE)) {
 			return;
 		}
+		List<Path> capped = List.copyOf(tracks.subList(0, Math.min(tracks.size(), SpeakerQueue.MAX_ENTRIES)));
+		BlockPos at = pos.immutable();
+		int epoch = addEpoch;
+		long ticket = nextTicket++;
+		OffThread.run(() -> {
+			List<String> titles = new ArrayList<>(capped.size());
+			for (Path track : capped) {
+				titles.add(titleOf(track, TrackInfos.readNow(track)));
+			}
+			return titles;
+		}, titles -> finishAdd(epoch, ticket, at, capped, titles),
+				() -> finishAdd(epoch, ticket, at, capped, capped.stream().map(LocalPlayback::fileNameTitle).toList()));
+	}
+
+	/** Runs the adds that are ready, strictly in ticket order. Client thread. */
+	private static void finishAdd(int epoch, long ticket, BlockPos pos, List<Path> tracks, List<String> titles) {
+		if (epoch != addEpoch) {
+			return; // left the world meanwhile
+		}
+		READY.put(ticket, () -> enqueue(pos, tracks, titles));
+		Runnable next;
+		while ((next = READY.remove(nextToApply)) != null) {
+			nextToApply++;
+			next.run();
+		}
+	}
+
+	private static void enqueue(BlockPos pos, List<Path> tracks, List<String> titles) {
 		Map<UUID, Path> registered = new LinkedHashMap<>();
 		List<QueueAddPayload.NewEntry> batch = new ArrayList<>();
-		for (Path track : tracks.subList(0, Math.min(tracks.size(), SpeakerQueue.MAX_ENTRIES))) {
+		for (int i = 0; i < tracks.size(); i++) {
 			UUID id = UUID.randomUUID();
-			registered.put(id, track);
-			batch.add(new QueueAddPayload.NewEntry(id, titleOf(track)));
+			registered.put(id, tracks.get(i));
+			batch.add(new QueueAddPayload.NewEntry(id, titles.get(i)));
 			if (batch.size() == QueueAddPayload.MAX_ENTRIES) {
-				PENDING.add(new QueueAddPayload(pos.immutable(), batch));
+				PENDING.add(new QueueAddPayload(pos, batch));
 				batch = new ArrayList<>();
 			}
 		}
 		if (!batch.isEmpty()) {
-			PENDING.add(new QueueAddPayload(pos.immutable(), batch));
+			PENDING.add(new QueueAddPayload(pos, batch));
 		}
 		TrackTableStore.register(registered);
 		sendPending();
 	}
 
-	/** The title shown to everyone: the file name without its extension. */
-	static String titleOf(Path track) {
-		String name = track.getFileName().toString();
-		int dot = name.lastIndexOf('.');
-		String title = dot > 0 ? name.substring(0, dot) : name;
-		return title.length() > QueueEntry.MAX_TITLE ? title.substring(0, QueueEntry.MAX_TITLE) : title;
+	/** The title shown to everyone: "Artist — Title" from the tags, otherwise the file name without its extension. */
+	static String titleOf(Path track, TrackInfo info) {
+		return info.queueTitle(AudioFiles.baseName(track), QueueEntry.MAX_TITLE);
+	}
+
+	private static String fileNameTitle(Path track) {
+		return titleOf(track, TrackInfo.empty(""));
 	}
 
 	private static void sendPending() {
@@ -93,6 +135,9 @@ public final class LocalPlayback {
 		EMITTERS.values().forEach(StreamEmitter::cancel);
 		EMITTERS.clear();
 		PENDING.clear();
+		READY.clear();
+		addEpoch++;
+		nextToApply = nextTicket;
 		cooldown = 0;
 	}
 

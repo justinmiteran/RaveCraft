@@ -35,4 +35,17 @@ public record TrackInfo(String title, String artist, String album, String year, 
 	public Optional<String> sharedTitle() {
 		return title.isEmpty() || artist.isEmpty() ? Optional.empty() : Optional.of(artist + " — " + title);
 	}
+
+	/** {@link #sharedTitle()}, otherwise {@code fallback}, cut to {@code max} chars without splitting a surrogate pair. */
+	public String queueTitle(String fallback, int max) {
+		String title = sharedTitle().orElse(fallback);
+		if (title.length() <= max) {
+			return title;
+		}
+		int end = max;
+		if (end > 0 && Character.isHighSurrogate(title.charAt(end - 1))) {
+			end--;
+		}
+		return title.substring(0, end);
+	}
 }

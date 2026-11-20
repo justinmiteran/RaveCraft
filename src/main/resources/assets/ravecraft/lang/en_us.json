@@ -10,6 +10,7 @@
   "screen.ravecraft.speaker.queue_empty": "Queue empty",
   "screen.ravecraft.speaker.off": "Speaker off",
   "screen.ravecraft.speaker.time": "%s:%s",
+  "screen.ravecraft.speaker.time_of": "%s / %s",
   "screen.ravecraft.speaker.remove": "Remove",
   "screen.ravecraft.speaker.shuffle.off": "Shuffle: off",
   "screen.ravecraft.speaker.shuffle.on": "Shuffle: on",

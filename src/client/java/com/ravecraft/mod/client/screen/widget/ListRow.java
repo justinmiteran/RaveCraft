@@ -33,6 +33,16 @@ public interface ListRow {
 	/** Draws the row between {@code left} and {@code end}, where its items begin. */
 	void draw(GuiGraphicsExtractor graphics, Font font, int left, int end, int y);
 
+	/** True when the row can be dragged elsewhere in a list that reorders. */
+	default boolean draggable() {
+		return false;
+	}
+
+	/** True when {@code mouseX} is on one of the items laid from {@code right}. */
+	default boolean onItem(Font font, double mouseX, int right) {
+		return itemAt(font, mouseX, right) != null;
+	}
+
 	/** A click on the row outside its items; true when it did something. */
 	default boolean click(boolean doubleClick) {
 		return false;

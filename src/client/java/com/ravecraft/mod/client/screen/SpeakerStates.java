@@ -58,15 +58,18 @@ public final class SpeakerStates {
 
 	/** Sends a command with a numeric value (seek position, volume...) when the server accepts speaker commands. */
 	public static void send(BlockPos pos, Command command, long value) {
-		if (ClientPlayNetworking.canSend(SpeakerCommandPayload.TYPE)) {
-			ClientPlayNetworking.send(new SpeakerCommandPayload(pos, command, Optional.empty(), value));
-		}
+		send(pos, command, Optional.empty(), value);
 	}
 
 	/** Sends a command about one entry (or none) when the server accepts speaker commands. */
 	public static void send(BlockPos pos, Command command, Optional<UUID> entryId) {
+		send(pos, command, entryId, 0);
+	}
+
+	/** Sends a command about one entry with a numeric value (MOVE's index) when the server accepts speaker commands. */
+	public static void send(BlockPos pos, Command command, Optional<UUID> entryId, long value) {
 		if (ClientPlayNetworking.canSend(SpeakerCommandPayload.TYPE)) {
-			ClientPlayNetworking.send(new SpeakerCommandPayload(pos, command, entryId));
+			ClientPlayNetworking.send(new SpeakerCommandPayload(pos, command, entryId, value));
 		}
 	}
 

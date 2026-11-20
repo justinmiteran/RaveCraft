@@ -1,12 +1,14 @@
 package com.ravecraft.mod.client.screen.widget;
 
 import com.ravecraft.mod.client.screen.SpeakerStates;
+import com.ravecraft.mod.core.ui.RowDrag;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload.StateEntry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.BlockPos;
@@ -16,7 +18,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * The speaker's queue in the order the server sends it, in a recessed panel: the current row in yellow, the owner
  * on the right (greyed when away), a ✕ per row sending {@code REMOVE}, and a {@code Next round} separator at
- * {@code nextRoundIndex}. Scrolls with the mouse wheel when the rows do not fit.
+ * {@code nextRoundIndex}. Scrolls with the mouse wheel when the rows do not fit. Entries other than the current one
+ * are dragged into what is still to play, between the current row and the separator, which sends {@code MOVE}.
  */
 public final class QueuePanel extends RowList {
 	private static final int ROW_H = 12;
@@ -47,7 +50,44 @@ public final class QueuePanel extends RowList {
 				built.add(new Row(entry, state.current().filter(entry.entryId()::equals).isPresent()));
 			}
 		}
-		rows = List.copyOf(built);
+		List<Row> shown = List.copyOf(built);
+		if (!ids(shown).equals(ids(rows))) {
+			cancelDrag();
+		}
+		rows = shown;
+	}
+
+	private static List<@Nullable UUID> ids(List<Row> rows) {
+		return rows.stream().map(row -> row.entry() == null ? null : row.entry().entryId()).toList();
+	}
+
+	/** The gap right after the current row: 1 when the first row is the current entry, else 0. */
+	private int firstGap() {
+		return !rows.isEmpty() && rows.get(0).current() ? 1 : 0;
+	}
+
+	@Override
+	protected int @Nullable [] dropRange() {
+		if (rows.stream().filter(row -> row.entry() != null).count() < 2) {
+			return null;
+		}
+		int end = rows.size();
+		for (int i = 0; i < rows.size(); i++) {
+			if (rows.get(i).entry() == null) {
+				end = i;
+				break;
+			}
+		}
+		return new int[] {firstGap(), end};
+	}
+
+	@Override
+	protected void onMove(int fromRow, int gap) {
+		StateEntry entry = rows.get(fromRow).entry();
+		int index = RowDrag.moveIndex(fromRow, gap, firstGap());
+		if (entry != null && index >= 0) {
+			SpeakerStates.send(pos, Command.MOVE, Optional.of(entry.entryId()), index);
+		}
 	}
 
 	@Override
@@ -85,6 +125,11 @@ public final class QueuePanel extends RowList {
 			@Override
 			public List<RowItem> items() {
 				return List.of(remove);
+			}
+
+			@Override
+			public boolean draggable() {
+				return !row.current();
 			}
 
 			@Override

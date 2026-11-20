@@ -66,15 +66,21 @@ public final class LocalPlayback {
 		List<Path> capped = List.copyOf(tracks.subList(0, Math.min(tracks.size(), SpeakerQueue.MAX_ENTRIES)));
 		BlockPos at = pos.immutable();
 		int epoch = addEpoch;
-		long ticket = nextTicket++;
-		OffThread.run(() -> {
-			List<String> titles = new ArrayList<>(capped.size());
-			for (Path track : capped) {
-				titles.add(titleOf(track, TrackInfos.readNow(track)));
-			}
-			return titles;
-		}, titles -> finishAdd(epoch, ticket, at, capped, titles),
-				() -> finishAdd(epoch, ticket, at, capped, capped.stream().map(LocalPlayback::fileNameTitle).toList()));
+		// One ticket and one read task per chunk: the first chunk reaches the server after about MAX_ENTRIES reads
+		// instead of after the whole folder, and the tickets keep the chunks in order.
+		for (int from = 0; from < capped.size(); from += QueueAddPayload.MAX_ENTRIES) {
+			List<Path> chunk = capped.subList(from, Math.min(capped.size(), from + QueueAddPayload.MAX_ENTRIES));
+			List<Optional<TrackInfo>> known = chunk.stream().map(TrackInfos::cached).toList();
+			long ticket = nextTicket++;
+			OffThread.run(() -> {
+				List<String> titles = new ArrayList<>(chunk.size());
+				for (int i = 0; i < chunk.size(); i++) {
+					Path track = chunk.get(i);
+					titles.add(titleOf(track, known.get(i).orElseGet(() -> TrackInfos.readNow(track))));
+				}
+				return titles;
+			}, titles -> finishAdd(epoch, ticket, at, chunk, titles), () -> finishAdd(epoch, ticket, at, chunk, fallbackTitles(chunk, known)));
+		}
 	}
 
 	/** Runs the adds that are ready, strictly in ticket order. Client thread. */
@@ -114,8 +120,13 @@ public final class LocalPlayback {
 		return info.queueTitle(AudioFiles.baseName(track), QueueEntry.MAX_TITLE);
 	}
 
-	private static String fileNameTitle(Path track) {
-		return titleOf(track, TrackInfo.empty(""));
+	/** When reading fails: the cached tags where there are some, the file name otherwise. */
+	private static List<String> fallbackTitles(List<Path> tracks, List<Optional<TrackInfo>> known) {
+		List<String> titles = new ArrayList<>(tracks.size());
+		for (int i = 0; i < tracks.size(); i++) {
+			titles.add(titleOf(tracks.get(i), known.get(i).orElseGet(() -> TrackInfo.empty(""))));
+		}
+		return titles;
 	}
 
 	private static void sendPending() {

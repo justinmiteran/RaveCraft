@@ -20,6 +20,8 @@ public record RoomShape(double openness, double meanFreePath, double absorption,
 	/** Irregularity when too few surfaces were met to tell. */
 	private static final double UNKNOWN_IRREGULARITY = 0.5;
 	private static final double MAX_ABSORPTION = 0.999;
+	/** How fast the reverberant tail shrinks as rays escape: half open gives an eighth of the Eyring time. */
+	private static final int OPENNESS_EXPONENT = 3;
 
 	public static RoomShape of(List<RayHit> hits, double rayLength) {
 		if (hits.isEmpty()) {
@@ -65,13 +67,18 @@ public record RoomShape(double openness, double meanFreePath, double absorption,
 		return Math.clamp((double) (faces.size() - BOX_FACES) / scale, 0, 1);
 	}
 
-	/** The time the sound takes to fall 60 dB (Eyring), between 0.1 s and {@code maxDecaySeconds}. */
+	/**
+	 * The time the sound takes to fall 60 dB, between 0.1 s and {@code maxDecaySeconds}: Eyring, scaled by
+	 * {@code (1 - openness)^}{@value #OPENNESS_EXPONENT}. Eyring assumes a diffuse field, which an open space does not
+	 * hold: sound that bounces off the ground leaves instead of coming back, so a field has no tail.
+	 */
 	public double rt60(double maxDecaySeconds) {
 		double a = Math.min(absorption, MAX_ABSORPTION);
 		if (a <= 0) {
 			return maxDecaySeconds;
 		}
-		double seconds = 0.161 * meanFreePath / (-4 * Math.log(1 - a));
+		double enclosed = Math.pow(1 - Math.clamp(openness, 0, 1), OPENNESS_EXPONENT);
+		double seconds = 0.161 * meanFreePath / (-4 * Math.log(1 - a)) * enclosed;
 		return Math.clamp(seconds, MIN_RT60, Math.max(MIN_RT60, maxDecaySeconds));
 	}
 }

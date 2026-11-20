@@ -14,8 +14,10 @@ import java.util.Set;
 public final class TrackInfoCache {
 	public static final int CAPACITY = 512;
 	public static final long RECHECK_MS = 5000;
+	/** The modification date known for a path with nothing cached. */
+	public static final long UNKNOWN_MODIFIED = -1;
 
-	/** {@code knownModified} is -1 when nothing is cached for the path. */
+	/** {@code knownModified} is {@link #UNKNOWN_MODIFIED} when nothing is cached for the path. */
 	public record Lookup(Optional<TrackInfo> info, boolean load, long knownModified) {
 	}
 
@@ -36,10 +38,10 @@ public final class TrackInfoCache {
 		boolean busy = inFlight.contains(path);
 		if (entry == null) {
 			if (busy) {
-				return new Lookup(Optional.empty(), false, -1);
+				return new Lookup(Optional.empty(), false, UNKNOWN_MODIFIED);
 			}
 			inFlight.add(path);
-			return new Lookup(Optional.empty(), true, -1);
+			return new Lookup(Optional.empty(), true, UNKNOWN_MODIFIED);
 		}
 		boolean due = !busy && nowMs - entry.checkedAt() >= RECHECK_MS;
 		if (due) {
@@ -74,6 +76,6 @@ public final class TrackInfoCache {
 	public void failed(String path, long nowMs) {
 		inFlight.remove(path);
 		Cached entry = entries.get(path);
-		entries.put(path, entry == null ? new Cached(null, -1, nowMs) : new Cached(entry.info(), entry.modified(), nowMs));
+		entries.put(path, entry == null ? new Cached(null, UNKNOWN_MODIFIED, nowMs) : new Cached(entry.info(), entry.modified(), nowMs));
 	}
 }

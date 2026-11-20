@@ -15,7 +15,6 @@ import java.util.OptionalLong;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 
@@ -26,7 +25,6 @@ import net.minecraft.util.Util;
 public final class NowPlayingToasts {
 	private static final int CHECK_TICKS = 20;
 	private static final int MAX_NOTICES = 64;
-	private static final SystemToast.SystemToastId NOW_PLAYING = new SystemToast.SystemToastId();
 
 	/** What each session plays, oldest first, dropped when it ends. */
 	private static final Map<Integer, NowPlayingPayload> NOTICES = new LinkedHashMap<>();
@@ -76,8 +74,8 @@ public final class NowPlayingToasts {
 				? OptionalLong.of(screen.pos().asLong())
 				: OptionalLong.empty();
 		Optional<Heard> announce = followed.update(Util.getMillis(), heard, open);
-		announce.flatMap(NowPlayingToasts::noticeOf).ifPresent(notice -> SystemToast.addOrUpdate(
-				client.gui.toastManager(), NOW_PLAYING, Component.translatable("toast.ravecraft.now_playing.title"),
+		announce.flatMap(NowPlayingToasts::noticeOf).ifPresent(notice -> SpeakerTrackToast.show(
+				client.gui.toastManager(), client.font, Component.translatable("toast.ravecraft.now_playing.title"),
 				Component.translatable("toast.ravecraft.now_playing.message", notice.title(), notice.ownerName())));
 	}
 

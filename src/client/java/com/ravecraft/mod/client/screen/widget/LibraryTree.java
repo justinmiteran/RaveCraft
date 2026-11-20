@@ -16,7 +16,6 @@ import java.util.List;
 import java.nio.file.Path;
 import java.util.Optional;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -35,8 +34,6 @@ import net.minecraft.resources.Identifier;
  * so. The state and the search filter live in {@link LibraryTreeModel}.
  */
 public final class LibraryTree extends TreeList {
-	private static final int ROW_H = 11;
-	private static final int ADD_W = SpeakerSprites.ICON + 1;
 	private static final int SEPARATOR = 0xFF6A6A6A;
 
 	private final MusicSource source;
@@ -46,7 +43,7 @@ public final class LibraryTree extends TreeList {
 	private int indexVersion;
 
 	public LibraryTree(int x, int y, int width, int height, MusicSource source, BlockPos pos) {
-		super(x, y, width, height, ROW_H, Component.translatable(SpeakerSprites.KEY + "library"));
+		super(x, y, width, height, Component.translatable(SpeakerSprites.KEY + "library"));
 		this.source = source;
 		this.pos = pos;
 		loadRoots();
@@ -141,7 +138,8 @@ public final class LibraryTree extends TreeList {
 
 	// --- Layout -----------------------------------------------------------------------------------------------
 
-	private List<Row> rows() {
+	@Override
+	protected List<Row> rows() {
 		syncIndex();
 		return model.rows();
 	}
@@ -157,37 +155,52 @@ public final class LibraryTree extends TreeList {
 		return model.isEmpty() ? 0 : rows().size() + (footerShown() ? 1 : 0);
 	}
 
-	private static boolean addable(Row row) {
-		return !row.loading() && !row.node().missing();
+	@Override
+	protected boolean clickable(Row row) {
+		return !row.node().missing();
 	}
 
-	private boolean overAdd(double mouseX) {
-		return mouseX >= rowRight() - ADD_W && mouseX < rowRight();
+	@Override
+	protected boolean greyed(Row row) {
+		return row.node().missing();
+	}
+
+	/** The flat list has no folders, so no arrow column either. */
+	@Override
+	protected boolean arrowColumn() {
+		return !model.flat();
+	}
+
+	@Override
+	protected Identifier icon(SourceNode node) {
+		return switch (node.kind()) {
+			case FOLDER -> SpeakerSprites.FOLDER;
+			case PLAYLIST -> SpeakerSprites.PLAYLIST;
+			case TRACK -> SpeakerSprites.TRACK;
+		};
 	}
 
 	// --- Input ------------------------------------------------------------------------------------------------
 
 	@Override
-	protected boolean clickRow(int index, double mouseX, boolean doubleClick) {
-		List<Row> rows = rows();
-		if (index >= rows.size() || !addable(rows.get(index))) {
+	protected boolean overEnd(Row row, double mouseX) {
+		return overRight(mouseX, ADD_W);
+	}
+
+	@Override
+	protected boolean clickEnd(Row row, double mouseX) {
+		if (full()) {
 			return false;
 		}
-		SourceNode node = rows.get(index).node();
-		if (overAdd(mouseX)) {
-			if (full()) {
-				return false;
-			}
-			add(node);
-			return true;
-		}
-		if (node.kind() == SourceNode.Kind.FOLDER) {
-			toggle(node);
-			return true;
-		}
-		// A track or playlist (a file, not a folder) is queued by a double click, like its + button.
+		add(row.node());
+		return true;
+	}
+
+	/** A track or playlist (a file, not a folder) is queued by a double click, like its + button. */
+	@Override
+	protected boolean clickOther(Row row, boolean doubleClick) {
 		if (doubleClick && !full()) {
-			add(node);
+			add(row.node());
 			return true;
 		}
 		return false;
@@ -204,66 +217,36 @@ public final class LibraryTree extends TreeList {
 	}
 
 	@Override
-	protected void drawRow(GuiGraphicsExtractor graphics, Font font, int index, int left, int right, int rowY,
-			boolean hovered, int mouseX, int mouseY) {
-		List<Row> rows = rows();
-		if (index == rows.size()) {
-			drawFooter(graphics, font, left, right, rowY, hovered, mouseX, mouseY);
-		} else {
-			drawNode(graphics, font, rows.get(index), left, right, rowY, hovered, mouseX, mouseY);
-		}
-	}
-
-	private void drawNode(GuiGraphicsExtractor graphics, Font font, Row row, int left, int right, int rowY,
-			boolean hovered, int mouseX, int mouseY) {
-		int x = indent(row, left);
-		int textY = rowY + 2;
-		if (row.loading()) {
-			drawLoading(graphics, font, x, right, rowY);
-			return;
-		}
+	protected int drawEnd(GuiGraphicsExtractor graphics, Font font, Row row, int right, int y, boolean hovered,
+			int mouseX, int mouseY) {
 		SourceNode node = row.node();
-		boolean missing = node.missing();
-		if (hovered && !missing) {
-			graphics.fill(left, rowY, right, rowY + ROW_H, HOVER);
-		}
-		if (node.kind() == SourceNode.Kind.FOLDER && !missing) {
-			SpeakerSprites.drawArrow(graphics, x + 1, rowY + 3, row.expanded());
-		}
-		// The flat list has no folders, so no arrow column either.
-		int iconX = model.flat() ? x + 1 : x + ARROW_W;
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, icon(node), iconX, rowY + 1, SpeakerSprites.ICON,
-				SpeakerSprites.ICON, missing ? 0.4F : 1.0F);
-		int nameX = iconX + SpeakerSprites.ICON + 2;
-		int end = right;
-		if (missing) {
+		if (node.missing()) {
 			if (hovered) {
-				graphics.setTooltipForNextFrame(font, Component.translatable(SpeakerSprites.KEY + "missing"), mouseX, mouseY);
+				graphics.setTooltipForNextFrame(font, Component.translatable(SpeakerSprites.KEY + "missing"), mouseX,
+						mouseY);
 			}
-		} else {
-			int addX = right - ADD_W;
-			boolean overAdd = hovered && overAdd(mouseX);
-			if (overAdd) {
-				SpeakerSprites.cellHover(graphics, addX - 1, rowY, right, rowY + ROW_H);
-				Component tip = full()
-						? Component.translatable(SpeakerSprites.KEY + "queue_full", SpeakerQueue.MAX_ENTRIES)
-						: Component.translatable(SpeakerSprites.KEY + "add");
-				graphics.setTooltipForNextFrame(font, tip, mouseX, mouseY);
-			} else if (hovered) {
-				graphics.setTooltipForNextFrame(font, rowTooltip(node), Optional.empty(), mouseX, mouseY);
-			}
-			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PLUS, addX, rowY + 1, SpeakerSprites.ICON,
-					SpeakerSprites.ICON, full() ? 0.4F : 1.0F);
-			end = addX - 2;
-			if (node.kind() == SourceNode.Kind.FOLDER) {
-				String count = countLabel(node);
-				end -= font.width(count);
-				graphics.text(font, count, end, textY, SpeakerSprites.MUTED, false);
-				end -= 3;
-			}
+			return right;
 		}
-		String name = SpeakerSprites.fit(font, node.name(), end - nameX);
-		graphics.text(font, name, nameX, textY, missing ? SpeakerSprites.ABSENT : SpeakerSprites.TEXT, !missing);
+		int addX = right - ADD_W;
+		if (hovered && overEnd(row, mouseX)) {
+			SpeakerSprites.cellHover(graphics, addX - 1, y, right, y + ROW_H);
+			Component tip = full()
+					? Component.translatable(SpeakerSprites.KEY + "queue_full", SpeakerQueue.MAX_ENTRIES)
+					: Component.translatable(SpeakerSprites.KEY + "add");
+			graphics.setTooltipForNextFrame(font, tip, mouseX, mouseY);
+		} else if (hovered) {
+			graphics.setTooltipForNextFrame(font, rowTooltip(node), Optional.empty(), mouseX, mouseY);
+		}
+		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PLUS, addX, y + 1, SpeakerSprites.ICON,
+				SpeakerSprites.ICON, full() ? 0.4F : 1.0F);
+		int end = addX - 2;
+		if (node.kind() == SourceNode.Kind.FOLDER) {
+			String count = countLabel(node);
+			end -= font.width(count);
+			graphics.text(font, count, end, y + 2, SpeakerSprites.MUTED, false);
+			end -= 3;
+		}
+		return end;
 	}
 
 	/**
@@ -290,7 +273,9 @@ public final class LibraryTree extends TreeList {
 		return LibraryIndexStore.countLabel(source.id(), folder.id()).orElse("…");
 	}
 
-	private void drawFooter(GuiGraphicsExtractor graphics, Font font, int left, int right, int rowY, boolean hovered,
+	/** The status line: the index being brought up to date, or how many entries the flat list holds. */
+	@Override
+	protected void drawExtraRow(GuiGraphicsExtractor graphics, Font font, int left, int right, int rowY, boolean hovered,
 			int mouseX, int mouseY) {
 		LibraryIndex current = syncIndex();
 		boolean refreshing = LibraryIndexStore.refreshing(source);
@@ -309,13 +294,5 @@ public final class LibraryTree extends TreeList {
 					SpeakerSprites.MUTED, true);
 		}
 		graphics.text(font, found, countX, textY, SpeakerSprites.MUTED, true);
-	}
-
-	private static Identifier icon(SourceNode node) {
-		return switch (node.kind()) {
-			case FOLDER -> SpeakerSprites.FOLDER;
-			case PLAYLIST -> SpeakerSprites.PLAYLIST;
-			case TRACK -> SpeakerSprites.TRACK;
-		};
 	}
 }

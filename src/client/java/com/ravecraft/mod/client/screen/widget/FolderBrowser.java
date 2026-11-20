@@ -21,14 +21,11 @@ import net.minecraft.network.chat.Component;
  * covered by a chosen one has its {@code +} greyed out. Listing runs off the render thread.
  */
 public final class FolderBrowser extends TreeList {
-	private static final int ROW_H = 11;
-	private static final int ADD_W = SpeakerSprites.ICON + 1;
-
 	private final Consumer<Path> onAdd;
 	private Predicate<Path> covered = path -> false;
 
 	public FolderBrowser(int width, int height, Consumer<Path> onAdd) {
-		super(0, 0, width, height, ROW_H, Component.translatable(SpeakerSprites.KEY + "folders.browser"));
+		super(0, 0, width, height, Component.translatable(SpeakerSprites.KEY + "folders.browser"));
 		this.onAdd = onAdd;
 	}
 
@@ -64,52 +61,26 @@ public final class FolderBrowser extends TreeList {
 		return path(node).filter(covered.negate()).isPresent();
 	}
 
-	private boolean overAdd(double mouseX) {
-		return mouseX >= rowRight() - ADD_W && mouseX < rowRight();
+	@Override
+	protected boolean overEnd(Row row, double mouseX) {
+		return overRight(mouseX, ADD_W);
 	}
 
 	@Override
-	protected int rowCount() {
-		return model.rows().size();
-	}
-
-	@Override
-	protected boolean clickRow(int index, double mouseX, boolean doubleClick) {
-		Row row = model.rows().get(index);
-		if (row.loading()) {
+	protected boolean clickEnd(Row row, double mouseX) {
+		if (!addable(row.node())) {
 			return false;
 		}
-		if (overAdd(mouseX)) {
-			if (!addable(row.node())) {
-				return false;
-			}
-			onAdd.accept(path(row.node()).orElseThrow());
-			return true;
-		}
-		toggle(row.node());
+		onAdd.accept(path(row.node()).orElseThrow());
 		return true;
 	}
 
 	@Override
-	protected void drawRow(GuiGraphicsExtractor graphics, Font font, int index, int left, int right, int y,
-			boolean hovered, int mouseX, int mouseY) {
-		Row row = model.rows().get(index);
-		int x = indent(row, left);
-		if (row.loading()) {
-			drawLoading(graphics, font, x, right, y);
-			return;
-		}
-		SourceNode node = row.node();
-		if (hovered) {
-			graphics.fill(left, y, right, y + ROW_H, HOVER);
-		}
-		SpeakerSprites.drawArrow(graphics, x + 1, y + 3, row.expanded());
-		int iconX = x + ARROW_W;
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.FOLDER, iconX, y + 1, SpeakerSprites.ICON,
-				SpeakerSprites.ICON);
+	protected int drawEnd(GuiGraphicsExtractor graphics, Font font, Row row, int right, int y, boolean hovered,
+			int mouseX, int mouseY) {
 		int addX = right - ADD_W;
-		boolean addable = addable(node);
-		if (hovered && overAdd(mouseX)) {
+		boolean addable = addable(row.node());
+		if (hovered && overEnd(row, mouseX)) {
 			if (addable) {
 				SpeakerSprites.cellHover(graphics, addX - 1, y, right, y + ROW_H);
 			}
@@ -117,12 +88,10 @@ public final class FolderBrowser extends TreeList {
 					: "folders.inside_existing"));
 			graphics.setTooltipForNextFrame(font, tip, mouseX, mouseY);
 		} else if (hovered) {
-			graphics.setTooltipForNextFrame(font, Component.literal(node.id()), mouseX, mouseY);
+			graphics.setTooltipForNextFrame(font, Component.literal(row.node().id()), mouseX, mouseY);
 		}
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PLUS, addX, y + 1, SpeakerSprites.ICON,
 				SpeakerSprites.ICON, addable ? 1.0F : 0.3F);
-		int nameX = iconX + SpeakerSprites.ICON + 2;
-		graphics.text(font, SpeakerSprites.fit(font, node.name(), addX - 2 - nameX), nameX, y + 2,
-				SpeakerSprites.TEXT, true);
+		return addX - 2;
 	}
 }

@@ -7,6 +7,7 @@ import com.ravecraft.mod.client.library.LibraryFoldersStore;
 import com.ravecraft.mod.client.screen.widget.FolderBrowser;
 import com.ravecraft.mod.client.screen.widget.FolderTree;
 import com.ravecraft.mod.client.screen.widget.SpeakerSprites;
+import com.ravecraft.mod.client.screen.widget.TreeList;
 import com.ravecraft.mod.core.library.LibraryFolders;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -35,8 +36,8 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 	private static final int INNER_W = WIDTH - 14;
 	private static final int LIST_Y = 17;
 	/** The tree is shorter while the in-game browser shares the popup. */
-	private static final int LIST_H = 9 * FolderTree.ROW_H + 4;
-	private static final int LIST_H_BROWSING = 4 * FolderTree.ROW_H + 4;
+	private static final int LIST_H = 9 * TreeList.ROW_H + 4;
+	private static final int LIST_H_BROWSING = 4 * TreeList.ROW_H + 4;
 	private static final int BUTTON_Y = HEIGHT - 18;
 	private static final int BROWSER_Y = LIST_Y + LIST_H_BROWSING + 3 + 11 + 10;
 	private static final int BUTTON_H = 14;

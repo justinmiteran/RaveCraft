@@ -23,7 +23,6 @@ import net.minecraft.resources.Identifier;
  * small red sign: clicking it expands every folder down to the exclusions inside.
  */
 public final class FolderTree extends TreeList {
-	public static final int ROW_H = 11;
 	private static final int ACTION_W = SpeakerSprites.ICON + 2;
 	private static final int MARK_W = SpeakerSprites.ICON + 2;
 
@@ -41,7 +40,7 @@ public final class FolderTree extends TreeList {
 	private volatile List<Path> roots = List.of();
 
 	public FolderTree(int width, int height, Actions actions) {
-		super(0, 0, width, height, ROW_H, Component.translatable(SpeakerSprites.KEY + "folders.title"));
+		super(0, 0, width, height, Component.translatable(SpeakerSprites.KEY + "folders.title"));
 		this.actions = actions;
 	}
 
@@ -76,15 +75,6 @@ public final class FolderTree extends TreeList {
 		}
 	}
 
-	private List<Row> rows() {
-		return model.rows();
-	}
-
-	@Override
-	protected int rowCount() {
-		return model.isEmpty() ? 0 : rows().size();
-	}
-
 	private static boolean root(Row row) {
 		return row.depth() == 0;
 	}
@@ -100,7 +90,7 @@ public final class FolderTree extends TreeList {
 	}
 
 	private boolean overAction(double mouseX) {
-		return mouseX >= rowRight() - ACTION_W && mouseX < rowRight();
+		return overRight(mouseX, ACTION_W);
 	}
 
 	private boolean overMark(double mouseX) {
@@ -109,31 +99,33 @@ public final class FolderTree extends TreeList {
 	}
 
 	@Override
-	protected boolean clickRow(int index, double mouseX, boolean doubleClick) {
-		Row row = rows().get(index);
-		if (row.loading()) {
-			return false;
-		}
+	protected boolean greyed(Row row) {
+		return excluded(row) || row.node().missing();
+	}
+
+	@Override
+	protected String label(Row row) {
+		return root(row) ? row.node().id() : row.node().name();
+	}
+
+	@Override
+	protected boolean overEnd(Row row, double mouseX) {
+		return overAction(mouseX) || marked(row) && overMark(mouseX);
+	}
+
+	@Override
+	protected boolean clickEnd(Row row, double mouseX) {
 		Path path = Path.of(row.node().id());
-		if (overAction(mouseX)) {
-			if (root(row)) {
-				actions.remove(path);
-			} else if (excluded(row)) {
-				actions.include(path);
-			} else {
-				actions.exclude(path);
-			}
-			return true;
-		}
-		if (marked(row) && overMark(mouseX)) {
+		if (!overAction(mouseX)) {
 			reveal(path);
-			return true;
+		} else if (root(row)) {
+			actions.remove(path);
+		} else if (excluded(row)) {
+			actions.include(path);
+		} else {
+			actions.exclude(path);
 		}
-		if (excluded(row)) {
-			return false;
-		}
-		toggle(row.node());
-		return !row.node().missing();
+		return true;
 	}
 
 	@Override
@@ -142,30 +134,10 @@ public final class FolderTree extends TreeList {
 	}
 
 	@Override
-	protected void drawRow(GuiGraphicsExtractor graphics, Font font, int index, int left, int right, int y,
-			boolean hovered, int mouseX, int mouseY) {
-		Row row = rows().get(index);
-		int x = indent(row, left);
-		if (row.loading()) {
-			drawLoading(graphics, font, x, right, y);
-			return;
-		}
-		SourceNode node = row.node();
+	protected int drawEnd(GuiGraphicsExtractor graphics, Font font, Row row, int right, int y, boolean hovered,
+			int mouseX, int mouseY) {
 		boolean excluded = excluded(row);
-		boolean missing = node.missing();
-		boolean grey = excluded || missing;
-		if (hovered) {
-			graphics.fill(left, y, right, y + ROW_H, HOVER);
-		}
-		if (!grey) {
-			SpeakerSprites.drawArrow(graphics, x + 1, y + 3, row.expanded());
-		}
-		int iconX = x + ARROW_W;
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.FOLDER, iconX, y + 1, SpeakerSprites.ICON,
-				SpeakerSprites.ICON, grey ? 0.4F : 1.0F);
-
 		int actionX = right - ACTION_W;
-		boolean overAction = hovered && overAction(mouseX);
 		Identifier action = null;
 		String actionTip = null;
 		if (root(row)) {
@@ -179,7 +151,7 @@ public final class FolderTree extends TreeList {
 			actionTip = "folders.exclude_hint";
 		}
 		if (action != null) {
-			if (overAction) {
+			if (hovered && overAction(mouseX)) {
 				graphics.fill(actionX, y, actionX + ACTION_W, y + ROW_H, HOVER);
 				graphics.setTooltipForNextFrame(font, Component.translatable(SpeakerSprites.KEY + actionTip), mouseX,
 						mouseY);
@@ -201,15 +173,12 @@ public final class FolderTree extends TreeList {
 			end = markX - 1;
 		}
 		if (!excluded) {
-			String count = missing ? Component.translatable(SpeakerSprites.KEY + "missing").getString()
-					: LibraryIndexStore.countLabel("local", node.id()).orElse("…");
+			String count = row.node().missing() ? Component.translatable(SpeakerSprites.KEY + "missing").getString()
+					: LibraryIndexStore.countLabel("local", row.node().id()).orElse("…");
 			end -= font.width(count);
 			graphics.text(font, count, end, y + 2, SpeakerSprites.MUTED, false);
 			end -= 3;
 		}
-		int nameX = iconX + SpeakerSprites.ICON + 2;
-		String name = root(row) ? node.id() : node.name();
-		graphics.text(font, SpeakerSprites.fit(font, name, end - nameX), nameX, y + 2,
-				grey ? SpeakerSprites.ABSENT : SpeakerSprites.TEXT, !grey);
+		return end;
 	}
 }

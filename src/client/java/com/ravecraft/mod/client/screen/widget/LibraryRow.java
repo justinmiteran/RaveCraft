@@ -76,10 +76,9 @@ public abstract sealed class LibraryRow implements ListRow permits FolderRow, Fi
 		return greyed;
 	}
 
-	/** True when the row draws an arrow, open when {@link #expanded()}. */
-	protected abstract boolean showsArrow();
-
-	protected abstract boolean expanded();
+	/** Draws what goes in the arrow column at {@code x, y}; nothing by default, the column staying empty. */
+	protected void drawArrow(GuiGraphicsExtractor graphics, int x, int y) {
+	}
 
 	@Override
 	public List<RowItem> items() {
@@ -99,9 +98,7 @@ public abstract sealed class LibraryRow implements ListRow permits FolderRow, Fi
 	@Override
 	public void draw(GuiGraphicsExtractor graphics, Font font, int left, int end, int y) {
 		int x = indent(left, depth);
-		if (showsArrow()) {
-			SpeakerSprites.drawArrow(graphics, x + 1, y + 3, expanded());
-		}
+		drawArrow(graphics, x + 1, y + 3);
 		int iconX = arrowColumn ? x + ARROW_W : x + 1;
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, icon, iconX, y + 1, SpeakerSprites.ICON, SpeakerSprites.ICON,
 				greyed ? 0.4F : 1.0F);

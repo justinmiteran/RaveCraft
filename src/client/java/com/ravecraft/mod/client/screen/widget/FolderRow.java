@@ -1,6 +1,7 @@
 package com.ravecraft.mod.client.screen.widget;
 
 import com.ravecraft.mod.core.library.SourceNode;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /** A folder: an arrow, and a click anywhere off its items opens or folds it, unless it is greyed. */
 public final class FolderRow extends LibraryRow {
@@ -13,14 +14,12 @@ public final class FolderRow extends LibraryRow {
 		this.toggle = toggle;
 	}
 
+	/** The open or folded arrow; a greyed folder can't be opened, so it shows none. */
 	@Override
-	protected boolean showsArrow() {
-		return !greyed();
-	}
-
-	@Override
-	protected boolean expanded() {
-		return expanded;
+	protected void drawArrow(GuiGraphicsExtractor graphics, int x, int y) {
+		if (!greyed()) {
+			SpeakerSprites.drawArrow(graphics, x, y, expanded);
+		}
 	}
 
 	@Override

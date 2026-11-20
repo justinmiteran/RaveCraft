@@ -29,9 +29,9 @@ public final class TrackInfoReader {
 			long durationMs = TrackDuration.of(file).orElse(-1);
 			TrackInfo info = switch (ext) {
 				case "mp3" -> mp3(file);
-				case "flac" -> TrackInfo.empty("FLAC");
-				case "wav" -> TrackInfo.empty("WAV");
-				case "ogg", "oga", "opus" -> TrackInfo.empty("Ogg");
+				case "flac" -> container(file, "FLAC");
+				case "wav" -> container(file, "WAV");
+				case "ogg", "oga", "opus" -> container(file, "Ogg");
 				default -> TrackInfo.empty(ext.toUpperCase(Locale.ROOT));
 			};
 			return withDuration(info, durationMs);
@@ -82,6 +82,24 @@ public final class TrackInfoReader {
 		return new TrackInfo(tags.get(Id3Tags.TITLE), tags.get(Id3Tags.ARTIST), tags.get(Id3Tags.ALBUM),
 				tags.get(Id3Tags.YEAR), tags.get(Id3Tags.GENRE), "MP3", stream.map(MpegHeader::kbps).orElse(0),
 				stream.map(MpegHeader::rate).orElse(0), stream.map(MpegHeader::channels).orElse(0), -1);
+	}
+
+	/** FLAC, WAV and Ogg: {@code format} is the default name, replaced by the codec for Ogg. */
+	private static TrackInfo container(Path file, String format) {
+		Map<String, String> tags = new HashMap<>();
+		int[] tech = new int[3];
+		String name = format;
+		try (RandomAccessFile f = new RandomAccessFile(file.toFile(), "r")) {
+			switch (format) {
+				case "FLAC" -> ContainerTags.flac(f, tags, tech);
+				case "WAV" -> ContainerTags.wav(f, tags, tech);
+				default -> name = ContainerTags.ogg(f, tags, tech);
+			}
+		} catch (IOException | RuntimeException e) {
+			// Return what was gathered.
+		}
+		return new TrackInfo(tags.get(Id3Tags.TITLE), tags.get(Id3Tags.ARTIST), tags.get(Id3Tags.ALBUM),
+				tags.get(Id3Tags.YEAR), tags.get(Id3Tags.GENRE), name, tech[0], tech[1], tech[2], -1);
 	}
 
 	private static Optional<MpegHeader> findHeader(ByteBuffer b) {

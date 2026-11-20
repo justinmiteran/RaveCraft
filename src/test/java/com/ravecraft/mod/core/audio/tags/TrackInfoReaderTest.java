@@ -1,16 +1,29 @@
 package com.ravecraft.mod.core.audio.tags;
 
+import static com.ravecraft.mod.core.audio.tags.TagBytes.chunk;
+import static com.ravecraft.mod.core.audio.tags.TagBytes.chunkDeclaring;
 import static com.ravecraft.mod.core.audio.tags.TagBytes.concat;
+import static com.ravecraft.mod.core.audio.tags.TagBytes.flac;
+import static com.ravecraft.mod.core.audio.tags.TagBytes.flacBlock;
+import static com.ravecraft.mod.core.audio.tags.TagBytes.flacBlockDeclaring;
 import static com.ravecraft.mod.core.audio.tags.TagBytes.id3Frame;
 import static com.ravecraft.mod.core.audio.tags.TagBytes.id3FrameRaw;
 import static com.ravecraft.mod.core.audio.tags.TagBytes.id3v1;
 import static com.ravecraft.mod.core.audio.tags.TagBytes.id3v2;
 import static com.ravecraft.mod.core.audio.tags.TagBytes.id3v2WithSize;
+import static com.ravecraft.mod.core.audio.tags.TagBytes.listInfo;
 import static com.ravecraft.mod.core.audio.tags.TagBytes.mpegFrame;
+import static com.ravecraft.mod.core.audio.tags.TagBytes.oggPage;
+import static com.ravecraft.mod.core.audio.tags.TagBytes.oggRaw;
+import static com.ravecraft.mod.core.audio.tags.TagBytes.riff;
+import static com.ravecraft.mod.core.audio.tags.TagBytes.vorbisComment;
+import static com.ravecraft.mod.core.audio.tags.TagBytes.wavFmt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -143,12 +156,131 @@ class TrackInfoReaderTest {
 	void brokenFilesNeverThrow() throws IOException {
 		byte[] oversized = concat(id3v2WithSize(4, 20, id3FrameRaw(4, "TIT2", new byte[100])), mpegFrame());
 		byte[] truncated = concat("ID3".getBytes(StandardCharsets.US_ASCII), new byte[] {4, 0, 0});
-		Path[] files = {write("a.mp3", oversized), write("b.mp3", truncated), write("c.mp3")};
+		byte[] flacOverrun = flac(streamInfo(), flacBlockDeclaring(4, 0xFFFFFF, new byte[10]));
+		byte[] hugeCount = ByteBuffer.allocate(12).order(ByteOrder.LITTLE_ENDIAN).putInt(0).putInt(0x7FFFFFFF).array();
+		byte[] flacCount = flac(streamInfo(), flacBlock(4, hugeCount));
+		byte[] oggOverrun = concat(ascii("OggS"), new byte[22], new byte[] {(byte) 255}, new byte[10]);
+		byte[] wavOverrun = riff(wavFmt(2, 44100, 176400), chunkDeclaring("LIST", 0xFFFFFFF0L, new byte[8]));
+		Path[] files = {write("a.mp3", oversized), write("b.mp3", truncated), write("c.mp3"),
+				write("d.flac", flacOverrun), write("e.flac", flacCount), write("f.ogg", oggOverrun),
+				write("g.wav", wavOverrun), write("h.ogg", noise(2048)), write("i.flac", noise(2048)),
+				write("j.wav", noise(2048))};
 		for (Path p : files) {
 			TrackInfo[] out = new TrackInfo[1];
 			assertDoesNotThrow(() -> out[0] = TrackInfoReader.read(p));
 			assertEquals("", out[0].title());
 		}
+	}
+
+	private static byte[] noise(int n) {
+		byte[] b = new byte[n];
+		new Random(11).nextBytes(b);
+		return b;
+	}
+
+	private static byte[] ascii(String s) {
+		return s.getBytes(StandardCharsets.US_ASCII);
+	}
+
+	private static byte[] streamInfo() {
+		ByteBuffer b = ByteBuffer.allocate(34);
+		b.putShort((short) 4096).putShort((short) 4096);
+		b.put(new byte[6]);
+		b.putLong((44100L << 44) | (1L << 41) | (15L << 36) | 88200L);
+		return b.array();
+	}
+
+	private static ByteBuffer le(int n) {
+		return ByteBuffer.allocate(n).order(ByteOrder.LITTLE_ENDIAN);
+	}
+
+	private static byte[] vorbisId() {
+		return concat(new byte[] {1}, ascii("vorbis"),
+				le(23).putInt(0).put((byte) 2).putInt(44100).putInt(0).putInt(192000).putInt(0).put((byte) 0xB8)
+						.array());
+	}
+
+	private static byte[] vorbisComments(String... kv) {
+		return concat(new byte[] {3}, ascii("vorbis"), vorbisComment(kv), new byte[] {1});
+	}
+
+	@Test
+	void flacVorbisComment() throws IOException {
+		byte[] data = flac(streamInfo(), flacBlock(6, new byte[300]),
+				flacBlock(4, vorbisComment("title=Rain", "ARTIST=Mia", "DATE=2021-03-03")));
+		TrackInfo info = TrackInfoReader.read(write("a.flac", data));
+		assertEquals("Rain", info.title());
+		assertEquals("Mia", info.artist());
+		assertEquals("2021", info.year());
+		assertEquals("FLAC", info.format());
+		assertEquals(44100, info.sampleRateHz());
+		assertEquals(2, info.channels());
+		assertEquals(1411, info.bitrateKbps());
+		assertEquals(2000, info.durationMs());
+	}
+
+	@Test
+	void flacFirstValueWins() throws IOException {
+		byte[] data = flac(streamInfo(), flacBlock(4, vorbisComment("TITLE=One", "title=Two")));
+		assertEquals("One", TrackInfoReader.read(write("a.flac", data)).title());
+	}
+
+	@Test
+	void oggVorbisComments() throws IOException {
+		byte[] data = concat(oggPage(0, vorbisId()), oggPage(1, vorbisComments("TITLE=Wave", "ARTIST=Kai")));
+		TrackInfo info = TrackInfoReader.read(write("a.ogg", data));
+		assertEquals("Wave", info.title());
+		assertEquals("Kai", info.artist());
+		assertEquals("Ogg Vorbis", info.format());
+		assertEquals(192, info.bitrateKbps());
+		assertEquals(44100, info.sampleRateHz());
+		assertEquals(2, info.channels());
+	}
+
+	@Test
+	void oggCommentSpanningPages() throws IOException {
+		byte[] packet = vorbisComments("TITLE=Long", "COMMENT=" + "z".repeat(300));
+		byte[] first = java.util.Arrays.copyOfRange(packet, 0, 255);
+		byte[] rest = java.util.Arrays.copyOfRange(packet, 255, packet.length);
+		byte[] data = concat(oggPage(0, vorbisId()), oggRaw(1, 0, new int[] {255}, first),
+				oggRaw(2, 1, new int[] {rest.length}, rest));
+		assertEquals("Long", TrackInfoReader.read(write("a.ogg", data)).title());
+	}
+
+	@Test
+	void oggOpusTags() throws IOException {
+		byte[] head = concat(ascii("OpusHead"), le(11).put((byte) 1).put((byte) 2).putShort((short) 312)
+				.putInt(48000).putShort((short) 0).put((byte) 0).array());
+		byte[] tags = concat(ascii("OpusTags"), vorbisComment("TITLE=Op"));
+		TrackInfo info = TrackInfoReader.read(write("a.opus", oggPage(0, head), oggPage(1, tags)));
+		assertEquals("Op", info.title());
+		assertEquals("Ogg Opus", info.format());
+		assertEquals(48000, info.sampleRateHz());
+		assertEquals(2, info.channels());
+		assertEquals(0, info.bitrateKbps());
+	}
+
+	@Test
+	void wavListInfo() throws IOException {
+		byte[] data = riff(wavFmt(2, 44100, 176400),
+				listInfo("INAM", "Loop", "IART", "Duo", "IPRD", "EP", "ICRD", "2020", "IGNR", "House"),
+				chunk("data", new byte[4]));
+		TrackInfo info = TrackInfoReader.read(write("a.wav", data));
+		assertEquals("Loop", info.title());
+		assertEquals("Duo", info.artist());
+		assertEquals("EP", info.album());
+		assertEquals("2020", info.year());
+		assertEquals("House", info.genre());
+		assertEquals("WAV", info.format());
+		assertEquals(1411, info.bitrateKbps());
+		assertEquals(44100, info.sampleRateHz());
+		assertEquals(2, info.channels());
+	}
+
+	@Test
+	void wavTrailingListAfterData() throws IOException {
+		byte[] data = riff(wavFmt(2, 44100, 176400), chunk("data", new byte[64]), listInfo("INAM", "Late"));
+		assertEquals("Late", TrackInfoReader.read(write("a.wav", data)).title());
 	}
 
 	@Test

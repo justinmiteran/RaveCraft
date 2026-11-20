@@ -19,7 +19,6 @@ public abstract sealed class LibraryRow implements ListRow permits FolderRow, Fi
 	private static final int ARROW_W = 7;
 
 	private final int depth;
-	private Identifier icon = SpeakerSprites.FOLDER;
 	private String label;
 	private boolean greyed;
 	private boolean arrowColumn = true;
@@ -30,11 +29,6 @@ public abstract sealed class LibraryRow implements ListRow permits FolderRow, Fi
 	protected LibraryRow(SourceNode node, int depth) {
 		this.depth = depth;
 		this.label = node.name();
-	}
-
-	public LibraryRow icon(Identifier icon) {
-		this.icon = icon;
-		return this;
 	}
 
 	public LibraryRow label(String label) {
@@ -76,6 +70,9 @@ public abstract sealed class LibraryRow implements ListRow permits FolderRow, Fi
 		return greyed;
 	}
 
+	/** The icon left of the name. */
+	protected abstract Identifier icon();
+
 	/** Draws what goes in the arrow column at {@code x, y}; nothing by default, the column staying empty. */
 	protected void drawArrow(GuiGraphicsExtractor graphics, int x, int y) {
 	}
@@ -100,7 +97,7 @@ public abstract sealed class LibraryRow implements ListRow permits FolderRow, Fi
 		int x = indent(left, depth);
 		drawArrow(graphics, x + 1, y + 3);
 		int iconX = arrowColumn ? x + ARROW_W : x + 1;
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, icon, iconX, y + 1, SpeakerSprites.ICON, SpeakerSprites.ICON,
+		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, icon(), iconX, y + 1, SpeakerSprites.ICON, SpeakerSprites.ICON,
 				greyed ? 0.4F : 1.0F);
 		int nameX = iconX + SpeakerSprites.ICON + 2;
 		graphics.text(font, SpeakerSprites.fit(font, label, end - nameX), nameX, y + 2,

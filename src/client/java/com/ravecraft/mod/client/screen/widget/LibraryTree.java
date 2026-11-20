@@ -19,7 +19,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 
 /**
  * The library as an expandable tree in a recessed panel: the source's roots (the chosen folders), then the
@@ -173,7 +172,6 @@ public final class LibraryTree extends TreeList {
 				}
 			});
 		};
-		line.icon(icon(node));
 		if (model.flat()) {
 			line.noArrowColumn();
 		}
@@ -186,14 +184,6 @@ public final class LibraryTree extends TreeList {
 						Component.translatable(SpeakerSprites.KEY + "queue_full", SpeakerQueue.MAX_ENTRIES));
 		RowItem count = node.kind() == SourceNode.Kind.FOLDER ? RowItem.text(countLabel(node)) : null;
 		return line.item(add).item(count).tooltip(rowTooltip(node));
-	}
-
-	private static Identifier icon(SourceNode node) {
-		return switch (node.kind()) {
-			case FOLDER -> SpeakerSprites.FOLDER;
-			case PLAYLIST -> SpeakerSprites.PLAYLIST;
-			case TRACK -> SpeakerSprites.TRACK;
-		};
 	}
 
 	/**

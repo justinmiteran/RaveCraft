@@ -19,11 +19,11 @@ class LibraryIndexTest {
 	private static final Path DEEP = CHILL.resolve("Deep");
 
 	private static SourceNode track(Path path) {
-		return new SourceNode(path.toString(), Kind.TRACK, AudioFiles.baseName(path), -1, false);
+		return new SourceNode(path.toString(), Kind.TRACK, AudioFiles.baseName(path), false);
 	}
 
 	private static SourceNode playlist(Path path) {
-		return new SourceNode(path.toString(), Kind.PLAYLIST, path.getFileName().toString(), -1, false);
+		return new SourceNode(path.toString(), Kind.PLAYLIST, path.getFileName().toString(), false);
 	}
 
 	private static LibraryIndex sample() {

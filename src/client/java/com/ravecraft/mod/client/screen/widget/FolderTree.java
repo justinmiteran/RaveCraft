@@ -1,12 +1,12 @@
 package com.ravecraft.mod.client.screen.widget;
 
 import com.ravecraft.mod.client.library.LibraryIndexStore;
-import com.ravecraft.mod.client.library.OffThread;
 import com.ravecraft.mod.core.library.LibraryFolders;
-import com.ravecraft.mod.core.library.LibraryTreeModel;
 import com.ravecraft.mod.core.library.LibraryTreeModel.Row;
 import com.ravecraft.mod.core.library.LocalFolderSource;
+import com.ravecraft.mod.core.library.MusicLibrary;
 import com.ravecraft.mod.core.library.SourceNode;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,10 +22,8 @@ import net.minecraft.resources.Identifier;
  * excluded folder is greyed with a red sign that shows it again. A collapsed folder holding an exclusion carries a
  * small red sign: clicking it expands every folder down to the exclusions inside.
  */
-public final class FolderTree extends RowList {
+public final class FolderTree extends TreeList {
 	public static final int ROW_H = 11;
-	private static final int INDENT = 8;
-	private static final int ARROW_W = 7;
 	private static final int ACTION_W = SpeakerSprites.ICON + 2;
 	private static final int MARK_W = SpeakerSprites.ICON + 2;
 
@@ -38,9 +36,9 @@ public final class FolderTree extends RowList {
 	}
 
 	private final Actions actions;
-	private final LibraryTreeModel model = new LibraryTreeModel();
 	private LibraryFolders folders = LibraryFolders.empty();
-	private boolean closed;
+	/** The chosen folders the roots are listed from. */
+	private volatile List<Path> roots = List.of();
 
 	public FolderTree(int width, int height, Actions actions) {
 		super(0, 0, width, height, ROW_H, Component.translatable(SpeakerSprites.KEY + "folders.title"));
@@ -52,41 +50,20 @@ public final class FolderTree extends RowList {
 		boolean reload = model.generation() == 0 || !folders.paths().equals(this.folders.paths());
 		this.folders = folders;
 		if (reload) {
-			resetScroll();
-			model.startLoading();
-			int generation = model.generation();
-			List<Path> roots = folders.paths();
-			OffThread.run(() -> new LocalFolderSource(() -> roots).roots(), nodes -> {
-				if (!closed) {
-					model.setRoots(generation, nodes);
-				}
-			}, () -> model.setRoots(generation, List.of()));
+			roots = folders.paths();
+			loadRoots();
 		}
 	}
 
-	/** Stops applying late disk listings once the popup is gone. */
-	public void close() {
-		closed = true;
+	@Override
+	protected List<SourceNode> listRoots() {
+		List<Path> chosen = roots;
+		return new LocalFolderSource(() -> chosen).roots();
 	}
 
-	private void loadChildren(String id) {
-		int generation = model.generation();
-		OffThread.run(() -> subfolders(id), nodes -> {
-			if (!closed) {
-				model.setChildren(generation, id, nodes);
-			}
-		}, () -> model.setChildren(generation, id, List.of()));
-	}
-
-	private static List<SourceNode> subfolders(String id) throws java.io.IOException {
-		LocalFolderSource source = new LocalFolderSource(List::of);
-		List<SourceNode> nodes = new ArrayList<>();
-		for (SourceNode node : source.children(new SourceNode(id, SourceNode.Kind.FOLDER, "", 0, false))) {
-			if (node.kind() == SourceNode.Kind.FOLDER) {
-				nodes.add(node);
-			}
-		}
-		return nodes;
+	@Override
+	protected List<SourceNode> listChildren(String folderId) throws IOException {
+		return MusicLibrary.folderNodes(Path.of(folderId));
 	}
 
 	private void reveal(Path folder) {
@@ -132,7 +109,7 @@ public final class FolderTree extends RowList {
 	}
 
 	@Override
-	protected boolean clickRow(int index, double mouseX) {
+	protected boolean clickRow(int index, double mouseX, boolean doubleClick) {
 		Row row = rows().get(index);
 		if (row.loading()) {
 			return false;
@@ -155,28 +132,22 @@ public final class FolderTree extends RowList {
 		if (excluded(row)) {
 			return false;
 		}
-		if (model.toggle(row.node())) {
-			loadChildren(row.node().id());
-		}
+		toggle(row.node());
 		return !row.node().missing();
 	}
 
 	@Override
 	protected void drawEmpty(GuiGraphicsExtractor graphics, Font font) {
-		Component empty = Component.translatable(SpeakerSprites.KEY + "no_folders");
-		graphics.centeredText(font, SpeakerSprites.fit(font, empty.getString(), width - 2 * PAD - 2), getX() + width / 2,
-				innerTop() + 6, SpeakerSprites.MUTED);
+		drawMessage(graphics, font, "no_folders");
 	}
 
 	@Override
 	protected void drawRow(GuiGraphicsExtractor graphics, Font font, int index, int left, int right, int y,
 			boolean hovered, int mouseX, int mouseY) {
 		Row row = rows().get(index);
-		int x = left + 1 + row.depth() * INDENT;
+		int x = indent(row, left);
 		if (row.loading()) {
-			String loading = Component.translatable(SpeakerSprites.KEY + "loading").getString();
-			graphics.text(font, SpeakerSprites.fit(font, loading, right - x - ARROW_W), x + ARROW_W, y + 2,
-					SpeakerSprites.MUTED, false);
+			drawLoading(graphics, font, x, right, y);
 			return;
 		}
 		SourceNode node = row.node();
@@ -231,7 +202,7 @@ public final class FolderTree extends RowList {
 		}
 		if (!excluded) {
 			String count = missing ? Component.translatable(SpeakerSprites.KEY + "missing").getString()
-					: LibraryIndexStore.countLabel("local", node.id()).orElse(Integer.toString(node.trackCount()));
+					: LibraryIndexStore.countLabel("local", node.id()).orElse("…");
 			end -= font.width(count);
 			graphics.text(font, count, end, y + 2, SpeakerSprites.MUTED, false);
 			end -= 3;
@@ -241,6 +212,4 @@ public final class FolderTree extends RowList {
 		graphics.text(font, SpeakerSprites.fit(font, name, end - nameX), nameX, y + 2,
 				grey ? SpeakerSprites.ABSENT : SpeakerSprites.TEXT, !grey);
 	}
-
-	/** A 5 px triangle: pointing right when collapsed, down when expanded. */
 }

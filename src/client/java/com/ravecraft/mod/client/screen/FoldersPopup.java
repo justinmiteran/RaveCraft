@@ -119,6 +119,7 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 		closed = true;
 		pickRequest++;
 		tree.close();
+		browser.close();
 		FolderPicker.coolDown();
 	}
 

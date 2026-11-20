@@ -1,6 +1,5 @@
 package com.ravecraft.mod.client.screen.widget;
 
-import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.client.audio.LocalPlayback;
 import com.ravecraft.mod.client.library.LibraryIndexStore;
 import com.ravecraft.mod.client.library.OffThread;
@@ -11,22 +10,19 @@ import com.ravecraft.mod.core.library.LibraryTreeModel.Row;
 import com.ravecraft.mod.core.library.MusicSource;
 import com.ravecraft.mod.core.library.SourceNode;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.nio.file.Path;
 import java.util.Optional;
-import com.ravecraft.mod.core.ui.Scrollbar;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.Mth;
 
 /**
  * The library as an expandable tree in a recessed panel: the source's roots (the chosen folders), then the
@@ -38,32 +34,22 @@ import net.minecraft.util.Mth;
  * {@link LibraryIndexStore}, shown at once and brought up to date in the background; while it is, a last row says
  * so. The state and the search filter live in {@link LibraryTreeModel}.
  */
-public final class LibraryTree extends AbstractWidget {
+public final class LibraryTree extends TreeList {
 	private static final int ROW_H = 11;
-	private static final int PAD = 2;
-	private static final int INDENT = 8;
-	private static final int ARROW_W = 7;
-	private static final int SCROLLBAR_W = 2;
 	private static final int ADD_W = SpeakerSprites.ICON + 1;
-	private static final int HOVER = 0x30FFFFFF;
 	private static final int SEPARATOR = 0xFF6A6A6A;
 
 	private final MusicSource source;
 	private final BlockPos pos;
-	private final LibraryTreeModel model = new LibraryTreeModel();
-	private int scroll;
-	private final Scrollbar bar = new Scrollbar();
 	/** The index the rows were last built from, and its version then. */
 	private @org.jspecify.annotations.Nullable LibraryIndex index;
 	private int indexVersion;
 
 	public LibraryTree(int x, int y, int width, int height, MusicSource source, BlockPos pos) {
-		super(x, y, width, height, Component.translatable(SpeakerSprites.KEY + "library"));
+		super(x, y, width, height, ROW_H, Component.translatable(SpeakerSprites.KEY + "library"));
 		this.source = source;
 		this.pos = pos;
-		model.startLoading();
-		int generation = model.generation();
-		OffThread.run(source::roots, roots -> model.setRoots(generation, roots), () -> model.setRoots(generation, List.of()));
+		loadRoots();
 		LibraryIndexStore.open(source);
 		syncIndex();
 	}
@@ -73,14 +59,7 @@ public final class LibraryTree extends AbstractWidget {
 	 * changed): the roots and the open folders are read again, the index is walked again in the background.
 	 */
 	public void reload() {
-		int generation = model.generation() + 1;
-		List<String> open = model.refresh();
-		OffThread.run(source::roots, roots -> model.setRoots(generation, roots), () -> model.setRoots(generation, List.of()));
-		for (String id : open) {
-			SourceNode folder = new SourceNode(id, SourceNode.Kind.FOLDER, "", -1, false);
-			OffThread.run(() -> source.children(folder), nodes -> model.setChildren(generation, id, nodes),
-					() -> model.setChildren(generation, id, List.of()));
-		}
+		reloadAll();
 		LibraryIndexStore.refresh(source);
 		syncIndex();
 	}
@@ -89,12 +68,18 @@ public final class LibraryTree extends AbstractWidget {
 	public void setFlat(boolean flat) {
 		if (flat != model.flat()) {
 			model.setFlat(flat);
-			scroll = 0;
+			resetScroll();
 		}
 	}
 
-	/** Nothing to stop: the index walk goes on after the screen closes and is saved when done. */
-	public void close() {
+	@Override
+	protected List<SourceNode> listRoots() throws IOException {
+		return source.roots();
+	}
+
+	@Override
+	protected List<SourceNode> listChildren(String folderId) throws IOException {
+		return source.children(SourceNode.folder(folderId));
 	}
 
 	/** Hands the index's entries to the flat list when the index changed since the last look. */
@@ -111,7 +96,7 @@ public final class LibraryTree extends AbstractWidget {
 	/** Filters the loaded rows by name; never reads the disk. */
 	public void setFilter(String filter) {
 		model.setFilter(filter);
-		scroll = 0;
+		resetScroll();
 	}
 
 	/** True once the roots are known and there are none: the screen then offers to choose a folder. */
@@ -125,18 +110,10 @@ public final class LibraryTree extends AbstractWidget {
 		return !model.isEmpty() && super.isMouseOver(mouseX, mouseY);
 	}
 
-	private void toggle(SourceNode folder) {
-		if (model.toggle(folder)) {
-			int generation = model.generation();
-			OffThread.run(() -> source.children(folder), nodes -> model.setChildren(generation, folder.id(), nodes),
-					() -> model.setChildren(generation, folder.id(), List.of()));
-		}
-	}
-
 	private void add(SourceNode node) {
 		if (node.kind() == SourceNode.Kind.FOLDER) {
 			// A folder brings its subfolders' tracks too, as found by the library walk.
-			List<java.nio.file.Path> indexed =
+			List<Path> indexed =
 					LibraryIndexStore.get(source).tracksUnder(node.id(), SpeakerQueue.roomLeft(queued()));
 			if (!indexed.isEmpty()) {
 				LocalPlayback.add(pos, indexed);
@@ -174,37 +151,10 @@ public final class LibraryTree extends AbstractWidget {
 		return LibraryIndexStore.refreshing(source) || model.flat() && syncIndex().truncated();
 	}
 
-	private int rowCount() {
-		return rows().size() + (footerShown() ? 1 : 0);
-	}
-
-	private int innerTop() {
-		return getY() + PAD;
-	}
-
-	private int innerHeight() {
-		return height - 2 * PAD;
-	}
-
-	private int maxScroll() {
-		return Math.max(0, rowCount() * ROW_H - innerHeight());
-	}
-
-	private int rowLeft() {
-		return getX() + PAD;
-	}
-
-	private int rowRight() {
-		return getX() + width - PAD - (maxScroll() > 0 ? SCROLLBAR_W + 1 : 0);
-	}
-
-	/** Index of the visible row under the mouse, or -1 (rows scrolled out of the panel do not count). */
-	private int rowAt(double mouseX, double mouseY) {
-		if (mouseX < getX() + 1 || mouseX >= getX() + width - 1 || mouseY < innerTop() || mouseY >= innerTop() + innerHeight()) {
-			return -1;
-		}
-		int index = (int) ((mouseY - innerTop() + scroll) / ROW_H);
-		return index >= 0 && index < rowCount() ? index : -1;
+	/** No row at all for an empty library, so the panel shows its message instead. */
+	@Override
+	protected int rowCount() {
+		return model.isEmpty() ? 0 : rows().size() + (footerShown() ? 1 : 0);
 	}
 
 	private static boolean addable(Row row) {
@@ -218,124 +168,58 @@ public final class LibraryTree extends AbstractWidget {
 	// --- Input ------------------------------------------------------------------------------------------------
 
 	@Override
-	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-		if (!isActive() || !isValidClickButton(event.buttonInfo())) {
+	protected boolean clickRow(int index, double mouseX, boolean doubleClick) {
+		List<Row> rows = rows();
+		if (index >= rows.size() || !addable(rows.get(index))) {
 			return false;
 		}
-		if (onBar(event.x(), event.y())) {
-			scroll = bar.press(event.y(), innerTop(), innerHeight(), rowCount() * ROW_H, scroll);
-			return true;
-		}
-		int index = rowAt(event.x(), event.y());
-		if (index < 0) {
-			return false;
-		}
-		if (index == rows().size()) {
-			return false;
-		}
-		Row row = rows().get(index);
-		if (!addable(row)) {
-			return false;
-		}
-		SourceNode node = row.node();
-		if (overAdd(event.x())) {
+		SourceNode node = rows.get(index).node();
+		if (overAdd(mouseX)) {
 			if (full()) {
-				return true;
+				return false;
 			}
-			playDownSound(Minecraft.getInstance().getSoundManager());
 			add(node);
 			return true;
 		}
 		if (node.kind() == SourceNode.Kind.FOLDER) {
-			playDownSound(Minecraft.getInstance().getSoundManager());
 			toggle(node);
 			return true;
 		}
-		if (doubleClick) {
-			// A track or playlist (a file, not a folder) is queued by a double click, like its + button.
-			if (!full()) {
-				playDownSound(Minecraft.getInstance().getSoundManager());
-				add(node);
-			}
+		// A track or playlist (a file, not a folder) is queued by a double click, like its + button.
+		if (doubleClick && !full()) {
+			add(node);
 			return true;
 		}
 		return false;
 	}
 
-	/** True when a press at {@code (x, y)} lands on the scrollbar while there is something to scroll. */
-	private boolean onBar(double x, double y) {
-		return maxScroll() > 0 && Scrollbar.hits(x, getX() + width - PAD - SCROLLBAR_W, getX() + width) && y >= innerTop()
-				&& y < innerTop() + innerHeight();
-	}
-
-	@Override
-	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-		if (bar.dragging()) {
-			scroll = bar.drag(event.y(), innerTop(), innerHeight(), rowCount() * ROW_H);
-			return true;
-		}
-		return super.mouseDragged(event, dx, dy);
-	}
-
-	@Override
-	public boolean mouseReleased(MouseButtonEvent event) {
-		bar.release();
-		return super.mouseReleased(event);
-	}
-
-	@Override
-	public boolean mouseScrolled(double x, double y, double scrollX, double scrollY) {
-		int max = maxScroll();
-		if (max == 0) {
-			return false;
-		}
-		scroll = Mth.clamp(scroll - (int) Math.round(scrollY * ROW_H), 0, max);
-		return true;
-	}
-
 	// --- Drawing ----------------------------------------------------------------------------------------------
 
 	@Override
-	protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
-		Font font = Minecraft.getInstance().font;
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.INSET, getX(), getY(), width, height);
+	protected void drawEmpty(GuiGraphicsExtractor graphics, Font font) {
 		if (model.isEmpty()) {
 			// The screen puts its "Choose a folder…" button under this message.
-			Component empty = Component.translatable(SpeakerSprites.KEY + "no_folders");
-			graphics.centeredText(font, SpeakerSprites.fit(font, empty.getString(), width - 2 * PAD - 2),
-					getX() + width / 2, innerTop() + 6, SpeakerSprites.MUTED);
-			return;
+			drawMessage(graphics, font, "no_folders");
 		}
-		List<Row> rows = rows();
-		scroll = Mth.clamp(scroll, 0, maxScroll());
-		int left = rowLeft();
-		int right = rowRight();
-		int hovered = isHovered() ? rowAt(mouseX, mouseY) : -1;
-		graphics.enableScissor(getX() + 1, innerTop(), getX() + width - 1, innerTop() + innerHeight());
-		int count = rowCount();
-		for (int i = scroll / ROW_H; i < count; i++) {
-			int rowY = innerTop() + i * ROW_H - scroll;
-			if (rowY >= innerTop() + innerHeight()) {
-				break;
-			}
-			if (i == rows.size()) {
-				drawFooter(graphics, font, left, right, rowY, i == hovered, mouseX, mouseY);
-			} else {
-				drawRow(graphics, font, rows.get(i), left, right, rowY, i == hovered, mouseX, mouseY);
-			}
-		}
-		graphics.disableScissor();
-		drawScrollbar(graphics, count, mouseX, mouseY);
 	}
 
-	private void drawRow(GuiGraphicsExtractor graphics, Font font, Row row, int left, int right, int rowY,
+	@Override
+	protected void drawRow(GuiGraphicsExtractor graphics, Font font, int index, int left, int right, int rowY,
 			boolean hovered, int mouseX, int mouseY) {
-		int x = left + 1 + row.depth() * INDENT;
+		List<Row> rows = rows();
+		if (index == rows.size()) {
+			drawFooter(graphics, font, left, right, rowY, hovered, mouseX, mouseY);
+		} else {
+			drawNode(graphics, font, rows.get(index), left, right, rowY, hovered, mouseX, mouseY);
+		}
+	}
+
+	private void drawNode(GuiGraphicsExtractor graphics, Font font, Row row, int left, int right, int rowY,
+			boolean hovered, int mouseX, int mouseY) {
+		int x = indent(row, left);
 		int textY = rowY + 2;
 		if (row.loading()) {
-			String loading = Component.translatable(SpeakerSprites.KEY + "loading").getString();
-			graphics.text(font, SpeakerSprites.fit(font, loading, right - x - ARROW_W), x + ARROW_W, textY,
-					SpeakerSprites.MUTED, false);
+			drawLoading(graphics, font, x, right, rowY);
 			return;
 		}
 		SourceNode node = row.node();
@@ -433,19 +317,5 @@ public final class LibraryTree extends AbstractWidget {
 			case PLAYLIST -> SpeakerSprites.PLAYLIST;
 			case TRACK -> SpeakerSprites.TRACK;
 		};
-	}
-
-	/** A 5 px triangle: pointing right when collapsed, down when expanded. */
-
-	private void drawScrollbar(GuiGraphicsExtractor graphics, int rowCount, int mouseX, int mouseY) {
-		if (maxScroll() > 0) {
-			ScrollbarView.draw(graphics, getX() + width - PAD - SCROLLBAR_W, innerTop(), innerHeight(),
-					rowCount * ROW_H, scroll, bar.dragging() || isHovered() && onBar(mouseX, mouseY));
-		}
-	}
-
-	@Override
-	protected void updateWidgetNarration(NarrationElementOutput output) {
-		defaultButtonNarrationText(output);
 	}
 }

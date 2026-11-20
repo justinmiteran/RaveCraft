@@ -1,18 +1,16 @@
 package com.ravecraft.mod.client.library;
 
 import com.ravecraft.mod.RaveCraft;
+import com.ravecraft.mod.core.io.AtomicFiles;
 import com.ravecraft.mod.core.library.FlatScan;
 import com.ravecraft.mod.core.library.LibraryIndex;
 import com.ravecraft.mod.core.library.MusicSource;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -179,16 +177,7 @@ public final class LibraryIndexStore {
 		Path file = file(sourceId);
 		CompletableFuture.runAsync(() -> {
 			try {
-				Files.createDirectories(file.getParent());
-				Path temp = Files.createTempFile(file.getParent(), "ravecraft-library-index", ".tmp");
-				try (Writer out = Files.newBufferedWriter(temp, StandardCharsets.UTF_8)) {
-					index.write(out);
-				}
-				try {
-					Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-				} catch (AtomicMoveNotSupportedException e) {
-					Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
-				}
+				AtomicFiles.write(file, index::write);
 			} catch (IOException e) {
 				RaveCraft.LOGGER.warn("Could not save the music library index", e);
 			}

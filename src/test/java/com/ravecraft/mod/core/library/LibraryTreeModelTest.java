@@ -12,11 +12,11 @@ import org.junit.jupiter.api.Test;
 
 class LibraryTreeModelTest {
 	private static SourceNode folder(String id, String name) {
-		return new SourceNode(id, Kind.FOLDER, name, 1, false);
+		return new SourceNode(id, Kind.FOLDER, name, false);
 	}
 
 	private static SourceNode track(String id, String name) {
-		return new SourceNode(id, Kind.TRACK, name, -1, false);
+		return new SourceNode(id, Kind.TRACK, name, false);
 	}
 
 	private static final SourceNode MUSIC = folder("/m", "Musique");
@@ -82,7 +82,7 @@ class LibraryTreeModelTest {
 	void tracksAndMissingFoldersDoNotExpand() {
 		LibraryTreeModel model = new LibraryTreeModel();
 		model.startLoading();
-		SourceNode gone = new SourceNode("/gone", Kind.FOLDER, "gone", 0, true);
+		SourceNode gone = new SourceNode("/gone", Kind.FOLDER, "gone", true);
 		model.setRoots(model.generation(), List.of(gone, INTRO));
 		assertFalse(model.toggle(gone));
 		assertFalse(model.toggle(INTRO));

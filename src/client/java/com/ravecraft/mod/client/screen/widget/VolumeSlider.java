@@ -22,9 +22,6 @@ import net.minecraft.util.Util;
 public final class VolumeSlider extends AbstractWidget {
 	private static final long SEND_INTERVAL_MS = 250;
 	private static final long HOLD_LOCAL_MS = 1000;
-	private static final int KNOB_W = 5;
-	private static final int KNOB_H = 9;
-	private static final int TRACK_H = 5;
 	/** The track starts after the speaker icon and a small gap. */
 	private static final int TRACK_X = SpeakerSprites.ICON + 5;
 
@@ -74,7 +71,7 @@ public final class VolumeSlider extends AbstractWidget {
 	}
 
 	private int valueAt(double mouseX) {
-		double t = (mouseX - (trackX() + KNOB_W / 2.0)) / (trackWidth() - KNOB_W);
+		double t = (mouseX - (trackX() + SpeakerSprites.KNOB_W / 2.0)) / (trackWidth() - SpeakerSprites.KNOB_W);
 		return (int) Math.round(Mth.clamp(t, 0, 1) * SpeakerSettings.MAX_VOLUME);
 	}
 
@@ -112,17 +109,8 @@ public final class VolumeSlider extends AbstractWidget {
 	protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.VOLUME, getX(),
 				getY() + (height - SpeakerSprites.ICON) / 2, SpeakerSprites.ICON, SpeakerSprites.ICON, active ? 1.0F : 0.4F);
-		int x = trackX();
-		int w = trackWidth();
-		int trackY = getY() + (height - TRACK_H) / 2;
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PROGRESS_TRACK, x, trackY, w, TRACK_H);
-		int knobX = x + Math.round((w - KNOB_W) * volume / (float) SpeakerSettings.MAX_VOLUME);
-		if (knobX > x + 1) {
-			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PROGRESS_FILL, x + 1, trackY + 1,
-					knobX - x - 1 + KNOB_W / 2, TRACK_H - 2);
-		}
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PROGRESS_KNOB, knobX, getY() + (height - KNOB_H) / 2,
-				KNOB_W, KNOB_H);
+		SpeakerSprites.copperBar(graphics, trackX(), getY() + (height - SpeakerSprites.BAR_H) / 2, trackWidth(),
+				volume / (float) SpeakerSettings.MAX_VOLUME, true, 1.0F);
 	}
 
 	private int trackX() {

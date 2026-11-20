@@ -11,7 +11,7 @@ class UnavailableSourceTest {
 	@Test
 	void isLockedAndEmpty() throws IOException {
 		MusicSource usb = new UnavailableSource("usb");
-		SourceNode node = new SourceNode("x", SourceNode.Kind.FOLDER, "x", 0, false);
+		SourceNode node = new SourceNode("x", SourceNode.Kind.FOLDER, "x", false);
 		assertEquals("usb", usb.id());
 		assertFalse(usb.available());
 		assertEquals(List.of(), usb.roots());

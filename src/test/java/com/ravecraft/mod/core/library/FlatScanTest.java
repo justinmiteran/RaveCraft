@@ -32,8 +32,8 @@ class FlatScanTest {
 		List<SourceNode> found = new ArrayList<>();
 		assertFalse(new FlatScan(List.of(dir)).run(found::addAll, 64), "nothing left");
 		assertEquals(List.of("b", "c", "mix.m3u"), names(found));
-		assertTrue(found.contains(new SourceNode(deeper.resolve("c.flac").toString(), Kind.TRACK, "c", -1, false)));
-		assertTrue(found.contains(new SourceNode(dir.resolve("mix.m3u").toString(), Kind.PLAYLIST, "mix.m3u", -1,
+		assertTrue(found.contains(new SourceNode(deeper.resolve("c.flac").toString(), Kind.TRACK, "c", false)));
+		assertTrue(found.contains(new SourceNode(dir.resolve("mix.m3u").toString(), Kind.PLAYLIST, "mix.m3u",
 				false)));
 	}
 
@@ -64,7 +64,7 @@ class FlatScanTest {
 		Files.createFile(jingles.resolve("dong.mp3"));
 		Files.createFile(Files.createDirectory(dir.resolve("Chill")).resolve("calm.mp3"));
 		List<SourceNode> found = new ArrayList<>();
-		new FlatScan(List.of(dir), List.of(dir.resolve("Jingles"))).run(found::addAll, 64);
+		new FlatScan(List.of(dir), List.of(dir.resolve("Jingles")), LibraryIndex.LIMIT).run(found::addAll, 64);
 		assertEquals(List.of("calm"), names(found));
 	}
 
@@ -87,30 +87,27 @@ class FlatScanTest {
 	}
 
 	@Test
-	void stopsAfterAPageAndResumesWhereItStopped() throws IOException {
+	void stopsAtTheLimitAndSaysMoreIsLeft() throws IOException {
 		for (String folder : List.of("a", "b")) {
 			Path sub = Files.createDirectory(dir.resolve(folder));
 			Files.createFile(sub.resolve(folder + "1.mp3"));
 			Files.createFile(sub.resolve(folder + "2.mp3"));
 		}
-		FlatScan scan = new FlatScan(List.of(dir), 2);
+		FlatScan scan = new FlatScan(List.of(dir), List.of(), 2);
 		List<SourceNode> found = new ArrayList<>();
 		assertTrue(scan.run(found::addAll, 64), "more is left");
 		assertEquals(List.of("a1", "a2"), names(found));
-		scan.nextPage();
-		assertFalse(scan.run(found::addAll, 64));
-		assertEquals(List.of("a1", "a2", "b1", "b2"), names(found));
 	}
 
 	@Test
-	void aPageEndsOnlyWhenItFoundEnoughEntriesNotAfterManyFolders() throws IOException {
+	void theLimitCountsEntriesNotFolders() throws IOException {
 		for (int i = 0; i < 5; i++) {
 			Files.createDirectory(dir.resolve("empty" + i));
 		}
 		Files.createFile(Files.createDirectory(dir.resolve("z")).resolve("z1.mp3"));
-		FlatScan scan = new FlatScan(List.of(dir), 2);
+		FlatScan scan = new FlatScan(List.of(dir), List.of(), 2);
 		List<SourceNode> found = new ArrayList<>();
-		assertFalse(scan.run(found::addAll, 64), "walking many empty folders does not end the page");
+		assertFalse(scan.run(found::addAll, 64), "walking many empty folders does not reach the limit");
 		assertEquals(List.of("z1"), names(found));
 	}
 
@@ -121,7 +118,7 @@ class FlatScanTest {
 		Files.createDirectory(dir.resolve("alias"));
 		Files.createFile(real.resolve("song.mp3"));
 		Path viaAlias = dir.resolve("alias").resolve("..").resolve("real");
-		FlatScan scan = new FlatScan(List.of(viaAlias, real), List.of(), FlatScan.PAGE, folder -> {
+		FlatScan scan = new FlatScan(List.of(viaAlias, real), List.of(), LibraryIndex.LIMIT, folder -> {
 			if (folder.equals(viaAlias)) {
 				throw new java.nio.file.AccessDeniedException(folder.toString());
 			}
@@ -144,7 +141,6 @@ class FlatScanTest {
 			scan.cancel();
 		}, 1);
 		assertFalse(more, "a cancelled scan offers nothing more");
-		assertTrue(scan.cancelled());
 		assertEquals(1, found.size());
 	}
 }

@@ -39,9 +39,7 @@ public final class LocalFolderSource implements MusicSource {
 		for (Path root : roots.get()) {
 			Path fileName = root.getFileName();
 			String name = fileName == null ? root.toString() : fileName.toString();
-			boolean missing = !Files.isDirectory(root);
-			nodes.add(new SourceNode(root.toString(), SourceNode.Kind.FOLDER, name,
-					missing ? 0 : countTracks(root), missing));
+			nodes.add(new SourceNode(root.toString(), SourceNode.Kind.FOLDER, name, !Files.isDirectory(root)));
 		}
 		return nodes;
 	}
@@ -52,26 +50,18 @@ public final class LocalFolderSource implements MusicSource {
 		if (!Files.isDirectory(path)) {
 			return List.of();
 		}
-		List<SourceNode> nodes = new ArrayList<>();
 		List<LibraryEntry> entries;
 		try {
 			entries = MusicLibrary.list(path);
 		} catch (IOException e) {
 			return List.of();
 		}
-		List<Path> hidden = excluded.get();
+		Exclusions hidden = new Exclusions(excluded.get());
+		List<SourceNode> nodes = new ArrayList<>();
 		for (LibraryEntry entry : entries) {
-			if ((entry.kind() == Kind.FOLDER || entry.kind() == Kind.ROOT)
-					&& hidden.contains(entry.path().toAbsolutePath().normalize())) {
-				continue;
+			if (!entry.isBrowsable() || !hidden.hides(entry.path())) {
+				nodes.add(SourceNode.of(entry));
 			}
-			nodes.add(switch (entry.kind()) {
-				case ROOT, FOLDER -> new SourceNode(entry.path().toString(), SourceNode.Kind.FOLDER, entry.name(),
-						countTracks(entry.path()), false);
-				case PLAYLIST -> new SourceNode(entry.path().toString(), SourceNode.Kind.PLAYLIST, entry.name(),
-						-1, false);
-				case TRACK -> new SourceNode(entry.path().toString(), SourceNode.Kind.TRACK, entry.name(), -1, false);
-			});
 		}
 		return nodes;
 	}
@@ -105,20 +95,5 @@ public final class LocalFolderSource implements MusicSource {
 		Path parent = Path.of(node.id()).getParent();
 		Path name = parent == null ? null : parent.getFileName();
 		return name == null ? "" : name.toString();
-	}
-
-	/** Direct audio files only; an unreadable folder counts as empty. */
-	private static int countTracks(Path folder) {
-		try {
-			int count = 0;
-			for (LibraryEntry entry : MusicLibrary.list(folder)) {
-				if (entry.kind() == Kind.TRACK) {
-					count++;
-				}
-			}
-			return count;
-		} catch (IOException e) {
-			return 0;
-		}
 	}
 }

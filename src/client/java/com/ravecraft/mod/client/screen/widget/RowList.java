@@ -12,8 +12,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
 /**
- * A recessed panel of fixed-height rows with wheel scrolling and a thin scrollbar, the base of the folder lists.
- * Subclasses draw a row and handle a click on it.
+ * A recessed panel of fixed-height rows with wheel scrolling and a thin scrollbar, the base of the library and folder
+ * lists. Subclasses draw a row and handle a click on it; a click that did something plays the button sound.
  */
 public abstract class RowList extends AbstractWidget {
 	protected static final int PAD = 2;
@@ -34,10 +34,10 @@ public abstract class RowList extends AbstractWidget {
 	protected abstract void drawRow(GuiGraphicsExtractor graphics, Font font, int index, int left, int right, int y,
 			boolean hovered, int mouseX, int mouseY);
 
-	/** Handles a click on a row; true when it did something. */
-	protected abstract boolean clickRow(int index, double mouseX);
+	/** Handles a click on a row ({@code doubleClick} for the second press of a double click); true when it did something. */
+	protected abstract boolean clickRow(int index, double mouseX, boolean doubleClick);
 
-	/** Drawn instead of the rows when there are none. */
+	/** Drawn instead of the rows when {@link #rowCount()} is 0. */
 	protected void drawEmpty(GuiGraphicsExtractor graphics, Font font) {
 	}
 
@@ -80,7 +80,7 @@ public abstract class RowList extends AbstractWidget {
 			return true;
 		}
 		int index = rowAt(event.x(), event.y());
-		if (index >= 0 && clickRow(index, event.x())) {
+		if (index >= 0 && clickRow(index, event.x(), doubleClick)) {
 			playDownSound(Minecraft.getInstance().getSoundManager());
 			return true;
 		}

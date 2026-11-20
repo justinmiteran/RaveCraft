@@ -1,18 +1,21 @@
 package com.ravecraft.mod.client.library;
 
 import com.ravecraft.mod.RaveCraft;
+import com.ravecraft.mod.core.io.AtomicFiles;
 import com.ravecraft.mod.core.library.LibraryFolders;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.util.concurrent.CompletableFuture;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.util.Util;
 
 /** Loads and saves the chosen library folders in the config directory. Errors are logged, never thrown. */
 public final class LibraryFoldersStore {
 	private static LibraryFolders cached;
+	/** The last save, so saves run in order. */
+	private static CompletableFuture<Void> saving = CompletableFuture.completedFuture(null);
 
 	private LibraryFoldersStore() {
 	}
@@ -28,21 +31,18 @@ public final class LibraryFoldersStore {
 		return cached;
 	}
 
+	/** Keeps {@code folders} at once and saves them off thread, one save after the other. */
 	public static synchronized void set(LibraryFolders folders) {
 		cached = folders;
 		Path file = file();
-		try {
-			Files.createDirectories(file.getParent());
-			Path temp = Files.createTempFile(file.getParent(), "ravecraft-library", ".tmp");
-			Files.writeString(temp, folders.toJson(), StandardCharsets.UTF_8);
+		String json = folders.toJson();
+		saving = saving.thenRunAsync(() -> {
 			try {
-				Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-			} catch (AtomicMoveNotSupportedException e) {
-				Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
+				AtomicFiles.write(file, json);
+			} catch (IOException e) {
+				RaveCraft.LOGGER.warn("Could not save the library folders to {}", file, e);
 			}
-		} catch (IOException e) {
-			RaveCraft.LOGGER.warn("Could not save the library folders to {}", file, e);
-		}
+		}, Util.ioPool());
 	}
 
 	private static LibraryFolders load() {

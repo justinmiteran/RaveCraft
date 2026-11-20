@@ -1,10 +1,9 @@
 package com.ravecraft.mod.client.screen.widget;
 
-import com.ravecraft.mod.client.library.OffThread;
-import com.ravecraft.mod.core.library.LibraryTreeModel;
 import com.ravecraft.mod.core.library.LibraryTreeModel.Row;
 import com.ravecraft.mod.core.library.MusicLibrary;
 import com.ravecraft.mod.core.library.SourceNode;
+import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.List;
@@ -21,13 +20,10 @@ import net.minecraft.network.chat.Component;
  * expandable tree of folders, like the library, with a {@code +} on each folder to add it. A folder already
  * covered by a chosen one has its {@code +} greyed out. Listing runs off the render thread.
  */
-public final class FolderBrowser extends RowList {
+public final class FolderBrowser extends TreeList {
 	private static final int ROW_H = 11;
-	private static final int INDENT = 8;
-	private static final int ARROW_W = 7;
 	private static final int ADD_W = SpeakerSprites.ICON + 1;
 
-	private final LibraryTreeModel model = new LibraryTreeModel();
 	private final Consumer<Path> onAdd;
 	private Predicate<Path> covered = path -> false;
 
@@ -43,21 +39,17 @@ public final class FolderBrowser extends RowList {
 
 	/** Lists the drives and home folders again, everything folded. */
 	public void open() {
-		model.startLoading();
-		resetScroll();
-		int generation = model.generation();
-		OffThread.run(MusicLibrary::rootNodes, roots -> model.setRoots(generation, roots),
-				() -> model.setRoots(generation, List.of()));
+		loadRoots();
 	}
 
-	private void toggle(SourceNode folder) {
-		if (model.toggle(folder)) {
-			int generation = model.generation();
-			Optional<Path> path = path(folder);
-			OffThread.run(() -> path.isPresent() ? MusicLibrary.folderNodes(path.get()) : List.<SourceNode>of(),
-					nodes -> model.setChildren(generation, folder.id(), nodes),
-					() -> model.setChildren(generation, folder.id(), List.of()));
-		}
+	@Override
+	protected List<SourceNode> listRoots() {
+		return MusicLibrary.rootNodes();
+	}
+
+	@Override
+	protected List<SourceNode> listChildren(String folderId) throws IOException {
+		return MusicLibrary.folderNodes(Path.of(folderId));
 	}
 
 	private static Optional<Path> path(SourceNode node) {
@@ -82,7 +74,7 @@ public final class FolderBrowser extends RowList {
 	}
 
 	@Override
-	protected boolean clickRow(int index, double mouseX) {
+	protected boolean clickRow(int index, double mouseX, boolean doubleClick) {
 		Row row = model.rows().get(index);
 		if (row.loading()) {
 			return false;
@@ -102,11 +94,9 @@ public final class FolderBrowser extends RowList {
 	protected void drawRow(GuiGraphicsExtractor graphics, Font font, int index, int left, int right, int y,
 			boolean hovered, int mouseX, int mouseY) {
 		Row row = model.rows().get(index);
-		int x = left + 1 + row.depth() * INDENT;
+		int x = indent(row, left);
 		if (row.loading()) {
-			String loading = Component.translatable(SpeakerSprites.KEY + "loading").getString();
-			graphics.text(font, SpeakerSprites.fit(font, loading, right - x - ARROW_W), x + ARROW_W, y + 2,
-					SpeakerSprites.MUTED, false);
+			drawLoading(graphics, font, x, right, y);
 			return;
 		}
 		SourceNode node = row.node();

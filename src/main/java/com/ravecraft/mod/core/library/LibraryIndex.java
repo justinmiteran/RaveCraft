@@ -234,12 +234,12 @@ public final class LibraryIndex {
 			switch (line.charAt(0)) {
 				case 'R' -> roots.add(p);
 				case 'X' -> excluded.add(p);
-				case 'T' -> nodes.add(new SourceNode(p.toString(), SourceNode.Kind.TRACK, AudioFiles.baseName(p), -1,
+				case 'T' -> nodes.add(new SourceNode(p.toString(), SourceNode.Kind.TRACK, AudioFiles.baseName(p),
 						false));
 				case 'P' -> {
 					Path name = p.getFileName();
 					if (name != null) {
-						nodes.add(new SourceNode(p.toString(), SourceNode.Kind.PLAYLIST, name.toString(), -1, false));
+						nodes.add(new SourceNode(p.toString(), SourceNode.Kind.PLAYLIST, name.toString(), false));
 					}
 				}
 				default -> {

@@ -3,6 +3,7 @@ package com.ravecraft.mod.client.screen.widget;
 import com.ravecraft.mod.RaveCraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.resources.Identifier;
 
@@ -48,6 +49,10 @@ public final class SpeakerSprites {
 
 	/** Size of the square icons. */
 	public static final int ICON = 9;
+	/** The copper bar of the progress and the volume: rail height, knob size. */
+	public static final int BAR_H = 5;
+	public static final int KNOB_W = 5;
+	public static final int KNOB_H = 9;
 
 	public static final int COPPER = 0xFFD68448;
 	public static final int COPPER_LIGHT = 0xFFF0AC70;
@@ -68,6 +73,24 @@ public final class SpeakerSprites {
 
 	private static Identifier sprite(String name) {
 		return RaveCraft.id("speaker/" + name);
+	}
+
+	/**
+	 * The copper bar at {@code (x, y)}, {@code w} wide: the rail, the fill up to the knob when {@code filled}, and the
+	 * knob at {@code fraction} (0 to 1) of the way, centred on the rail; a {@code knobAlpha} of 0 leaves it out.
+	 */
+	public static void copperBar(GuiGraphicsExtractor graphics, int x, int y, int w, float fraction, boolean filled,
+			float knobAlpha) {
+		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_TRACK, x, y, w, BAR_H);
+		int knobX = x + Math.round((w - KNOB_W) * fraction);
+		if (filled && knobX > x + 1) {
+			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_FILL, x + 1, y + 1, knobX - x - 1 + KNOB_W / 2,
+					BAR_H - 2);
+		}
+		if (knobAlpha > 0) {
+			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_KNOB, knobX, y - (KNOB_H - BAR_H) / 2, KNOB_W,
+					KNOB_H, knobAlpha);
+		}
 	}
 
 	/** The 5 px arrow of a folder row in a tree: pointing right when folded, down when open. */

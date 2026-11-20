@@ -36,9 +36,6 @@ public final class PlayerBand extends AbstractWidget {
 	private static final float FABRIC_SHADE = 0.6F;
 	private static final int TEXT_X = 42;
 	private static final int TIME_W = 32;
-	private static final int TRACK_H = 5;
-	private static final int KNOB_W = 5;
-	private static final int KNOB_H = 9;
 	private static final int BAR_W = 6;
 	private static final int BAR_GAP = 2;
 	private static final int BAR_MAX = 30;
@@ -70,7 +67,7 @@ public final class PlayerBand extends AbstractWidget {
 
 	private boolean overTrack(double mouseX, double mouseY) {
 		return mouseX >= trackX() - 2 && mouseX < trackX() + trackWidth() + 2
-				&& mouseY >= trackY() - 3 && mouseY < trackY() + TRACK_H + 3;
+				&& mouseY >= trackY() - 3 && mouseY < trackY() + SpeakerSprites.BAR_H + 3;
 	}
 
 	// --- State ------------------------------------------------------------------------------------------------
@@ -217,21 +214,10 @@ public final class PlayerBand extends AbstractWidget {
 				graphics.text(font, time(duration), trackX() + trackWidth() + 4, textY, SpeakerSprites.MUTED);
 			}
 		}
-		int tx = trackX();
-		int ty = trackY();
-		int tw = trackWidth();
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PROGRESS_TRACK, tx, ty, tw, TRACK_H);
 		boolean known = duration > 0;
 		float fraction = known ? Mth.clamp(position / (float) duration, 0, 1) : 0;
-		int knobX = tx + Math.round((tw - KNOB_W) * fraction);
-		if (known && knobX > tx + 1) {
-			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PROGRESS_FILL, tx + 1, ty + 1,
-					knobX - tx - 1 + KNOB_W / 2, TRACK_H - 2);
-		}
-		if (hasCurrent) {
-			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PROGRESS_KNOB, knobX, ty - 2, KNOB_W, KNOB_H,
-					seekable() ? 1.0F : 0.4F);
-		}
+		SpeakerSprites.copperBar(graphics, trackX(), trackY(), trackWidth(), fraction, known,
+				hasCurrent ? (seekable() ? 1.0F : 0.4F) : 0);
 	}
 
 	/** {@code m:ss}, through the translation so a language may write it its own way. */

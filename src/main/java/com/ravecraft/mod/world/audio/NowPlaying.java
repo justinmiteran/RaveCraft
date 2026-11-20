@@ -5,6 +5,7 @@ import com.ravecraft.mod.core.queue.QueueEntry;
 import com.ravecraft.mod.network.Net;
 import com.ravecraft.mod.network.payload.NowPlayingPayload;
 import java.util.Optional;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -31,6 +32,11 @@ public final class NowPlaying {
 
 	public static Optional<NowPlayingPayload> of(int sessionId) {
 		return NOTICES.get(sessionId);
+	}
+
+	/** {@code player} left: tell them again if they come back while the same sessions play. */
+	public static void forget(UUID player) {
+		NOTICES.forget(player);
 	}
 
 	public static void end(int sessionId) {

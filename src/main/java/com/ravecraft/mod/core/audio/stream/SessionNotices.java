@@ -34,6 +34,13 @@ public final class SessionNotices<T> {
 		return Optional.ofNullable(notices.get(sessionId));
 	}
 
+	/** Forgets that {@code player} was told about any session, so a rejoining player is told again. */
+	public void forget(UUID player) {
+		for (Set<UUID> players : told.values()) {
+			players.remove(player);
+		}
+	}
+
 	public void end(int sessionId) {
 		notices.remove(sessionId);
 		told.remove(sessionId);

@@ -47,4 +47,18 @@ class SessionNoticesTest {
 		notices.clear();
 		assertTrue(notices.get(2).isEmpty());
 	}
+
+	@Test
+	void forgetTellsAgain() {
+		SessionNotices<String> notices = new SessionNotices<>();
+		notices.open(1, "a");
+		notices.open(2, "b");
+		notices.firstFor(1, p);
+		notices.firstFor(2, p);
+		notices.firstFor(1, q);
+		notices.forget(p);
+		assertEquals(Optional.of("a"), notices.firstFor(1, p));
+		assertEquals(Optional.of("b"), notices.firstFor(2, p));
+		assertTrue(notices.firstFor(1, q).isEmpty());
+	}
 }

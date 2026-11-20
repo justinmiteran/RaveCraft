@@ -126,6 +126,7 @@ public final class LocalPlayback {
 	private static void finished(int id) {
 		if (EMITTERS.remove(id) != null) {
 			ReceivedStreams.end(id, true);
+			NowPlayingToasts.onSessionEnd(id);
 			ClientPlayNetworking.send(new StreamClosePayload(id, true));
 		}
 	}
@@ -133,6 +134,7 @@ public final class LocalPlayback {
 	private static void failed(int id) {
 		if (EMITTERS.remove(id) != null) {
 			ReceivedStreams.end(id, false);
+			NowPlayingToasts.onSessionEnd(id);
 			ClientPlayNetworking.send(new StreamResultPayload(id));
 		}
 	}

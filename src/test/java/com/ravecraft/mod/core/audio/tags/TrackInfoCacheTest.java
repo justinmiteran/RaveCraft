@@ -53,6 +53,9 @@ class TrackInfoCacheTest {
 		cache.lookup("a", 5000);
 		cache.loaded("a", 8, other, 5003);
 		assertEquals(other, cache.lookup("a", 5004).info().orElseThrow());
+		TrackInfoCache.Lookup due = cache.lookup("a", 5003 + TrackInfoCache.RECHECK_MS);
+		assertTrue(due.load());
+		assertEquals(8, due.knownModified());
 	}
 
 	@Test
@@ -74,8 +77,26 @@ class TrackInfoCacheTest {
 	@Test
 	void failedAllowsRetry() {
 		TrackInfoCache cache = new TrackInfoCache();
-		assertTrue(cache.lookup("a", 0).load());
-		cache.failed("a");
-		assertTrue(cache.lookup("a", 1).load());
+		assertTrue(cache.lookup("a", 100).load());
+		cache.failed("a", 100);
+		TrackInfoCache.Lookup soon = cache.lookup("a", 101);
+		assertFalse(soon.load());
+		assertTrue(soon.info().isEmpty());
+		assertEquals(-1, soon.knownModified());
+		assertTrue(cache.lookup("a", 100 + TrackInfoCache.RECHECK_MS).load());
+	}
+
+	@Test
+	void failedRecheckKeepsInfo() {
+		TrackInfoCache cache = new TrackInfoCache();
+		TrackInfo a = info("a");
+		cache.lookup("a", 0);
+		cache.loaded("a", 7, a, 0);
+		assertTrue(cache.lookup("a", 5000).load());
+		cache.failed("a", 5001);
+		TrackInfoCache.Lookup after = cache.lookup("a", 5002);
+		assertEquals(a, after.info().orElseThrow());
+		assertFalse(after.load());
+		assertEquals(7, after.knownModified());
 	}
 }

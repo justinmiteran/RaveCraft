@@ -36,7 +36,7 @@ public final class TrackInfos {
 				} else {
 					CACHE.loaded(key, result.modified(), result.info(), Util.getMillis());
 				}
-			}, () -> CACHE.failed(key));
+			}, () -> CACHE.failed(key, Util.getMillis()));
 		}
 		return lookup.info();
 	}

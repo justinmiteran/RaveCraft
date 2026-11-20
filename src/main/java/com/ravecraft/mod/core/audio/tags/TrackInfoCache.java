@@ -8,7 +8,7 @@ import java.util.Set;
 
 /**
  * Remembers the tag info of recently shown tracks, keyed by path. It does no I/O: {@link #lookup} says whether a
- * (re)load is due, and the caller reports back with {@link #loaded}, {@link #unchanged} or {@link #failed}. Meant
+ * (re)load is due, and the caller reports back with {@link #loaded}, {@link #unchanged} or {@link #failed}; a failure is retried only after {@link #RECHECK_MS}. Meant
  * for a single thread.
  */
 public final class TrackInfoCache {
@@ -19,6 +19,7 @@ public final class TrackInfoCache {
 	public record Lookup(Optional<TrackInfo> info, boolean load, long knownModified) {
 	}
 
+	/** {@code info} is null for a path whose load failed and that has nothing cached. */
 	private record Cached(TrackInfo info, long modified, long checkedAt) {
 	}
 
@@ -44,7 +45,7 @@ public final class TrackInfoCache {
 		if (due) {
 			inFlight.add(path);
 		}
-		return new Lookup(Optional.of(entry.info()), due, entry.modified());
+		return new Lookup(Optional.ofNullable(entry.info()), due, entry.modified());
 	}
 
 	public void loaded(String path, long modified, TrackInfo info, long nowMs) {
@@ -60,7 +61,13 @@ public final class TrackInfoCache {
 		}
 	}
 
-	public void failed(String path) {
+	/**
+	 * A load or re-check failed. The path is not retried before {@link #RECHECK_MS} has passed; any cached info is
+	 * kept, and a path with none is remembered as having no info.
+	 */
+	public void failed(String path, long nowMs) {
 		inFlight.remove(path);
+		Cached entry = entries.get(path);
+		entries.put(path, entry == null ? new Cached(null, -1, nowMs) : new Cached(entry.info(), entry.modified(), nowMs));
 	}
 }

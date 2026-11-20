@@ -115,6 +115,7 @@ public abstract class RowList extends AbstractWidget {
 		if (!isActive() || !isValidClickButton(event.buttonInfo())) {
 			return false;
 		}
+		cancelDrag();
 		if (onBar(event.x(), event.y())) {
 			scroll = bar.press(event.y(), innerTop(), innerHeight(), rowCount() * rowH, scroll);
 			return true;
@@ -161,7 +162,7 @@ public abstract class RowList extends AbstractWidget {
 			int from = dragFrom;
 			boolean moved = dragging;
 			cancelDrag();
-			if (from >= rowCount()) {
+			if (from >= rowCount() || !row(from).draggable()) {
 				return true;
 			}
 			int[] range = dropRange();
@@ -204,7 +205,7 @@ public abstract class RowList extends AbstractWidget {
 		int left = getX() + PAD;
 		int right = rowRight();
 		int[] range = dropRange();
-		if (dragging && (range == null || dragFrom >= count)) {
+		if (dragFrom >= 0 && (range == null || dragFrom >= count || !row(dragFrom).draggable())) {
 			cancelDrag();
 		}
 		if (dragging) {

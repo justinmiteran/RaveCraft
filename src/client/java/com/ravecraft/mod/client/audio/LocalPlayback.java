@@ -1,5 +1,6 @@
 package com.ravecraft.mod.client.audio;
 
+import com.ravecraft.mod.client.audio.stream.NowPlayingToasts;
 import com.ravecraft.mod.client.audio.stream.ReceivedStreams;
 import com.ravecraft.mod.client.audio.stream.StreamEmitter;
 import com.ravecraft.mod.core.queue.QueueEntry;
@@ -104,6 +105,7 @@ public final class LocalPlayback {
 				emitter.cancel();
 			}
 			ReceivedStreams.end(id, false);
+			NowPlayingToasts.onSessionEnd(id);
 			return;
 		}
 		Optional<Path> track = TrackTableStore.resolve(order.entryId()).filter(Files::isReadable);

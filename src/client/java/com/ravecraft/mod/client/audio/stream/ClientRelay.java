@@ -3,6 +3,7 @@ package com.ravecraft.mod.client.audio.stream;
 import com.ravecraft.mod.client.audio.LocalPlayback;
 import com.ravecraft.mod.client.options.RaveCraftOptions;
 import com.ravecraft.mod.client.screen.SpeakerStates;
+import com.ravecraft.mod.network.payload.NowPlayingPayload;
 import com.ravecraft.mod.network.payload.RelayedChunkPayload;
 import com.ravecraft.mod.network.payload.SessionEndPayload;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload;
@@ -20,11 +21,16 @@ public final class ClientRelay {
 
 	public static void init() {
 		ReceivedStreams.register();
+		NowPlayingToasts.register();
 		SpeakerStates.register();
 		ClientPlayNetworking.registerGlobalReceiver(RelayedChunkPayload.TYPE,
 				(payload, context) -> ReceivedStreams.offer(payload.sessionId(), payload.pos(), payload.seq(), payload.frames()));
 		ClientPlayNetworking.registerGlobalReceiver(SessionEndPayload.TYPE,
-				(payload, context) -> ReceivedStreams.end(payload.sessionId(), payload.drain()));
+				(payload, context) -> {
+					ReceivedStreams.end(payload.sessionId(), payload.drain());
+					NowPlayingToasts.onSessionEnd(payload.sessionId());
+				});
+		ClientPlayNetworking.registerGlobalReceiver(NowPlayingPayload.TYPE, (payload, context) -> NowPlayingToasts.onNotice(payload));
 		ClientPlayNetworking.registerGlobalReceiver(StreamOrderPayload.TYPE,
 				(payload, context) -> LocalPlayback.onOrder(payload));
 		ClientPlayNetworking.registerGlobalReceiver(SpeakerStatePayload.TYPE, (payload, context) -> SpeakerStates.put(payload));

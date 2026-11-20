@@ -143,6 +143,15 @@ public final class AcousticRenderer {
 		return STREAMS.values();
 	}
 
+	/** Client thread: the gain each attached stream is heard at, by session id (0: silent or not traced yet). */
+	public static Map<Integer, Double> heard() {
+		Map<Integer, Double> gains = new HashMap<>();
+		for (RenderStream stream : STREAMS.values()) {
+			gains.put(stream.sessionId, stream.heardGain);
+		}
+		return gains;
+	}
+
 	/** Client thread: the perception of the medium the listener's head is in. */
 	static void headPerception(ListenerPerception perception) {
 		head = perception;

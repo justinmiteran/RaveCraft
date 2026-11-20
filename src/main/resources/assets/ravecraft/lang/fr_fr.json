@@ -107,5 +107,7 @@
   "options.ravecraft.notifications.tooltip": "Toasts du morceau joué par l'enceinte que vous entendez le plus fort, et des erreurs.",
   "options.ravecraft.notifications.all": "Toutes",
   "options.ravecraft.notifications.errors": "Erreurs seulement",
-  "options.ravecraft.notifications.none": "Aucune"
+  "options.ravecraft.notifications.none": "Aucune",
+  "toast.ravecraft.now_playing.title": "En lecture",
+  "toast.ravecraft.now_playing.message": "%s — ajouté par %s"
 }

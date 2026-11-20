@@ -10,9 +10,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -62,36 +59,11 @@ public final class FolderBrowser extends TreeList {
 	}
 
 	@Override
-	protected boolean overEnd(Row row, double mouseX) {
-		return overRight(mouseX, ADD_W);
-	}
-
-	@Override
-	protected boolean clickEnd(Row row, double mouseX) {
-		if (!addable(row.node())) {
-			return false;
-		}
-		onAdd.accept(path(row.node()).orElseThrow());
-		return true;
-	}
-
-	@Override
-	protected int drawEnd(GuiGraphicsExtractor graphics, Font font, Row row, int right, int y, boolean hovered,
-			int mouseX, int mouseY) {
-		int addX = right - ADD_W;
-		boolean addable = addable(row.node());
-		if (hovered && overEnd(row, mouseX)) {
-			if (addable) {
-				SpeakerSprites.cellHover(graphics, addX - 1, y, right, y + ROW_H);
-			}
-			Component tip = Component.translatable(SpeakerSprites.KEY + (addable ? "folders.add_this"
-					: "folders.inside_existing"));
-			graphics.setTooltipForNextFrame(font, tip, mouseX, mouseY);
-		} else if (hovered) {
-			graphics.setTooltipForNextFrame(font, Component.literal(row.node().id()), mouseX, mouseY);
-		}
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PLUS, addX, y + 1, SpeakerSprites.ICON,
-				SpeakerSprites.ICON, addable ? 1.0F : 0.3F);
-		return addX - 2;
+	protected LibraryRow rowFor(Row row) {
+		SourceNode node = row.node();
+		RowItem add = RowItem.button(SpeakerSprites.PLUS, Component.translatable(SpeakerSprites.KEY + "folders.add_this"),
+				() -> path(node).ifPresent(onAdd)).enabledIf(addable(node),
+						Component.translatable(SpeakerSprites.KEY + "folders.inside_existing"));
+		return folder(row).item(add).tooltip(List.of(Component.literal(node.id())));
 	}
 }

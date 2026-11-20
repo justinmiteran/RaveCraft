@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Optional;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
@@ -21,7 +20,6 @@ import org.jspecify.annotations.Nullable;
  */
 public final class QueuePanel extends RowList {
 	private static final int ROW_H = 12;
-	private static final int REMOVE_W = SpeakerSprites.ICON + 1;
 	private static final int SEPARATOR = 0xFF5A5A5A;
 
 	/** One line of the panel: an entry, or the separator when {@code entry} is null. */
@@ -57,20 +55,6 @@ public final class QueuePanel extends RowList {
 		return rows.size();
 	}
 
-	private boolean overRemove(double mouseX) {
-		return mouseX >= rowRight() - REMOVE_W && mouseX < rowRight();
-	}
-
-	@Override
-	protected boolean clickRow(int index, double mouseX, boolean doubleClick) {
-		StateEntry entry = rows.get(index).entry();
-		if (entry == null || !overRemove(mouseX)) {
-			return false;
-		}
-		SpeakerStates.send(pos, Command.REMOVE, Optional.of(entry.entryId()));
-		return true;
-	}
-
 	@Override
 	protected void drawEmpty(GuiGraphicsExtractor graphics, Font font) {
 		Component empty = Component.translatable(SpeakerSprites.KEY + "queue_empty");
@@ -79,14 +63,35 @@ public final class QueuePanel extends RowList {
 	}
 
 	@Override
-	protected void drawRow(GuiGraphicsExtractor graphics, Font font, int index, int left, int right, int rowY,
-			boolean hovered, int mouseX, int mouseY) {
+	protected ListRow row(int index) {
 		Row row = rows.get(index);
-		if (row.entry() == null) {
-			drawSeparator(graphics, font, left, right, rowY);
-		} else {
-			drawEntry(graphics, font, row, left, right, rowY, hovered, mouseX);
+		StateEntry entry = row.entry();
+		if (entry == null) {
+			return new ListRow() {
+				@Override
+				public boolean highlights() {
+					return false;
+				}
+
+				@Override
+				public void draw(GuiGraphicsExtractor graphics, Font font, int left, int end, int y) {
+					drawSeparator(graphics, font, left, end, y);
+				}
+			};
 		}
+		RowItem remove = RowItem.button(SpeakerSprites.REMOVE, Component.translatable(SpeakerSprites.KEY + "remove"),
+				() -> SpeakerStates.send(pos, Command.REMOVE, Optional.of(entry.entryId())));
+		return new ListRow() {
+			@Override
+			public List<RowItem> items() {
+				return List.of(remove);
+			}
+
+			@Override
+			public void draw(GuiGraphicsExtractor graphics, Font font, int left, int end, int y) {
+				drawEntry(graphics, font, row, left, end, y);
+			}
+		};
 	}
 
 	private void drawSeparator(GuiGraphicsExtractor graphics, Font font, int left, int right, int rowY) {
@@ -100,29 +105,16 @@ public final class QueuePanel extends RowList {
 		graphics.text(font, label, centre - labelW / 2, rowY + 2, SEPARATOR, false);
 	}
 
-	private void drawEntry(GuiGraphicsExtractor graphics, Font font, Row row, int left, int right, int rowY,
-			boolean hovered, int mouseX) {
+	private void drawEntry(GuiGraphicsExtractor graphics, Font font, Row row, int left, int end, int rowY) {
 		StateEntry entry = row.entry();
 		int textY = rowY + 2;
-		boolean overRemove = hovered && overRemove(mouseX);
-		if (hovered) {
-			graphics.fill(left, rowY, right, rowY + ROW_H, HOVER);
-		}
 		int titleX = left + 8;
 		if (row.current()) {
 			graphics.text(font, ">", left + 1, textY, SpeakerSprites.CURRENT);
 		}
-		int removeX = right - REMOVE_W;
-		if (overRemove) {
-			SpeakerSprites.cellHover(graphics, removeX - 1, rowY, right, rowY + ROW_H);
-			graphics.setTooltipForNextFrame(font, Component.translatable(SpeakerSprites.KEY + "remove"), mouseX, rowY);
-		}
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.REMOVE, removeX, rowY + 1, SpeakerSprites.ICON,
-				SpeakerSprites.ICON);
-
-		int space = removeX - 3 - titleX;
+		int space = end - titleX;
 		String owner = SpeakerSprites.fit(font, entry.ownerName(), space / 3);
-		int ownerX = removeX - 3 - font.width(owner);
+		int ownerX = end - font.width(owner);
 		String title = SpeakerSprites.fit(font, entry.title(), ownerX - 4 - titleX);
 		if (entry.ownerOnline()) {
 			graphics.text(font, title, titleX, textY, row.current() ? SpeakerSprites.CURRENT : SpeakerSprites.TEXT);

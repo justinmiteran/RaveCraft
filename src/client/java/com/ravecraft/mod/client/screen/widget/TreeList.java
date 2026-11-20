@@ -7,25 +7,18 @@ import com.ravecraft.mod.core.library.SourceNode;
 import java.util.List;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 
 /**
  * A {@link RowList} showing a {@link LibraryTreeModel}: the base of the library, the chosen folders and the folder
  * browser. Subclasses say how to list the roots and a folder's children; this class runs those listings on the IO
  * pool and applies them on the client thread, only if the tree was not reloaded meanwhile and is not closed.
  *
- * <p>Every row is drawn the same way, from the left: indentation, expand arrow, icon, name; subclasses draw what
- * goes on the right (buttons, counts) with {@link #drawEnd} and handle a click there with {@link #clickEnd}. A click
- * anywhere else opens or folds a folder.
+ * <p>Subclasses turn each model row into a {@link FolderRow} or a {@link FileRow} with its items ({@link #rowFor});
+ * the {@code Loading…} rows are drawn here.
  */
 public abstract class TreeList extends RowList {
 	public static final int ROW_H = 11;
-	protected static final int INDENT = 8;
-	protected static final int ARROW_W = 7;
-	/** The {@code +} button at the right of a row. */
-	protected static final int ADD_W = SpeakerSprites.ICON + 1;
 
 	protected final LibraryTreeModel model = new LibraryTreeModel();
 	private boolean closed;
@@ -104,111 +97,27 @@ public abstract class TreeList extends RowList {
 		return model.isEmpty() ? 0 : rows().size();
 	}
 
-	/** False for a row that reacts to nothing (a missing folder in the library): no hover, no click. */
-	protected boolean clickable(Row row) {
-		return true;
-	}
+	/** The row standing for {@code row} of the model, never a loading one. */
+	protected abstract LibraryRow rowFor(Row row);
 
-	/** Greyed rows: name, icon and arrow dimmed, and the folder cannot be opened. */
-	protected boolean greyed(Row row) {
-		return false;
-	}
-
-	/** True when the row shows an arrow and a click opens or folds it. */
-	protected boolean expandable(Row row) {
-		return row.node().kind() == SourceNode.Kind.FOLDER && !greyed(row);
-	}
-
-	/** False when no row can be expanded (the flat list), to drop the arrow column. */
-	protected boolean arrowColumn() {
-		return true;
-	}
-
-	protected Identifier icon(SourceNode node) {
-		return SpeakerSprites.FOLDER;
-	}
-
-	protected String label(Row row) {
-		return row.node().name();
-	}
-
-	/**
-	 * Draws the right end of a row ({@code right} is the row's right edge) and returns where the name must stop.
-	 */
-	protected abstract int drawEnd(GuiGraphicsExtractor graphics, Font font, Row row, int right, int y, boolean hovered,
-			int mouseX, int mouseY);
-
-	/** True when {@code mouseX} is on one of the buttons {@link #drawEnd} drew. */
-	protected abstract boolean overEnd(Row row, double mouseX);
-
-	/** A click on one of those buttons; true when it did something. */
-	protected abstract boolean clickEnd(Row row, double mouseX);
-
-	/** A click on a row that cannot be expanded, outside its buttons; true when it did something. */
-	protected boolean clickOther(Row row, boolean doubleClick) {
-		return false;
-	}
-
-	/** A row past the tree's own rows (the library's status line). */
-	protected void drawExtraRow(GuiGraphicsExtractor graphics, Font font, int left, int right, int y, boolean hovered,
-			int mouseX, int mouseY) {
+	/** A row past the tree's own rows (the library's status line); {@code index} counts from the first of them. */
+	protected ListRow extraRow(int index) {
+		throw new IndexOutOfBoundsException(index);
 	}
 
 	@Override
-	protected final boolean clickRow(int index, double mouseX, boolean doubleClick) {
+	protected final ListRow row(int index) {
 		List<Row> rows = rows();
 		if (index >= rows.size()) {
-			return false;
+			return extraRow(index - rows.size());
 		}
 		Row row = rows.get(index);
-		if (row.loading() || !clickable(row)) {
-			return false;
-		}
-		if (overEnd(row, mouseX)) {
-			return clickEnd(row, mouseX);
-		}
-		if (expandable(row)) {
-			toggle(row.node());
-			return true;
-		}
-		return clickOther(row, doubleClick);
+		return row.loading() ? LibraryRow.loading(row.depth()) : rowFor(row);
 	}
 
-	/** True when {@code mouseX} is on the button of width {@code w} at the right end of the rows. */
-	protected final boolean overRight(double mouseX, int w) {
-		return mouseX >= rowRight() - w && mouseX < rowRight();
-	}
-
-	@Override
-	protected final void drawRow(GuiGraphicsExtractor graphics, Font font, int index, int left, int right, int y,
-			boolean hovered, int mouseX, int mouseY) {
-		List<Row> rows = rows();
-		if (index >= rows.size()) {
-			drawExtraRow(graphics, font, left, right, y, hovered, mouseX, mouseY);
-			return;
-		}
-		Row row = rows.get(index);
-		int x = left + 1 + row.depth() * INDENT;
-		if (row.loading()) {
-			String loading = Component.translatable(SpeakerSprites.KEY + "loading").getString();
-			graphics.text(font, SpeakerSprites.fit(font, loading, right - x - ARROW_W), x + ARROW_W, y + 2,
-					SpeakerSprites.MUTED, false);
-			return;
-		}
-		boolean grey = greyed(row);
-		if (hovered && clickable(row)) {
-			graphics.fill(left, y, right, y + ROW_H, HOVER);
-		}
-		if (expandable(row)) {
-			SpeakerSprites.drawArrow(graphics, x + 1, y + 3, row.expanded());
-		}
-		int iconX = arrowColumn() ? x + ARROW_W : x + 1;
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, icon(row.node()), iconX, y + 1, SpeakerSprites.ICON,
-				SpeakerSprites.ICON, grey ? 0.4F : 1.0F);
-		int end = drawEnd(graphics, font, row, right, y, hovered, mouseX, mouseY);
-		int nameX = iconX + SpeakerSprites.ICON + 2;
-		graphics.text(font, SpeakerSprites.fit(font, label(row), end - nameX), nameX, y + 2,
-				grey ? SpeakerSprites.ABSENT : SpeakerSprites.TEXT, !grey);
+	/** A folder row that opens and folds through this tree, listing its children the first time. */
+	protected final FolderRow folder(Row row) {
+		return new FolderRow(row.node(), row.depth(), row.expanded(), () -> toggle(row.node()));
 	}
 
 	/** The centred message of an empty tree. */

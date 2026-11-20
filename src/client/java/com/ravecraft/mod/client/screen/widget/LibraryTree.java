@@ -14,11 +14,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.nio.file.Path;
-import java.util.Optional;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -156,59 +154,6 @@ public final class LibraryTree extends TreeList {
 	}
 
 	@Override
-	protected boolean clickable(Row row) {
-		return !row.node().missing();
-	}
-
-	@Override
-	protected boolean greyed(Row row) {
-		return row.node().missing();
-	}
-
-	/** The flat list has no folders, so no arrow column either. */
-	@Override
-	protected boolean arrowColumn() {
-		return !model.flat();
-	}
-
-	@Override
-	protected Identifier icon(SourceNode node) {
-		return switch (node.kind()) {
-			case FOLDER -> SpeakerSprites.FOLDER;
-			case PLAYLIST -> SpeakerSprites.PLAYLIST;
-			case TRACK -> SpeakerSprites.TRACK;
-		};
-	}
-
-	// --- Input ------------------------------------------------------------------------------------------------
-
-	@Override
-	protected boolean overEnd(Row row, double mouseX) {
-		return overRight(mouseX, ADD_W);
-	}
-
-	@Override
-	protected boolean clickEnd(Row row, double mouseX) {
-		if (full()) {
-			return false;
-		}
-		add(row.node());
-		return true;
-	}
-
-	/** A track or playlist (a file, not a folder) is queued by a double click, like its + button. */
-	@Override
-	protected boolean clickOther(Row row, boolean doubleClick) {
-		if (doubleClick && !full()) {
-			add(row.node());
-			return true;
-		}
-		return false;
-	}
-
-	// --- Drawing ----------------------------------------------------------------------------------------------
-
-	@Override
 	protected void drawEmpty(GuiGraphicsExtractor graphics, Font font) {
 		if (model.isEmpty()) {
 			// The screen puts its "Choose a folder…" button under this message.
@@ -217,36 +162,38 @@ public final class LibraryTree extends TreeList {
 	}
 
 	@Override
-	protected int drawEnd(GuiGraphicsExtractor graphics, Font font, Row row, int right, int y, boolean hovered,
-			int mouseX, int mouseY) {
+	protected LibraryRow rowFor(Row row) {
 		SourceNode node = row.node();
+		LibraryRow line = switch (node.kind()) {
+			case FOLDER -> folder(row);
+			// A track or playlist is queued by a double click, like its + button.
+			case PLAYLIST, TRACK -> new FileRow(node, row.depth()).onDoubleClick(() -> {
+				if (!full()) {
+					add(node);
+				}
+			});
+		};
+		line.icon(icon(node));
+		if (model.flat()) {
+			line.noArrowColumn();
+		}
 		if (node.missing()) {
-			if (hovered) {
-				graphics.setTooltipForNextFrame(font, Component.translatable(SpeakerSprites.KEY + "missing"), mouseX,
-						mouseY);
-			}
-			return right;
+			return line.greyed(true).inert()
+					.tooltip(List.of(Component.translatable(SpeakerSprites.KEY + "missing")));
 		}
-		int addX = right - ADD_W;
-		if (hovered && overEnd(row, mouseX)) {
-			SpeakerSprites.cellHover(graphics, addX - 1, y, right, y + ROW_H);
-			Component tip = full()
-					? Component.translatable(SpeakerSprites.KEY + "queue_full", SpeakerQueue.MAX_ENTRIES)
-					: Component.translatable(SpeakerSprites.KEY + "add");
-			graphics.setTooltipForNextFrame(font, tip, mouseX, mouseY);
-		} else if (hovered) {
-			graphics.setTooltipForNextFrame(font, rowTooltip(node), Optional.empty(), mouseX, mouseY);
-		}
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.PLUS, addX, y + 1, SpeakerSprites.ICON,
-				SpeakerSprites.ICON, full() ? 0.4F : 1.0F);
-		int end = addX - 2;
-		if (node.kind() == SourceNode.Kind.FOLDER) {
-			String count = countLabel(node);
-			end -= font.width(count);
-			graphics.text(font, count, end, y + 2, SpeakerSprites.MUTED, false);
-			end -= 3;
-		}
-		return end;
+		RowItem add = RowItem.button(SpeakerSprites.PLUS, Component.translatable(SpeakerSprites.KEY + "add"),
+				() -> add(node)).enabledIf(!full(),
+						Component.translatable(SpeakerSprites.KEY + "queue_full", SpeakerQueue.MAX_ENTRIES));
+		RowItem count = node.kind() == SourceNode.Kind.FOLDER ? RowItem.text(countLabel(node)) : null;
+		return line.item(add).item(count).tooltip(rowTooltip(node));
+	}
+
+	private static Identifier icon(SourceNode node) {
+		return switch (node.kind()) {
+			case FOLDER -> SpeakerSprites.FOLDER;
+			case PLAYLIST -> SpeakerSprites.PLAYLIST;
+			case TRACK -> SpeakerSprites.TRACK;
+		};
 	}
 
 	/**
@@ -275,24 +222,35 @@ public final class LibraryTree extends TreeList {
 
 	/** The status line: the index being brought up to date, or how many entries the flat list holds. */
 	@Override
-	protected void drawExtraRow(GuiGraphicsExtractor graphics, Font font, int left, int right, int rowY, boolean hovered,
-			int mouseX, int mouseY) {
+	protected ListRow extraRow(int index) {
 		LibraryIndex current = syncIndex();
 		boolean refreshing = LibraryIndexStore.refreshing(source);
-		if (hovered && current.truncated()) {
-			graphics.setTooltipForNextFrame(font,
-					Component.translatable(SpeakerSprites.KEY + "flat.limit", LibraryIndex.LIMIT), mouseX, mouseY);
-		}
-		graphics.fill(left + 1, rowY, right - 1, rowY + 1, SEPARATOR);
-		int textY = rowY + 2;
-		String found = current.size() + (current.truncated() ? "+" : "");
-		int countX = right - 2 - font.width(found);
-		if (refreshing) {
-			String key = current.complete() ? "flat.updating" : "flat.searching";
-			String label = Component.translatable(SpeakerSprites.KEY + key).getString();
-			graphics.text(font, SpeakerSprites.fit(font, label, countX - left - 6), left + 2, textY,
-					SpeakerSprites.MUTED, true);
-		}
-		graphics.text(font, found, countX, textY, SpeakerSprites.MUTED, true);
+		return new ListRow() {
+			@Override
+			public boolean highlights() {
+				return false;
+			}
+
+			@Override
+			public List<Component> tooltip() {
+				return current.truncated()
+						? List.of(Component.translatable(SpeakerSprites.KEY + "flat.limit", LibraryIndex.LIMIT))
+						: List.of();
+			}
+
+			@Override
+			public void draw(GuiGraphicsExtractor graphics, Font font, int left, int end, int y) {
+				graphics.fill(left + 1, y, end - 1, y + 1, SEPARATOR);
+				String found = current.size() + (current.truncated() ? "+" : "");
+				int countX = end - 2 - font.width(found);
+				if (refreshing) {
+					String key = current.complete() ? "flat.updating" : "flat.searching";
+					String label = Component.translatable(SpeakerSprites.KEY + key).getString();
+					graphics.text(font, SpeakerSprites.fit(font, label, countX - left - 6), left + 2, y + 2,
+							SpeakerSprites.MUTED, true);
+				}
+				graphics.text(font, found, countX, y + 2, SpeakerSprites.MUTED, true);
+			}
+		};
 	}
 }

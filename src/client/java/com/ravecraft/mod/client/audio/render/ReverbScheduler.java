@@ -74,6 +74,8 @@ public final class ReverbScheduler {
 	private static boolean listenerRunning;
 	/** Whether a listener measure was ever started on this grid: if not, one starts at once. */
 	private static boolean listenerStarted;
+	/** Whether the sound view's rooms layer was on last tick. */
+	private static boolean roomsShown;
 	private static double listenerX;
 	private static double listenerY;
 	private static double listenerZ;
@@ -138,7 +140,16 @@ public final class ReverbScheduler {
 		boolean showRooms = level != null && SoundViewEntries.mode().rooms();
 		if (!showRooms) {
 			SoundViewSnapshots.clearRooms();
+		} else if (!roomsShown) {
+			// The layer just turned on: measure every space now rather than when each is next due (up to 5 s).
+			listenerStarted = false;
+			for (int i = 0; i < SpaceSlots.SLOTS; i++) {
+				if (!SLOT_RUNNING[i]) {
+					SLOT_START_TICK[i] = tick - SPEAKER_PERIOD;
+				}
+			}
 		}
+		roomsShown = showRooms;
 		if (level == null || grid == null || grid.level() != level || !reverb.enabled()
 				|| !RaveCraftOptions.acousticEffects().get()) {
 			silence();

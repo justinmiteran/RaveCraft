@@ -44,5 +44,7 @@
   "debug.ravecraft.sound_view.reverb": "RT60 %s s | écho %s s (gain %s)",
   "debug.ravecraft.sound_view.reverb_no_echo": "RT60 %s s | écho : aucun",
   "debug.ravecraft.sound_view.fluid": "dans %s (préréglage)",
-  "debug.ravecraft.sound_view.slot": "S%s · RT60 %s s"
+  "debug.ravecraft.sound_view.slot": "S%s · RT60 %s s",
+  "debug.ravecraft.sound_view.measuring": "Mesure de la pièce…",
+  "debug.ravecraft.sound_view.slots": "Enceintes dans une autre pièce : %s"
 }

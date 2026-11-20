@@ -4,6 +4,7 @@ import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.client.audio.render.SoundViewSnapshots;
 import com.ravecraft.mod.core.acoustics.debug.view.Crossing;
 import com.ravecraft.mod.core.acoustics.debug.view.Detour;
+import com.ravecraft.mod.core.acoustics.debug.view.EyeAnchor;
 import com.ravecraft.mod.core.acoustics.debug.view.LossColors;
 import com.ravecraft.mod.core.acoustics.debug.view.PathView;
 import com.ravecraft.mod.core.acoustics.debug.view.Ray;
@@ -12,20 +13,28 @@ import com.ravecraft.mod.core.acoustics.debug.view.SoundViewMode;
 import com.ravecraft.mod.core.acoustics.debug.view.Vec;
 import com.ravecraft.mod.core.acoustics.reverb.Echo;
 import com.ravecraft.mod.core.acoustics.reverb.RoomShape;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelExtractionEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gizmos.GizmoProperties;
 import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.gizmos.TextGizmo;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /**
  * Draws the sound view with vanilla gizmos at the end of level extraction: the paths of the loudest speakers (on top
- * of the blocks, which hide exactly what is to be seen) and the room probes. Emits nothing while both layers are off.
+ * of the blocks, which hide exactly what is to be seen) and the room probes. The listener's room is summed up on the
+ * HUD, since it is measured from the player's own head. Emits nothing while both layers are off.
  */
 public final class SoundViewRenderer {
 	private static final int MAX_PATHS = 8;
@@ -39,9 +48,14 @@ public final class SoundViewRenderer {
 	private static final int MAX_OPEN_RAY_DASHES = 6;
 	private static final float SLOT_ALPHA = 0.4f;
 	private static final int WHITE = 0xFFFFFFFF;
-	private static final double SOURCE_LABEL_HEIGHT = 0.8;
+	private static final double SOURCE_LABEL_HEIGHT = 1.3;
 	private static final double ROOM_LABEL_HEIGHT = 1.2;
-	private static final double ROW_HEIGHT = 0.25;
+	/** Half the side of the cube marking a detour's waypoint. */
+	private static final double WAYPOINT_HALF = 0.15;
+	private static final int HUD_TOP = 4;
+	private static final int HUD_PADDING = 2;
+	private static final int HUD_BACKGROUND = 0x90000000;
+	private static final Identifier HUD_ID = Identifier.fromNamespaceAndPath(RaveCraft.MOD_ID, "sound_view");
 	private static final long FAILURE_LOG_MS = 60_000;
 	private static long lastFailureLog = Long.MIN_VALUE;
 
@@ -50,6 +64,7 @@ public final class SoundViewRenderer {
 
 	public static void register() {
 		LevelExtractionEvents.END_EXTRACTION.register(context -> emit());
+		HudElementRegistry.addLast(HUD_ID, (graphics, delta) -> hud(graphics));
 	}
 
 	/** Never throws: an exception out of level extraction would crash the client. */
@@ -59,39 +74,41 @@ public final class SoundViewRenderer {
 			return;
 		}
 		try {
+			Vec camera = camera();
 			if (mode.paths()) {
 				int drawn = 0;
 				for (PathView path : SoundViewSnapshots.paths()) {
 					if (drawn++ >= MAX_PATHS) {
 						break;
 					}
-					path(path);
+					path(path, camera);
 				}
 			}
 			if (mode.rooms()) {
 				RoomView listener = SoundViewSnapshots.listenerRoom();
-				if (listener != null) {
-					listenerRoom(listener);
+				if (listener != null && listener.fluid() == null) {
+					rays(listener, 1f, true, camera);
 				}
 				for (int slot = 0; slot < 2; slot++) {
 					RoomView room = SoundViewSnapshots.slotRoom(slot);
 					if (room != null) {
-						slotRoom(slot, room);
+						slotRoom(slot, room, camera);
 					}
 				}
 			}
 		} catch (RuntimeException e) {
-			long now = System.currentTimeMillis();
-			if (lastFailureLog == Long.MIN_VALUE || now - lastFailureLog >= FAILURE_LOG_MS) {
-				lastFailureLog = now;
-				RaveCraft.LOGGER.error("Sound view drawing failed", e);
-			}
+			logFailure(e);
 		}
 	}
 
-	private static void path(PathView path) {
+	private static Vec camera() {
+		Vec3 c = Minecraft.getInstance().gameRenderer.mainCamera().position();
+		return new Vec(c.x, c.y, c.z);
+	}
+
+	private static void path(PathView path, Vec camera) {
 		Vec3 source = vec3(path.source());
-		Vec3 listener = vec3(path.listener());
+		Vec3 listener = vec3(EyeAnchor.of(path.listener(), camera));
 		// The direct path, cut where it enters each block it loses in, each piece the colour of the loss so far.
 		Vec3 from = source;
 		double cumulative = 0;
@@ -112,13 +129,20 @@ public final class SoundViewRenderer {
 			int colour = LossColors.forLoss(detour.lossDb());
 			List<Vec> points = detour.points();
 			for (int i = 0; i + 1 < points.size(); i++) {
-				dashed(vec3(points.get(i)), vec3(points.get(i + 1)), colour, LINE_WIDTH, true, MAX_DASHES);
+				Vec end = points.get(i + 1);
+				Vec3 to = vec3(i + 2 == points.size() ? EyeAnchor.of(end, camera) : end);
+				dashed(vec3(points.get(i)), to, colour, LINE_WIDTH, true, MAX_DASHES);
 			}
+			// The waypoints the detour bends at (by a door, round a corner), its loss written once, by the first.
 			for (int i = 1; i + 1 < points.size(); i++) {
-				BlockPos opening = BlockPos.containing(vec3(points.get(i)));
-				Gizmos.cuboid(opening, 0.3f, GizmoStyle.stroke(LossColors.OPENING)).setAlwaysOnTop();
-				text("−" + oneDecimal(detour.lossDb()) + " dB", Vec3.atCenterOf(opening), LossColors.OPENING)
-						.setAlwaysOnTop();
+				Vec3 waypoint = vec3(points.get(i));
+				Gizmos.cuboid(new AABB(waypoint.subtract(WAYPOINT_HALF, WAYPOINT_HALF, WAYPOINT_HALF),
+						waypoint.add(WAYPOINT_HALF, WAYPOINT_HALF, WAYPOINT_HALF)),
+						GizmoStyle.stroke(LossColors.OPENING)).setAlwaysOnTop();
+				if (i == 1) {
+					text("−" + oneDecimal(detour.lossDb()) + " dB", waypoint.add(0, 0.35, 0), LossColors.OPENING)
+							.setAlwaysOnTop();
+				}
 			}
 		}
 
@@ -152,39 +176,70 @@ public final class SoundViewRenderer {
 		return source.add(delta[0] * enter, delta[1] * enter, delta[2] * enter);
 	}
 
-	private static void listenerRoom(RoomView room) {
-		Vec3 origin = vec3(room.origin());
-		String fluid = room.fluid();
-		if (fluid != null) {
-			text(I18n.get("debug.ravecraft.sound_view.fluid", fluid), origin.add(0, ROOM_LABEL_HEIGHT, 0), WHITE);
+	/** The listener's room on the HUD, at the top of the screen. */
+	private static void hud(GuiGraphicsExtractor graphics) {
+		Minecraft minecraft = Minecraft.getInstance();
+		if (!SoundViewEntries.mode().rooms() || minecraft.level == null) {
 			return;
 		}
-		rays(room, 1f, true);
-		RoomShape shape = room.shape();
-		if (shape == null) {
-			return;
+		try {
+			Font font = minecraft.font;
+			int centre = graphics.guiWidth() / 2;
+			int y = HUD_TOP;
+			for (String line : hudLines()) {
+				int width = font.width(line);
+				graphics.fill(centre - width / 2 - HUD_PADDING, y - 1, centre + width / 2 + HUD_PADDING,
+						y + font.lineHeight, HUD_BACKGROUND);
+				graphics.text(font, line, centre - width / 2, y, WHITE, false);
+				y += font.lineHeight + 1;
+			}
+		} catch (RuntimeException e) {
+			logFailure(e);
 		}
-		String first = I18n.get("debug.ravecraft.sound_view.room", String.format(Locale.ROOT, "%.0f",
-				shape.openness() * 100), oneDecimal(shape.meanFreePath()), twoDecimals(shape.absorption()),
-				twoDecimals(shape.irregularity()));
-		Echo echo = room.echo();
-		String second = echo.equals(Echo.NONE)
-				? I18n.get("debug.ravecraft.sound_view.reverb_no_echo", twoDecimals(room.rt60()))
-				: I18n.get("debug.ravecraft.sound_view.reverb", twoDecimals(room.rt60()),
-						twoDecimals(echo.delaySeconds()), twoDecimals(echo.gain()));
-		text(first, origin.add(0, ROOM_LABEL_HEIGHT + ROW_HEIGHT, 0), WHITE);
-		text(second, origin.add(0, ROOM_LABEL_HEIGHT, 0), WHITE);
 	}
 
-	private static void slotRoom(int slot, RoomView room) {
-		rays(room, SLOT_ALPHA, false);
+	private static List<String> hudLines() {
+		List<String> lines = new ArrayList<>(3);
+		RoomView room = SoundViewSnapshots.listenerRoom();
+		RoomShape shape = room == null ? null : room.shape();
+		String fluid = room == null ? null : room.fluid();
+		if (fluid != null) {
+			lines.add(I18n.get("debug.ravecraft.sound_view.fluid", fluid));
+		} else if (room == null || shape == null) {
+			lines.add(I18n.get("debug.ravecraft.sound_view.measuring"));
+		} else {
+			lines.add(I18n.get("debug.ravecraft.sound_view.room", String.format(Locale.ROOT, "%.0f",
+					shape.openness() * 100), oneDecimal(shape.meanFreePath()), twoDecimals(shape.absorption()),
+					twoDecimals(shape.irregularity())));
+			Echo echo = room.echo();
+			lines.add(echo.equals(Echo.NONE)
+					? I18n.get("debug.ravecraft.sound_view.reverb_no_echo", twoDecimals(room.rt60()))
+					: I18n.get("debug.ravecraft.sound_view.reverb", twoDecimals(room.rt60()),
+							twoDecimals(echo.delaySeconds()), twoDecimals(echo.gain())));
+		}
+		int slots = 0;
+		for (int slot = 0; slot < 2; slot++) {
+			if (SoundViewSnapshots.slotRoom(slot) != null) {
+				slots++;
+			}
+		}
+		lines.add(I18n.get("debug.ravecraft.sound_view.slots", slots));
+		return lines;
+	}
+
+	private static void slotRoom(int slot, RoomView room, Vec camera) {
+		rays(room, SLOT_ALPHA, false, camera);
 		text(I18n.get("debug.ravecraft.sound_view.slot", slot + 1, twoDecimals(room.rt60())),
 				vec3(room.origin()).add(0, ROOM_LABEL_HEIGHT, 0), LossColors.withAlpha(WHITE, SLOT_ALPHA + 0.3f));
 	}
 
-	/** At most {@value #MAX_RAYS} rays, evenly picked, plus every ray of the echo when {@code echo} is shown. */
-	private static void rays(RoomView room, float alpha, boolean echo) {
-		Vec3 origin = vec3(room.origin());
+	/**
+	 * At most {@value #MAX_RAYS} rays, evenly picked, plus every ray of the echo when {@code echo} is shown. Drawn from
+	 * below the eye when the camera is at the origin, else they would be seen end-on.
+	 */
+	private static void rays(RoomView room, float alpha, boolean echo, Vec camera) {
+		Vec3 measured = vec3(room.origin());
+		Vec3 origin = vec3(EyeAnchor.of(room.origin(), camera));
 		List<Ray> rays = room.rays();
 		int step = Math.max(1, Math.ceilDiv(rays.size(), MAX_RAYS));
 		for (int i = 0; i < rays.size(); i++) {
@@ -205,7 +260,7 @@ public final class SoundViewRenderer {
 			Gizmos.point(end, colour, 4f);
 			if (echoRay) {
 				// Just past the hit, so that the frame is the block that was hit, not the air in front of it.
-				Vec3 into = end.add(end.subtract(origin).normalize().scale(0.01));
+				Vec3 into = end.add(end.subtract(measured).normalize().scale(0.01));
 				Gizmos.cuboid(BlockPos.containing(into), 0.0f, GizmoStyle.stroke(LossColors.ECHO));
 			}
 		}
@@ -230,6 +285,14 @@ public final class SoundViewRenderer {
 
 	private static GizmoProperties text(String text, Vec3 pos, int argb) {
 		return Gizmos.billboardText(text, pos, TextGizmo.Style.forColorAndCentered(argb));
+	}
+
+	private static void logFailure(RuntimeException e) {
+		long now = System.currentTimeMillis();
+		if (lastFailureLog == Long.MIN_VALUE || now - lastFailureLog >= FAILURE_LOG_MS) {
+			lastFailureLog = now;
+			RaveCraft.LOGGER.error("Sound view drawing failed", e);
+		}
 	}
 
 	private static Vec3 vec3(Vec v) {

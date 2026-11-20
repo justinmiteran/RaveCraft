@@ -50,6 +50,12 @@ fabricApi {
 // Write GameTest results as JUnit XML next to the JUnit ones, so CI can report both.
 loom {
 	runs {
+		client {
+			// ./gradlew runClient -PfolderDialog=builtin (or classic) tests the folder dialog fallbacks.
+			if (project.hasProperty("folderDialog")) {
+				property("ravecraft.folderDialog", project.property("folderDialog").toString())
+			}
+		}
 		gameTest {
 			property("fabric-api.gametest.report-file", file("build/test-results/gameTest/TEST-gametest.xml").absolutePath)
 		}
@@ -68,6 +74,12 @@ dependencies {
 	include(implementation("javazoom:jlayer:1.0.1"))
 	include(implementation("org.jflac:jflac-codec:1.5.2"))
 	include(implementation("io.github.jaredmdobson:concentus:1.0.2"))
+
+	// Native folder dialog (tinyfd), bundled jar-in-jar with its natives
+	include(implementation("org.lwjgl:lwjgl-tinyfd:${project.lwjgl_version}"))
+	['windows', 'windows-arm64', 'linux', 'linux-arm64', 'macos', 'macos-arm64'].each { os ->
+		include(runtimeOnly("org.lwjgl:lwjgl-tinyfd:${project.lwjgl_version}:natives-${os}"))
+	}
 
 	testImplementation platform("org.junit:junit-bom:${project.junit_version}")
 	testImplementation "org.junit.jupiter:junit-jupiter"

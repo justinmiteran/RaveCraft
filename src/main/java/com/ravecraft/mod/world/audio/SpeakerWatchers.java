@@ -48,6 +48,11 @@ public final class SpeakerWatchers {
 		}
 	}
 
+	/** Whether the speaker at {@code pos} has a state waiting to be sent to its watchers. */
+	public static boolean isDirty(ServerLevel level, BlockPos pos) {
+		return DIRTY.contains(new SpeakerKey(level.dimension(), pos));
+	}
+
 	public static void markAllDirty() {
 		DIRTY.addAll(WATCHERS.keySet());
 	}

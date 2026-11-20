@@ -16,6 +16,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -236,6 +237,30 @@ public class PortableSpeakerGameTest {
 		var drops = h.getEntities(EntityTypes.ITEM, pos, 2);
 		h.assertTrue(!drops.isEmpty(), "speaker dropped");
 		h.assertValueEqual(drops.getFirst().getItem().get(DataComponents.DYED_COLOR), blue, "dropped colour");
+		h.succeed();
+	}
+
+	@GameTest
+	public void customNameSurvivesPlaceBreakAndSave(GameTestHelper h) {
+		Component name = Component.literal("Garage");
+		ItemStack stack = new ItemStack(ModBlocks.PORTABLE_SPEAKER);
+		stack.set(DataComponents.CUSTOM_NAME, name);
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		BlockPos pos = new BlockPos(1, 1, 1);
+		player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+		h.setBlock(pos.below(), Blocks.STONE);
+		h.placeAt(player, stack, pos.below(), Direction.UP);
+		PortableSpeakerBlockEntity speaker = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class);
+		h.assertValueEqual(speaker.customName(), name, "placed name");
+
+		var access = h.getLevel().registryAccess();
+		BlockEntity loaded = BlockEntity.loadStatic(h.absolutePos(pos), speaker.getBlockState(), speaker.saveWithFullMetadata(access), access);
+		h.assertValueEqual(((PortableSpeakerBlockEntity) loaded).customName(), name, "saved name");
+
+		h.getLevel().destroyBlock(h.absolutePos(pos), true);
+		var drops = h.getEntities(EntityTypes.ITEM, pos, 2);
+		h.assertTrue(!drops.isEmpty(), "speaker dropped");
+		h.assertValueEqual(drops.getFirst().getItem().get(DataComponents.CUSTOM_NAME), name, "dropped name");
 		h.succeed();
 	}
 

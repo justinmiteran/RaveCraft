@@ -1,8 +1,12 @@
-# Build the mod and run JUnit tests + GameTests on every push and pull request.
+# Build the mod and run JUnit tests + GameTests on every pull request and every push to main.
+# Feature branches are built once, by their pull request, not a second time by the push.
 # Test results are published as a check ("Test results") with a summary on the run page.
 
 name: build
-on: [pull_request, push]
+on:
+  pull_request:
+  push:
+    branches: [main]
 
 permissions:
   contents: read

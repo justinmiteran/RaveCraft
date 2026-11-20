@@ -11,10 +11,14 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-/** C→S: a player's command on the speaker at {@code pos}; {@code entryId} names the entry to remove. */
-public record SpeakerCommandPayload(BlockPos pos, Command command, Optional<UUID> entryId) implements CustomPacketPayload {
+/**
+ * C→S: a player's command on the speaker at {@code pos}; {@code entryId} names the entry to remove, {@code value}
+ * carries the argument of SEEK (ms), VOLUME, POWER, REPEAT (mode ordinal) and SHUFFLE.
+ */
+public record SpeakerCommandPayload(BlockPos pos, Command command, Optional<UUID> entryId, long value)
+		implements CustomPacketPayload {
 	public enum Command {
-		PLAY, PAUSE, NEXT, REMOVE, CLEAR;
+		PLAY, PAUSE, NEXT, REMOVE, CLEAR, PREVIOUS, SEEK, VOLUME, POWER, REPEAT, SHUFFLE;
 
 		private static final Command[] VALUES = values();
 		public static final StreamCodec<ByteBuf, Command> CODEC = ByteBufCodecs.idMapper(Command::byId, Command::ordinal);
@@ -32,7 +36,12 @@ public record SpeakerCommandPayload(BlockPos pos, Command command, Optional<UUID
 			BlockPos.STREAM_CODEC, SpeakerCommandPayload::pos,
 			Command.CODEC, SpeakerCommandPayload::command,
 			ByteBufCodecs.optional(UUIDUtil.STREAM_CODEC), SpeakerCommandPayload::entryId,
+			ByteBufCodecs.VAR_LONG, SpeakerCommandPayload::value,
 			SpeakerCommandPayload::new);
+
+	public SpeakerCommandPayload(BlockPos pos, Command command, Optional<UUID> entryId) {
+		this(pos, command, entryId, 0L);
+	}
 
 	@Override
 	public Type<SpeakerCommandPayload> type() {

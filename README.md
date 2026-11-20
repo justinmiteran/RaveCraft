@@ -59,7 +59,7 @@ Deux workflows GitHub Actions, visibles dans l'onglet **Actions** du dépôt.
 
 | Workflow | Déclencheur | Rôle |
 |---|---|---|
-| **build** (`.github/workflows/build.yml`) | chaque `push` et chaque pull request | compiler, tester, produire le jar |
+| **build** (`.github/workflows/build.yml`) | chaque pull request et chaque `push` sur `main` | compiler, tester, produire le jar |
 | **release** (`.github/workflows/release.yml`) | push d'un tag `vX.Y.Z` | publier une version sur GitHub |
 
 ### CI : `build`

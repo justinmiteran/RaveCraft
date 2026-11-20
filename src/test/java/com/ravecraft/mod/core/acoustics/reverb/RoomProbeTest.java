@@ -140,4 +140,16 @@ class RoomProbeTest {
 				new RayHit(false, 3, 0.1, VoxelSample.Y, 3), new RayHit(false, 3, 0.1, VoxelSample.Z, 3)), 64);
 		assertEquals(0.5, few.irregularity());
 	}
+
+	@Test
+	void wallDistanceIsPerpendicularToTheFace() {
+		List<RayHit> hits = measure(new TestGrid().fill(20, -30, -30, 20, 30, 30, STONE), 0.5, 0.5, 0.5, 32, 64);
+		List<RayHit> wall = hits.stream().filter(h -> !h.open()).toList();
+		assertTrue(wall.size() > 3, "wall hits " + wall.size());
+		for (RayHit hit : wall) {
+			assertEquals(VoxelSample.X, hit.faceAxis());
+			assertEquals(19.5, hit.wallDistance(), 1e-9);
+			assertTrue(hit.distance() >= hit.wallDistance() - 1e-9);
+		}
+	}
 }

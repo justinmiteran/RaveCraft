@@ -8,6 +8,7 @@ import com.ravecraft.mod.network.payload.QueueAddPayload;
 import com.ravecraft.mod.network.payload.StreamClosePayload;
 import com.ravecraft.mod.network.payload.StreamOrderPayload;
 import com.ravecraft.mod.network.payload.StreamResultPayload;
+import com.ravecraft.mod.network.payload.StreamStartedPayload;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -115,7 +116,7 @@ public final class LocalPlayback {
 			previous.cancel();
 		}
 		StreamEmitter emitter = new StreamEmitter(id, order.dimension(), order.pos(), track.get(), order.positionMs(),
-				() -> finished(id), e -> failed(id));
+				durationMs -> ClientPlayNetworking.send(new StreamStartedPayload(id, durationMs)), () -> finished(id), e -> failed(id));
 		EMITTERS.put(id, emitter);
 		emitter.start();
 	}

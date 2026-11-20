@@ -102,5 +102,12 @@
   "debug.ravecraft.sound_view.fluid": "in %s (preset)",
   "debug.ravecraft.sound_view.slot": "S%s · RT60 %s s",
   "debug.ravecraft.sound_view.measuring": "Measuring the room…",
-  "debug.ravecraft.sound_view.slots": "Speakers in another room: %s"
+  "debug.ravecraft.sound_view.slots": "Speakers in another room: %s",
+  "options.ravecraft.notifications": "RaveCraft Notifications",
+  "options.ravecraft.notifications.tooltip": "Toasts for the track playing on the speaker you hear loudest, and for errors.",
+  "options.ravecraft.notifications.all": "All",
+  "options.ravecraft.notifications.errors": "Errors Only",
+  "options.ravecraft.notifications.none": "None",
+  "toast.ravecraft.now_playing.title": "Now Playing",
+  "toast.ravecraft.now_playing.message": "%s — added by %s"
 }

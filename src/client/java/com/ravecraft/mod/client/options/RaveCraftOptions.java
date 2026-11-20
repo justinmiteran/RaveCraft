@@ -6,7 +6,7 @@ import net.minecraft.client.Options;
 import net.minecraft.network.chat.Component;
 
 /**
- * The player's own RaveCraft sound settings, shown in Options › Music &amp; Sounds and saved in {@code options.txt}.
+ * The player's own RaveCraft sound and notification settings, shown in Options › Music &amp; Sounds and saved in {@code options.txt}.
  * They change what this player hears, never the range the server relays.
  */
 public final class RaveCraftOptions {
@@ -38,6 +38,14 @@ public final class RaveCraftOptions {
 			OcclusionQuality.MEDIUM,
 			value -> {
 			});
+	private static final OptionInstance<NotificationLevel> NOTIFICATIONS = new OptionInstance<>(
+			"options.ravecraft.notifications",
+			OptionInstance.cachedConstantTooltip(Component.translatable("options.ravecraft.notifications.tooltip")),
+			(caption, value) -> value.caption(),
+			new OptionInstance.Enum<>(List.of(NotificationLevel.values()), NotificationLevel.CODEC),
+			NotificationLevel.ALL,
+			value -> {
+			});
 
 	private RaveCraftOptions() {
 	}
@@ -62,11 +70,17 @@ public final class RaveCraftOptions {
 		return OCCLUSION_QUALITY;
 	}
 
+	/** Which RaveCraft toasts show: all, errors only, or none. */
+	public static OptionInstance<NotificationLevel> notifications() {
+		return NOTIFICATIONS;
+	}
+
 	/** Loads or saves the options, from the {@code Options.processOptions} mixin. */
 	public static void process(Options.FieldAccess access) {
 		access.process("ravecraft_volume", VOLUME);
 		access.process("ravecraft_maxSources", MAX_SOURCES);
 		access.process("ravecraft_efx", ACOUSTIC_EFFECTS);
 		access.process("ravecraft_occlusionQuality", OCCLUSION_QUALITY);
+		access.process("ravecraft_notifications", NOTIFICATIONS);
 	}
 }

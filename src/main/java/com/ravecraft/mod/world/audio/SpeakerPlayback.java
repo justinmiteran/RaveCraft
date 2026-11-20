@@ -323,6 +323,7 @@ public final class SpeakerPlayback {
 				level.getServer().getTickCount()));
 		update(be, queue);
 		Net.send(owner, new StreamOrderPayload(session.get().id(), level.dimension(), pos, true, entry.entryId(), startMs));
+		NowPlaying.start(owner, session.get().id(), pos, entry);
 	}
 
 	/** Stops playing, storing the estimated position of the current entry. */

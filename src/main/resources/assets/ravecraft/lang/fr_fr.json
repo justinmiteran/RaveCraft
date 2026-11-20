@@ -102,5 +102,12 @@
   "debug.ravecraft.sound_view.fluid": "dans %s (préréglage)",
   "debug.ravecraft.sound_view.slot": "S%s · RT60 %s s",
   "debug.ravecraft.sound_view.measuring": "Mesure de la pièce…",
-  "debug.ravecraft.sound_view.slots": "Enceintes dans une autre pièce : %s"
+  "debug.ravecraft.sound_view.slots": "Enceintes dans une autre pièce : %s",
+  "options.ravecraft.notifications": "Notifications RaveCraft",
+  "options.ravecraft.notifications.tooltip": "Toasts du morceau joué par l'enceinte que vous entendez le plus fort, et des erreurs.",
+  "options.ravecraft.notifications.all": "Toutes",
+  "options.ravecraft.notifications.errors": "Erreurs seulement",
+  "options.ravecraft.notifications.none": "Aucune",
+  "toast.ravecraft.now_playing.title": "En lecture",
+  "toast.ravecraft.now_playing.message": "%s — ajouté par %s"
 }

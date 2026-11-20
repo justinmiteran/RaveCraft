@@ -7,6 +7,7 @@ import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
 import com.ravecraft.mod.network.payload.SpeakerWatchPayload;
 import com.ravecraft.mod.network.payload.StreamResultPayload;
 import com.ravecraft.mod.network.payload.StreamStartedPayload;
+import com.ravecraft.mod.world.audio.NowPlaying;
 import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import com.ravecraft.mod.world.audio.SpeakerWatchers;
 import java.util.HashMap;
@@ -68,6 +69,7 @@ public final class SpeakerNetwork {
 			VOLUME_BUCKETS.remove(id);
 			START_BUCKETS.remove(id);
 			SpeakerWatchers.forget(id);
+			NowPlaying.forget(id);
 			SpeakerPlayback.onDisconnect(server, id);
 		});
 		ServerTickEvents.END_SERVER_TICK.register(server -> {

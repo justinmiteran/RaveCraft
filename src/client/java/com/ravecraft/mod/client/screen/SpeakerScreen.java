@@ -78,6 +78,11 @@ public final class SpeakerScreen extends Screen {
 		SpeakerStates.forget(this.pos);
 	}
 
+	/** The speaker this screen controls. */
+	public BlockPos pos() {
+		return pos;
+	}
+
 	/** The item's custom name when the speaker has one, otherwise the block's name. */
 	private static Component titleOf(BlockPos pos) {
 		ClientLevel level = Minecraft.getInstance().level;

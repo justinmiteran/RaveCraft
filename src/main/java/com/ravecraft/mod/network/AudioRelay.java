@@ -9,6 +9,7 @@ import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.TokenBucket;
 import com.ravecraft.mod.network.payload.AudioChunkPayload;
 import com.ravecraft.mod.network.payload.RelayedChunkPayload;
+import com.ravecraft.mod.world.audio.NowPlaying;
 import com.ravecraft.mod.network.payload.StreamClosePayload;
 import com.ravecraft.mod.world.audio.SpeakerKey;
 import com.ravecraft.mod.world.audio.SpeakerPlayback;
@@ -72,6 +73,7 @@ public final class AudioRelay {
 		RelayedChunkPayload relayed = new RelayedChunkPayload(chunk.sessionId(), pos, chunk.seq(), chunk.frames());
 		double radius = relayRadius(level, pos);
 		for (ServerPlayer listener : listeners(level, pos, session.owner(), PlayerLookup.tracking(level, pos), radius)) {
+			NowPlaying.tell(listener, chunk.sessionId());
 			Net.send(listener, relayed);
 		}
 	}

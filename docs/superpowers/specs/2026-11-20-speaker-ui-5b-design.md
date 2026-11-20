@@ -69,6 +69,7 @@ Nouvelle commande `MOVE` dans `SpeakerCommandPayload`, qui réutilise ses champs
 
 ### Toast « En lecture »
 
+- Le serveur dit à chaque joueur ce que joue une session, une seule fois par session et par joueur (`NowPlayingPayload` : session, enceinte, morceau, titre, nom de qui l'a ajouté) : au joueur qui diffuse quand elle démarre, et à chaque auditeur juste avant son premier paquet de son, donc aussi à celui qui arrive en cours de morceau. Sans lui, un auditeur ne connaît ni le titre ni le nom : la file de l'enceinte ne va qu'aux joueurs qui ont son écran ouvert.
 - Le client choisit chaque seconde l'enceinte **audible la plus forte** (gain calculé par le rendu acoustique, occlusion comprise). Elle devient la « source suivie » si elle est la plus forte depuis 3 s (la première fois : tout de suite).
 - Un toast apparaît quand la source suivie démarre un morceau, et quand la source suivie change et qu'elle joue. Le même morceau sur la même enceinte n'est jamais annoncé deux fois de suite.
 - Contenu : « En lecture » ; en dessous, le titre (« Artiste — Titre » après la PR 3) et « ajouté par X ». Toast système vanilla, une seule instance remplacée si un nouveau arrive.
@@ -117,7 +118,7 @@ Au survol de la barre, une infobulle « 2:14 / 3:40 » donne le temps à l'endro
 
 - Une commande `MOVE` sur un morceau retiré entre-temps ne fait rien (id inconnu).
 - Un fichier illisible au survol donne une infobulle réduite au nom du fichier, sans durée.
-- Les toasts ne partent jamais du serveur : tout est calculé chez le joueur, rien n'est envoyé en plus sur le réseau (sauf `MOVE`).
+- Le choix de la source suivie et des toasts se fait chez le joueur. Sur le réseau, seuls s'ajoutent `MOVE` et `NowPlayingPayload` (une fois par session et par joueur).
 
 ## 7. Tests
 

@@ -40,16 +40,37 @@ class EchoFinderTest {
 	@Test
 	void wallAt50BlocksDoesNotEcho() {
 		assertEquals(Echo.NONE, EchoFinder.find(hits(6, 50, 0.02), E));
+		assertTrue(EchoFinder.group(hits(6, 50, 0.02), E).isEmpty());
 	}
 
 	@Test
 	void woolWallDoesNotEcho() {
 		assertEquals(Echo.NONE, EchoFinder.find(hits(6, 25, 0.7), E));
+		assertTrue(EchoFinder.group(hits(6, 25, 0.7), E).isEmpty());
 	}
 
 	@Test
 	void tooFewRaysDoNotEcho() {
 		assertEquals(Echo.NONE, EchoFinder.find(hits(3, 25, 0.02), E));
+		assertTrue(EchoFinder.group(hits(3, 25, 0.02), E).isEmpty());
+	}
+
+	@Test
+	void groupIsTheWallRays() {
+		assertEquals(List.of(0, 1, 2, 3, 4, 5), EchoFinder.group(hits(6, 25, 0.02), E));
+	}
+
+	@Test
+	void groupIndicesSurviveShuffle() {
+		List<Integer> walls = List.of(3, 10, 17, 24, 31, 5);
+		List<RayHit> hits = new ArrayList<>();
+		for (int i = 0; i < 32; i++) {
+			hits.add(new RayHit(true, 64, 1));
+		}
+		for (int i = 0; i < walls.size(); i++) {
+			hits.set(walls.get(i), new RayHit(false, 24.5 + i / 5.0, 0.02));
+		}
+		assertEquals(walls.stream().sorted().toList(), EchoFinder.group(hits, E));
 	}
 
 	@Test

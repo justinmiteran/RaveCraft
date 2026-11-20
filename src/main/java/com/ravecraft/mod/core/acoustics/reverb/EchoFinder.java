@@ -22,31 +22,15 @@ public final class EchoFinder {
 	 * Fewer than {@code minRays} members, or no candidate, gives {@link Echo#NONE}.
 	 */
 	public static Echo find(List<RayHit> hits, EchoSettings settings) {
-		List<RayHit> candidates = new ArrayList<>();
-		for (RayHit hit : hits) {
-			if (!hit.open() && hit.absorption() <= settings.maxAbsorption() && hit.distance() >= settings.minDistance()
-					&& hit.distance() <= settings.maxDistance()) {
-				candidates.add(hit);
-			}
-		}
-		candidates.sort(Comparator.comparingDouble(RayHit::distance));
-
-		List<RayHit> best = List.of();
-		for (RayHit center : candidates) {
-			double limit = TOLERANCE * center.distance();
-			List<RayHit> group = new ArrayList<>();
-			for (RayHit other : candidates) {
-				if (Math.abs(other.distance() - center.distance()) <= limit) {
-					group.add(other);
-				}
-			}
-			if (group.size() > best.size()) {
-				best = group;
-			}
-		}
-		if (best.isEmpty() || best.size() < settings.minRays()) {
+		List<Integer> group = group(hits, settings);
+		if (group.isEmpty()) {
 			return Echo.NONE;
 		}
+		List<RayHit> best = new ArrayList<>(group.size());
+		for (int i : group) {
+			best.add(hits.get(i));
+		}
+		best.sort(Comparator.comparingDouble(RayHit::distance));
 
 		double d = median(best);
 		double absorption = 0;
@@ -57,6 +41,44 @@ public final class EchoFinder {
 		double gain = settings.gain() * (1 - absorption) * ((double) best.size() / hits.size())
 				* (REFERENCE_DISTANCE / d);
 		return new Echo(2 * d / SPEED_OF_SOUND, Math.clamp(gain, 0, 1));
+	}
+
+	/**
+	 * The indices into {@code hits}, ascending, of the group {@link #find} makes its echo from; empty when it finds
+	 * {@link Echo#NONE}.
+	 */
+	public static List<Integer> group(List<RayHit> hits, EchoSettings settings) {
+		List<Integer> candidates = new ArrayList<>();
+		for (int i = 0; i < hits.size(); i++) {
+			RayHit hit = hits.get(i);
+			if (!hit.open() && hit.absorption() <= settings.maxAbsorption() && hit.distance() >= settings.minDistance()
+					&& hit.distance() <= settings.maxDistance()) {
+				candidates.add(i);
+			}
+		}
+		candidates.sort(Comparator.comparingDouble(i -> hits.get(i).distance()));
+
+		List<Integer> best = List.of();
+		for (int center : candidates) {
+			double distance = hits.get(center).distance();
+			double limit = TOLERANCE * distance;
+			List<Integer> group = new ArrayList<>();
+			for (int other : candidates) {
+				if (Math.abs(hits.get(other).distance() - distance) <= limit) {
+					group.add(other);
+				}
+			}
+			// Candidates go nearest first: on a tie the nearest centre keeps the lead.
+			if (group.size() > best.size()) {
+				best = group;
+			}
+		}
+		if (best.isEmpty() || best.size() < settings.minRays()) {
+			return List.of();
+		}
+		List<Integer> sorted = new ArrayList<>(best);
+		sorted.sort(null);
+		return List.copyOf(sorted);
 	}
 
 	/** The median distance of a group already sorted by distance. */

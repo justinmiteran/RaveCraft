@@ -32,5 +32,19 @@
   "options.ravecraft.occlusionQuality.tooltip": "Effort consacré à trouver comment le son contourne les murs. Baissez-la si les FPS chutent près de nombreuses enceintes.",
   "tooltip.ravecraft.speaker.specs": "%s W · %s dB (1 W, 1 m)",
   "tooltip.ravecraft.speaker.range": "Portée : %s blocs à %s %% de volume",
-  "debug.options.category.ravecraft": "RaveCraft"
+  "debug.options.category.ravecraft": "RaveCraft",
+  "key.ravecraft.debug.soundView": "Changer la vue sonore",
+  "debug.ravecraft.sound_view.none": "Vue sonore : désactivée",
+  "debug.ravecraft.sound_view.paths": "Vue sonore : chemins",
+  "debug.ravecraft.sound_view.rooms": "Vue sonore : pièces",
+  "debug.ravecraft.sound_view.all": "Vue sonore : chemins et pièces",
+  "debug.ravecraft.sound_view.source": "S%s −%s dB (aigus −%s)",
+  "debug.ravecraft.sound_view.source_mute": "S%s muet",
+  "debug.ravecraft.sound_view.room": "ouvert %s %% | parcours %s | absorption %s | irrégulier %s",
+  "debug.ravecraft.sound_view.reverb": "RT60 %s s | écho %s s (gain %s)",
+  "debug.ravecraft.sound_view.reverb_no_echo": "RT60 %s s | écho : aucun",
+  "debug.ravecraft.sound_view.fluid": "dans %s (préréglage)",
+  "debug.ravecraft.sound_view.slot": "S%s · RT60 %s s",
+  "debug.ravecraft.sound_view.measuring": "Mesure de la pièce…",
+  "debug.ravecraft.sound_view.slots": "Enceintes dans une autre pièce : %s"
 }

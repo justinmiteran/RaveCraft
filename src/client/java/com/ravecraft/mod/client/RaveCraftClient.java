@@ -9,6 +9,8 @@ import com.ravecraft.mod.block.SpeakerScreenOpener;
 import com.ravecraft.mod.client.audio.LocalPlayback;
 import com.ravecraft.mod.client.audio.stream.ClientRelay;
 import com.ravecraft.mod.client.debug.AcousticDebugEntry;
+import com.ravecraft.mod.client.debug.SoundViewEntries;
+import com.ravecraft.mod.client.debug.SoundViewRenderer;
 import com.ravecraft.mod.client.item.SpeakerPowered;
 import com.ravecraft.mod.client.screen.SpeakerBrowserScreen;
 import com.ravecraft.mod.registry.ModBlocks;
@@ -30,6 +32,8 @@ public class RaveCraftClient implements ClientModInitializer {
 		OcclusionScheduler.register();
 		ReverbScheduler.register();
 		AcousticDebugEntry.registerAll();
+		SoundViewEntries.register();
+		SoundViewRenderer.register();
 		if (FabricLoader.getInstance().isModLoaded("sound_physics_remastered")) {
 			RaveCraft.LOGGER.info("Sound Physics Remastered is loaded: RaveCraft speakers keep their own occlusion");
 		}

@@ -55,6 +55,8 @@ public final class OcclusionTracer {
 	private @Nullable AcousticMedium endMedium;
 	/** Set by each {@link #trace}: true when it was muted by the medium at one of its ends. */
 	private boolean endMuted;
+	/** Where {@link #trace} records the voxels it loses in; set only around the direct path of {@link #occlusion}. */
+	private @Nullable PathCapture recording;
 
 	/** A candidate waypoint near one end, with the trace that reaches it from that end. */
 	private record Waypoint(double x, double y, double z, PathLoss fromEnd) {
@@ -68,9 +70,10 @@ public final class OcclusionTracer {
 	 * One way the sound gets through: broadband loss and extra treble loss, both infinite when it is mute, and for a
 	 * detour the unit direction of its last leg (waypoint → listener).
 	 */
-	private record Route(double lossDb, double highLossDb, double @Nullable [] lastLeg) {
+	private record Route(double lossDb, double highLossDb, double @Nullable [] lastLeg,
+			double @Nullable [][] points) {
 		/** A detour that is not taken. */
-		static final Route SKIPPED = new Route(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, null);
+		static final Route SKIPPED = new Route(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, null, null);
 	}
 
 	public OcclusionTracer(AcousticGrid grid, OcclusionSettings settings) {
@@ -105,17 +108,24 @@ public final class OcclusionTracer {
 			double inside = (walk.exitT() - walk.enterT()) * length;
 
 			if (inside >= MIN_LENGTH) {
+				double before = loss;
+				@Nullable String crossed = null;
 				grid.sample(walk.x(), walk.y(), walk.z(), sample);
 				AcousticMedium own = sample.medium;
 				if (own != null && own.impedance() <= 0) {
 					endMuted = first || last;
+					if (recording != null) {
+						recording.step(walk.x(), walk.y(), walk.z(), own.name(), Double.POSITIVE_INFINITY);
+					}
 					return PathLoss.mute(length);
 				}
 				AcousticMaterial material = sample.material;
+				boolean materialLoss = false;
 				if (material != null && !first && !last) {
 					double weight = sample.fill(walk.entryAxis()) * Math.min(1, inside);
 					loss += material.lossDb() * weight;
 					high += material.highLossDb() * weight;
+					materialLoss = material.lossDb() * weight > 0;
 				}
 				if (own == null) {
 					if (current == null) {
@@ -133,12 +143,22 @@ public final class OcclusionTracer {
 					} else if (!current.equals(own)) {
 						double interfaceLoss = Interfaces.lossDb(current, own, settings.interfaceScale());
 						if (Double.isInfinite(interfaceLoss)) {
+							if (recording != null) {
+								recording.step(walk.x(), walk.y(), walk.z(), current.name() + "→" + own.name(),
+										Double.POSITIVE_INFINITY);
+							}
 							return PathLoss.mute(length);
 						}
 						loss += interfaceLoss;
 						high += Interfaces.highLossDb(interfaceLoss, settings.interfaceHighRatio());
+						crossed = current.name() + "→" + own.name();
 					}
 					current = own;
+				}
+				if (recording != null && loss > before) {
+					String name = materialLoss ? Objects.requireNonNull(material).name()
+							: crossed != null ? crossed : Objects.requireNonNull(current).name();
+					recording.step(walk.x(), walk.y(), walk.z(), name, loss - before);
 				}
 			}
 
@@ -190,7 +210,17 @@ public final class OcclusionTracer {
 	 */
 	public @Nullable Occlusion occlusion(double lx, double ly, double lz, double sx, double sy, double sz,
 			double rolloff, double maxPathLength, TraceBudget budget) {
-		return occlusion(lx, ly, lz, sx, sy, sz, rolloff, maxPathLength, budget, BEST_DETOURS);
+		return occlusion(lx, ly, lz, sx, sy, sz, rolloff, maxPathLength, budget, BEST_DETOURS, null);
+	}
+
+	/**
+	 * {@link #occlusion(double, double, double, double, double, double, double, double, TraceBudget)}, recording in
+	 * {@code capture} (when not null) the voxels of the direct path that lose something and the detours summed with
+	 * it. The capture is reset first, even when occlusion is disabled.
+	 */
+	public @Nullable Occlusion occlusion(double lx, double ly, double lz, double sx, double sy, double sz,
+			double rolloff, double maxPathLength, TraceBudget budget, @Nullable PathCapture capture) {
+		return occlusion(lx, ly, lz, sx, sy, sz, rolloff, maxPathLength, budget, BEST_DETOURS, capture);
 	}
 
 	/**
@@ -199,15 +229,32 @@ public final class OcclusionTracer {
 	 */
 	@Nullable Occlusion occlusion(double lx, double ly, double lz, double sx, double sy, double sz,
 			double rolloff, double maxPathLength, TraceBudget budget, int maxDetours) {
+		return occlusion(lx, ly, lz, sx, sy, sz, rolloff, maxPathLength, budget, maxDetours, null);
+	}
+
+	private @Nullable Occlusion occlusion(double lx, double ly, double lz, double sx, double sy, double sz,
+			double rolloff, double maxPathLength, TraceBudget budget, int maxDetours, @Nullable PathCapture capture) {
+		if (capture != null) {
+			capture.reset();
+		}
 		if (!settings.enabled()) {
 			return Occlusion.NONE;
 		}
-		PathLoss direct = trace(lx, ly, lz, sx, sy, sz, budget);
+		recording = capture;
+		PathLoss direct;
+		try {
+			direct = trace(lx, ly, lz, sx, sy, sz, budget);
+		} finally {
+			recording = null;
+		}
 		if (direct == null) {
 			return null;
 		}
+		if (capture != null) {
+			capture.direct(direct);
+		}
 		List<Route> routes = new ArrayList<>();
-		routes.add(new Route(direct.lossDb(), direct.highLossDb(), null));
+		routes.add(new Route(direct.lossDb(), direct.highLossDb(), null, null));
 		// An end in a medium that carries nothing (vacuum) mutes every detour as well.
 		if (!settings.detours() || direct.lossDb() < DETOUR_THRESHOLD_DB || (direct.mute() && endMuted)) {
 			return combine(routes);
@@ -243,7 +290,7 @@ public final class OcclusionTracer {
 		}
 		List<Route> detours = new ArrayList<>();
 		for (Path path : paths) {
-			Route route = route(path, direct, rolloff, maxPathLength, budget);
+			Route route = route(path, direct, rolloff, maxPathLength, budget, capture != null);
 			if (route == null) {
 				return null;
 			}
@@ -264,6 +311,11 @@ public final class OcclusionTracer {
 			}
 		}
 		routes.addAll(chosen);
+		if (capture != null) {
+			for (Route detour : chosen) {
+				capture.detour(Objects.requireNonNull(detour.points()), detour.lossDb());
+			}
+		}
 		return combine(routes);
 	}
 
@@ -360,7 +412,7 @@ public final class OcclusionTracer {
 	 * is mute. Null when {@code budget} ran out.
 	 */
 	private @Nullable Route route(Path path, PathLoss direct, double rolloff, double maxPathLength,
-			TraceBudget budget) {
+			TraceBudget budget, boolean keepPoints) {
 		double[][] points = path.points();
 		double length = 0;
 		for (int i = 0; i + 1 < points.length; i++) {
@@ -406,7 +458,8 @@ public final class OcclusionTracer {
 		double[] a = points[points.length - 2];
 		double[] b = points[points.length - 1];
 		double leg = distance(a, b);
-		return new Route(loss, high, new double[] {(b[0] - a[0]) / leg, (b[1] - a[1]) / leg, (b[2] - a[2]) / leg});
+		return new Route(loss, high, new double[] {(b[0] - a[0]) / leg, (b[1] - a[1]) / leg, (b[2] - a[2]) / leg},
+				keepPoints ? points : null);
 	}
 
 	/** Sums the routes in energy, broadband and treble apart; {@link Occlusion#MUTE} when none gets through. */

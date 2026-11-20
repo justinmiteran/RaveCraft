@@ -2,15 +2,19 @@ package com.ravecraft.mod.client.audio.render;
 
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.client.audio.occlusion.WorldAcousticGrid;
+import com.ravecraft.mod.client.debug.SoundViewEntries;
 import com.ravecraft.mod.client.options.RaveCraftOptions;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.Propagation;
+import com.ravecraft.mod.core.acoustics.debug.view.PathView;
+import com.ravecraft.mod.core.acoustics.debug.view.Vec;
 import com.ravecraft.mod.core.acoustics.occlusion.ListenerPerception;
 import com.ravecraft.mod.core.acoustics.occlusion.Occlusion;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionPass;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionRota;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionTracer;
+import com.ravecraft.mod.core.acoustics.occlusion.PathCapture;
 import com.ravecraft.mod.core.acoustics.occlusion.PathLoss;
 import com.ravecraft.mod.core.acoustics.occlusion.TraceBudget;
 import com.ravecraft.mod.world.acoustics.BlockAcoustics;
@@ -68,6 +72,8 @@ public final class OcclusionScheduler {
 	private static @Nullable WorldAcousticGrid grid;
 	private static @Nullable OcclusionTracer tracer;
 	private static long tick;
+	/** Reused by every trace while the sound view shows the paths. */
+	private static final PathCapture CAPTURE = new PathCapture();
 
 	private OcclusionScheduler() {
 	}
@@ -122,6 +128,10 @@ public final class OcclusionScheduler {
 		}
 
 		ClientLevel level = minecraft.level;
+		boolean showPaths = level != null && SoundViewEntries.mode().paths();
+		if (!showPaths) {
+			SoundViewSnapshots.clearPaths();
+		}
 		if (level == null) {
 			grid = null;
 			tracer = null;
@@ -174,11 +184,13 @@ public final class OcclusionScheduler {
 
 		lastVoxels = 0;
 		if (!occlusion.enabled()) {
+			SoundViewSnapshots.clearPaths();
 			for (RenderStream stream : AUDIBLE) {
 				publish(stream, 0, 0);
 			}
 			return;
 		}
+		@Nullable PathCapture capture = showPaths ? CAPTURE : null;
 
 		DUE.clear();
 		for (Integer id : ROTA.pick(AUDIBLE_IDS, tick)) {
@@ -197,8 +209,17 @@ public final class OcclusionScheduler {
 
 					@Override
 					public @Nullable Occlusion occlusion(RenderStream stream, TraceBudget budget) {
-						return pathTracer.occlusion(ear.x, ear.y, ear.z, stream.pos.getX() + 0.5,
-								stream.pos.getY() + 0.5, stream.pos.getZ() + 0.5, rolloff, range(settings, stream), budget);
+						double sx = stream.pos.getX() + 0.5;
+						double sy = stream.pos.getY() + 0.5;
+						double sz = stream.pos.getZ() + 0.5;
+						Occlusion result = pathTracer.occlusion(ear.x, ear.y, ear.z, sx, sy, sz, rolloff,
+								range(settings, stream), budget, capture);
+						// Only a finished trace is shown: a budget-out or the direct fallback would draw a partial path.
+						if (capture != null && result != null) {
+							SoundViewSnapshots.putPath(PathView.of(stream.sessionId, new Vec(sx, sy, sz),
+									new Vec(ear.x, ear.y, ear.z), capture, result));
+						}
+						return result;
 					}
 
 					@Override
@@ -226,6 +247,9 @@ public final class OcclusionScheduler {
 					}
 				});
 		lastVoxels = budget.used();
+		if (showPaths) {
+			SoundViewSnapshots.retainPaths(AUDIBLE_IDS);
+		}
 	}
 
 	/** Voxels the last tick's traces used (debug screen). */

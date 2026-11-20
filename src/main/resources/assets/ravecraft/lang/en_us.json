@@ -32,5 +32,19 @@
   "options.ravecraft.occlusionQuality.tooltip": "How much work is spent finding how sound gets around walls. Lower it if your frame rate drops near many speakers.",
   "tooltip.ravecraft.speaker.specs": "%s W · %s dB (1 W, 1 m)",
   "tooltip.ravecraft.speaker.range": "Range: %s blocks at %s%% volume",
-  "debug.options.category.ravecraft": "RaveCraft"
+  "debug.options.category.ravecraft": "RaveCraft",
+  "key.ravecraft.debug.soundView": "Cycle sound view",
+  "debug.ravecraft.sound_view.none": "Sound view: off",
+  "debug.ravecraft.sound_view.paths": "Sound view: paths",
+  "debug.ravecraft.sound_view.rooms": "Sound view: rooms",
+  "debug.ravecraft.sound_view.all": "Sound view: paths and rooms",
+  "debug.ravecraft.sound_view.source": "S%s −%s dB (treble −%s)",
+  "debug.ravecraft.sound_view.source_mute": "S%s mute",
+  "debug.ravecraft.sound_view.room": "open %s %% | path %s | absorption %s | irregular %s",
+  "debug.ravecraft.sound_view.reverb": "RT60 %s s | echo %s s (gain %s)",
+  "debug.ravecraft.sound_view.reverb_no_echo": "RT60 %s s | echo: none",
+  "debug.ravecraft.sound_view.fluid": "in %s (preset)",
+  "debug.ravecraft.sound_view.slot": "S%s · RT60 %s s",
+  "debug.ravecraft.sound_view.measuring": "Measuring the room…",
+  "debug.ravecraft.sound_view.slots": "Speakers in another room: %s"
 }

@@ -3,6 +3,7 @@ package com.ravecraft.mod.client.screen.widget;
 import com.ravecraft.mod.core.library.SourceNode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -24,7 +25,7 @@ public abstract sealed class LibraryRow implements ListRow permits FolderRow, Fi
 	private boolean arrowColumn = true;
 	private boolean highlights = true;
 	private final List<RowItem> items = new ArrayList<>();
-	private List<Component> tooltip = List.of();
+	private Supplier<List<Component>> tooltip = List::of;
 
 	protected LibraryRow(SourceNode node, int depth) {
 		this.depth = depth;
@@ -62,6 +63,11 @@ public abstract sealed class LibraryRow implements ListRow permits FolderRow, Fi
 	}
 
 	public LibraryRow tooltip(List<Component> tooltip) {
+		return tooltip(() -> tooltip);
+	}
+
+	/** A tooltip built only when the row is hovered. */
+	public LibraryRow tooltip(Supplier<List<Component>> tooltip) {
 		this.tooltip = tooltip;
 		return this;
 	}
@@ -89,7 +95,7 @@ public abstract sealed class LibraryRow implements ListRow permits FolderRow, Fi
 
 	@Override
 	public List<Component> tooltip() {
-		return tooltip;
+		return tooltip.get();
 	}
 
 	@Override

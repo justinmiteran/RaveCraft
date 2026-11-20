@@ -11,6 +11,7 @@ import com.ravecraft.mod.core.acoustics.debug.view.Ray;
 import com.ravecraft.mod.core.acoustics.debug.view.RoomView;
 import com.ravecraft.mod.core.acoustics.debug.view.SoundViewMode;
 import com.ravecraft.mod.core.acoustics.debug.view.Vec;
+import com.ravecraft.mod.core.acoustics.debug.view.Waypoint;
 import com.ravecraft.mod.core.acoustics.reverb.Echo;
 import com.ravecraft.mod.core.acoustics.reverb.RoomShape;
 import java.util.ArrayList;
@@ -18,7 +19,6 @@ import java.util.List;
 import java.util.Locale;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelExtractionEvents;
-import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -31,7 +31,6 @@ import net.minecraft.gizmos.TextGizmo;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Vector3fc;
 
 /**
  * Draws the sound view with vanilla gizmos at the end of level extraction: the paths of the loudest speakers (on top
@@ -58,12 +57,7 @@ public final class SoundViewRenderer {
 	private static final int HUD_PADDING = 2;
 	private static final int HUD_BACKGROUND = 0x90000000;
 	private static final Identifier HUD_ID = Identifier.fromNamespaceAndPath(RaveCraft.MOD_ID, "sound_view");
-	/** Lines are cut this far in front of the camera, in blocks. */
-	private static final double NEAR_CLIP = 0.2;
 	private static final long FAILURE_LOG_MS = 60_000;
-	/** The camera of the frame being drawn. */
-	private static Vec camera = new Vec(0, 0, 0);
-	private static Vec forward = new Vec(0, 0, 1);
 	private static long lastFailureLog = Long.MIN_VALUE;
 
 	private SoundViewRenderer() {
@@ -109,11 +103,7 @@ public final class SoundViewRenderer {
 	}
 
 	private static Vec camera() {
-		Camera c = Minecraft.getInstance().gameRenderer.mainCamera();
-		Vector3fc f = c.forwardVector();
-		forward = new Vec(f.x(), f.y(), f.z());
-		camera = vec(c.position());
-		return camera;
+		return vec(Minecraft.getInstance().gameRenderer.mainCamera().position());
 	}
 
 	private static void path(PathView path, Vec camera) {
@@ -143,17 +133,19 @@ public final class SoundViewRenderer {
 				Vec3 to = vec3(i + 2 == points.size() ? EyeAnchor.of(end, camera) : end);
 				dashed(vec3(points.get(i)), to, colour, LINE_WIDTH, true, MAX_DASHES);
 			}
-			// The waypoints the detour bends at (by a door, round a corner), its loss written once, by the first.
-			for (int i = 1; i + 1 < points.size(); i++) {
-				Vec3 waypoint = vec3(points.get(i));
-				Gizmos.cuboid(new AABB(waypoint.subtract(WAYPOINT_HALF, WAYPOINT_HALF, WAYPOINT_HALF),
-						waypoint.add(WAYPOINT_HALF, WAYPOINT_HALF, WAYPOINT_HALF)),
-						GizmoStyle.stroke(LossColors.OPENING)).setAlwaysOnTop();
-				if (i == 1) {
-					text("−" + oneDecimal(detour.lossDb()) + " dB", waypoint.add(0, 0.35, 0), LossColors.OPENING)
-							.setAlwaysOnTop();
-				}
+		}
+		// The points the detours bend at (by a door, round a corner), each once, with the loss of every detour
+		// through it: detours often share the waypoint by a door.
+		for (Waypoint waypoint : Waypoint.of(path.detours())) {
+			Vec3 at = vec3(waypoint.point());
+			Gizmos.cuboid(new AABB(at.subtract(WAYPOINT_HALF, WAYPOINT_HALF, WAYPOINT_HALF),
+					at.add(WAYPOINT_HALF, WAYPOINT_HALF, WAYPOINT_HALF)), GizmoStyle.stroke(LossColors.OPENING))
+					.setAlwaysOnTop();
+			StringBuilder label = new StringBuilder();
+			for (double loss : waypoint.lossesDb()) {
+				label.append(label.isEmpty() ? "−" : " / −").append(oneDecimal(loss));
 			}
+			text(label.append(" dB").toString(), at.add(0, 0.35, 0), LossColors.OPENING).setAlwaysOnTop();
 		}
 
 		String label = path.mute() ? I18n.get("debug.ravecraft.sound_view.source_mute", path.sessionId())
@@ -289,13 +281,8 @@ public final class SoundViewRenderer {
 		}
 	}
 
-	/** A line cut to what lies in front of the camera: an end on or behind its plane breaks the line on screen. */
 	private static void line(Vec3 a, Vec3 b, int argb, float width, boolean onTop) {
-		Vec[] kept = EyeAnchor.clip(vec(a), vec(b), camera, forward, NEAR_CLIP);
-		if (kept == null) {
-			return;
-		}
-		GizmoProperties line = Gizmos.line(vec3(kept[0]), vec3(kept[1]), argb, width);
+		GizmoProperties line = Gizmos.line(a, b, argb, width);
 		if (onTop) {
 			line.setAlwaysOnTop();
 		}

@@ -1,7 +1,5 @@
 package com.ravecraft.mod.core.acoustics.debug.view;
 
-import org.jspecify.annotations.Nullable;
-
 /**
  * Where to draw an end that sits at the listener's eye. A line from the eye is seen end-on in first person, a dot at
  * best, and flickers against the near plane; dropped below the eye, it shows as a line coming up from the bottom of
@@ -24,34 +22,5 @@ public final class EyeAnchor {
 			return point;
 		}
 		return new Vec(point.x(), point.y() - DROP, point.z());
-	}
-
-	/**
-	 * The part of the segment a → b at least {@code near} in front of the camera (along the unit vector
-	 * {@code forward}), or null when none is. A line is widened on screen, and an end on or behind the camera's plane
-	 * makes the whole line vanish or flicker.
-	 */
-	public static Vec @Nullable [] clip(Vec a, Vec b, Vec camera, Vec forward, double near) {
-		double da = depth(a, camera, forward);
-		double db = depth(b, camera, forward);
-		if (da < near && db < near) {
-			return null;
-		}
-		if (da < near) {
-			return new Vec[] {lerp(a, b, (near - da) / (db - da)), b};
-		}
-		if (db < near) {
-			return new Vec[] {a, lerp(a, b, (da - near) / (da - db))};
-		}
-		return new Vec[] {a, b};
-	}
-
-	private static double depth(Vec p, Vec camera, Vec forward) {
-		return (p.x() - camera.x()) * forward.x() + (p.y() - camera.y()) * forward.y()
-				+ (p.z() - camera.z()) * forward.z();
-	}
-
-	private static Vec lerp(Vec a, Vec b, double t) {
-		return new Vec(a.x() + (b.x() - a.x()) * t, a.y() + (b.y() - a.y()) * t, a.z() + (b.z() - a.z()) * t);
 	}
 }

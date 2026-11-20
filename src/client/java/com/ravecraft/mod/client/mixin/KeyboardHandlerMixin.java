@@ -14,7 +14,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** F3 + U cycles the sound view, with the same "[Debug]:" feedback as vanilla's debug keys. */
+/**
+ * F3 + U cycles the sound view, with the same "[Debug]:" feedback as vanilla's debug keys; not under reduced debug
+ * info.
+ */
 @Mixin(KeyboardHandler.class)
 abstract class KeyboardHandlerMixin {
 	@Shadow
@@ -23,7 +26,9 @@ abstract class KeyboardHandlerMixin {
 
 	@Inject(method = "handleDebugKeys", at = @At("HEAD"), cancellable = true)
 	private void ravecraft$cycleSoundView(KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
-		if (SoundViewEntries.key().matches(event)) {
+		// Under reduced debug info the entries are hidden and nothing would be drawn: leave the key to vanilla, as
+		// F3 + B and F3 + G do.
+		if (SoundViewEntries.key().matches(event) && !minecraft.showOnlyReducedInfo()) {
 			Component message = Component.empty()
 					.append(Component.translatable("debug.prefix").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD))
 					.append(CommonComponents.SPACE)

@@ -1,7 +1,9 @@
 package com.ravecraft.mod.core.acoustics.debug.view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Objects;
@@ -91,6 +93,26 @@ class PathViewTest {
 				assertEquals(new Vec(p[0], p[1], p[2]), detour.points().get(i));
 			}
 		}
+	}
+
+	@Test
+	void directMuteMarksTheMutingBlock() {
+		PathCapture capture = new PathCapture();
+		Occlusion occlusion = trace(new TestGrid().solid(2, 0, 0, material("stone"))
+				.fluid(4, 0, 0, Objects.requireNonNull(S.medium("vacuum"))), capture);
+		PathView view = PathView.of(1, SOURCE, LISTENER, capture, occlusion);
+		assertTrue(view.directMute());
+		assertEquals(2, view.crossings().size());
+		assertEquals("vacuum", view.crossings().get(0).name());
+		assertEquals(Double.POSITIVE_INFINITY, view.crossings().get(0).cumulativeDb());
+		assertEquals("stone", view.crossings().get(1).name());
+		assertEquals(Double.POSITIVE_INFINITY, view.crossings().get(1).cumulativeDb());
+	}
+
+	@Test
+	void directNotMuteThroughStone() {
+		PathCapture capture = new PathCapture();
+		assertFalse(PathView.of(1, SOURCE, LISTENER, capture, trace(stoneThenWood(), capture)).directMute());
 	}
 
 	@Test

@@ -35,6 +35,8 @@ public final class SoundViewRenderer {
 	/** Dashes: 0.4 block drawn every 0.8 block, longer on long lines so that one has at most this many. */
 	private static final double DASH_PERIOD = 0.8;
 	private static final int MAX_DASHES = 16;
+	/** Open rays are many and long: fewer dashes keep a room outdoors to a few hundred lines. */
+	private static final int MAX_OPEN_RAY_DASHES = 6;
 	private static final float SLOT_ALPHA = 0.4f;
 	private static final int WHITE = 0xFFFFFFFF;
 	private static final double SOURCE_LABEL_HEIGHT = 0.8;
@@ -100,17 +102,17 @@ public final class SoundViewRenderer {
 			cumulative = crossing.cumulativeDb();
 			BlockPos pos = new BlockPos(crossing.x(), crossing.y(), crossing.z());
 			Gizmos.cuboid(pos, 0.02f, GizmoStyle.stroke(LossColors.forLoss(crossing.lossDb()))).setAlwaysOnTop();
-			text(crossing.name() + " −" + oneDecimal(crossing.lossDb()) + " dB", Vec3.atCenterOf(pos), WHITE)
+			text(crossing.name() + " −" + db(crossing.lossDb()) + " dB", Vec3.atCenterOf(pos), WHITE)
 					.setAlwaysOnTop();
 		}
-		double last = path.mute() ? Double.POSITIVE_INFINITY : cumulative;
+		double last = path.directMute() ? Double.POSITIVE_INFINITY : cumulative;
 		Gizmos.line(from, listener, LossColors.forLoss(last), DIRECT_WIDTH).setAlwaysOnTop();
 
 		for (Detour detour : path.detours()) {
 			int colour = LossColors.forLoss(detour.lossDb());
 			List<Vec> points = detour.points();
 			for (int i = 0; i + 1 < points.size(); i++) {
-				dashed(vec3(points.get(i)), vec3(points.get(i + 1)), colour, LINE_WIDTH, true);
+				dashed(vec3(points.get(i)), vec3(points.get(i + 1)), colour, LINE_WIDTH, true, MAX_DASHES);
 			}
 			for (int i = 1; i + 1 < points.size(); i++) {
 				BlockPos opening = BlockPos.containing(vec3(points.get(i)));
@@ -193,7 +195,8 @@ public final class SoundViewRenderer {
 			}
 			Vec3 end = vec3(ray.end());
 			if (ray.open()) {
-				dashed(origin, end, LossColors.withAlpha(LossColors.OPEN_RAY, alpha), LINE_WIDTH, false);
+				dashed(origin, end, LossColors.withAlpha(LossColors.OPEN_RAY, alpha), LINE_WIDTH, false,
+						MAX_OPEN_RAY_DASHES);
 				continue;
 			}
 			int colour = LossColors.withAlpha(echoRay ? LossColors.ECHO : LossColors.forAbsorption(ray.absorption()),
@@ -208,13 +211,13 @@ public final class SoundViewRenderer {
 		}
 	}
 
-	/** Dashes of half a period, at most {@value #MAX_DASHES} of them. */
-	private static void dashed(Vec3 a, Vec3 b, int argb, float width, boolean onTop) {
+	/** Dashes of half a period, at most {@code maxDashes} of them. */
+	private static void dashed(Vec3 a, Vec3 b, int argb, float width, boolean onTop, int maxDashes) {
 		double length = a.distanceTo(b);
 		if (length <= 0) {
 			return;
 		}
-		double period = Math.max(DASH_PERIOD, length / MAX_DASHES);
+		double period = Math.max(DASH_PERIOD, length / maxDashes);
 		Vec3 d = b.subtract(a).scale(1 / length);
 		for (double s = 0; s < length; s += period) {
 			GizmoProperties dash = Gizmos.line(a.add(d.scale(s)), a.add(d.scale(Math.min(s + period / 2, length))),
@@ -231,6 +234,11 @@ public final class SoundViewRenderer {
 
 	private static Vec3 vec3(Vec v) {
 		return new Vec3(v.x(), v.y(), v.z());
+	}
+
+	/** A loss for a label: one decimal, or ∞ for a mute block. */
+	private static String db(double lossDb) {
+		return Double.isInfinite(lossDb) ? "∞" : oneDecimal(lossDb);
 	}
 
 	private static String oneDecimal(double value) {

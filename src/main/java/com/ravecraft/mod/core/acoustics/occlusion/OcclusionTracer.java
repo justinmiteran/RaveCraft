@@ -114,6 +114,9 @@ public final class OcclusionTracer {
 				AcousticMedium own = sample.medium;
 				if (own != null && own.impedance() <= 0) {
 					endMuted = first || last;
+					if (recording != null) {
+						recording.step(walk.x(), walk.y(), walk.z(), own.name(), Double.POSITIVE_INFINITY);
+					}
 					return PathLoss.mute(length);
 				}
 				AcousticMaterial material = sample.material;
@@ -140,6 +143,10 @@ public final class OcclusionTracer {
 					} else if (!current.equals(own)) {
 						double interfaceLoss = Interfaces.lossDb(current, own, settings.interfaceScale());
 						if (Double.isInfinite(interfaceLoss)) {
+							if (recording != null) {
+								recording.step(walk.x(), walk.y(), walk.z(), current.name() + "→" + own.name(),
+										Double.POSITIVE_INFINITY);
+							}
 							return PathLoss.mute(length);
 						}
 						loss += interfaceLoss;

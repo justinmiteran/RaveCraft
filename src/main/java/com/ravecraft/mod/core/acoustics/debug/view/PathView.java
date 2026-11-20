@@ -5,13 +5,16 @@ import java.util.List;
 
 import com.ravecraft.mod.core.acoustics.occlusion.Occlusion;
 import com.ravecraft.mod.core.acoustics.occlusion.PathCapture;
+import com.ravecraft.mod.core.acoustics.occlusion.PathLoss;
 
 /**
  * What the sound view shows of one source: the occlusion heard, the blocks the direct path loses in (source to
  * listener, with the loss accumulated from the source), how many were left out, and the detours summed with it.
+ * {@code mute} is the combined occlusion; {@code directMute} says the straight path alone is mute (a detour may still
+ * carry the sound), its muting block being then the crossing with an infinite loss.
  */
 public record PathView(int sessionId, Vec source, Vec listener, double lossDb, double highLossDb, boolean mute,
-		List<Crossing> crossings, int truncated, List<Detour> detours) {
+		boolean directMute, List<Crossing> crossings, int truncated, List<Detour> detours) {
 	public PathView {
 		crossings = List.copyOf(crossings);
 		detours = List.copyOf(detours);
@@ -35,7 +38,8 @@ public record PathView(int sessionId, Vec source, Vec listener, double lossDb, d
 			}
 			detours.add(new Detour(points, captured.lossDb()));
 		}
+		PathLoss direct = capture.direct();
 		return new PathView(sessionId, source, listener, occlusion.lossDb(), occlusion.highLossDb(), occlusion.mute(),
-				crossings, capture.truncated(), detours);
+				direct != null && direct.mute(), crossings, capture.truncated(), detours);
 	}
 }

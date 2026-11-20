@@ -130,8 +130,12 @@ class PathCaptureTest {
 	void vacuumKeepsStepsUntilMute() {
 		PathCapture capture = new PathCapture();
 		alongX(new TestGrid().solid(2, 0, 0, STONE).fluid(4, 0, 0, VACUUM), S, 6, capture);
-		assertEquals(1, capture.steps().size());
+		assertEquals(2, capture.steps().size());
 		assertStep(capture.steps().getFirst(), 2, "stone", 15);
+		PathCapture.Step mute = capture.steps().get(1);
+		assertEquals(4, mute.x());
+		assertEquals("vacuum", mute.name());
+		assertEquals(Double.POSITIVE_INFINITY, mute.lossDb());
 		assertTrue(Objects.requireNonNull(capture.direct()).mute());
 	}
 }

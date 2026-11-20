@@ -15,7 +15,10 @@ public final class PathCapture {
 	/** At most this many steps are kept; the rest are only counted. */
 	public static final int MAX_STEPS = 64;
 
-	/** A voxel of the direct path and what it lost: a material, an interface ("air→water") or a medium. */
+	/**
+	 * A voxel of the direct path and what it lost: a material, an interface ("air→water") or a medium. The voxel that
+	 * mutes the path (vacuum, an interface nothing crosses) is the last step, with an infinite loss.
+	 */
 	public record Step(int x, int y, int z, String name, double lossDb) {
 	}
 

@@ -116,7 +116,7 @@ Tout se passe sur le thread client : les ticks (`END_CLIENT_TICK`) et l'extracti
    - `Gizmos.billboardText` pour les étiquettes.
 3. Les gizmos des chemins sont `setAlwaysOnTop()`, sinon le mur cache justement ce qu'on veut voir. Les rayons de pièce ne le sont pas, pour rester lisibles quand on est dedans.
 
-**Plafonds par image** : 8 chemins × (64 voxels + 3 détours), 3 pièces × 48 rayons. Avec ces limites, la vue reste sous ~1 000 primitives.
+**Plafonds par image** : 8 chemins × (64 voxels + 3 détours), 3 pièces × 48 rayons (plus les rayons de l'écho). Une ligne en pointillés compte au plus 16 tirets, un rayon ouvert au plus 6. En pratique (quelques enceintes, quelques blocs traversés, une pièce), la vue reste sous ~1 000 gizmos ; le pire cas (8 chemins de 64 blocs, 3 pièces en plein air) en émet quelques milliers, ce qui reste acceptable pour une vue de debug.
 
 L'état « couche active » est lu dans `debugEntries`. Les schedulers le consultent à chaque tick pour décider de passer une `PathCapture` ou non.
 

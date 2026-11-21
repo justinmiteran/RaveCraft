@@ -1,5 +1,6 @@
 package com.ravecraft.mod.core.acoustics.occlusion;
 
+import com.ravecraft.mod.core.acoustics.Bound;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import org.jspecify.annotations.Nullable;
@@ -48,9 +50,16 @@ public record OcclusionSettings(boolean enabled, double maxLossDb, List<Acoustic
 			new AcousticMedium("vacuum", 0, 0, 0, 0, 0, 0, 1)),
 			0.67, 0.5, Map.of(), BASE_DEFAULTS, true, 6, 10);
 
+	private static final Bound IMPEDANCE = new Bound(0, 100_000_000);
+	private static final Bound LOSS_DB = new Bound(0, 40);
+	private static final Bound LISTENER_LOSS_DB = new Bound(0, 60);
+	private static final Bound MAX_LOSS_DB = new Bound(20, 120);
+	private static final Bound HIGH_RATIO = new Bound(0, 2);
+
 	private static final Pattern NAME = Pattern.compile("[a-z0-9_]{1," + MAX_NAME + "}");
 	private static final Pattern DIMENSION_ID = Pattern.compile("[a-z0-9_.-]+:[a-z0-9_./-]+");
 
+	/** Copies the lists and the map, so the settings never change. */
 	public OcclusionSettings {
 		media = List.copyOf(media);
 		materials = List.copyOf(materials);
@@ -82,42 +91,62 @@ public record OcclusionSettings(boolean enabled, double maxLossDb, List<Acoustic
 
 	/** The same settings with every value brought into its bounds; {@code warn} hears about each change. */
 	public OcclusionSettings clamped(Consumer<String> warn) {
-		List<AcousticMedium> keptMedia = new ArrayList<>();
+		List<AcousticMedium> keptMedia = clampedMedia(warn);
+		Set<String> mediumNames = new LinkedHashSet<>();
+		keptMedia.forEach(m -> mediumNames.add(m.name()));
+		List<AcousticMaterial> keptMaterials = clampedMaterials(warn);
+		Map<String, String> keptDimensions = clampedDimensions(mediumNames, warn);
+		return new OcclusionSettings(enabled,
+				MAX_LOSS_DB.apply("occlusion.maxLossDb", maxLossDb, warn),
+				keptMedia,
+				Bound.UNIT.apply("occlusion.interfaceScale", interfaceScale, warn),
+				HIGH_RATIO.apply("occlusion.interfaceHighRatio", interfaceHighRatio, warn),
+				keptDimensions, keptMaterials, detours,
+				LOSS_DB.apply("occlusion.bendLossDb", bendLossDb, warn),
+				LOSS_DB.apply("occlusion.bendHighLossDb", bendHighLossDb, warn));
+	}
+
+	/** The media with valid, distinct names and their values in bounds; air comes back if missing. */
+	private List<AcousticMedium> clampedMedia(Consumer<String> warn) {
+		List<AcousticMedium> kept = new ArrayList<>();
 		Set<String> seen = new LinkedHashSet<>();
 		for (AcousticMedium m : media) {
 			if (!validName("occlusion.media", m.name(), seen, warn)) {
 				continue;
 			}
 			String p = "occlusion.media." + m.name() + ".";
-			keptMedia.add(new AcousticMedium(m.name(),
-					bound(p + "impedance", m.impedance(), 0, 100_000_000, warn),
-					bound(p + "lossDbPerBlock", m.lossDbPerBlock(), 0, 40, warn),
-					bound(p + "highLossDbPerBlock", m.highLossDbPerBlock(), 0, 40, warn),
-					bound(p + "listenerLossDb", m.listenerLossDb(), 0, 60, warn),
-					bound(p + "listenerHighLossDb", m.listenerHighLossDb(), 0, 40, warn),
-					bound(p + "listenerBlur", m.listenerBlur(), 0, 1, warn),
-					bound(p + "surfaceAbsorption", m.surfaceAbsorption(), 0, 1, warn)));
+			kept.add(new AcousticMedium(m.name(),
+					IMPEDANCE.apply(p + "impedance", m.impedance(), warn),
+					LOSS_DB.apply(p + "lossDbPerBlock", m.lossDbPerBlock(), warn),
+					LOSS_DB.apply(p + "highLossDbPerBlock", m.highLossDbPerBlock(), warn),
+					LISTENER_LOSS_DB.apply(p + "listenerLossDb", m.listenerLossDb(), warn),
+					LOSS_DB.apply(p + "listenerHighLossDb", m.listenerHighLossDb(), warn),
+					Bound.UNIT.apply(p + "listenerBlur", m.listenerBlur(), warn),
+					Bound.UNIT.apply(p + "surfaceAbsorption", m.surfaceAbsorption(), warn)));
 		}
-		keptMedia = capped("occlusion.media", keptMedia, MAX_MEDIA, List.of(AIR), AcousticMedium::name, warn);
+		return capped("occlusion.media", kept, MAX_MEDIA, List.of(AIR), AcousticMedium::name, warn);
+	}
 
-		List<AcousticMaterial> keptMaterials = new ArrayList<>();
-		seen.clear();
+	/** The materials with valid, distinct names and their values in bounds; base materials come back if missing. */
+	private List<AcousticMaterial> clampedMaterials(Consumer<String> warn) {
+		List<AcousticMaterial> kept = new ArrayList<>();
+		Set<String> seen = new LinkedHashSet<>();
 		for (AcousticMaterial m : materials) {
 			if (!validName("occlusion.materials", m.name(), seen, warn)) {
 				continue;
 			}
 			String p = "occlusion.materials." + m.name() + ".";
-			keptMaterials.add(new AcousticMaterial(m.name(),
-					bound(p + "lossDb", m.lossDb(), 0, 40, warn),
-					bound(p + "highLossDb", m.highLossDb(), 0, 40, warn),
-					bound(p + "absorption", m.absorption(), 0, 1, warn)));
+			kept.add(new AcousticMaterial(m.name(),
+					LOSS_DB.apply(p + "lossDb", m.lossDb(), warn),
+					LOSS_DB.apply(p + "highLossDb", m.highLossDb(), warn),
+					Bound.UNIT.apply(p + "absorption", m.absorption(), warn)));
 		}
-		keptMaterials = capped("occlusion.materials", keptMaterials, MAX_MATERIALS, BASE_DEFAULTS,
-				AcousticMaterial::name, warn);
+		return capped("occlusion.materials", kept, MAX_MATERIALS, BASE_DEFAULTS, AcousticMaterial::name, warn);
+	}
 
-		Set<String> mediumNames = new LinkedHashSet<>();
-		keptMedia.forEach(m -> mediumNames.add(m.name()));
-		Map<String, String> keptDimensions = new LinkedHashMap<>();
+	/** The dimension mappings with a valid id and a known medium, up to {@link #MAX_DIMENSIONS}. */
+	private Map<String, String> clampedDimensions(Set<String> mediumNames, Consumer<String> warn) {
+		Map<String, String> kept = new LinkedHashMap<>();
 		for (Map.Entry<String, String> e : dimensions.entrySet()) {
 			String id = e.getKey();
 			String medium = e.getValue();
@@ -126,29 +155,20 @@ public record OcclusionSettings(boolean enabled, double maxLossDb, List<Acoustic
 			} else if (medium == null || !mediumNames.contains(medium)) {
 				warn.accept("occlusion.dimensions." + id + " names the unknown medium " + medium + ", dropped");
 			} else {
-				keptDimensions.put(id, medium);
+				kept.put(id, medium);
 			}
 		}
-		if (keptDimensions.size() > MAX_DIMENSIONS) {
-			warn.accept("occlusion.dimensions has " + keptDimensions.size() + " entries, keeping the first "
-					+ MAX_DIMENSIONS);
-			Map<String, String> head = new LinkedHashMap<>();
-			for (Map.Entry<String, String> e : keptDimensions.entrySet()) {
-				if (head.size() < MAX_DIMENSIONS) {
-					head.put(e.getKey(), e.getValue());
-				}
-			}
-			keptDimensions = head;
+		if (kept.size() <= MAX_DIMENSIONS) {
+			return kept;
 		}
-
-		return new OcclusionSettings(enabled,
-				bound("occlusion.maxLossDb", maxLossDb, 20, 120, warn),
-				keptMedia,
-				bound("occlusion.interfaceScale", interfaceScale, 0, 1, warn),
-				bound("occlusion.interfaceHighRatio", interfaceHighRatio, 0, 2, warn),
-				keptDimensions, keptMaterials, detours,
-				bound("occlusion.bendLossDb", bendLossDb, 0, 40, warn),
-				bound("occlusion.bendHighLossDb", bendHighLossDb, 0, 40, warn));
+		warn.accept("occlusion.dimensions has " + kept.size() + " entries, keeping the first " + MAX_DIMENSIONS);
+		Map<String, String> head = new LinkedHashMap<>();
+		for (Map.Entry<String, String> e : kept.entrySet()) {
+			if (head.size() < MAX_DIMENSIONS) {
+				head.put(e.getKey(), e.getValue());
+			}
+		}
+		return head;
 	}
 
 	/** True for a well-formed, not yet seen name; otherwise warns and returns false. */
@@ -170,7 +190,7 @@ public record OcclusionSettings(boolean enabled, double maxLossDb, List<Acoustic
 	 * the last entries that are not required when the list is full.
 	 */
 	private static <T> List<T> capped(String list, List<T> entries, int max, List<T> required,
-			java.util.function.Function<T, String> name, Consumer<String> warn) {
+			Function<T, String> name, Consumer<String> warn) {
 		List<T> out = new ArrayList<>(entries);
 		if (out.size() > max) {
 			warn.accept(list + " has " + out.size() + " entries, keeping the first " + max);
@@ -190,13 +210,5 @@ public record OcclusionSettings(boolean enabled, double maxLossDb, List<Acoustic
 		}
 		out.addAll(missing);
 		return out;
-	}
-
-	private static double bound(String name, double value, double min, double max, Consumer<String> warn) {
-		double bounded = Double.isNaN(value) ? min : Math.clamp(value, min, max);
-		if (bounded != value) {
-			warn.accept(name + " = " + value + " is outside [" + min + ", " + max + "], using " + bounded);
-		}
-		return bounded;
 	}
 }

@@ -14,6 +14,7 @@ public final class EyeAnchor {
 	private EyeAnchor() {
 	}
 
+	/** Where to draw {@code point}: {@link #DROP} below it when it is within {@link #NEAR} of the camera. */
 	public static Vec of(Vec point, Vec camera) {
 		double dx = point.x() - camera.x();
 		double dy = point.y() - camera.y();

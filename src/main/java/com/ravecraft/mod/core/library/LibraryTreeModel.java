@@ -19,6 +19,7 @@ import java.util.Set;
 public final class LibraryTreeModel {
 	/** One visible line: a node, or a {@code Loading…} placeholder when {@code node} is null. */
 	public record Row(SourceNode node, int depth, boolean expanded) {
+		/** Whether this line is the placeholder of a folder still loading. */
 		public boolean loading() {
 			return node == null;
 		}
@@ -68,6 +69,7 @@ public final class LibraryTreeModel {
 		return reload;
 	}
 
+	/** Whether the roots are still being listed. */
 	public boolean loadingRoots() {
 		return loadingRoots;
 	}
@@ -143,6 +145,7 @@ public final class LibraryTreeModel {
 		}
 	}
 
+	/** Whether the flat list replaces the tree. */
 	public boolean flat() {
 		return flat;
 	}
@@ -197,6 +200,7 @@ public final class LibraryTreeModel {
 		return rows;
 	}
 
+	/** Adds the line of {@code node}, then, when it is expanded, its children or their placeholder. */
 	private void addExpanded(List<Row> out, SourceNode node, int depth) {
 		boolean open = expanded.contains(node.id());
 		out.add(new Row(node, depth, open));

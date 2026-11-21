@@ -1,7 +1,12 @@
 package com.ravecraft.mod.core.acoustics.occlusion;
 
+import com.ravecraft.mod.core.acoustics.Decibels;
+
 /** Loss at the boundary between two media, from the transmission coefficient of their impedances. */
 public final class Interfaces {
+	/** The numerator of the transmission coefficient {@code 4·z1·z2 / (z1 + z2)²}. */
+	private static final double TRANSMISSION_FACTOR = 4;
+
 	private Interfaces() {
 	}
 
@@ -16,11 +21,11 @@ public final class Interfaces {
 		if (sum == 0) {
 			return Double.POSITIVE_INFINITY;
 		}
-		double transmission = 4 * z1 * z2 / (sum * sum);
+		double transmission = TRANSMISSION_FACTOR * z1 * z2 / (sum * sum);
 		if (transmission <= 0) {
 			return Double.POSITIVE_INFINITY;
 		}
-		double loss = -10 * Math.log10(transmission) * interfaceScale;
+		double loss = -Decibels.fromPower(transmission) * interfaceScale;
 		return loss <= 0 ? 0 : loss;
 	}
 

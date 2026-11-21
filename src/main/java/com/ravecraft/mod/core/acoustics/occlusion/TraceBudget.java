@@ -5,6 +5,11 @@ public final class TraceBudget {
 	private final int voxels;
 	private int used;
 
+	/**
+	 * Creates an unspent budget.
+	 *
+	 * @param voxels the voxels it allows; a negative count allows none
+	 */
 	public TraceBudget(int voxels) {
 		this.voxels = Math.max(0, voxels);
 	}
@@ -23,6 +28,7 @@ public final class TraceBudget {
 		return used >= voxels;
 	}
 
+	/** The voxels consumed so far. */
 	public int used() {
 		return used;
 	}

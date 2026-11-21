@@ -10,6 +10,7 @@ public record SpeakerSettings(boolean powered, int volume) {
 	public static final int DEFAULT_VOLUME = 70;
 	public static final SpeakerSettings DEFAULT = new SpeakerSettings(false, DEFAULT_VOLUME);
 
+	/** Clamps the volume to its range. */
 	public SpeakerSettings {
 		volume = Math.clamp(volume, MIN_VOLUME, MAX_VOLUME);
 	}

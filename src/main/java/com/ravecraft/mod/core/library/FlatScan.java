@@ -43,6 +43,7 @@ public final class FlatScan {
 	private int found;
 	private volatile boolean cancelled;
 
+	/** A walk of {@code roots}, excluding nothing, up to {@link LibraryIndex#LIMIT}. */
 	public FlatScan(List<Path> roots) {
 		this(roots, List.of(), LibraryIndex.LIMIT);
 	}
@@ -113,6 +114,7 @@ public final class FlatScan {
 		return !cancelled && !pending.isEmpty();
 	}
 
+	/** Stops the walk at its next step; safe from any thread. */
 	public void cancel() {
 		cancelled = true;
 	}

@@ -7,6 +7,7 @@ import java.util.Map;
 
 /** A point some detours bend at, and the loss of each detour through it, in detour order. */
 public record Waypoint(Vec point, List<Double> lossesDb) {
+	/** Copies {@code lossesDb}, so the view never changes. */
 	public Waypoint {
 		lossesDb = List.copyOf(lossesDb);
 	}

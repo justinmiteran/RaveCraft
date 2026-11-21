@@ -11,14 +11,11 @@ package com.ravecraft.mod.core.acoustics.occlusion;
  */
 public record AcousticMedium(String name, double impedance, double lossDbPerBlock, double highLossDbPerBlock,
 		double listenerLossDb, double listenerHighLossDb, double listenerBlur, double surfaceAbsorption) {
-	/** A medium whose surface absorbs a little, 0.05. */
-	public AcousticMedium(String name, double impedance, double lossDbPerBlock, double highLossDbPerBlock,
-			double listenerLossDb, double listenerHighLossDb, double listenerBlur) {
-		this(name, impedance, lossDbPerBlock, highLossDbPerBlock, listenerLossDb, listenerHighLossDb, listenerBlur, 0.05);
-	}
+	/** The share a medium's surface absorbs when nothing says otherwise: a little. */
+	public static final double DEFAULT_SURFACE_ABSORPTION = 0.05;
 
 	/** A medium that does not change how a listener inside it hears. */
 	public AcousticMedium(String name, double impedance, double lossDbPerBlock, double highLossDbPerBlock) {
-		this(name, impedance, lossDbPerBlock, highLossDbPerBlock, 0, 0, 0, 0.05);
+		this(name, impedance, lossDbPerBlock, highLossDbPerBlock, 0, 0, 0, DEFAULT_SURFACE_ABSORPTION);
 	}
 }

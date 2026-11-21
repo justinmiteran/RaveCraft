@@ -37,6 +37,13 @@ public final class OcclusionPass {
 	private OcclusionPass() {
 	}
 
+	/**
+	 * Traces the due streams in order under one budget, as the class describes.
+	 *
+	 * @param due the streams to trace, loudest first
+	 * @param budget the voxels this tick may visit
+	 * @param ops what the pass does to a stream
+	 */
 	public static <T> void run(List<T> due, TraceBudget budget, Ops<T> ops) {
 		boolean outOfBudget = false;
 		for (T stream : due) {

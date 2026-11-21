@@ -13,6 +13,7 @@ public final class AtomicFiles {
 	/** Writes the new content; may throw, the file is then left as it was. */
 	@FunctionalInterface
 	public interface Content {
+		/** Writes the whole content to {@code out}. */
 		void write(Writer out) throws IOException;
 	}
 

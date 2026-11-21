@@ -1,5 +1,7 @@
 package com.ravecraft.mod.core.acoustics.occlusion;
 
+import com.ravecraft.mod.core.acoustics.Decibels;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -76,6 +78,12 @@ public final class OcclusionTracer {
 		static final Route SKIPPED = new Route(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, null, null);
 	}
 
+	/**
+	 * Creates a tracer over {@code grid}.
+	 *
+	 * @param grid the blocks around the listener
+	 * @param settings the media and materials
+	 */
 	public OcclusionTracer(AcousticGrid grid, OcclusionSettings settings) {
 		this.grid = grid;
 		this.settings = settings;
@@ -427,7 +435,7 @@ public final class OcclusionTracer {
 		if (length > maxPathLength || length <= directLength + COLLINEAR_EPSILON) {
 			return Route.SKIPPED;
 		}
-		double loss = directLength > 0 ? 20 * Math.log10(length / directLength) * rolloff : 0;
+		double loss = directLength > 0 ? Decibels.fromAmplitude(length / directLength) * rolloff : 0;
 		double high = 0;
 		for (int i = 1; i + 1 < points.length; i++) {
 			double bend = bendDegrees(points[i - 1], points[i], points[i + 1]) / 90;
@@ -467,16 +475,16 @@ public final class OcclusionTracer {
 		double energy = 0;
 		double highEnergy = 0;
 		for (Route route : routes) {
-			energy += Math.pow(10, -route.lossDb() / 10);
-			highEnergy += Math.pow(10, -(route.lossDb() + route.highLossDb()) / 10);
+			energy += Decibels.toPower(-route.lossDb());
+			highEnergy += Decibels.toPower(-(route.lossDb() + route.highLossDb()));
 		}
 		if (energy <= 0) {
 			return Occlusion.MUTE;
 		}
 		double max = settings.maxLossDb();
 		// Math.max also turns the -0.0 of a lossless path into 0.0.
-		double loss = Math.max(0, -10 * Math.log10(energy));
-		double total = highEnergy > 0 ? -10 * Math.log10(highEnergy) : Double.POSITIVE_INFINITY;
+		double loss = Math.max(0, -Decibels.fromPower(energy));
+		double total = highEnergy > 0 ? -Decibels.fromPower(highEnergy) : Double.POSITIVE_INFINITY;
 		return new Occlusion(Math.min(loss, max), Math.clamp(total - loss, 0, max));
 	}
 

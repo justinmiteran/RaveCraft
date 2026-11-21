@@ -34,7 +34,13 @@ public record SpeakerLayout(boolean wide, int width, int height, int bandWidth, 
 	private static final int LIST_GAP = 4;
 	private static final int QUEUE_MIN_WIDTH = 120;
 	private static final double QUEUE_SHARE = 0.34;
+	/** How far above its list a label sits. */
+	private static final int LABEL_RISE = 10;
+	private static final int COMPACT_BOTTOM = 4;
+	private static final int COMPACT_PANEL_W = 116;
+	private static final int COMPACT_TITLE_INSET = 16;
 
+	/** The layout for a screen of this size: wide when it fits, compact otherwise. */
 	public static SpeakerLayout of(int screenWidth, int screenHeight) {
 		int width = Math.min(MAX_WIDTH, screenWidth - 2 * SIDE_MARGIN);
 		if (width < WIDE_MIN_WIDTH) {
@@ -49,16 +55,16 @@ public record SpeakerLayout(boolean wide, int width, int height, int bandWidth, 
 		return new SpeakerLayout(true, width, height, column, column + 2 * EDGE,
 				new Rect(EDGE, LIBRARY_Y, column, listsBottom - LIBRARY_Y),
 				new Rect(EDGE + column + GAP, BAND_Y, queueWidth, listsBottom - BAND_Y),
-				BAND_Y - 10, column - 1, buttonsY, WIDE_BUTTONS_H);
+				BAND_Y - LABEL_RISE, column - 1, buttonsY, WIDE_BUTTONS_H);
 	}
 
 	private static SpeakerLayout compact() {
-		int buttonsY = MIN_HEIGHT - 4 - COMPACT_BUTTONS_H;
+		int buttonsY = MIN_HEIGHT - COMPACT_BOTTOM - COMPACT_BUTTONS_H;
 		int listHeight = buttonsY - LIST_GAP - LIBRARY_Y;
-		int panel = 116;
+		int panel = COMPACT_PANEL_W;
 		return new SpeakerLayout(false, MIN_WIDTH, MIN_HEIGHT, MIN_WIDTH - 2 * EDGE, MIN_WIDTH,
 				new Rect(EDGE, LIBRARY_Y, panel, listHeight),
 				new Rect(MIN_WIDTH - EDGE - panel, LIBRARY_Y, panel, listHeight),
-				LIBRARY_Y - 10, MIN_WIDTH - 16, buttonsY, COMPACT_BUTTONS_H);
+				LIBRARY_Y - LABEL_RISE, MIN_WIDTH - COMPACT_TITLE_INSET, buttonsY, COMPACT_BUTTONS_H);
 	}
 }

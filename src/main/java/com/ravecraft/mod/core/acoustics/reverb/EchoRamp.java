@@ -12,10 +12,12 @@ public final class EchoRamp {
 	private double delay;
 	private double gain;
 
+	/** The delay applied now. */
 	public double delaySeconds() {
 		return delay;
 	}
 
+	/** The gain applied now. */
 	public double gain() {
 		return gain;
 	}

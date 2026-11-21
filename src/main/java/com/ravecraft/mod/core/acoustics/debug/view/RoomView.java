@@ -20,6 +20,7 @@ import com.ravecraft.mod.core.acoustics.reverb.RoomShape;
  */
 public record RoomView(Vec origin, List<Ray> rays, @Nullable RoomShape shape, double rt60, Echo echo,
 		@Nullable String fluid) {
+	/** Copies {@code rays}, so the view never changes. */
 	public RoomView {
 		rays = List.copyOf(rays);
 	}

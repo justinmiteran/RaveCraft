@@ -85,6 +85,7 @@ public final class MusicLibrary {
 		};
 	}
 
+	/** The browser line of {@code path}; null for hidden files and files that are neither audio nor playlists. */
 	private static LibraryEntry toEntry(Path path) {
 		Path fileName = path.getFileName();
 		if (fileName == null || isHidden(path)) {

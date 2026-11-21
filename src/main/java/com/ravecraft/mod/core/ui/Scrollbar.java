@@ -14,10 +14,12 @@ public final class Scrollbar {
 	/** Distance from the thumb's top to the point grabbed, or -1 when not dragging. */
 	private int grab = -1;
 
+	/** The thumb's height for {@code content} pixels shown in a {@code track} pixels high; never below the minimum. */
 	public static int thumbHeight(int track, int content) {
 		return Math.max(MIN_THUMB, track * track / content);
 	}
 
+	/** The thumb's top for a scroll of {@code scroll} pixels. */
 	public static int thumbTop(int trackTop, int track, int content, int scroll) {
 		int max = content - track;
 		return max <= 0 ? trackTop : trackTop + (track - thumbHeight(track, content)) * scroll / max;
@@ -47,10 +49,12 @@ public final class Scrollbar {
 		return Math.clamp((long) top * max / room, 0, max);
 	}
 
+	/** Whether the thumb is being dragged. */
 	public boolean dragging() {
 		return grab >= 0;
 	}
 
+	/** Ends a drag. */
 	public void release() {
 		grab = -1;
 	}

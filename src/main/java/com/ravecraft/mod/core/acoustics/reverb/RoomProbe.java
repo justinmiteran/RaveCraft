@@ -35,6 +35,11 @@ public final class RoomProbe {
 	private boolean walking;
 	private @Nullable AcousticMedium startMedium;
 
+	/**
+	 * Creates an idle probe over {@code grid}.
+	 *
+	 * @param grid the blocks around the listener
+	 */
 	public RoomProbe(AcousticGrid grid) {
 		this.grid = grid;
 	}

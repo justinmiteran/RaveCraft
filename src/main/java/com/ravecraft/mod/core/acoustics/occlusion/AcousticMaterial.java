@@ -6,8 +6,11 @@ package com.ravecraft.mod.core.acoustics.occlusion;
  * surface of it absorbs instead of reflecting back into the room.
  */
 public record AcousticMaterial(String name, double lossDb, double highLossDb, double absorption) {
+	/** The share a surface absorbs when nothing says otherwise. */
+	public static final double DEFAULT_ABSORPTION = 0.1;
+
 	/** A material that absorbs a tenth of what hits it. */
 	public AcousticMaterial(String name, double lossDb, double highLossDb) {
-		this(name, lossDb, highLossDb, 0.1);
+		this(name, lossDb, highLossDb, DEFAULT_ABSORPTION);
 	}
 }

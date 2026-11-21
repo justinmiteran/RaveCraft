@@ -9,6 +9,7 @@ import java.util.Set;
 public final class Exclusions {
 	private final Set<Path> hidden = new HashSet<>();
 
+	/** Hides {@code excluded} and everything under them. */
 	public Exclusions(List<Path> excluded) {
 		for (Path folder : excluded) {
 			hidden.add(normalize(folder));

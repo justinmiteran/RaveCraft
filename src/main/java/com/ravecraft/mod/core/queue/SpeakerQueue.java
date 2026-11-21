@@ -23,6 +23,7 @@ public record SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, lon
 	public static final int MAX_ENTRIES = 200;
 	public static final SpeakerQueue EMPTY = new SpeakerQueue(List.of(), Optional.empty(), 0);
 
+	/** Caps the entries, and drops a current entry or pending ids that are not in the queue. */
 	public SpeakerQueue {
 		entries = List.copyOf(entries.size() > MAX_ENTRIES ? entries.subList(0, MAX_ENTRIES) : entries);
 		positionMs = Math.max(0, positionMs);
@@ -39,6 +40,7 @@ public record SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, lon
 		pending = List.copyOf(kept);
 	}
 
+	/** A queue repeating all, shuffle off. */
 	public SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, long positionMs) {
 		this(entries, current, positionMs, RepeatMode.ALL, false, List.of());
 	}
@@ -129,6 +131,7 @@ public record SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, lon
 		return new SpeakerQueue(entries, Optional.of(nextId), 0, repeat, shuffle, newPending);
 	}
 
+	/** The same queue with another repeat mode. */
 	public SpeakerQueue withRepeat(RepeatMode mode) {
 		return new SpeakerQueue(entries, current, positionMs, mode, shuffle, pending);
 	}
@@ -184,6 +187,7 @@ public record SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, lon
 		return now.isPresent() ? now : next(ownerOnline, false, rng);
 	}
 
+	/** The same queue playing {@code entryId} from {@code positionMs}; it leaves what is still to play. */
 	public SpeakerQueue withCurrent(UUID entryId, long positionMs) {
 		List<UUID> newPending = new ArrayList<>(pending);
 		newPending.remove(entryId);
@@ -201,6 +205,7 @@ public record SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, lon
 		return new SpeakerQueue(list, current, positionMs, repeat, shuffle, pending);
 	}
 
+	/** The same queue at another position in the current entry. */
 	public SpeakerQueue withPosition(long positionMs) {
 		return new SpeakerQueue(entries, current, positionMs, repeat, shuffle, pending);
 	}
@@ -263,6 +268,7 @@ public record SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, lon
 		return new SpeakerQueue(List.of(), Optional.empty(), 0, repeat, shuffle, List.of());
 	}
 
+	/** The entry with this id, if it is in the queue. */
 	public Optional<QueueEntry> entry(UUID entryId) {
 		int index = indexOf(entryId);
 		return index < 0 ? Optional.empty() : Optional.of(entries.get(index));

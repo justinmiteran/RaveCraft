@@ -17,6 +17,10 @@ public final class LossColors {
 	private static final int HIGH_LOSS = 0xFFE24B4A;
 	private static final double MID_DB = 10;
 	private static final double HIGH_DB = 30;
+	private static final int CHANNEL_MAX = 0xFF;
+	private static final int ALPHA_SHIFT = 24;
+	private static final int RGB_MASK = 0xFFFFFF;
+	private static final int OPAQUE = 0xFF000000;
 
 	private LossColors() {
 	}
@@ -42,15 +46,15 @@ public final class LossColors {
 
 	/** {@code argb} with its alpha replaced by {@code alpha} (0 to 1). */
 	public static int withAlpha(int argb, float alpha) {
-		int a = Math.round(Math.clamp(alpha, 0f, 1f) * 255);
-		return (a << 24) | (argb & 0xFFFFFF);
+		int a = Math.round(Math.clamp(alpha, 0f, 1f) * CHANNEL_MAX);
+		return (a << ALPHA_SHIFT) | (argb & RGB_MASK);
 	}
 
 	private static int lerp(int from, int to, double t) {
-		int out = 0xFF000000;
-		for (int shift = 0; shift <= 16; shift += 8) {
-			int a = (from >> shift) & 0xFF;
-			int b = (to >> shift) & 0xFF;
+		int out = OPAQUE;
+		for (int shift = 0; shift < ALPHA_SHIFT; shift += Byte.SIZE) {
+			int a = (from >> shift) & CHANNEL_MAX;
+			int b = (to >> shift) & CHANNEL_MAX;
 			out |= (int) Math.round(a + (b - a) * t) << shift;
 		}
 		return out;

@@ -118,5 +118,8 @@
   "options.ravecraft.notifications.errors": "Errors Only",
   "options.ravecraft.notifications.none": "None",
   "toast.ravecraft.now_playing.title": "Now Playing",
-  "toast.ravecraft.now_playing.message": "%s — added by %s"
+  "toast.ravecraft.now_playing.message": "%s — added by %s",
+  "key.ravecraft.open_speaker": "Open speaker",
+  "key.category.ravecraft.ravecraft": "RaveCraft",
+  "tooltip.ravecraft.speaker.open_key": "[%s]: open the interface from the inventory"
 }

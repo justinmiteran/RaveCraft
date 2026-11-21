@@ -3,6 +3,7 @@ package com.ravecraft.mod.block;
 import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.registry.ModDataComponents;
+import com.ravecraft.mod.world.audio.SpeakerHosts;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
@@ -79,6 +80,10 @@ public class PortableSpeakerBlock extends BaseEntityBlock implements SimpleWater
 				&& level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) {
 			speaker.setData(SpeakerData.create().withSettings(speaker.data().settings()));
 		}
+		// The id is final here (from the item, or refreshed above): register where it lives.
+		if (!level.isClientSide() && level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) {
+			SpeakerHosts.placed(speaker);
+		}
 	}
 
 	/** Middle-click keeps the fabric colour, like picking a coloured block; ctrl adds the full data on top. */
@@ -130,8 +135,9 @@ public class PortableSpeakerBlock extends BaseEntityBlock implements SimpleWater
 			if (!level.isClientSide() && level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) {
 				speaker.togglePower();
 			}
-		} else if (level.isClientSide()) {
-			SpeakerScreenOpener.open(pos);
+		} else if (level.isClientSide() && level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) {
+			// Titled with the item's custom name when it has one, otherwise the block's name.
+			SpeakerScreenOpener.open(speaker.data().id(), speaker.customName() != null ? speaker.customName() : getName());
 		}
 		return InteractionResult.SUCCESS;
 	}

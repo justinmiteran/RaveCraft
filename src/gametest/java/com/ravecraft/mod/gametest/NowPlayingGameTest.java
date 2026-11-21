@@ -21,12 +21,12 @@ public class NowPlayingGameTest {
 	public void noticeOpenedOnPlay(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		ServerPlayer player = online(h, 2);
-		SpeakerPlayback.add(player, pos, newEntries(1));
-		SpeakerPlayback.command(player, pos, Command.PLAY, Optional.empty());
+		SpeakerPlayback.add(player, Speakers.idAt(h, pos), newEntries(1));
+		SpeakerPlayback.command(player, Speakers.idAt(h, pos), Command.PLAY, Optional.empty());
 		NowPlayingPayload notice = NowPlaying.of(sessionId(h, pos)).orElseThrow();
 		h.assertValueEqual(notice.title(), "track 0", "title");
 		h.assertValueEqual(notice.ownerName(), player.getName().getString(), "owner name");
-		h.assertValueEqual(notice.pos(), pos, "speaker");
+		h.assertValueEqual(notice.speakerId(), Speakers.idAt(h, pos), "speaker");
 		finish(h, pos, player);
 	}
 
@@ -34,10 +34,10 @@ public class NowPlayingGameTest {
 	public void noticeDroppedWhenSessionEnds(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		ServerPlayer player = online(h, 2);
-		SpeakerPlayback.add(player, pos, newEntries(1));
-		SpeakerPlayback.command(player, pos, Command.PLAY, Optional.empty());
+		SpeakerPlayback.add(player, Speakers.idAt(h, pos), newEntries(1));
+		SpeakerPlayback.command(player, Speakers.idAt(h, pos), Command.PLAY, Optional.empty());
 		int id = sessionId(h, pos);
-		SpeakerPlayback.command(player, pos, Command.CLEAR, Optional.empty());
+		SpeakerPlayback.command(player, Speakers.idAt(h, pos), Command.CLEAR, Optional.empty());
 		h.assertTrue(NowPlaying.of(id).isEmpty(), "notice dropped");
 		finish(h, pos, player);
 	}

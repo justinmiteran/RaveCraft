@@ -6,9 +6,9 @@ import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
@@ -24,7 +24,7 @@ public final class ControlRow {
 	private static final int VOLUME_X = 7 + 5 * STEP + 3;
 	private static final int SMALL = 14;
 
-	private final BlockPos pos;
+	private final UUID speakerId;
 	private final IconButton shuffle;
 	private final IconButton previous;
 	private final IconButton play;
@@ -39,8 +39,8 @@ public final class ControlRow {
 	 * Creates the controls with the row's top at {@code (left + 7, top)}, power ending 7 px before
 	 * {@code left + width}, and hands each one to {@code add}.
 	 */
-	public ControlRow(int left, int top, int width, BlockPos pos, Consumer<AbstractWidget> add) {
-		this.pos = pos;
+	public ControlRow(int left, int top, int width, UUID speakerId, Consumer<AbstractWidget> add) {
+		this.speakerId = speakerId;
 		int smallY = top + (BUTTON - SMALL) / 2;
 		shuffle = new IconButton(left + 7, top, BUTTON, SpeakerSprites.SHUFFLE, label("shuffle.off"), this::toggleShuffle);
 		previous = new IconButton(left + 7 + STEP, top, BUTTON, SpeakerSprites.PREVIOUS, label("previous"), () -> send(Command.PREVIOUS));
@@ -48,7 +48,7 @@ public final class ControlRow {
 		next = new IconButton(left + 7 + 3 * STEP, top, BUTTON, SpeakerSprites.NEXT, label("next"), () -> send(Command.NEXT));
 		repeat = new IconButton(left + 7 + 4 * STEP, top, BUTTON, SpeakerSprites.REPEAT_ALL, label("repeat.all"), this::cycleRepeat);
 		// The speaker icon sits in the slider's left margin; the track fills the rest up to the power button.
-		volume = new VolumeSlider(left + VOLUME_X, smallY, width - 7 - BUTTON - 4 - VOLUME_X, SMALL, pos);
+		volume = new VolumeSlider(left + VOLUME_X, smallY, width - 7 - BUTTON - 4 - VOLUME_X, SMALL, speakerId);
 		power = new IconButton(left + width - 7 - BUTTON, top, BUTTON, SpeakerSprites.POWER_OFF, label("power.on"), this::togglePower);
 		for (AbstractWidget widget : new AbstractWidget[] {shuffle, previous, play, next, repeat, volume, power}) {
 			add.accept(widget);
@@ -104,13 +104,13 @@ public final class ControlRow {
 
 	private void cycleRepeat() {
 		if (state != null) {
-			SpeakerStates.send(pos, Command.REPEAT, nextRepeat(state.repeat()).ordinal());
+			SpeakerStates.send(speakerId, Command.REPEAT, nextRepeat(state.repeat()).ordinal());
 		}
 	}
 
 	private void toggleShuffle() {
 		if (state != null) {
-			SpeakerStates.send(pos, Command.SHUFFLE, state.shuffle() ? 0 : 1);
+			SpeakerStates.send(speakerId, Command.SHUFFLE, state.shuffle() ? 0 : 1);
 		}
 	}
 
@@ -119,10 +119,10 @@ public final class ControlRow {
 	}
 
 	private void togglePower() {
-		SpeakerStates.send(pos, Command.POWER, powered ? 0 : 1);
+		SpeakerStates.send(speakerId, Command.POWER, powered ? 0 : 1);
 	}
 
 	private void send(Command command) {
-		SpeakerStates.send(pos, command, Optional.empty());
+		SpeakerStates.send(speakerId, command, Optional.empty());
 	}
 }

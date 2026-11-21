@@ -1,7 +1,7 @@
 package com.ravecraft.mod.client.audio.render;
 
 import com.ravecraft.mod.block.PortableSpeakerBlock;
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.client.audio.ClientSpeakerHosts;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.Equalizer;
 import com.ravecraft.mod.core.acoustics.VirtualPacer;
@@ -13,29 +13,38 @@ import com.ravecraft.mod.core.acoustics.reverb.SendRoute;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
+import com.ravecraft.mod.network.payload.SpeakerHostPayload;
 import com.ravecraft.mod.registry.ModBlocks;
 import java.nio.ByteBuffer;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 /**
- * One speaker stream as the renderer sees it: where it plays from, the speaker's state (refreshed each client tick)
- * and the audio-thread side (equalizer, virtual pacing, source).
+ * One speaker stream as the renderer sees it: where it plays from and the speaker's state, both refreshed each
+ * client tick from its host ({@link ClientSpeakerHosts}), and the audio-thread side (equalizer, virtual pacing,
+ * source).
  */
 final class RenderStream {
 	/** How long an occlusion change takes to be heard in full. */
 	static final double OCCLUSION_RAMP_MS = 200;
 
 	final int sessionId;
-	final BlockPos pos;
+	final UUID speakerId;
 	final StreamPlayout playout;
 	final BooleanSupplier alive;
 
-	// Written on the client thread each tick, read on the audio thread.
+	// Written on the client thread each tick, read on the audio thread. The position is refreshed per tick, not per
+	// frame: the audio thread reads it once per 100 ms block anyway.
+	volatile double x;
+	volatile double y;
+	volatile double z;
 	volatile double volume;
 	volatile boolean powered;
 	volatile double facingX;
@@ -74,33 +83,43 @@ final class RenderStream {
 	final LossSmoother lossRamp = new LossSmoother(OCCLUSION_RAMP_MS);
 	final LossSmoother highRamp = new LossSmoother(OCCLUSION_RAMP_MS);
 
-	RenderStream(int sessionId, BlockPos pos, StreamPlayout playout, BooleanSupplier alive, long nowMs) {
+	RenderStream(int sessionId, UUID speakerId, StreamPlayout playout, BooleanSupplier alive, long nowMs) {
 		this.sessionId = sessionId;
-		this.pos = pos;
+		this.speakerId = speakerId;
 		this.playout = playout;
 		this.alive = alive;
 		this.pacer = new VirtualPacer(nowMs, StreamFormat.FRAMES_PER_CHUNK * StreamFormat.FRAME_MS);
 	}
 
-	/** Whether a speaker at {@code pos} is there and switched on, so a stream may play from it. */
-	static boolean isPoweredSpeaker(@Nullable ClientLevel level, BlockPos pos) {
-		if (level == null) {
-			return false;
-		}
-		BlockState state = level.getBlockState(pos);
-		return state.is(ModBlocks.PORTABLE_SPEAKER) && state.getValue(PortableSpeakerBlock.POWERED);
-	}
-
-	/** Client thread: copies the speaker's volume, power and facing for the audio thread. */
+	/**
+	 * Client thread: copies the speaker's position, volume, power and facing for the audio thread. Silent (volume 0)
+	 * while its host is unknown or not here (another dimension, entity not loaded, block not there).
+	 */
 	void refresh(@Nullable ClientLevel level) {
-		powered = isPoweredSpeaker(level, pos);
-		if (powered && level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) {
-			volume = speaker.data().settings().volume() / (double) SpeakerSettings.MAX_VOLUME;
-			Direction facing = level.getBlockState(pos).getValue(PortableSpeakerBlock.FACING);
+		Vec3 at = ClientSpeakerHosts.position(speakerId, level);
+		Optional<SpeakerHostPayload> host = ClientSpeakerHosts.get(speakerId);
+		if (at == null || host.isEmpty()) {
+			volume = 0;
+			return;
+		}
+		x = at.x;
+		y = at.y;
+		z = at.z;
+		powered = host.get().powered();
+		volume = host.get().volume() / (double) SpeakerSettings.MAX_VOLUME;
+		if (host.get().block().isPresent()) {
+			BlockPos pos = host.get().block().get();
+			BlockState state = level.getBlockState(pos);
+			if (!state.is(ModBlocks.PORTABLE_SPEAKER)) {
+				volume = 0;
+				return;
+			}
+			Direction facing = state.getValue(PortableSpeakerBlock.FACING);
 			facingX = facing.getStepX();
 			facingZ = facing.getStepZ();
 		} else {
-			volume = 0;
+			facingX = 0;
+			facingZ = 1;
 		}
 	}
 

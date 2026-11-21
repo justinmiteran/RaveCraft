@@ -26,12 +26,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Util;
 import net.minecraft.world.phys.Vec3;
@@ -89,12 +89,12 @@ public final class AcousticRenderer {
 	 * Client thread: starts rendering a stream. A no-op when this playout is already attached; a session that
 	 * restarts with a new playout replaces the old one.
 	 */
-	public static void attach(int sessionId, BlockPos pos, StreamPlayout playout, BooleanSupplier alive) {
+	public static void attach(int sessionId, UUID speakerId, StreamPlayout playout, BooleanSupplier alive) {
 		STREAMS.compute(sessionId, (id, old) -> {
 			if (old != null && old.playout == playout) {
 				return old;
 			}
-			RenderStream stream = new RenderStream(id, pos, playout, alive, Util.getMillis());
+			RenderStream stream = new RenderStream(id, speakerId, playout, alive, Util.getMillis());
 			stream.refresh(Minecraft.getInstance().level);
 			return stream;
 		});
@@ -397,9 +397,9 @@ public final class AcousticRenderer {
 			double headBlur = headBlurRamp.step(perception.blur(), dt);
 			gains.clear();
 			for (RenderStream stream : streams) {
-				double dx = ear.x - (stream.pos.getX() + 0.5);
-				double dy = ear.y - (stream.pos.getY() + 0.5);
-				double dz = ear.z - (stream.pos.getZ() + 0.5);
+				double dx = ear.x - (stream.x);
+				double dy = ear.y - (stream.y);
+				double dz = ear.z - (stream.z);
 				double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 				double cos = distance < 1e-6 ? 1 : (stream.facingX * dx + stream.facingZ * dz) / distance;
 				stream.distance = distance;
@@ -456,7 +456,7 @@ public final class AcousticRenderer {
 					stream.nextBlock(scratch, pcm, filter ? stream.highLossDb + headHighLossDb : 0, chorus);
 					source.queue(pcm);
 				}
-				source.place(stream.pos.getX() + 0.5, stream.pos.getY() + 0.5, stream.pos.getZ() + 0.5);
+				source.place(stream.x, stream.y, stream.z);
 				source.gain((float) (stream.gain * volume));
 				// The EFX shelf only cuts the top octaves: it carries the air's absorption, while occlusion's treble
 				// loss goes through the stream's own low-pass (nextBlock), which reaches down into the mids.

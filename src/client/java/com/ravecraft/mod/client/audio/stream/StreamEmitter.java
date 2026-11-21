@@ -1,6 +1,7 @@
 package com.ravecraft.mod.client.audio.stream;
 
 import com.ravecraft.mod.RaveCraft;
+import com.ravecraft.mod.client.audio.ClientSpeakerHosts;
 import com.ravecraft.mod.core.audio.Pcm16;
 import com.ravecraft.mod.core.audio.decode.Decoders;
 import com.ravecraft.mod.core.audio.decode.PcmDecoder;
@@ -18,13 +19,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.Level;
 
 /**
  * Streams one track of this player's PC into a session: decode, mono, 48 kHz, Opus, 100 ms chunks sent at most
@@ -33,9 +32,8 @@ import net.minecraft.world.level.Level;
  */
 public final class StreamEmitter {
 	private final int sessionId;
-	/** The speaker's dimension: this player hears its own stream only while there. */
-	private final ResourceKey<Level> dimension;
-	private final BlockPos pos;
+	/** The speaker played into: this player hears its own stream only while its host is here. */
+	private final UUID speakerId;
 	private final Path track;
 	/** Where to start in the track: everything before is decoded and dropped. */
 	private final long startMs;
@@ -46,10 +44,9 @@ public final class StreamEmitter {
 	private volatile boolean cancelled;
 	private Thread thread;
 
-	public StreamEmitter(int sessionId, ResourceKey<Level> dimension, BlockPos pos, Path track, long startMs, LongConsumer onStarted, Runnable onFinished, Consumer<Exception> onFailed) {
+	public StreamEmitter(int sessionId, UUID speakerId, Path track, long startMs, LongConsumer onStarted, Runnable onFinished, Consumer<Exception> onFailed) {
 		this.sessionId = sessionId;
-		this.dimension = dimension;
-		this.pos = pos.immutable();
+		this.speakerId = speakerId;
 		this.track = track;
 		this.startMs = startMs;
 		this.onStarted = onStarted;
@@ -138,9 +135,8 @@ public final class StreamEmitter {
 		List<byte[]> copy = List.copyOf(frames);
 		onClientThread(() -> {
 			ClientPlayNetworking.send(new AudioChunkPayload(sessionId, seq, copy));
-			Minecraft minecraft = Minecraft.getInstance();
-			if (minecraft.level != null && minecraft.level.dimension().equals(dimension)) {
-				ReceivedStreams.offer(sessionId, pos, seq, copy);
+			if (ClientSpeakerHosts.position(speakerId, Minecraft.getInstance().level) != null) {
+				ReceivedStreams.offer(sessionId, speakerId, seq, copy);
 			}
 		});
 	}

@@ -28,7 +28,6 @@ import java.util.UUID;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.core.BlockPos;
 
 /**
  * This player's side of the shared queues: adds local tracks to a speaker's queue (sending ids and titles, never
@@ -56,15 +55,14 @@ public final class LocalPlayback {
 	}
 
 	/**
-	 * Appends {@code tracks} (at most a full queue) to the queue of the speaker at {@code pos}. The tags are read off
+	 * Appends {@code tracks} (at most a full queue) to the queue of speaker {@code speakerId}. The tags are read off
 	 * the client thread; calls are enqueued in the order they were made even when their reads finish out of order.
 	 */
-	public static void add(BlockPos pos, List<Path> tracks) {
+	public static void add(UUID speakerId, List<Path> tracks) {
 		if (tracks.isEmpty() || !ClientPlayNetworking.canSend(QueueAddPayload.TYPE)) {
 			return;
 		}
 		List<Path> capped = List.copyOf(tracks.subList(0, Math.min(tracks.size(), SpeakerQueue.MAX_ENTRIES)));
-		BlockPos at = pos.immutable();
 		int epoch = addEpoch;
 		// One ticket and one read task per chunk: the first chunk reaches the server after about MAX_ENTRIES reads
 		// instead of after the whole folder, and the tickets keep the chunks in order.
@@ -79,16 +77,16 @@ public final class LocalPlayback {
 					titles.add(titleOf(track, known.get(i).orElseGet(() -> TrackInfos.readNow(track))));
 				}
 				return titles;
-			}, titles -> finishAdd(epoch, ticket, at, chunk, titles), () -> finishAdd(epoch, ticket, at, chunk, fallbackTitles(chunk, known)));
+			}, titles -> finishAdd(epoch, ticket, speakerId, chunk, titles), () -> finishAdd(epoch, ticket, speakerId, chunk, fallbackTitles(chunk, known)));
 		}
 	}
 
 	/** Runs the adds that are ready, strictly in ticket order. Client thread. */
-	private static void finishAdd(int epoch, long ticket, BlockPos pos, List<Path> tracks, List<String> titles) {
+	private static void finishAdd(int epoch, long ticket, UUID speakerId, List<Path> tracks, List<String> titles) {
 		if (epoch != addEpoch) {
 			return; // left the world meanwhile
 		}
-		READY.put(ticket, () -> enqueue(pos, tracks, titles));
+		READY.put(ticket, () -> enqueue(speakerId, tracks, titles));
 		Runnable next;
 		while ((next = READY.remove(nextToApply)) != null) {
 			nextToApply++;
@@ -96,7 +94,7 @@ public final class LocalPlayback {
 		}
 	}
 
-	private static void enqueue(BlockPos pos, List<Path> tracks, List<String> titles) {
+	private static void enqueue(UUID speakerId, List<Path> tracks, List<String> titles) {
 		Map<UUID, Path> registered = new LinkedHashMap<>();
 		List<QueueAddPayload.NewEntry> batch = new ArrayList<>();
 		for (int i = 0; i < tracks.size(); i++) {
@@ -104,12 +102,12 @@ public final class LocalPlayback {
 			registered.put(id, tracks.get(i));
 			batch.add(new QueueAddPayload.NewEntry(id, titles.get(i)));
 			if (batch.size() == QueueAddPayload.MAX_ENTRIES) {
-				PENDING.add(new QueueAddPayload(pos, batch));
+				PENDING.add(new QueueAddPayload(speakerId, batch));
 				batch = new ArrayList<>();
 			}
 		}
 		if (!batch.isEmpty()) {
-			PENDING.add(new QueueAddPayload(pos, batch));
+			PENDING.add(new QueueAddPayload(speakerId, batch));
 		}
 		TrackTableStore.register(registered);
 		sendPending();
@@ -173,7 +171,7 @@ public final class LocalPlayback {
 		if (previous != null) {
 			previous.cancel();
 		}
-		StreamEmitter emitter = new StreamEmitter(id, order.dimension(), order.pos(), track.get(), order.positionMs(),
+		StreamEmitter emitter = new StreamEmitter(id, order.speakerId(), track.get(), order.positionMs(),
 				durationMs -> ClientPlayNetworking.send(new StreamStartedPayload(id, durationMs)), () -> finished(id), e -> failed(id));
 		EMITTERS.put(id, emitter);
 		emitter.start();

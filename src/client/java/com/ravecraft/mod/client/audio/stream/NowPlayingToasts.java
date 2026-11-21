@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.UUID;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.Minecraft;
@@ -67,11 +68,11 @@ public final class NowPlayingToasts {
 		for (NowPlayingPayload notice : NOTICES.values()) {
 			Double gain = gains.get(notice.sessionId());
 			if (gain != null) {
-				heard.add(new Heard(notice.pos().asLong(), notice.entryId(), gain));
+				heard.add(new Heard(keyOf(notice.speakerId()), notice.entryId(), gain));
 			}
 		}
 		OptionalLong open = client.gui.screen() instanceof SpeakerScreen screen
-				? OptionalLong.of(screen.pos().asLong())
+				? OptionalLong.of(keyOf(screen.speakerId()))
 				: OptionalLong.empty();
 		Optional<Heard> announce = followed.update(Util.getMillis(), heard, open);
 		announce.flatMap(NowPlayingToasts::noticeOf).ifPresent(notice -> SpeakerTrackToast.show(
@@ -79,9 +80,17 @@ public final class NowPlayingToasts {
 				Component.translatable("toast.ravecraft.now_playing.message", notice.title(), notice.ownerName())));
 	}
 
+	/**
+	 * The {@link FollowedSource} key of speaker {@code speakerId}: its id folded to 64 bits. Two random ids colliding
+	 * is negligible, and would only merge their toasts.
+	 */
+	private static long keyOf(UUID speakerId) {
+		return speakerId.getMostSignificantBits() ^ speakerId.getLeastSignificantBits();
+	}
+
 	private static Optional<NowPlayingPayload> noticeOf(Heard heard) {
 		return NOTICES.values().stream()
-				.filter(n -> n.pos().asLong() == heard.speaker() && n.entryId().equals(heard.entryId()))
+				.filter(n -> keyOf(n.speakerId()) == heard.speaker() && n.entryId().equals(heard.entryId()))
 				.findFirst();
 	}
 }

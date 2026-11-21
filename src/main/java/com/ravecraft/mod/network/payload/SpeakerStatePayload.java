@@ -7,7 +7,6 @@ import io.netty.buffer.ByteBuf;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -18,7 +17,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
  * and the speaker's settings. {@code nextRoundIndex} is the index in {@code entries} where the next round starts, or
  * -1 when there is no separator.
  */
-public record SpeakerStatePayload(BlockPos pos, boolean playing, Optional<UUID> current, long positionMs,
+public record SpeakerStatePayload(UUID speakerId, boolean playing, Optional<UUID> current, long positionMs,
 		List<StateEntry> entries, RepeatMode repeat, boolean shuffle, int volume, boolean powered,
 		int nextRoundIndex) implements CustomPacketPayload {
 	public static final int MAX_ENTRIES = 200;
@@ -42,7 +41,7 @@ public record SpeakerStatePayload(BlockPos pos, boolean playing, Optional<UUID> 
 	// Too many fields for StreamCodec.composite: written by hand, in field order.
 	public static final StreamCodec<ByteBuf, SpeakerStatePayload> CODEC = StreamCodec.of(
 			(buf, p) -> {
-				BlockPos.STREAM_CODEC.encode(buf, p.pos);
+				UUIDUtil.STREAM_CODEC.encode(buf, p.speakerId);
 				ByteBufCodecs.BOOL.encode(buf, p.playing);
 				CURRENT.encode(buf, p.current);
 				ByteBufCodecs.VAR_LONG.encode(buf, p.positionMs);
@@ -54,7 +53,7 @@ public record SpeakerStatePayload(BlockPos pos, boolean playing, Optional<UUID> 
 				ByteBufCodecs.VAR_INT.encode(buf, p.nextRoundIndex);
 			},
 			buf -> new SpeakerStatePayload(
-					BlockPos.STREAM_CODEC.decode(buf),
+					UUIDUtil.STREAM_CODEC.decode(buf),
 					ByteBufCodecs.BOOL.decode(buf),
 					CURRENT.decode(buf),
 					ByteBufCodecs.VAR_LONG.decode(buf),

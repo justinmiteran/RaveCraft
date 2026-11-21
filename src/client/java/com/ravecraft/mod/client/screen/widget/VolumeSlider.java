@@ -3,13 +3,13 @@ package com.ravecraft.mod.client.screen.widget;
 import com.ravecraft.mod.client.screen.SpeakerStates;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
+import java.util.UUID;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Util;
@@ -25,16 +25,16 @@ public final class VolumeSlider extends AbstractWidget {
 	/** The track starts after the speaker icon and a small gap. */
 	private static final int TRACK_X = SpeakerSprites.ICON + 5;
 
-	private final BlockPos pos;
+	private final UUID speakerId;
 	private int volume = SpeakerSettings.DEFAULT_VOLUME;
 	private int sentVolume = -1;
 	private boolean dragging;
 	private long lastSendMs;
 	private long localUntilMs;
 
-	public VolumeSlider(int x, int y, int width, int height, BlockPos pos) {
+	public VolumeSlider(int x, int y, int width, int height, UUID speakerId) {
 		super(x, y, width, height, Component.empty());
-		this.pos = pos;
+		this.speakerId = speakerId;
 		updateLabel();
 	}
 
@@ -95,7 +95,7 @@ public final class VolumeSlider extends AbstractWidget {
 		if (volume != sentVolume) {
 			sentVolume = volume;
 			lastSendMs = Util.getMillis();
-			SpeakerStates.send(pos, Command.VOLUME, volume);
+			SpeakerStates.send(speakerId, Command.VOLUME, volume);
 		}
 	}
 

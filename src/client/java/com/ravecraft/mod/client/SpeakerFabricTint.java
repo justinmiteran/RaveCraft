@@ -8,7 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.level.block.state.BlockState;
 
-/** Tint layer 0 of the portable speaker: its fabric, coloured by the dye stored in the block entity. */
+/** Tint layer 0 of a speaker: the portable's fabric or the party speaker's grille, coloured by the stored dye. */
 public final class SpeakerFabricTint implements BlockTintSource {
 	@Override
 	public int color(BlockState state) {

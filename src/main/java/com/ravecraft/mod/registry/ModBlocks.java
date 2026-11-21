@@ -1,6 +1,7 @@
 package com.ravecraft.mod.registry;
 
 import com.ravecraft.mod.RaveCraft;
+import com.ravecraft.mod.block.PartySpeakerBlock;
 import com.ravecraft.mod.block.PortableSpeakerBlock;
 import com.ravecraft.mod.item.SpeakerItem;
 import java.util.Set;
@@ -25,13 +26,20 @@ public final class ModBlocks {
 					.strength(1.0F)
 					.noOcclusion(),
 			SpeakerItem::new, new Item.Properties().stacksTo(1));
+	public static final Block PARTY_SPEAKER = register("party_speaker", PartySpeakerBlock::new,
+			BlockBehaviour.Properties.of()
+					.mapColor(MapColor.COLOR_GRAY)
+					.sound(SoundType.METAL)
+					.strength(1.0F)
+					.noOcclusion(),
+			SpeakerItem::new, new Item.Properties().stacksTo(1));
 
 	private ModBlocks() {
 	}
 
 	/** Every speaker block, whatever its kind: the blocks the speaker block entity type covers. */
 	public static Set<Block> speakers() {
-		return Set.of(PORTABLE_SPEAKER);
+		return Set.of(PORTABLE_SPEAKER, PARTY_SPEAKER);
 	}
 
 	/** Registers a block and the item {@code itemFactory} makes for it, both under the same id. */

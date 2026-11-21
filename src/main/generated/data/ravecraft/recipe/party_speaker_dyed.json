@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_dye",
+  "dye": "#minecraft:dyes",
+  "group": "party_speaker_dye",
+  "result": {
+    "id": "ravecraft:party_speaker"
+  },
+  "target": "ravecraft:party_speaker"
+}

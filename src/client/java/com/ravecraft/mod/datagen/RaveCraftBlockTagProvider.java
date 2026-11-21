@@ -21,7 +21,7 @@ public class RaveCraftBlockTagProvider extends FabricTagsProvider.BlockTagsProvi
 
 	@Override
 	protected void addTags(HolderLookup.Provider registries) {
-		builder(BlockTags.MINEABLE_WITH_PICKAXE).add(key(ModBlocks.PORTABLE_SPEAKER));
+		builder(BlockTags.MINEABLE_WITH_PICKAXE).add(key(ModBlocks.PORTABLE_SPEAKER)).add(key(ModBlocks.PARTY_SPEAKER));
 
 		// Acoustic materials: looked at before the footstep sound, so datapacks can override them.
 		for (String name : OcclusionSettings.BASE_MATERIALS) {

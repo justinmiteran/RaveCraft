@@ -1,5 +1,6 @@
 {
   "block.ravecraft.portable_speaker": "Enceinte portable",
+  "block.ravecraft.party_speaker": "Enceinte de soirée",
   "itemGroup.ravecraft.main": "RaveCraft",
   "screen.ravecraft.speaker.library": "Bibliothèque",
   "screen.ravecraft.speaker.queue": "File",

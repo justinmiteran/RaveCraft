@@ -1,5 +1,6 @@
 {
   "block.ravecraft.portable_speaker": "Portable Speaker",
+  "block.ravecraft.party_speaker": "Party Speaker",
   "itemGroup.ravecraft.main": "RaveCraft",
   "screen.ravecraft.speaker.library": "Library",
   "screen.ravecraft.speaker.queue": "Queue",

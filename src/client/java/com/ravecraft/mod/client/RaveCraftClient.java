@@ -48,6 +48,6 @@ public class RaveCraftClient implements ClientModInitializer {
 				screen.onClose();
 			}
 		});
-		BlockColorRegistry.register(List.of(new SpeakerFabricTint()), ModBlocks.PORTABLE_SPEAKER);
+		BlockColorRegistry.register(List.of(new SpeakerFabricTint()), ModBlocks.PORTABLE_SPEAKER, ModBlocks.PARTY_SPEAKER);
 	}
 }

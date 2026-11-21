@@ -12,7 +12,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import org.junit.jupiter.api.Test;
 
 class SpeakerPayloadCodecTest {
@@ -77,7 +80,17 @@ class SpeakerPayloadCodecTest {
 
 	@Test
 	void nowPlayingRoundTrips() {
-		NowPlayingPayload payload = new NowPlayingPayload(7, POS, UUID.randomUUID(), "Artist — Title", "Steve");
+		NowPlayingPayload payload = new NowPlayingPayload(7, SPEAKER, UUID.randomUUID(), "Artist — Title", "Steve");
 		assertEquals(payload, roundTrip(NowPlayingPayload.CODEC, payload));
+	}
+
+	@Test
+	void hostRoundTripsBlockAndEntity() {
+		var nether = ResourceKey.create(Registries.DIMENSION, Identifier.withDefaultNamespace("the_nether"));
+		SpeakerHostPayload block = new SpeakerHostPayload(SPEAKER, nether, Optional.of(POS),
+				SpeakerHostPayload.NO_ENTITY, false, 70, true);
+		assertEquals(block, roundTrip(SpeakerHostPayload.CODEC, block));
+		SpeakerHostPayload carried = new SpeakerHostPayload(SPEAKER, nether, Optional.empty(), 4242, true, 0, false);
+		assertEquals(carried, roundTrip(SpeakerHostPayload.CODEC, carried));
 	}
 }

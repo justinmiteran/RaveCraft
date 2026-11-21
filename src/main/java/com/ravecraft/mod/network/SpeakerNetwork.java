@@ -71,6 +71,7 @@ public final class SpeakerNetwork {
 			START_BUCKETS.remove(id);
 			SpeakerWatchers.forget(id);
 			NowPlaying.forget(id);
+			SpeakerHosts.forget(id);
 			SpeakerPlayback.onDisconnect(server, id);
 		});
 		SpeakerHosts.init();

@@ -14,7 +14,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.core.BlockPos;
+import java.util.UUID;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.VarInt;
 import org.junit.jupiter.api.Test;
@@ -43,12 +43,12 @@ class AudioChunkPayloadTest {
 	}
 
 	@Test
-	void relayedChunkRoundTripsPosition() {
+	void relayedChunkRoundTripsSpeakerId() {
 		ByteBuf buf = Unpooled.buffer();
-		RelayedChunkPayload payload = new RelayedChunkPayload(3, new BlockPos(10, -5, 300), 9, frames(2, 10));
+		RelayedChunkPayload payload = new RelayedChunkPayload(3, UUID.randomUUID(), 9, frames(2, 10));
 		RelayedChunkPayload.CODEC.encode(buf, payload);
 		RelayedChunkPayload decoded = RelayedChunkPayload.CODEC.decode(buf);
-		assertEquals(payload.pos(), decoded.pos());
+		assertEquals(payload.speakerId(), decoded.speakerId());
 		assertEquals(9, decoded.seq());
 	}
 

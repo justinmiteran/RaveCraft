@@ -10,17 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.VarInt;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.Identifier;
-import net.minecraft.resources.ResourceKey;
 import org.junit.jupiter.api.Test;
 
 class QueuePayloadsTest {
-	private static final BlockPos POS = new BlockPos(3, 64, -7);
 	private static final UUID SPEAKER = UUID.fromString("8a3c1f52-0d7e-4b6a-9c21-5e4f7a6b3d10");
 
 	private static <T> T roundTrip(StreamCodec<ByteBuf, T> codec, T value) {
@@ -78,12 +73,11 @@ class QueuePayloadsTest {
 
 	@Test
 	void streamOrderRoundTrips() {
-		// The dimension travels with the order: the owner's client must not loop its stream back elsewhere.
-		var nether = ResourceKey.create(Registries.DIMENSION, Identifier.withDefaultNamespace("the_nether"));
-		StreamOrderPayload payload = new StreamOrderPayload(12, nether, POS, true, UUID.randomUUID(), 61_250L);
+		UUID speaker = UUID.randomUUID();
+		StreamOrderPayload payload = new StreamOrderPayload(12, speaker, true, UUID.randomUUID(), 61_250L);
 		StreamOrderPayload read = roundTrip(StreamOrderPayload.CODEC, payload);
 		assertEquals(payload, read);
-		assertEquals(nether, read.dimension());
+		assertEquals(speaker, read.speakerId());
 	}
 
 	@Test

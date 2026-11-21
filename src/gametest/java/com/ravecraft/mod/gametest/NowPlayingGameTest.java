@@ -26,7 +26,7 @@ public class NowPlayingGameTest {
 		NowPlayingPayload notice = NowPlaying.of(sessionId(h, pos)).orElseThrow();
 		h.assertValueEqual(notice.title(), "track 0", "title");
 		h.assertValueEqual(notice.ownerName(), player.getName().getString(), "owner name");
-		h.assertValueEqual(notice.pos(), pos, "speaker");
+		h.assertValueEqual(notice.speakerId(), Speakers.idAt(h, pos), "speaker");
 		finish(h, pos, player);
 	}
 

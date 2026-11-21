@@ -22,7 +22,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.function.Predicate;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Util;
@@ -118,11 +117,13 @@ public final class SpeakerPlayback {
 			case VOLUME -> {
 				int volume = Math.clamp(value, SpeakerSettings.MIN_VOLUME, SpeakerSettings.MAX_VOLUME);
 				setVolume(speaker, volume);
+				SpeakerHosts.notice(speaker.level().getServer(), speaker.id());
 				markDirty(speaker);
 			}
 			case POWER -> {
 				if ((value != 0) != speaker.powered()) {
 					togglePower(speaker);
+					SpeakerHosts.notice(speaker.level().getServer(), speaker.id());
 					markDirty(speaker);
 				}
 			}
@@ -326,10 +327,10 @@ public final class SpeakerPlayback {
 		PLAYING.put(speaker.id(), new Playing(session.get().id(), entry.entryId(), new PlaybackClock(startMs, Util.getMillis()),
 				server.getTickCount()));
 		update(speaker, queue);
-		// The streaming payloads still name the speaker by its block, the only host that plays so far.
-		BlockPos pos = ((SpeakerHost.Block) speaker.host()).pos();
-		Net.send(owner, new StreamOrderPayload(session.get().id(), speaker.level().dimension(), pos, true, entry.entryId(), startMs));
-		NowPlaying.start(owner, session.get().id(), pos, entry);
+		// Hosts first: the owner must know where its own stream plays from before its first chunk.
+		SpeakerHosts.notice(server, speaker.id());
+		Net.send(owner, new StreamOrderPayload(session.get().id(), speaker.id(), true, entry.entryId(), startMs));
+		NowPlaying.start(owner, session.get().id(), speaker.id(), entry);
 	}
 
 	/** Stops playing, storing the estimated position of the current entry. */

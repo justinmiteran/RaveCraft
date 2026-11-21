@@ -171,7 +171,7 @@ public final class LocalPlayback {
 		if (previous != null) {
 			previous.cancel();
 		}
-		StreamEmitter emitter = new StreamEmitter(id, order.dimension(), order.pos(), track.get(), order.positionMs(),
+		StreamEmitter emitter = new StreamEmitter(id, order.speakerId(), track.get(), order.positionMs(),
 				durationMs -> ClientPlayNetworking.send(new StreamStartedPayload(id, durationMs)), () -> finished(id), e -> failed(id));
 		EMITTERS.put(id, emitter);
 		emitter.start();

@@ -6,13 +6,13 @@ import com.ravecraft.mod.network.Net;
 import com.ravecraft.mod.network.payload.SessionEndPayload;
 import com.ravecraft.mod.network.payload.StreamOrderPayload;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
-import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -23,11 +23,6 @@ public final class StreamSessions {
 	private static final SessionTable<UUID> TABLE = new SessionTable<>();
 	/** The queue entry each open session streams, so stop orders can name it. */
 	private static final Map<Integer, UUID> ENTRIES = new HashMap<>();
-	/**
-	 * Where each open session's speaker was when it opened: the stop order and the end notice still need it once the
-	 * speaker is gone (broken, unloaded). Block hosts only until the streaming payloads carry the id.
-	 */
-	private static final Map<Integer, SpeakerHost.Block> HOSTS = new HashMap<>();
 
 	private StreamSessions() {
 	}
@@ -42,13 +37,12 @@ public final class StreamSessions {
 	 * other stream there. Distance does not matter: the owner may be anywhere. Sends no order.
 	 */
 	public static Optional<Session<UUID>> open(SpeakerHandle handle, ServerPlayer owner, UUID entryId) {
-		if (!handle.powered() || !(handle.host() instanceof SpeakerHost.Block block)) {
+		if (!handle.powered()) {
 			return Optional.empty();
 		}
 		endAt(handle.level().getServer(), handle.id());
 		Session<UUID> session = TABLE.open(handle.id(), owner.getUUID()).session();
 		ENTRIES.put(session.id(), entryId);
-		HOSTS.put(session.id(), block);
 		return Optional.of(session);
 	}
 
@@ -84,30 +78,34 @@ public final class StreamSessions {
 	public static void clear() {
 		TABLE.endAll();
 		ENTRIES.clear();
-		HOSTS.clear();
 		NowPlaying.clear();
+		SpeakerHosts.clearNotices();
 	}
 
-	/** Tells the players tracking the speaker that the session is over, and its owner to stop when asked to. */
+	/**
+	 * Tells everyone who may hear the session that it is over (the players told its host, and those tracking the
+	 * speaker when it is still reachable), and its owner to stop when asked to.
+	 */
 	private static void notifyEnded(MinecraftServer server, Session<UUID> session, boolean tellOwner, boolean drain) {
 		NowPlaying.end(session.id());
+		Set<UUID> told = SpeakerHosts.endNotice(session.id());
 		UUID entryId = ENTRIES.remove(session.id());
-		SpeakerHost.Block host = HOSTS.remove(session.id());
-		if (host == null) {
-			return;
-		}
 		if (tellOwner && entryId != null) {
 			ServerPlayer owner = server.getPlayerList().getPlayer(session.owner());
 			if (owner != null) {
-				Net.send(owner, new StreamOrderPayload(session.id(), host.dimension(), host.pos(), false, entryId, 0));
+				Net.send(owner, new StreamOrderPayload(session.id(), session.key(), false, entryId, 0));
 			}
 		}
-		ServerLevel level = server.getLevel(host.dimension());
-		if (level == null) {
-			return;
+		Set<ServerPlayer> hearers = new LinkedHashSet<>();
+		SpeakerHosts.handle(server, session.key()).ifPresent(handle -> hearers.addAll(handle.trackers()));
+		for (UUID id : told) {
+			ServerPlayer player = server.getPlayerList().getPlayer(id);
+			if (player != null) {
+				hearers.add(player);
+			}
 		}
 		SessionEndPayload end = new SessionEndPayload(session.id(), drain);
-		for (ServerPlayer player : PlayerLookup.tracking(level, host.pos())) {
+		for (ServerPlayer player : hearers) {
 			if (!player.getUUID().equals(session.owner())) {
 				Net.send(player, end);
 			}

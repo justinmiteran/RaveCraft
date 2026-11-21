@@ -1,6 +1,5 @@
 package com.ravecraft.mod.client.audio.stream;
 
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
 import com.ravecraft.mod.client.audio.render.AcousticRenderer;
 import com.ravecraft.mod.client.options.RaveCraftOptions;
 import com.ravecraft.mod.client.screen.SpeakerScreen;
@@ -17,7 +16,6 @@ import java.util.UUID;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 
@@ -70,11 +68,11 @@ public final class NowPlayingToasts {
 		for (NowPlayingPayload notice : NOTICES.values()) {
 			Double gain = gains.get(notice.sessionId());
 			if (gain != null) {
-				heard.add(new Heard(notice.pos().asLong(), notice.entryId(), gain));
+				heard.add(new Heard(keyOf(notice.speakerId()), notice.entryId(), gain));
 			}
 		}
 		OptionalLong open = client.gui.screen() instanceof SpeakerScreen screen
-				? noticePosOf(client.level, screen.speakerId())
+				? OptionalLong.of(keyOf(screen.speakerId()))
 				: OptionalLong.empty();
 		Optional<Heard> announce = followed.update(Util.getMillis(), heard, open);
 		announce.flatMap(NowPlayingToasts::noticeOf).ifPresent(notice -> SpeakerTrackToast.show(
@@ -83,22 +81,16 @@ public final class NowPlayingToasts {
 	}
 
 	/**
-	 * The position of the notice whose speaker block holds {@code speakerId}: notices still name speakers by their
-	 * block while the screen names them by id.
+	 * The {@link FollowedSource} key of speaker {@code speakerId}: its id folded to 64 bits. Two random ids colliding
+	 * is negligible, and would only merge their toasts.
 	 */
-	private static OptionalLong noticePosOf(ClientLevel level, UUID speakerId) {
-		for (NowPlayingPayload notice : NOTICES.values()) {
-			if (level.getBlockEntity(notice.pos()) instanceof PortableSpeakerBlockEntity speaker
-					&& speaker.data().id().equals(speakerId)) {
-				return OptionalLong.of(notice.pos().asLong());
-			}
-		}
-		return OptionalLong.empty();
+	private static long keyOf(UUID speakerId) {
+		return speakerId.getMostSignificantBits() ^ speakerId.getLeastSignificantBits();
 	}
 
 	private static Optional<NowPlayingPayload> noticeOf(Heard heard) {
 		return NOTICES.values().stream()
-				.filter(n -> n.pos().asLong() == heard.speaker() && n.entryId().equals(heard.entryId()))
+				.filter(n -> keyOf(n.speakerId()) == heard.speaker() && n.entryId().equals(heard.entryId()))
 				.findFirst();
 	}
 }

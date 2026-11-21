@@ -7,6 +7,7 @@ import com.ravecraft.mod.network.payload.RelayedChunkPayload;
 import com.ravecraft.mod.network.payload.SessionEndPayload;
 import com.ravecraft.mod.network.payload.SpeakerClosedPayload;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload;
+import com.ravecraft.mod.network.payload.SpeakerHostPayload;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload;
 import com.ravecraft.mod.network.payload.SpeakerWatchPayload;
 import com.ravecraft.mod.network.payload.StreamClosePayload;
@@ -37,6 +38,7 @@ public final class ModPayloads {
 		PayloadTypeRegistry.clientboundPlay().register(SpeakerClosedPayload.TYPE, SpeakerClosedPayload.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(TrackRemovedPayload.TYPE, TrackRemovedPayload.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(NowPlayingPayload.TYPE, NowPlayingPayload.CODEC);
+		PayloadTypeRegistry.clientboundPlay().register(SpeakerHostPayload.TYPE, SpeakerHostPayload.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(AcousticSettingsPayload.TYPE, AcousticSettingsPayload.CODEC);
 	}
 }

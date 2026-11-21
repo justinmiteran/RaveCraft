@@ -7,9 +7,12 @@ import com.ravecraft.mod.core.acoustics.DeviceProfile;
 import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.audio.stream.SessionTable.Session;
 import com.ravecraft.mod.network.AudioRelay;
+import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
+import com.ravecraft.mod.network.payload.SpeakerHostPayload;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.world.audio.SpeakerHandle;
 import com.ravecraft.mod.world.audio.SpeakerHosts;
+import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import com.ravecraft.mod.world.audio.StreamSessions;
 import java.util.List;
 import java.util.Optional;
@@ -44,6 +47,42 @@ public class AudioRelayGameTest {
 
 	private static SpeakerHandle handle(GameTestHelper h, BlockPos absolute) {
 		return SpeakerHosts.handle(h.getLevel().getServer(), Speakers.idAt(h, absolute)).orElseThrow();
+	}
+
+	/** Plays one track queued by {@code owner} on the speaker at {@code pos}, and returns its session id. */
+	private static int play(GameTestHelper h, BlockPos pos, ServerPlayer owner) {
+		UUID id = Speakers.idAt(h, pos);
+		SpeakerPlayback.add(owner, id, SharedQueueGameTest.newEntries(1));
+		SpeakerPlayback.command(owner, id, Command.PLAY, Optional.empty());
+		return sessionAt(h, id).orElseThrow().id();
+	}
+
+	@GameTest
+	public void newListenerIsToldHostFirst(GameTestHelper h) {
+		BlockPos pos = poweredSpeaker(h);
+		ServerPlayer owner = SharedQueueGameTest.online(h, 2);
+		int sessionId = play(h, pos, owner);
+		ServerPlayer listener = playerAt(h, 5);
+		h.assertTrue(SpeakerHosts.tellHost(listener, sessionId), "told the first time");
+		h.assertFalse(SpeakerHosts.tellHost(listener, sessionId), "not told twice");
+		SharedQueueGameTest.finish(h, pos, owner);
+	}
+
+	@GameTest
+	public void hostNoticeHasBlockAndVolume(GameTestHelper h) {
+		BlockPos pos = poweredSpeaker(h);
+		volume(h, 70);
+		ServerPlayer owner = SharedQueueGameTest.online(h, 2);
+		int sessionId = play(h, pos, owner);
+		SpeakerHostPayload notice = SpeakerHosts.noticeOf(sessionId).orElseThrow();
+		h.assertValueEqual(notice.speakerId(), Speakers.idAt(h, pos), "speaker id");
+		h.assertValueEqual(notice.dimension(), h.getLevel().dimension(), "dimension");
+		h.assertValueEqual(notice.block(), Optional.of(pos), "block");
+		h.assertValueEqual(notice.volume(), 70, "volume");
+		h.assertTrue(notice.powered(), "powered");
+		SpeakerPlayback.command(owner, Speakers.idAt(h, pos), Command.VOLUME, Optional.empty(), 30);
+		h.assertValueEqual(SpeakerHosts.noticeOf(sessionId).orElseThrow().volume(), 30, "volume after VOLUME");
+		SharedQueueGameTest.finish(h, pos, owner);
 	}
 
 	@GameTest
@@ -95,7 +134,7 @@ public class AudioRelayGameTest {
 	}
 
 	private static boolean hears(GameTestHelper h, BlockPos pos, ServerPlayer owner, ServerPlayer player) {
-		return AudioRelay.listeners(h.getLevel(), pos, owner.getUUID(), List.of(owner, player),
+		return AudioRelay.listeners(h.getLevel(), Vec3.atCenterOf(pos), owner.getUUID(), List.of(owner, player),
 				AudioRelay.relayRadius(handle(h, pos))).contains(player);
 	}
 
@@ -106,7 +145,7 @@ public class AudioRelayGameTest {
 		ServerPlayer owner = playerAt(h, 1);
 		ServerPlayer near = playerAt(h, 5);
 		ServerPlayer far = playerAt(h, 45);
-		List<ServerPlayer> listeners = AudioRelay.listeners(h.getLevel(), pos, owner.getUUID(), List.of(owner, near, far),
+		List<ServerPlayer> listeners = AudioRelay.listeners(h.getLevel(), Vec3.atCenterOf(pos), owner.getUUID(), List.of(owner, near, far),
 				AudioRelay.relayRadius(handle(h, pos)));
 		h.assertValueEqual(listeners, List.of(near), "listeners");
 		h.succeed();

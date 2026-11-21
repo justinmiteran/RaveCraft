@@ -5,9 +5,9 @@ import com.ravecraft.mod.core.audio.stream.SessionRoster;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.core.BlockPos;
 import net.minecraft.util.Util;
 
 /**
@@ -30,11 +30,12 @@ public final class ReceivedStreams {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> endAll());
 	}
 
-	public static void offer(int sessionId, BlockPos pos, int seq, List<byte[]> frames) {
+	/** A chunk of session {@code sessionId}, played by speaker {@code speakerId} (placed from its host). */
+	public static void offer(int sessionId, UUID speakerId, int seq, List<byte[]> frames) {
 		long now = Util.getMillis();
-		STREAMS.admit(sessionId, () -> new Stream(pos.immutable(), new StreamPlayout(now))).ifPresent(stream -> {
+		STREAMS.admit(sessionId, () -> new Stream(speakerId, new StreamPlayout(now))).ifPresent(stream -> {
 			stream.playout.offer(seq, frames, now);
-			AcousticRenderer.attach(sessionId, stream.pos, stream.playout, stream::alive);
+			AcousticRenderer.attach(sessionId, stream.speakerId, stream.playout, stream::alive);
 		});
 	}
 
@@ -65,12 +66,12 @@ public final class ReceivedStreams {
 	}
 
 	private static final class Stream {
-		final BlockPos pos;
+		final UUID speakerId;
 		final StreamPlayout playout;
 		volatile boolean stopped;
 
-		Stream(BlockPos pos, StreamPlayout playout) {
-			this.pos = pos;
+		Stream(UUID speakerId, StreamPlayout playout) {
+			this.speakerId = speakerId;
 			this.playout = playout;
 		}
 

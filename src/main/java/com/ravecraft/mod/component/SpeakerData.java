@@ -41,6 +41,10 @@ public record SpeakerData(UUID id, SpeakerSettings settings, SpeakerQueue queue)
 		return new SpeakerData(UUID.randomUUID(), SpeakerSettings.DEFAULT);
 	}
 
+	public SpeakerData withId(UUID id) {
+		return new SpeakerData(id, settings, queue);
+	}
+
 	public SpeakerData withSettings(SpeakerSettings settings) {
 		return new SpeakerData(id, settings, queue);
 	}

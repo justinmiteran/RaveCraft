@@ -3,6 +3,7 @@ package com.ravecraft.mod.block;
 import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.registry.ModDataComponents;
+import com.ravecraft.mod.world.audio.SpeakerHosts;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
@@ -78,6 +79,10 @@ public class PortableSpeakerBlock extends BaseEntityBlock implements SimpleWater
 		if (!level.isClientSide() && by instanceof Player player && player.hasInfiniteMaterials()
 				&& level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) {
 			speaker.setData(SpeakerData.create().withSettings(speaker.data().settings()));
+		}
+		// The id is final here (from the item, or refreshed above): register where it lives.
+		if (!level.isClientSide() && level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) {
+			SpeakerHosts.placed(speaker);
 		}
 	}
 

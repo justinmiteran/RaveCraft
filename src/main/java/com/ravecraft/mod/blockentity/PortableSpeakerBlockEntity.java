@@ -6,6 +6,7 @@ import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.registry.ModBlockEntities;
 import com.ravecraft.mod.registry.ModDataComponents;
+import com.ravecraft.mod.world.audio.SpeakerHosts;
 import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import com.ravecraft.mod.world.audio.SpeakerWatchers;
 import java.util.Objects;
@@ -106,6 +107,7 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 		super.setRemoved();
 		if (level instanceof ServerLevel) {
 			SpeakerPlayback.pauseAt(this);
+			SpeakerHosts.removed(this);
 		}
 	}
 

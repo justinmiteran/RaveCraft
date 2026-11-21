@@ -1,5 +1,6 @@
 package com.ravecraft.mod.world.audio;
 
+import com.ravecraft.mod.core.speaker.CarryPlace;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
@@ -15,8 +16,8 @@ public sealed interface SpeakerHost {
 		}
 	}
 
-	/** {@code inHand}: held in a hand (sounds from the eyes) rather than elsewhere in the inventory (chest). */
-	record Carrier(UUID player, ResourceKey<Level> dimension, boolean inHand) implements SpeakerHost {}
+	/** {@code place}: in a hand (sounds from the eyes), in the inventory or on the back (from the chest). */
+	record Carrier(UUID player, ResourceKey<Level> dimension, CarryPlace place) implements SpeakerHost {}
 
 	/** The item on the ground, as item entity {@code entity}. */
 	record Dropped(UUID entity, ResourceKey<Level> dimension) implements SpeakerHost {}

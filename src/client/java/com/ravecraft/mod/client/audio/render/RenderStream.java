@@ -2,7 +2,9 @@ package com.ravecraft.mod.client.audio.render;
 
 import com.ravecraft.mod.block.PortableSpeakerBlock;
 import com.ravecraft.mod.client.audio.ClientSpeakerHosts;
-import com.ravecraft.mod.core.acoustics.AcousticSettings;
+import com.ravecraft.mod.core.acoustics.DeviceProfile;
+import com.ravecraft.mod.core.acoustics.Directivity;
+import com.ravecraft.mod.core.acoustics.SpeakerAxis;
 import com.ravecraft.mod.core.acoustics.Equalizer;
 import com.ravecraft.mod.core.acoustics.VirtualPacer;
 import com.ravecraft.mod.core.acoustics.occlusion.LossSmoother;
@@ -12,7 +14,6 @@ import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
 import com.ravecraft.mod.core.acoustics.reverb.SendRoute;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
-import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import com.ravecraft.mod.network.payload.SpeakerHostPayload;
 import com.ravecraft.mod.registry.ModBlocks;
@@ -21,8 +22,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
@@ -50,6 +52,9 @@ final class RenderStream {
 	volatile boolean powered;
 	volatile double facingX;
 	volatile double facingZ = 1;
+	/** The profile of the speaker's kind, and how it radiates where it is now (omnidirectional on the ground). */
+	volatile DeviceProfile profile = DeviceProfile.PORTABLE;
+	volatile Directivity directivity = Directivity.OMNI;
 
 	// Written on the client thread by the occlusion scheduler, read on the audio thread: both losses are published
 	// before occlusionKnown is set.
@@ -69,6 +74,8 @@ final class RenderStream {
 
 	// Audio thread only.
 	@Nullable Equalizer eq;
+	/** The profile {@code eq} was built for. */
+	@Nullable DeviceProfile eqProfile;
 	final OcclusionFilter occlusionFilter = new OcclusionFilter(StreamFormat.SAMPLE_RATE);
 	final Chorus chorus = new Chorus(StreamFormat.SAMPLE_RATE);
 	final VirtualPacer pacer;
@@ -93,40 +100,55 @@ final class RenderStream {
 	}
 
 	/**
-	 * Client thread: copies the speaker's position, volume, power and facing for the audio thread. Silent (volume 0)
-	 * while its host is unknown or not here (another dimension, entity not loaded, block not there).
+	 * Client thread: copies the speaker's position, volume, power, sound axis and profile for the audio thread.
+	 * Silent (volume 0) while its host is unknown or not here (another dimension, entity not loaded, block not there).
 	 */
 	void refresh(@Nullable ClientLevel level) {
 		Vec3 at = ClientSpeakerHosts.position(speakerId, level);
-		Optional<SpeakerHostPayload> host = ClientSpeakerHosts.get(speakerId);
-		if (at == null || host.isEmpty()) {
+		Optional<SpeakerHostPayload> found = ClientSpeakerHosts.get(speakerId);
+		SpeakerAxis axis = at == null || found.isEmpty() ? null : axisOf(found.get(), level);
+		if (axis == null) {
 			volume = 0;
 			return;
 		}
+		SpeakerHostPayload host = found.get();
 		x = at.x;
 		y = at.y;
 		z = at.z;
-		powered = host.get().powered();
-		volume = host.get().volume() / (double) SpeakerSettings.MAX_VOLUME;
-		if (host.get().block().isPresent()) {
-			BlockPos pos = host.get().block().get();
-			BlockState state = level.getBlockState(pos);
-			if (!state.is(ModBlocks.PORTABLE_SPEAKER)) {
-				volume = 0;
-				return;
-			}
-			Direction facing = state.getValue(PortableSpeakerBlock.FACING);
-			facingX = facing.getStepX();
-			facingZ = facing.getStepZ();
-		} else {
-			facingX = 0;
-			facingZ = 1;
-		}
+		powered = host.powered();
+		facingX = axis.x();
+		facingZ = axis.z();
+		DeviceProfile kindProfile = AcousticSettingsClient.get().profile(host.kind());
+		profile = kindProfile;
+		directivity = axis.directivity(kindProfile);
+		volume = host.volume() / (double) SpeakerSettings.MAX_VOLUME;
 	}
 
-	/** Audio thread: (re)builds the equalizer for the server's portable profile. */
-	void configure(AcousticSettings settings) {
-		eq = new Equalizer(StreamFormat.SAMPLE_RATE, settings.profile(SpeakerKind.PORTABLE).bassCutHz(), settings.profile(SpeakerKind.PORTABLE).bassCutDb());
+	/**
+	 * The way {@code host} points: a block along its facing, a carrier along its look or behind its body, the
+	 * ground every way. Null when its block is no longer a speaker.
+	 */
+	private static @Nullable SpeakerAxis axisOf(SpeakerHostPayload host, ClientLevel level) {
+		if (host.block().isPresent()) {
+			BlockState state = level.getBlockState(host.block().get());
+			if (!state.is(ModBlocks.PORTABLE_SPEAKER)) {
+				return null;
+			}
+			Direction facing = state.getValue(PortableSpeakerBlock.FACING);
+			return SpeakerAxis.block(facing.getStepX(), facing.getStepZ());
+		}
+		Entity entity = level.getEntity(host.entityId());
+		if (host.place().isPresent() && entity instanceof LivingEntity carrier) {
+			return SpeakerAxis.carried(host.place().get(), carrier.getYRot(), carrier.yBodyRot);
+		}
+		return SpeakerAxis.GROUND;
+	}
+
+	/** Audio thread: (re)builds the equalizer for the profile of the speaker's kind, as last refreshed. */
+	void configure() {
+		DeviceProfile current = profile;
+		eq = new Equalizer(StreamFormat.SAMPLE_RATE, current.bassCutHz(), current.bassCutDb());
+		eqProfile = current;
 	}
 
 	/**

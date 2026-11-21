@@ -1,6 +1,7 @@
 package com.ravecraft.mod.world.audio;
 
 import com.ravecraft.mod.component.SpeakerData;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import java.util.Collection;
 import java.util.UUID;
 import net.minecraft.server.level.ServerLevel;
@@ -23,6 +24,14 @@ public interface SpeakerHandle {
 
 	/** Writes the data where it lives, then marks the speaker's open screens dirty. */
 	void setData(SpeakerData data);
+
+	/**
+	 * Which kind of speaker it is, which picks its acoustic profile. Every speaker is a portable one until the party
+	 * speaker's block and item exist: this is the one place that tells.
+	 */
+	default SpeakerKind kind() {
+		return SpeakerKind.PORTABLE;
+	}
 
 	/** Whether it is switched on. */
 	default boolean powered() {

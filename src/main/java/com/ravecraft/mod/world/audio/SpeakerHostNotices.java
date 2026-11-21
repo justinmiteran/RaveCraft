@@ -2,6 +2,7 @@ package com.ravecraft.mod.world.audio;
 
 import com.ravecraft.mod.core.audio.stream.SessionNotices;
 import com.ravecraft.mod.core.audio.stream.SessionTable.Session;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.network.Net;
 import com.ravecraft.mod.network.payload.SpeakerHostPayload;
 import java.util.LinkedHashSet;
@@ -75,18 +76,19 @@ public final class SpeakerHostNotices {
 		NOTICES.clear();
 	}
 
-	/** Where {@code handle}'s speaker is, as its listeners need it, with its volume and power. */
+	/** Where {@code handle}'s speaker is, as its listeners need it, with its kind, volume and power. */
 	private static SpeakerHostPayload payloadOf(SpeakerHandle handle) {
 		int volume = handle.data().settings().volume();
 		boolean powered = handle.powered();
+		SpeakerKind kind = handle.kind();
 		return switch (handle.host()) {
 			case SpeakerHost.Block block -> new SpeakerHostPayload(handle.id(), block.dimension(), Optional.of(block.pos()),
-					SpeakerHostPayload.NO_ENTITY, false, volume, powered);
+					SpeakerHostPayload.NO_ENTITY, kind, Optional.empty(), volume, powered);
 			case SpeakerHost.Carrier carrier -> new SpeakerHostPayload(handle.id(), carrier.dimension(), Optional.empty(),
-					entityId(handle.level().getServer().getPlayerList().getPlayer(carrier.player())), carrier.inHand(),
-					volume, powered);
+					entityId(handle.level().getServer().getPlayerList().getPlayer(carrier.player())), kind,
+					Optional.of(carrier.place()), volume, powered);
 			case SpeakerHost.Dropped dropped -> new SpeakerHostPayload(handle.id(), dropped.dimension(), Optional.empty(),
-					entityId(handle.level().getEntity(dropped.entity())), false, volume, powered);
+					entityId(handle.level().getEntity(dropped.entity())), kind, Optional.empty(), volume, powered);
 		};
 	}
 

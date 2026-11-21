@@ -52,12 +52,21 @@ public final class Propagation {
 	/** Linear gain at the listener, before the player's own volume settings. */
 	public static double gain(AcousticSettings settings, DeviceProfile profile, double volume, double distance,
 			double cosAngle) {
+		return gain(settings, profile, profile.directivity(), volume, distance, cosAngle);
+	}
+
+	/**
+	 * Linear gain at the listener with {@code directivity} in place of the profile's own (a speaker on the ground
+	 * radiates in every direction, whatever its kind).
+	 */
+	public static double gain(AcousticSettings settings, DeviceProfile profile, Directivity directivity, double volume,
+			double distance, double cosAngle) {
 		if (volume <= 0) {
 			return 0;
 		}
 		return volume * distanceGain(settings.rolloff(), distance)
 				* fade(distance, range(settings, profile, volume), settings.fadeFraction())
-				* profile.directivity().gain(cosAngle);
+				* directivity.gain(cosAngle);
 	}
 
 	/** Linear gain of the highs after {@code distance} blocks of air. */

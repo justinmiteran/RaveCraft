@@ -6,7 +6,6 @@ import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import com.ravecraft.mod.core.audio.stream.SessionTable.Session;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.TokenBucket;
-import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.network.payload.AudioChunkPayload;
 import com.ravecraft.mod.network.payload.RelayedChunkPayload;
 import com.ravecraft.mod.world.audio.NowPlaying;
@@ -84,7 +83,7 @@ public final class AudioRelay {
 	}
 
 	/**
-	 * How far {@code speaker} is relayed: its profile range at its current volume, plus a margin. 0 when it is
+	 * How far {@code speaker} is relayed: its kind's profile range at its current volume, plus a margin. 0 when it is
 	 * unpowered.
 	 */
 	public static double relayRadius(SpeakerHandle speaker) {
@@ -92,7 +91,7 @@ public final class AudioRelay {
 			return 0;
 		}
 		double volume = speaker.data().settings().volume() / (double) SpeakerSettings.MAX_VOLUME;
-		return Propagation.relayRadius(AcousticConfig.get(), AcousticConfig.get().profile(SpeakerKind.PORTABLE), volume);
+		return Propagation.relayRadius(AcousticConfig.get(), AcousticConfig.get().profile(speaker.kind()), volume);
 	}
 
 	/** The candidates in {@code level} within {@code radius} of {@code centre} (the speaker), owner excluded. */

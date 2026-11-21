@@ -2,6 +2,7 @@ package com.ravecraft.mod.item;
 
 import com.ravecraft.mod.block.SpeakerScreenOpener;
 import com.ravecraft.mod.component.SpeakerData;
+import com.ravecraft.mod.core.speaker.CarryPlace;
 import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.world.audio.SpeakerHosts;
 import net.minecraft.server.level.ServerLevel;
@@ -44,8 +45,16 @@ public class PortableSpeakerItem extends BlockItem {
 	public void inventoryTick(ItemStack stack, ServerLevel level, Entity owner, @Nullable EquipmentSlot slot) {
 		super.inventoryTick(stack, level, owner, slot);
 		if (owner instanceof ServerPlayer player) {
-			SpeakerHosts.carried(player, stack, slot == EquipmentSlot.MAINHAND || slot == EquipmentSlot.OFFHAND);
+			SpeakerHosts.carried(player, stack, placeOf(slot));
 		}
+	}
+
+	/** Where a stack ticked in {@code slot} is carried: a hand, the back (chest slot), or the inventory. */
+	static CarryPlace placeOf(@Nullable EquipmentSlot slot) {
+		if (slot == EquipmentSlot.MAINHAND || slot == EquipmentSlot.OFFHAND) {
+			return CarryPlace.HAND;
+		}
+		return slot == EquipmentSlot.CHEST ? CarryPlace.BACK : CarryPlace.INVENTORY;
 	}
 
 	/** Burnt, blown up or otherwise destroyed on the ground: its session ends for good. */

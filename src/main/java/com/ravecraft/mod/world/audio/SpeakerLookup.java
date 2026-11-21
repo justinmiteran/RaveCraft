@@ -43,7 +43,7 @@ final class SpeakerLookup {
 		ServerPlayer player = server.getPlayerList().getPlayer(carrier.player());
 		return player == null
 				? Optional.empty()
-				: findCarried(player, id).map(stack -> new CarrierHandle(player, stack, carrier.inHand()));
+				: findCarried(player, id).map(stack -> new CarrierHandle(player, stack, carrier.place()));
 	}
 
 	/** The stack of {@code id} the player carries, in its inventory or where nothing ticks it. */

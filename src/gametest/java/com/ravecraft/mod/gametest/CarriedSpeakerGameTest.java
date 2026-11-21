@@ -149,7 +149,7 @@ public class CarriedSpeakerGameTest {
 				.thenSucceed();
 	}
 
-	@GameTest(maxTicks = 60)
+	@GameTest(maxTicks = 80)
 	public void storedCarrierPausesThenResumes(GameTestHelper h) {
 		ServerPlayer owner = online(h, 2);
 		ItemStack stack = carriedPlaying(h, owner);
@@ -157,6 +157,12 @@ public class CarriedSpeakerGameTest {
 		h.startSequence()
 				.thenIdle(1) // a second report in the setup tick would be a copy
 				.thenExecuteFor(5, () -> SpeakerHosts.carried(owner, stack, true))
+				// Ticks run faster than real time here: keep carrying until the wall-clock position has moved.
+				.thenWaitUntil(() -> {
+					SpeakerHosts.carried(owner, stack, true);
+					SpeakerQueue stored = stack.get(ModDataComponents.SPEAKER).queue();
+					h.assertTrue(SpeakerPlayback.liveQueue(id, stored).positionMs() > 0, "track still at its start");
+				})
 				.thenIdle(21)
 				.thenExecute(() -> {
 					h.assertFalse(SpeakerPlayback.isPlaying(id), "paused when no longer carried");
@@ -164,6 +170,27 @@ public class CarriedSpeakerGameTest {
 					h.assertTrue(parked.positionMs() > 0, "position kept, got " + parked.positionMs());
 					SpeakerHosts.carried(owner, stack, true);
 					h.assertTrue(SpeakerPlayback.isPlaying(id), "resumed when carried again");
+					cleanUp(h, List.of(id), owner);
+				})
+				.thenSucceed();
+	}
+
+	/** Moving the speaker between hand and pocket on successive ticks is a move of the same speaker, not a copy. */
+	@GameTest(maxTicks = 40)
+	public void hotbarScrollKeepsId(GameTestHelper h) {
+		ServerPlayer owner = online(h, 2);
+		ItemStack stack = carriedPlaying(h, owner);
+		UUID id = idOf(stack);
+		h.startSequence()
+				.thenIdle(1) // a second report in the setup tick would be a copy
+				.thenExecute(() -> SpeakerHosts.carried(owner, stack, true))
+				.thenExecuteAfter(1, () -> SpeakerHosts.carried(owner, stack, false))
+				.thenExecuteAfter(1, () -> SpeakerHosts.carried(owner, stack, true))
+				.thenExecute(() -> {
+					h.assertValueEqual(idOf(stack), id, "same id");
+					h.assertTrue(SpeakerPlayback.isPlaying(id), "still playing");
+					SpeakerHost host = SpeakerHosts.handle(server(h), id).orElseThrow().host();
+					h.assertValueEqual(host, new SpeakerHost.Carrier(owner.getUUID(), h.getLevel().dimension(), true), "back in hand");
 					cleanUp(h, List.of(id), owner);
 				})
 				.thenSucceed();

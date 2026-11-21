@@ -23,7 +23,7 @@ Une spec, deux PR successives, chacune testable seule :
 
 - Je casse une enceinte qui joue : elle continue sans coupure audible, le son part de l'objet au sol, puis de moi quand je la ramasse ; les autres joueurs l'entendent se déplacer avec moi.
 - Je range l'enceinte dans un coffre : la lecture se met en pause ; je la reprends : elle repart là où elle s'était arrêtée.
-- J'appuie sur **J** avec une enceinte dans l'inventaire : son interface s'ouvre, sans la poser ni la tenir.
+- J'appuie sur **M** avec une enceinte dans l'inventaire : son interface s'ouvre, sans la poser ni la tenir.
 - L'enceinte de soirée s'entend à environ 96 blocs devant sa grille et nettement moins derrière.
 - Je la porte sur le dos (plastron, ou emplacement « dos » de Trinkets s'il est installé) : elle s'affiche dans mon dos et le son part derrière moi.
 
@@ -37,7 +37,7 @@ Une spec, deux PR successives, chacune testable seule :
 | D4 | Basses renforcées : coupure de −2 dB sous 80 Hz | Même courbe que la portable |
 | D5 | Son dirigé vers la grille : plein volume à ±60° de l'axe, −10 dB juste derrière. La portable reste omnidirectionnelle | Omnidirectionnelle |
 | D6 | Port sur le dos : emplacement du plastron (vanilla), plus l'emplacement « dos » de **Trinkets Updated** en dépendance optionnelle | Plastron seul ; affichage sans emplacement ; Accessories (pas de version 26.x) |
-| D7 | Touche *Ouvrir l'enceinte*, **J** par défaut, réglable, pour les deux enceintes, en main, dans l'inventaire ou sur le dos | Clic droit seulement |
+| D7 | Touche *Ouvrir l'enceinte*, **M** par défaut, réglable, pour les deux enceintes, en main, dans l'inventaire ou sur le dos | Clic droit seulement |
 | D8 | La touche choisie est rappelée dans l'infobulle des deux objets | — |
 | D9 | Apparence : proposition v3 (`art/proposals/soundbox/soundbox_v3.png`) | Propositions A à D, v1, v2 |
 | D10 | Objet rangé dans un conteneur : pause, reprise quand il revient dans un inventaire de joueur, au sol ou posé (règle du socle, inchangée) | Arrêt de la session |
@@ -80,9 +80,9 @@ Un **registre serveur** en mémoire (`SpeakerHosts`) associe `speakerId → hôt
 - **Ouvrir l'interface** :
   - bloc posé : clic droit (inchangé) ;
   - objet en main : **clic droit dans le vide** (remplace l'allumage provisoire) ;
-  - touche **Ouvrir l'enceinte** (`key.ravecraft.open_speaker`, **J** par défaut, catégorie *RaveCraft* dans Options → Commandes). Sans écran ouvert, elle ouvre, dans l'ordre : l'enceinte portée sur le dos (6b), celle de la main principale, celle de la main secondaire, puis la première de la barre rapide, puis du reste de l'inventaire. Sans enceinte, elle ne fait rien.
+  - touche **Ouvrir l'enceinte** (`key.ravecraft.open_speaker`, **M** par défaut, catégorie *RaveCraft* dans Options → Commandes). Sans écran ouvert, elle ouvre, dans l'ordre : l'enceinte portée sur le dos (6b), celle de la main principale, celle de la main secondaire, puis la première de la barre rapide, puis du reste de l'inventaire. Sans enceinte, elle ne fait rien.
 - L'écran (`SpeakerScreen`) s'ouvre par identifiant. S'il est ouvert sur une enceinte qui change d'hôte, il reste ouvert ; il se ferme si l'enceinte sort de portée ou est rangée.
-- **Infobulle** (portable, et enceinte de soirée en 6b) : une ligne grise sous les valeurs de base, « [J] : ouvrir l'interface (inventaire ou dos) », avec le nom réel de la touche choisie. Si la touche n'est pas attribuée, la ligne n'apparaît pas.
+- **Infobulle** (portable, et enceinte de soirée en 6b) : une ligne grise sous les valeurs de base, « [M] : ouvrir l'interface depuis l'inventaire », avec le nom réel de la touche choisie. Si la touche n'est pas attribuée, la ligne n'apparaît pas.
 
 ### 3.4 Hors 6a
 
@@ -120,7 +120,7 @@ L'axe suit l'hôte : `facing` du bloc posé ; regard du joueur quand elle est en
 - **Emplacement du plastron** : l'objet est équipable (composant d'équipement vanilla, emplacement `CHEST`), sans modèle d'armure ; on ne peut donc pas porter de plastron en même temps.
 - **Trinkets Updated** (optionnel, version 26.3, licence MIT) : si le mod est présent (`FabricLoader.isModLoaded`), l'objet est aussi accepté dans l'emplacement « dos » de Trinkets (slot à confirmer dans le plan selon les groupes de Trinkets Updated). Le mod n'est qu'une dépendance de compilation : sans lui, rien ne casse et aucune classe Trinkets n'est chargée.
 - **Rendu** : une couche de rendu du joueur dessine le modèle de l'enceinte dans le dos, réduit pour tenir sur le torse (environ 0,6), grille vers l'extérieur, avec la teinture et la LED allumée ou éteinte.
-- **Hôte** : porteur, avec l'axe du dos (§ 4.3). La touche J ouvre en priorité l'enceinte portée sur le dos.
+- **Hôte** : porteur, avec l'axe du dos (§ 4.3). La touche M ouvre en priorité l'enceinte portée sur le dos.
 
 ### 4.5 Apparence
 
@@ -153,7 +153,7 @@ Textures produites par `tools/textures/gen_textures.py` (palette et caoutchouc d
   - la ranger dans un coffre : pause ; la reprendre : reprise ;
   - commande d'un joueur hors de portée de l'hôte : refusée ;
   - 6b : équiper l'enceinte de soirée au plastron : l'hôte est le porteur.
-- **En jeu** (`runClient`, à deux joueurs si possible) : déplacement du son avec le porteur, objet au sol, coffre, touche J, infobulle ; en 6b, portée devant et derrière, dos au plastron, avec et sans Trinkets Updated.
+- **En jeu** (`runClient`, à deux joueurs si possible) : déplacement du son avec le porteur, objet au sol, coffre, touche M, infobulle ; en 6b, portée devant et derrière, dos au plastron, avec et sans Trinkets Updated.
 
 ## 7. Hors périmètre
 

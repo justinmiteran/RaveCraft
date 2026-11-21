@@ -121,5 +121,5 @@
   "toast.ravecraft.now_playing.message": "%s — ajouté par %s",
   "key.ravecraft.open_speaker": "Ouvrir l'enceinte",
   "key.category.ravecraft.ravecraft": "RaveCraft",
-  "tooltip.ravecraft.speaker.open_key": "[%s] : ouvrir l'interface (inventaire ou dos)"
+  "tooltip.ravecraft.speaker.open_key": "[%s] : ouvrir l'interface depuis l'inventaire"
 }

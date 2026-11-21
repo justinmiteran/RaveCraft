@@ -15,10 +15,10 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-/** The J key: opens the screen of a speaker carried in the hotbar, offhand or inventory. */
+/** The M key (for "music"): opens the screen of a speaker carried in the hotbar, offhand or inventory. */
 public final class OpenSpeakerKey {
 	private static final KeyMapping KEY = new KeyMapping("key.ravecraft.open_speaker", InputConstants.Type.KEYBOARD,
-			InputConstants.KEY_J, KeyMapping.Category.register(Identifier.fromNamespaceAndPath(RaveCraft.MOD_ID, "ravecraft")));
+			InputConstants.KEY_M, KeyMapping.Category.register(Identifier.fromNamespaceAndPath(RaveCraft.MOD_ID, "ravecraft")));
 
 	private OpenSpeakerKey() {
 	}

@@ -1,6 +1,7 @@
 package com.ravecraft.mod.compat.trinkets;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.client.render.BackSpeakerRenderer;
 import com.ravecraft.mod.registry.ModBlocks;
 import eu.pb4.trinkets.api.TrinketSlotAccess;
@@ -26,14 +27,30 @@ public final class TrinketsClientCompat {
 				context -> new BackTrinketRenderer(BackSpeakerRenderer.create(context.getBlockModelResolver())));
 	}
 
-	/** Hands a worn speaker to the chest slot's drawing, on humanoid models only. */
-	private record BackTrinketRenderer(BackSpeakerRenderer drawer) implements TrinketRenderer {
+	/**
+	 * Hands a worn speaker to the chest slot's drawing, on humanoid models only. An incompatible Trinkets version fails
+	 * at the first draw: drawing stops there, logged once, instead of crashing the game.
+	 */
+	private static final class BackTrinketRenderer implements TrinketRenderer {
+		private final BackSpeakerRenderer drawer;
+		private boolean broken;
+
+		BackTrinketRenderer(BackSpeakerRenderer drawer) {
+			this.drawer = drawer;
+		}
+
 		@Override
 		public void submit(ItemStack stack, TrinketSlotAccess slot, EntityModel<? extends LivingEntityRenderState> model,
 				PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int light, LivingEntityRenderState state,
 				float limbAngle, float limbDistance) {
-			if (model instanceof HumanoidModel<?> humanoid) {
+			if (broken || !(model instanceof HumanoidModel<?> humanoid)) {
+				return;
+			}
+			try {
 				drawer.submitOnBack(poseStack, submitNodeCollector, stack, humanoid.body, light, state.outlineColor);
+			} catch (LinkageError e) {
+				broken = true;
+				RaveCraft.LOGGER.warn("Trinkets back render disabled: incompatible Trinkets version", e);
 			}
 		}
 	}

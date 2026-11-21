@@ -9,6 +9,7 @@ import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.registry.ModBlockEntities;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModDataComponents;
+import com.ravecraft.mod.world.audio.SpeakerBackSlots;
 import com.ravecraft.mod.world.audio.SpeakerHandle;
 import com.ravecraft.mod.world.audio.SpeakerHost;
 import com.ravecraft.mod.world.audio.SpeakerHosts;
@@ -16,6 +17,7 @@ import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -122,6 +124,26 @@ public class PartySpeakerGameTest {
 		stack.use(h.getLevel(), owner, InteractionHand.MAIN_HAND);
 		h.assertTrue(owner.getItemBySlot(EquipmentSlot.CHEST).is(ModBlocks.PARTY_SPEAKER.asItem()), "worn on the back");
 		CarriedSpeakerGameTest.cleanUp(h, List.of(stack.get(ModDataComponents.SPEAKER).id()), owner);
+		h.succeed();
+	}
+
+	/** An accessory mod whose API changed fails at its first lookup: the finder is dropped, the chest slot remains. */
+	@GameTest
+	public void brokenBackFinderIsDropped(GameTestHelper h) {
+		ServerPlayer owner = SharedQueueGameTest.online(h, 2);
+		AtomicInteger calls = new AtomicInteger();
+		SpeakerBackSlots.set((player, filter) -> {
+			calls.incrementAndGet();
+			throw new NoSuchMethodError("changed accessory API");
+		});
+		try {
+			h.assertTrue(SpeakerBackSlots.find(owner, stack -> true).isEmpty(), "nothing found on failure");
+			h.assertTrue(SpeakerBackSlots.find(owner, stack -> true).isEmpty(), "still nothing found");
+			h.assertValueEqual(calls.get(), 1, "finder called once, then dropped");
+		} finally {
+			SpeakerBackSlots.set(null);
+			CarriedSpeakerGameTest.cleanUp(h, List.of(), owner);
+		}
 		h.succeed();
 	}
 }

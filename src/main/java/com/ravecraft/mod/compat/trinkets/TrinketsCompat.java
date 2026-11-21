@@ -48,10 +48,13 @@ public final class TrinketsCompat {
 		SpeakerBackSlots.set(TrinketsCompat::findBack);
 	}
 
-	/** The first stack in the player's Trinkets back slot ({@code chest/back}) that matches {@code filter}. */
+	/**
+	 * The first stack in the player's Trinkets back slot ({@code chest/back}) that matches {@code filter}. The cosmetic
+	 * slot is left out: Trinkets never ticks it, so a speaker there would be stored, not carried.
+	 */
 	public static Optional<ItemStack> findBack(Player player, Predicate<ItemStack> filter) {
 		return TrinketsApi.getAttachment(player).equipped(filter, false).stream()
-				.filter(access -> DefaultTrinketSlots.CHEST_BACK.equals(access.slotType().getId()))
+				.filter(access -> !access.cosmetic() && DefaultTrinketSlots.CHEST_BACK.equals(access.slotType().getId()))
 				.findFirst()
 				.map(TrinketSlotAccess::get);
 	}

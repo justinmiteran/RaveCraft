@@ -1,5 +1,6 @@
 package com.ravecraft.mod.world.audio;
 
+import com.ravecraft.mod.RaveCraft;
 import java.util.Optional;
 import java.util.function.Predicate;
 import net.minecraft.world.entity.player.Player;
@@ -28,9 +29,21 @@ public final class SpeakerBackSlots {
 		finder = newFinder;
 	}
 
-	/** The first stack worn in an accessory back slot that matches {@code filter}; empty without an accessory mod. */
+	/**
+	 * The first stack worn in an accessory back slot that matches {@code filter}; empty without an accessory mod. An
+	 * accessory mod whose API no longer links (an incompatible version) is dropped at its first failure, logged once.
+	 */
 	public static Optional<ItemStack> find(Player player, Predicate<ItemStack> filter) {
 		Finder current = finder;
-		return current == null ? Optional.empty() : current.find(player, filter);
+		if (current == null) {
+			return Optional.empty();
+		}
+		try {
+			return current.find(player, filter);
+		} catch (LinkageError e) {
+			finder = null;
+			RaveCraft.LOGGER.warn("Accessory back slot disabled: incompatible accessory mod", e);
+			return Optional.empty();
+		}
 	}
 }

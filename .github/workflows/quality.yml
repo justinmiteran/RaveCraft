@@ -29,19 +29,11 @@ jobs:
         run: chmod +x ./gradlew
       - name: code rules (Checkstyle, PMD)
         run: ./gradlew codeQuality --continue
+      # Run page summary: totals, counts per rule, every violation by file; the first 50 also
+      # appear as annotations on the pull request diff.
       - name: summarize violations
         if: ${{ !cancelled() }}
-        run: |
-          {
-            echo "## Code rules"
-            echo "| Source set | Checkstyle | PMD |"
-            echo "|---|---|---|"
-            for s in main client test gametest; do
-              cs=$(grep -c '<error' "build/reports/checkstyle/$s.xml" 2>/dev/null || true)
-              pmd=$(grep -c '<violation' "build/reports/pmd/$s.xml" 2>/dev/null || true)
-              echo "| $s | ${cs:-0} | ${pmd:-0} |"
-            done
-          } >> "$GITHUB_STEP_SUMMARY"
+        run: python3 -I tools/ci/quality_summary.py --annotate
       - name: upload rule reports
         if: ${{ failure() }}
         uses: actions/upload-artifact@v7

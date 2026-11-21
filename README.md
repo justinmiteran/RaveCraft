@@ -94,7 +94,7 @@ gh run view --log-failed
 
 ### CI : `code-quality`
 
-Un job séparé du build, qui lance `./gradlew codeQuality` : **Checkstyle** (`config/checkstyle/`) et **PMD** (`config/pmd/ruleset.xml`) sur tous les source sets. Une seule violation le rend rouge. Le nombre de violations par source set s'affiche dans le résumé du run, et les rapports HTML sont joints en cas d'échec (artefact `code-quality-reports`).
+Un job séparé du build, qui lance `./gradlew codeQuality` : **Checkstyle** (`config/checkstyle/`) et **PMD** (`config/pmd/ruleset.xml`) sur tous les source sets. Une seule violation le rend rouge. Le résumé du run (**Summary**) donne, comme pour les tests, le total par source set, le nombre par règle et le détail de chaque violation par fichier (ligne, règle, message). Les 50 premières apparaissent aussi en annotations sur le diff de la pull request. Les rapports HTML sont joints en cas d'échec (artefact `code-quality-reports`). En local, `python tools/ci/quality_summary.py` affiche le même résumé après `./gradlew codeQuality`.
 
 | Famille | Règles |
 |---|---|

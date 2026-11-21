@@ -2,7 +2,7 @@
 
 Reads build/reports/checkstyle/*.xml and build/reports/pmd/*.xml (written by ./gradlew codeQuality)
 and prints a Markdown report: totals per source set, counts per rule, then every violation grouped
-by file. With --annotate, also prints GitHub workflow commands so the first violations show up as
+by file. With --annotate, also prints GitHub workflow commands so the first 10 violations show up as
 annotations on the pull request diff.
 
 Usage:
@@ -18,7 +18,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 SOURCE_SETS = ("main", "client", "test", "gametest")
-ANNOTATION_LIMIT = 50  # GitHub shows at most 50 annotations per job
+ANNOTATION_LIMIT = 10  # GitHub keeps at most 10 error annotations per step
 
 
 class Violation:

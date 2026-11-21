@@ -29,7 +29,7 @@ jobs:
         run: chmod +x ./gradlew
       - name: code rules (Checkstyle, PMD)
         run: ./gradlew codeQuality --continue
-      # Run page summary: totals, counts per rule, every violation by file; the first 50 also
+      # Run page summary: totals, counts per rule, every violation by file; the first 10 also
       # appear as annotations on the pull request diff.
       - name: summarize violations
         if: ${{ !cancelled() }}

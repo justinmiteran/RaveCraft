@@ -12,11 +12,16 @@ final class ScrollbarView {
 	private ScrollbarView() {
 	}
 
-	static void draw(GuiGraphicsExtractor graphics, int x, int trackTop, int track, int content, int scroll,
-			boolean hot) {
-		int thumbH = Scrollbar.thumbHeight(track, content);
-		int thumbY = Scrollbar.thumbTop(trackTop, track, content, scroll);
-		graphics.fill(x, trackTop, x + Scrollbar.WIDTH, trackTop + track, TRACK);
+	/** Where the scrollbar runs: from {@code top}, {@code height} high, at {@code x}. */
+	record Track(int x, int top, int height) {
+	}
+
+	/** Draws the bar on {@code track} for {@code content} pixels scrolled by {@code scroll}; {@code hot} lights it. */
+	static void draw(GuiGraphicsExtractor graphics, Track track, int content, int scroll, boolean hot) {
+		int x = track.x();
+		int thumbH = Scrollbar.thumbHeight(track.height(), content);
+		int thumbY = Scrollbar.thumbTop(track.top(), track.height(), content, scroll);
+		graphics.fill(x, track.top(), x + Scrollbar.WIDTH, track.top() + track.height(), TRACK);
 		graphics.fill(x, thumbY, x + Scrollbar.WIDTH, thumbY + thumbH, hot ? THUMB_HOT : THUMB);
 	}
 }

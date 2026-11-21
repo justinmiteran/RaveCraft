@@ -23,6 +23,7 @@ import java.util.Optional;
 public final class LibraryIndex {
 	/** The chosen folders and the excluded ones an index was built for. */
 	public record Scope(List<Path> roots, List<Path> excluded) {
+		/** Copies the lists, so the scope never changes. */
 		public Scope {
 			roots = List.copyOf(roots);
 			excluded = List.copyOf(excluded);
@@ -36,6 +37,8 @@ public final class LibraryIndex {
 
 	/** The most entries kept; a walk stops there and the index is then {@link #truncated()}. */
 	public static final int LIMIT = 50_000;
+	/** Each entry line starts with a one-letter kind and a space. */
+	private static final int ENTRY_PREFIX = 2;
 
 	private static final String HEADER = "ravecraft-library-index 1";
 	private static final Comparator<SourceNode> BY_NAME =
@@ -50,14 +53,17 @@ public final class LibraryIndex {
 	private boolean truncated;
 	private int version;
 
+	/** An empty index for {@code scope}. */
 	public LibraryIndex(Scope scope) {
 		this.scope = scope;
 	}
 
+	/** An empty index for these chosen and excluded folders. */
 	public LibraryIndex(List<Path> roots, List<Path> excluded) {
 		this(new Scope(roots, excluded));
 	}
 
+	/** The folders the index was built for. */
 	public Scope scope() {
 		return scope;
 	}
@@ -86,6 +92,7 @@ public final class LibraryIndex {
 		return complete;
 	}
 
+	/** Whether the walk stopped at {@link #LIMIT} entries. */
 	public boolean truncated() {
 		return truncated;
 	}
@@ -95,6 +102,7 @@ public final class LibraryIndex {
 		return version;
 	}
 
+	/** The entries indexed so far. */
 	public int size() {
 		return entries.size();
 	}
@@ -126,6 +134,7 @@ public final class LibraryIndex {
 			return List.of();
 		}
 		List<String> base = parts(folder.get());
+		/** A track found under the folder, with its path parts below it. */
 		record Found(Path path, List<String> parts) {
 		}
 		List<Found> found = new ArrayList<>();
@@ -223,27 +232,10 @@ public final class LibraryIndex {
 		List<Path> excluded = new ArrayList<>();
 		List<SourceNode> nodes = new ArrayList<>();
 		for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-			if (line.length() < 3 || line.charAt(1) != ' ') {
-				continue;
-			}
-			Optional<Path> path = path(line.substring(2));
-			if (path.isEmpty()) {
-				continue;
-			}
-			Path p = path.get();
-			switch (line.charAt(0)) {
-				case 'R' -> roots.add(p);
-				case 'X' -> excluded.add(p);
-				case 'T' -> nodes.add(new SourceNode(p.toString(), SourceNode.Kind.TRACK, AudioFiles.baseName(p),
-						false));
-				case 'P' -> {
-					Path name = p.getFileName();
-					if (name != null) {
-						nodes.add(new SourceNode(p.toString(), SourceNode.Kind.PLAYLIST, name.toString(), false));
-					}
-				}
-				default -> {
-				}
+			Optional<Path> path = line.length() <= ENTRY_PREFIX || line.charAt(ENTRY_PREFIX - 1) != ' '
+					? Optional.empty() : path(line.substring(ENTRY_PREFIX));
+			if (path.isPresent()) {
+				readEntry(line.charAt(0), path.get(), roots, excluded, nodes);
 			}
 		}
 		LibraryIndex index = new LibraryIndex(roots, excluded);
@@ -252,6 +244,23 @@ public final class LibraryIndex {
 			index.finish(Boolean.parseBoolean(state[1]));
 		}
 		return Optional.of(index);
+	}
+
+	/** Files the entry {@code p} of kind {@code kind} into its list; an unknown kind is skipped. */
+	private static void readEntry(char kind, Path p, List<Path> roots, List<Path> excluded, List<SourceNode> nodes) {
+		switch (kind) {
+			case 'R' -> roots.add(p);
+			case 'X' -> excluded.add(p);
+			case 'T' -> nodes.add(new SourceNode(p.toString(), SourceNode.Kind.TRACK, AudioFiles.baseName(p), false));
+			case 'P' -> {
+				Path name = p.getFileName();
+				if (name != null) {
+					nodes.add(new SourceNode(p.toString(), SourceNode.Kind.PLAYLIST, name.toString(), false));
+				}
+			}
+			default -> {
+			}
+		}
 	}
 
 	private void count(String id) {

@@ -31,6 +31,7 @@ public final class QueuePanel extends RowList {
 	private final UUID speakerId;
 	private List<Row> rows = List.of();
 
+	/** The queue of speaker {@code speakerId}. */
 	public QueuePanel(int x, int y, int width, int height, UUID speakerId) {
 		super(x, y, width, height, ROW_H, Component.translatable(SpeakerSprites.KEY + "queue"));
 		this.speakerId = speakerId;
@@ -149,6 +150,7 @@ public final class QueuePanel extends RowList {
 		graphics.text(font, label, centre - labelW / 2, rowY + 2, SEPARATOR, false);
 	}
 
+	/** Draws the entry of {@code row}: its title and its owner, dimmed when the owner is offline. */
 	private void drawEntry(GuiGraphicsExtractor graphics, Font font, Row row, int left, int end, int rowY) {
 		StateEntry entry = row.entry();
 		int textY = rowY + 2;

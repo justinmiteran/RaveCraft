@@ -1,5 +1,7 @@
 package com.ravecraft.mod.core.acoustics.occlusion;
 
+import com.ravecraft.mod.core.acoustics.Decibels;
+
 /** The gain a stream plays at once its occlusion is applied. */
 public final class OcclusionGate {
 	private OcclusionGate() {
@@ -11,6 +13,6 @@ public final class OcclusionGate {
 	 * out of range or at volume 0 has a gain of 0 either way.
 	 */
 	public static double gain(double gain, boolean known, double lossDb) {
-		return known ? gain * Math.pow(10, -lossDb / 20) : 0;
+		return known ? gain * Decibels.toAmplitude(-lossDb) : 0;
 	}
 }

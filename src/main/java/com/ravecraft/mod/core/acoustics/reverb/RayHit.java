@@ -14,10 +14,12 @@ public record RayHit(boolean open, double distance, double absorption, int faceA
 	/** The {@code faceAxis} of a ray that met no face. */
 	public static final int NO_FACE = -1;
 
+	/** A ray that met no face, its wall as far as its hit. */
 	public RayHit(boolean open, double distance, double absorption) {
 		this(open, distance, absorption, NO_FACE, 0, distance);
 	}
 
+	/** A ray that met a face, its wall as far as its hit. */
 	public RayHit(boolean open, double distance, double absorption, int faceAxis, int facePlane) {
 		this(open, distance, absorption, faceAxis, facePlane, distance);
 	}

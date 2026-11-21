@@ -17,10 +17,12 @@ import java.util.List;
  */
 public final class M3uParser {
 	private static final char BOM = '﻿';
+	private static final String FILE_SCHEME = "file:";
 
 	private M3uParser() {
 	}
 
+	/** Reads the entries of {@code playlist}; relative ones resolve against its folder. */
 	public static List<Path> read(Path playlist) throws IOException {
 		byte[] bytes = Files.readAllBytes(playlist);
 		String text = decode(bytes, AudioFiles.extension(playlist).equals("m3u8"));
@@ -28,6 +30,7 @@ public final class M3uParser {
 		return parse(text.lines().toList(), base);
 	}
 
+	/** The entries of a playlist's lines, skipping comments and blank lines; relative ones resolve against {@code baseDir}. */
 	public static List<Path> parse(List<String> lines, Path baseDir) {
 		List<Path> paths = new ArrayList<>();
 		for (String raw : lines) {
@@ -46,9 +49,10 @@ public final class M3uParser {
 		return paths;
 	}
 
+	/** One entry as a path: a {@code file:} URI, an absolute path, or one relative to {@code baseDir}; null when invalid. */
 	private static Path toPath(String entry, Path baseDir) {
 		try {
-			if (entry.regionMatches(true, 0, "file:", 0, 5)) {
+			if (entry.regionMatches(true, 0, FILE_SCHEME, 0, FILE_SCHEME.length())) {
 				return Path.of(URI.create(entry));
 			}
 			// Playlists written on Windows use '\' even when read elsewhere, and vice versa.

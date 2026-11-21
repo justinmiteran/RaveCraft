@@ -1,5 +1,6 @@
 package com.ravecraft.mod.core.audio.decode;
 
+import com.ravecraft.mod.core.audio.Pcm16;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,6 +18,12 @@ final class Mp3Decoder extends BlockPcmDecoder {
 	private final Decoder decoder = new Decoder();
 	private final PcmFormat format;
 
+	/**
+	 * Opens {@code file} and decodes its first frame to learn the format.
+	 *
+	 * @param file the MP3 file
+	 * @throws IOException when the file cannot be read or holds no MP3 frame
+	 */
 	Mp3Decoder(Path file) throws IOException {
 		bitstream = new Bitstream(new BufferedInputStream(Files.newInputStream(file)));
 		try {
@@ -47,32 +54,38 @@ final class Mp3Decoder extends BlockPcmDecoder {
 		return true;
 	}
 
+	/**
+	 * Decodes the next frame.
+	 *
+	 * @return its samples, or null at the end of the stream
+	 * @throws IOException when the data is corrupt
+	 */
 	private SampleBuffer nextFrame() throws IOException {
 		try {
 			Header header = bitstream.readFrame();
-			if (header == null) {
-				return null;
-			}
-			try {
-				return (SampleBuffer) decoder.decodeFrame(header, bitstream);
-			} finally {
-				bitstream.closeFrame();
-			}
+			return header == null ? null : decode(header);
 		} catch (BitstreamException | DecoderException | RuntimeException e) {
 			// JLayer throws unchecked exceptions (array bounds...) on some corrupt files.
 			throw new IOException("Corrupt MP3 data", e);
 		}
 	}
 
+	private SampleBuffer decode(Header header) throws DecoderException {
+		try {
+			return (SampleBuffer) decoder.decodeFrame(header, bitstream);
+		} finally {
+			bitstream.closeFrame();
+		}
+	}
+
 	private void keep(SampleBuffer samples) {
 		short[] data = samples.getBuffer();
 		int length = samples.getBufferLength();
-		byte[] pcm = scratch(length * 2);
+		byte[] pcm = scratch(length * Pcm16.SAMPLE_BYTES);
 		for (int i = 0; i < length; i++) {
-			pcm[i * 2] = (byte) data[i];
-			pcm[i * 2 + 1] = (byte) (data[i] >> 8);
+			Pcm16.put(pcm, i * Pcm16.SAMPLE_BYTES, data[i]);
 		}
-		setPending(pcm, length * 2);
+		setPending(pcm, length * Pcm16.SAMPLE_BYTES);
 	}
 
 	@Override

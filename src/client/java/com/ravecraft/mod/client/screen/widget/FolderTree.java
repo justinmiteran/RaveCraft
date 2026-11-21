@@ -21,11 +21,15 @@ import net.minecraft.network.chat.Component;
  * small red sign: clicking it expands every folder down to the exclusions inside.
  */
 public final class FolderTree extends TreeList {
+	/** What the tree's items do. */
 	public interface Actions {
+		/** Removes the chosen folder {@code chosen}. */
 		void remove(Path chosen);
 
+		/** Excludes {@code folder} from the library. */
 		void exclude(Path folder);
 
+		/** Shows the excluded {@code folder} again. */
 		void include(Path folder);
 	}
 
@@ -34,6 +38,7 @@ public final class FolderTree extends TreeList {
 	/** The chosen folders the roots are listed from. */
 	private volatile List<Path> roots = List.of();
 
+	/** An empty tree; {@code actions} does what its items ask. */
 	public FolderTree(int width, int height, Actions actions) {
 		super(0, 0, width, height, Component.translatable(SpeakerSprites.KEY + "folders.title"));
 		this.actions = actions;

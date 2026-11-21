@@ -45,6 +45,7 @@ public final class PlayerBand extends AbstractWidget {
 	private boolean seeking;
 	private long seekMs;
 
+	/** The band of speaker {@code speakerId}. */
 	public PlayerBand(int x, int y, int width, UUID speakerId, IntSupplier fabricColour) {
 		super(x, y, width, HEIGHT, Component.empty());
 		this.speakerId = speakerId;
@@ -150,9 +151,22 @@ public final class PlayerBand extends AbstractWidget {
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, powered ? SpeakerSprites.LED_ON : SpeakerSprites.LED_OFF,
 				x + width - 9, y + 4, 5, 5);
 
-		int textX = x + TEXT_X;
-		int textW = width - TEXT_X - 14;
 		Optional<StateEntry> current = state.flatMap(PlayerBand::current);
+		drawLines(graphics, font, state.isPresent() && !powered, current);
+		drawProgress(graphics, font, current.isPresent());
+		if (duration() > 0 && (seeking || overTrack(mouseX, mouseY))) {
+			long ms = seeking ? seekMs : msAt(mouseX);
+			graphics.setTooltipForNextFrame(font,
+					List.of(Component.translatable(SpeakerSprites.KEY + "time_of", time(ms), time(duration()))),
+					Optional.empty(), mouseX, mouseY);
+		}
+	}
+
+	/** The title of {@code current}, then who added it, or that the speaker is {@code off}. */
+	private void drawLines(GuiGraphicsExtractor graphics, Font font, boolean off, Optional<StateEntry> current) {
+		int y = getY();
+		int textX = getX() + TEXT_X;
+		int textW = width - TEXT_X - 14;
 		if (current.isPresent()) {
 			graphics.text(font, SpeakerSprites.fit(font, current.get().title(), textW), textX, y + 6, SpeakerSprites.TEXT);
 		} else {
@@ -160,19 +174,12 @@ public final class PlayerBand extends AbstractWidget {
 			graphics.text(font, SpeakerSprites.fit(font, empty, textW), textX, y + 6, SpeakerSprites.MUTED);
 		}
 		// Second line: a switched-off speaker says so, otherwise who added the current track.
-		if (state.isPresent() && !powered) {
-			String off = Component.translatable(SpeakerSprites.KEY + "off").getString();
-			graphics.text(font, SpeakerSprites.fit(font, off, textW), textX, y + 17, SpeakerSprites.WARNING);
+		if (off) {
+			String text = Component.translatable(SpeakerSprites.KEY + "off").getString();
+			graphics.text(font, SpeakerSprites.fit(font, text, textW), textX, y + 17, SpeakerSprites.WARNING);
 		} else if (current.isPresent()) {
 			String by = Component.translatable(SpeakerSprites.KEY + "added_by", current.get().ownerName()).getString();
 			graphics.text(font, SpeakerSprites.fit(font, by, textW), textX, y + 17, SpeakerSprites.MUTED);
-		}
-		drawProgress(graphics, font, current.isPresent());
-		if (duration() > 0 && (seeking || overTrack(mouseX, mouseY))) {
-			long ms = seeking ? seekMs : msAt(mouseX);
-			graphics.setTooltipForNextFrame(font,
-					List.of(Component.translatable(SpeakerSprites.KEY + "time_of", time(ms), time(duration()))),
-					Optional.empty(), mouseX, mouseY);
 		}
 	}
 
@@ -210,6 +217,7 @@ public final class PlayerBand extends AbstractWidget {
 		}
 	}
 
+	/** Draws the progress bar and the times, the bar filled while {@code hasCurrent}. */
 	private void drawProgress(GuiGraphicsExtractor graphics, Font font, boolean hasCurrent) {
 		long duration = duration();
 		long position = seeking ? seekMs : SpeakerStates.positionMs(speakerId);
@@ -222,8 +230,8 @@ public final class PlayerBand extends AbstractWidget {
 		}
 		boolean known = duration > 0;
 		float fraction = known ? Mth.clamp(position / (float) duration, 0, 1) : 0;
-		SpeakerSprites.copperBar(graphics, trackX(), trackY(), trackWidth(), fraction, known,
-				hasCurrent ? (seekable() ? 1.0F : 0.4F) : 0);
+		SpeakerSprites.copperBar(graphics, trackX(), trackY(), trackWidth(),
+				new SpeakerSprites.Bar(fraction, known, hasCurrent ? (seekable() ? 1.0F : 0.4F) : 0));
 	}
 
 	/** {@code m:ss}, through the translation so a language may write it its own way. */

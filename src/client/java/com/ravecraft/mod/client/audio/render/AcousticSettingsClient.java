@@ -12,11 +12,13 @@ public final class AcousticSettingsClient {
 	private AcousticSettingsClient() {
 	}
 
+	/** Takes the settings the server sends, and the defaults again on leaving. */
 	public static void register() {
 		ClientPlayNetworking.registerGlobalReceiver(AcousticSettingsPayload.TYPE, (payload, context) -> settings = payload.settings());
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> settings = AcousticSettings.DEFAULT);
 	}
 
+	/** The settings in force. */
 	public static AcousticSettings get() {
 		return settings;
 	}

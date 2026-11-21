@@ -35,6 +35,7 @@ public final class NowPlayingToasts {
 	private NowPlayingToasts() {
 	}
 
+	/** Registers the toast check and the cleanup on leaving. */
 	public static void register() {
 		ClientTickEvents.END_CLIENT_TICK.register(NowPlayingToasts::tick);
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
@@ -43,6 +44,7 @@ public final class NowPlayingToasts {
 		});
 	}
 
+	/** Remembers what session {@code notice} plays, the latest notices only. */
 	public static void onNotice(NowPlayingPayload notice) {
 		NOTICES.remove(notice.sessionId());
 		NOTICES.put(notice.sessionId(), notice);
@@ -51,10 +53,12 @@ public final class NowPlayingToasts {
 		}
 	}
 
+	/** Session {@code sessionId} ended: forgets its notice. */
 	public static void onSessionEnd(int sessionId) {
 		NOTICES.remove(sessionId);
 	}
 
+	/** Every few ticks, shows a toast when the player starts following another heard speaker. */
 	private static void tick(Minecraft client) {
 		if (++ticks < CHECK_TICKS) {
 			return;

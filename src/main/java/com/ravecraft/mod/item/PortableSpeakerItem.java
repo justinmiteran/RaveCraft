@@ -18,7 +18,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import org.jspecify.annotations.Nullable;
 
+/** The portable speaker as an item: places the block and keeps its data. */
 public class PortableSpeakerItem extends BlockItem {
+	/** The item that places {@code block}. */
 	public PortableSpeakerItem(Block block, Properties properties) {
 		super(block, properties);
 	}

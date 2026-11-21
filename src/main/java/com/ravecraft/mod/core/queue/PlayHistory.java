@@ -11,6 +11,7 @@ public final class PlayHistory {
 
 	private final Deque<UUID> stack = new ArrayDeque<>();
 
+	/** Remembers {@code entryId} as the last played, dropping the oldest beyond {@link #MAX}. */
 	public void push(UUID entryId) {
 		stack.addFirst(entryId);
 		while (stack.size() > MAX) {
@@ -18,6 +19,7 @@ public final class PlayHistory {
 		}
 	}
 
+	/** Takes back the last played entry. */
 	public Optional<UUID> pop() {
 		return Optional.ofNullable(stack.pollFirst());
 	}

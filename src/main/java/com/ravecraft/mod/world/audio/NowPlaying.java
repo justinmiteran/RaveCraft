@@ -29,6 +29,7 @@ public final class NowPlaying {
 		NOTICES.firstFor(sessionId, player.getUUID()).ifPresent(notice -> Net.send(player, notice));
 	}
 
+	/** The notice of session {@code sessionId}, while it plays. */
 	public static Optional<NowPlayingPayload> of(int sessionId) {
 		return NOTICES.get(sessionId);
 	}
@@ -38,10 +39,12 @@ public final class NowPlaying {
 		NOTICES.forget(player);
 	}
 
+	/** Session {@code sessionId} stopped: forgets its notice. */
 	public static void end(int sessionId) {
 		NOTICES.end(sessionId);
 	}
 
+	/** Forgets every notice (server stop). */
 	public static void clear() {
 		NOTICES.clear();
 	}

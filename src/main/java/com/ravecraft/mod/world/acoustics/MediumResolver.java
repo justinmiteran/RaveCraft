@@ -12,6 +12,7 @@ import org.jspecify.annotations.Nullable;
 public final class MediumResolver {
 	private final OcclusionSettings settings;
 
+	/** With the media of {@code settings}. */
 	public MediumResolver(OcclusionSettings settings) {
 		this.settings = settings;
 	}

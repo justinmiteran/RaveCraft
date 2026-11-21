@@ -14,6 +14,7 @@ public final class ModTabTooltip {
 	private ModTabTooltip() {
 	}
 
+	/** {@code lines} with the mod's tab name added, for an item of the mod. */
 	public static List<Component> withModTab(ItemStack stack, List<Component> lines) {
 		if (lines.isEmpty() || !RaveCraft.MOD_ID.equals(BuiltInRegistries.ITEM.getKey(stack.getItem()).getNamespace())) {
 			return lines;

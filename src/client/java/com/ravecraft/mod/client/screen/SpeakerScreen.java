@@ -84,6 +84,7 @@ public final class SpeakerScreen extends Screen {
 	/** The {@code Folders…} popup while it is open; it then gets all the input. */
 	private @Nullable FoldersPopup folders;
 
+	/** The screen of speaker {@code speakerId}, titled {@code title}. */
 	public SpeakerScreen(UUID speakerId, Component title) {
 		super(title);
 		this.speakerId = speakerId;

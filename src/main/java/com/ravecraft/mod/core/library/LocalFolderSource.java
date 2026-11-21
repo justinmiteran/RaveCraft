@@ -13,6 +13,7 @@ public final class LocalFolderSource implements MusicSource {
 	private final Supplier<List<Path>> roots;
 	private final Supplier<List<Path>> excluded;
 
+	/** A source over the folders {@code roots} gives, excluding nothing. */
 	public LocalFolderSource(Supplier<List<Path>> roots) {
 		this(roots, List::of);
 	}

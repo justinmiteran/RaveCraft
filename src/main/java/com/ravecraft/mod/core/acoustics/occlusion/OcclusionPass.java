@@ -37,23 +37,21 @@ public final class OcclusionPass {
 	private OcclusionPass() {
 	}
 
+	/**
+	 * Traces the due streams in order under one budget, as the class describes.
+	 *
+	 * @param due the streams to trace, loudest first
+	 * @param budget the voxels this tick may visit
+	 * @param ops what the pass does to a stream
+	 */
 	public static <T> void run(List<T> due, TraceBudget budget, Ops<T> ops) {
 		boolean outOfBudget = false;
 		for (T stream : due) {
 			try {
-				if (!outOfBudget) {
-					boolean wholeBudget = budget.used() == 0;
-					Occlusion result = ops.occlusion(stream, budget);
-					if (result != null) {
-						ops.publish(stream, result);
-						continue;
-					}
-					if (wholeBudget) {
-						ops.publish(stream, ops.direct(stream));
-						continue;
-					}
-					outOfBudget = true;
+				if (!outOfBudget && traced(stream, budget, ops)) {
+					continue;
 				}
+				outOfBudget = true;
 				ops.unfinished(stream);
 				if (!ops.known(stream)) {
 					ops.publish(stream, ops.direct(stream));
@@ -65,5 +63,23 @@ public final class OcclusionPass {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Traces {@code stream} and publishes what it found; false when the budget ran out first. A stream that runs out
+	 * of a whole, unspent budget is published as direct: no budget would ever be enough for it.
+	 */
+	private static <T> boolean traced(T stream, TraceBudget budget, Ops<T> ops) {
+		boolean wholeBudget = budget.used() == 0;
+		Occlusion result = ops.occlusion(stream, budget);
+		if (result != null) {
+			ops.publish(stream, result);
+			return true;
+		}
+		if (wholeBudget) {
+			ops.publish(stream, ops.direct(stream));
+			return true;
+		}
+		return false;
 	}
 }

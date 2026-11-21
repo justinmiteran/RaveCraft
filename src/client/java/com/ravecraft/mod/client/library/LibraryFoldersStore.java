@@ -24,6 +24,7 @@ public final class LibraryFoldersStore {
 		return FabricLoader.getInstance().getConfigDir().resolve("ravecraft-library.json");
 	}
 
+	/** The chosen folders, read from their file the first time. */
 	public static synchronized LibraryFolders get() {
 		if (cached == null) {
 			cached = load();

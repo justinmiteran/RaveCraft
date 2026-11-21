@@ -15,11 +15,12 @@ public final class SpeakerScreenOpener {
 	private SpeakerScreenOpener() {
 	}
 
+	/** Sets what opens the speaker screen; the client calls it at startup. */
 	public static void set(BiConsumer<UUID, Component> screenOpener) {
 		opener = screenOpener;
 	}
 
-	/** Opens the screen of speaker {@code speakerId}, titled {@code title}. */
+	/** Opens the screen of speaker {@code speakerId}, titled {@code title}, when a client set an opener. */
 	public static void open(UUID speakerId, Component title) {
 		opener.accept(speakerId, title);
 	}

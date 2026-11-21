@@ -9,7 +9,6 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -29,13 +28,7 @@ public final class ModBlocks {
 	private ModBlocks() {
 	}
 
-	/** Registers a block and its {@link BlockItem}, both under the same id. */
-	private static Block register(String name, Function<BlockBehaviour.Properties, Block> factory,
-			BlockBehaviour.Properties properties) {
-		return register(name, factory, properties, BlockItem::new, new Item.Properties());
-	}
-
-	/** Same as above, with a custom item factory and item properties. */
+	/** Registers a block and the item {@code itemFactory} makes for it, both under the same id. */
 	private static Block register(String name, Function<BlockBehaviour.Properties, Block> factory,
 			BlockBehaviour.Properties properties, BiFunction<Block, Item.Properties, Item> itemFactory,
 			Item.Properties baseItemProperties) {

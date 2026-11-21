@@ -27,22 +27,25 @@ public final class SingleFlight<T> {
 		CompletableFuture<T> future = new CompletableFuture<>();
 		pending = future;
 		try {
-			launcher.accept(() -> {
-				T result;
-				try {
-					result = task.get();
-				} catch (Throwable t) {
-					result = onError.apply(t);
-				} finally {
-					busy.set(false);
-				}
-				future.complete(result);
-			});
+			launcher.accept(() -> complete(future, task, onError));
 		} catch (Throwable t) {
 			busy.set(false);
 			future.complete(onError.apply(t));
 		}
 		return future;
+	}
+
+	/** Runs {@code task}, frees the slot, then completes {@code future} with its result or {@code onError}'s. */
+	private void complete(CompletableFuture<T> future, Supplier<T> task, Function<Throwable, T> onError) {
+		T result;
+		try {
+			result = task.get();
+		} catch (Throwable t) {
+			result = onError.apply(t);
+		} finally {
+			busy.set(false);
+		}
+		future.complete(result);
 	}
 
 	/** True while a task runs. */

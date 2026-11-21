@@ -31,6 +31,9 @@ import net.minecraft.client.Minecraft;
  * happens on the client thread, and nothing is sent once {@link #cancel()} was called there.
  */
 public final class StreamEmitter {
+	/** PCM frames decoded per read. */
+	private static final int READ_FRAMES = 4096;
+
 	private final int sessionId;
 	/** The speaker played into: this player hears its own stream only while its host is here. */
 	private final UUID speakerId;
@@ -44,16 +47,25 @@ public final class StreamEmitter {
 	private volatile boolean cancelled;
 	private Thread thread;
 
-	public StreamEmitter(int sessionId, UUID speakerId, Path track, long startMs, LongConsumer onStarted, Runnable onFinished, Consumer<Exception> onFailed) {
+	/**
+	 * What the emitter reports, on the client thread: the track's duration once its header was read (-1 if unknown),
+	 * its natural end, or the failure that stopped it.
+	 */
+	public record Callbacks(LongConsumer onStarted, Runnable onFinished, Consumer<Exception> onFailed) {
+	}
+
+	/** An emitter for {@code track} from {@code startMs}, played by speaker {@code speakerId}, not started yet. */
+	public StreamEmitter(int sessionId, UUID speakerId, Path track, long startMs, Callbacks callbacks) {
 		this.sessionId = sessionId;
 		this.speakerId = speakerId;
 		this.track = track;
 		this.startMs = startMs;
-		this.onStarted = onStarted;
-		this.onFinished = onFinished;
-		this.onFailed = onFailed;
+		this.onStarted = callbacks.onStarted();
+		this.onFinished = callbacks.onFinished();
+		this.onFailed = callbacks.onFailed();
 	}
 
+	/** Starts streaming on a daemon thread. */
 	public void start() {
 		thread = new Thread(this::run, "RaveCraft emitter #" + sessionId);
 		thread.setDaemon(true);
@@ -68,41 +80,81 @@ public final class StreamEmitter {
 		}
 	}
 
+	/** Decodes, encodes and sends the track, then reports how it ended. */
 	private void run() {
 		long durationMs = TrackDuration.of(track).orElse(-1);
 		onClientThread(() -> onStarted.accept(durationMs));
 		long start = System.nanoTime();
 		try (PcmDecoder decoder = open(track)) {
 			PcmFormat format = decoder.format();
-			LinearResampler resampler = new LinearResampler(format.sampleRate());
-			MonoFramer framer = new MonoFramer();
-			OpusMonoEncoder encoder = new OpusMonoEncoder();
-			EmitterPacer pacer = new EmitterPacer(StreamFormat.LEAD_MS);
-			FrameSkipper skipper = new FrameSkipper(startMs);
-			byte[] buffer = new byte[format.frameBytes() * 4096];
-			List<byte[]> chunk = new ArrayList<>(StreamFormat.FRAMES_PER_CHUNK);
-			int seq = 0;
-			while (!cancelled) {
-				int read = decoder.read(buffer);
-				if (read < 0) {
-					break;
-				}
-				byte[] mono = Pcm16.downmixToMono(buffer, read, format.channels());
-				short[] samples = resampler.process(Pcm16.toShorts(mono, mono.length), mono.length / 2);
-				framer.push(samples, samples.length);
-				for (short[] frame = framer.poll(); frame != null; frame = framer.poll()) {
-					if (skipper.skip()) {
-						// Real time starts with the first frame sent, not while the skipped part is decoded.
-						start = System.nanoTime();
-						continue;
-					}
-					chunk.add(encoder.encode(frame));
-					if (chunk.size() == StreamFormat.FRAMES_PER_CHUNK) {
-						send(seq++, chunk, pacer, start);
-						chunk = new ArrayList<>(StreamFormat.FRAMES_PER_CHUNK);
-					}
-				}
+			Pass pass = new Pass(format, start);
+			byte[] buffer = new byte[format.frameBytes() * READ_FRAMES];
+			for (int read = readUnlessCancelled(decoder, buffer); read >= 0; read = readUnlessCancelled(decoder, buffer)) {
+				pass.push(buffer, read);
 			}
+			pass.finish();
+			onClientThread(onFinished);
+		} catch (InterruptedException e) {
+			// Cancelled: the thread ends here, interrupted.
+			Thread.currentThread().interrupt();
+		} catch (IOException | RuntimeException e) {
+			if (!cancelled) {
+				RaveCraft.LOGGER.warn("Cannot play {}: {}", track.getFileName(), e.getMessage());
+				onClientThread(() -> onFailed.accept(e));
+			}
+		}
+	}
+
+	/** The next PCM block into {@code buffer}: its length in bytes, or -1 at the end or once cancelled. */
+	private int readUnlessCancelled(PcmDecoder decoder, byte[] buffer) throws IOException {
+		return cancelled ? -1 : decoder.read(buffer);
+	}
+
+	/** One streaming of the track: the chain from decoded PCM to the Opus chunks sent. */
+	private final class Pass {
+		private final PcmFormat format;
+		private final LinearResampler resampler;
+		private final MonoFramer framer = new MonoFramer();
+		private final OpusMonoEncoder encoder = new OpusMonoEncoder();
+		private final EmitterPacer pacer = new EmitterPacer(StreamFormat.LEAD_MS);
+		private final FrameSkipper skipper = new FrameSkipper(startMs);
+		private List<byte[]> chunk = new ArrayList<>(StreamFormat.FRAMES_PER_CHUNK);
+		private int seq;
+		/** When real time started, in {@link System#nanoTime()}. */
+		private long start;
+
+		Pass(PcmFormat format, long start) {
+			this.format = format;
+			this.resampler = new LinearResampler(format.sampleRate());
+			this.start = start;
+		}
+
+		/** Converts {@code read} bytes of decoded PCM and sends each chunk they complete. */
+		void push(byte[] buffer, int read) throws InterruptedException {
+			byte[] mono = Pcm16.downmixToMono(buffer, read, format.channels());
+			short[] samples = resampler.process(Pcm16.toShorts(mono, mono.length), mono.length / 2);
+			framer.push(samples, samples.length);
+			for (short[] frame = framer.poll(); frame != null; frame = framer.poll()) {
+				add(frame);
+			}
+		}
+
+		/** Encodes {@code frame} unless it comes before the start position, and sends a full chunk. */
+		private void add(short[] frame) throws InterruptedException {
+			if (skipper.skip()) {
+				// Real time starts with the first frame sent, not while the skipped part is decoded.
+				start = System.nanoTime();
+				return;
+			}
+			chunk.add(encoder.encode(frame));
+			if (chunk.size() == StreamFormat.FRAMES_PER_CHUNK) {
+				send(seq++, chunk, pacer, start);
+				chunk = new ArrayList<>(StreamFormat.FRAMES_PER_CHUNK);
+			}
+		}
+
+		/** Sends the last frames, then waits until real time caught up with what was sent. */
+		void finish() throws InterruptedException {
 			short[] tail = framer.flush();
 			if (tail != null && !skipper.skip()) {
 				chunk.add(encoder.encode(tail));
@@ -112,14 +164,6 @@ public final class StreamEmitter {
 			}
 			// Finish only once real time caught up, so the next track does not start over this one's lead.
 			sleepUntil(start, (long) seq * StreamFormat.FRAMES_PER_CHUNK * StreamFormat.FRAME_MS);
-			onClientThread(onFinished);
-		} catch (InterruptedException e) {
-			// Cancelled.
-		} catch (IOException | RuntimeException e) {
-			if (!cancelled) {
-				RaveCraft.LOGGER.warn("Cannot play {}: {}", track.getFileName(), e.getMessage());
-				onClientThread(() -> onFailed.accept(e));
-			}
 		}
 	}
 
@@ -128,6 +172,7 @@ public final class StreamEmitter {
 		return decoder.isPresent() ? decoder.get() : new OggPcmDecoder(track);
 	}
 
+	/** Waits until chunk {@code seq} is due, then sends it on the client thread. */
 	private void send(int seq, List<byte[]> frames, EmitterPacer pacer, long start) throws InterruptedException {
 		long sentMillis = (long) (seq + 1) * StreamFormat.FRAMES_PER_CHUNK * StreamFormat.FRAME_MS;
 		long delay = pacer.delayBeforeNextMillis(elapsedMillis(start), sentMillis);

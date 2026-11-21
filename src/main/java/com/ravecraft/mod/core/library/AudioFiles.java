@@ -12,10 +12,12 @@ public final class AudioFiles {
 	private AudioFiles() {
 	}
 
+	/** Whether {@code path} has the extension of a supported audio format. */
 	public static boolean isAudio(Path path) {
 		return AUDIO_EXTENSIONS.contains(extension(path));
 	}
 
+	/** Whether {@code path} has the extension of a playlist. */
 	public static boolean isPlaylist(Path path) {
 		return PLAYLIST_EXTENSIONS.contains(extension(path));
 	}

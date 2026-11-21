@@ -32,6 +32,7 @@ public final class VolumeSlider extends AbstractWidget {
 	private long lastSendMs;
 	private long localUntilMs;
 
+	/** The volume slider of speaker {@code speakerId}. */
 	public VolumeSlider(int x, int y, int width, int height, UUID speakerId) {
 		super(x, y, width, height, Component.empty());
 		this.speakerId = speakerId;
@@ -110,7 +111,7 @@ public final class VolumeSlider extends AbstractWidget {
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.VOLUME, getX(),
 				getY() + (height - SpeakerSprites.ICON) / 2, SpeakerSprites.ICON, SpeakerSprites.ICON, active ? 1.0F : 0.4F);
 		SpeakerSprites.copperBar(graphics, trackX(), getY() + (height - SpeakerSprites.BAR_H) / 2, trackWidth(),
-				volume / (float) SpeakerSettings.MAX_VOLUME, true, 1.0F);
+				new SpeakerSprites.Bar(volume / (float) SpeakerSettings.MAX_VOLUME, true, 1.0F));
 	}
 
 	private int trackX() {

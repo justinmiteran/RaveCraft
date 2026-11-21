@@ -23,6 +23,7 @@ public final class ModPayloads {
 	private ModPayloads() {
 	}
 
+	/** Registers every payload type with its codec. */
 	public static void init() {
 		PayloadTypeRegistry.serverboundPlay().register(QueueAddPayload.TYPE, QueueAddPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(SpeakerCommandPayload.TYPE, SpeakerCommandPayload.CODEC);

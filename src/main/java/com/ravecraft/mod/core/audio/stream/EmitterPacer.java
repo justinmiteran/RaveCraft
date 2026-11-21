@@ -4,6 +4,11 @@ package com.ravecraft.mod.core.audio.stream;
 public final class EmitterPacer {
 	private final long leadMillis;
 
+	/**
+	 * Creates a pacer.
+	 *
+	 * @param leadMillis how far ahead of real time the emitter may run
+	 */
 	public EmitterPacer(long leadMillis) {
 		this.leadMillis = leadMillis;
 	}

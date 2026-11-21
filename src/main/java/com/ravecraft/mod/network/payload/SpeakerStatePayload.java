@@ -22,6 +22,7 @@ public record SpeakerStatePayload(UUID speakerId, boolean playing, Optional<UUID
 		int nextRoundIndex) implements CustomPacketPayload {
 	public static final int MAX_ENTRIES = 200;
 
+	/** A queued track as the screen shows it. */
 	public record StateEntry(UUID entryId, String ownerName, String title, boolean ownerOnline, long durationMs) {
 		public static final StreamCodec<ByteBuf, StateEntry> CODEC = StreamCodec.composite(
 				UUIDUtil.STREAM_CODEC, StateEntry::entryId,

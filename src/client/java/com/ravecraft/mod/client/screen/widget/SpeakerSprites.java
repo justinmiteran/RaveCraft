@@ -76,14 +76,18 @@ public final class SpeakerSprites {
 	}
 
 	/**
-	 * The copper bar at {@code (x, y)}, {@code w} wide: the rail, the fill up to the knob when {@code filled}, and the
-	 * knob at {@code fraction} (0 to 1) of the way, centred on the rail; a {@code knobAlpha} of 0 leaves it out.
+	 * How a copper bar looks: the knob at {@code fraction} (0 to 1) of the way, the rail filled up to it when
+	 * {@code filled}; a {@code knobAlpha} of 0 leaves the knob out.
 	 */
-	public static void copperBar(GuiGraphicsExtractor graphics, int x, int y, int w, float fraction, boolean filled,
-			float knobAlpha) {
+	public record Bar(float fraction, boolean filled, float knobAlpha) {
+	}
+
+	/** The copper bar at {@code (x, y)}, {@code w} wide: the rail, the fill and the knob, centred on the rail. */
+	public static void copperBar(GuiGraphicsExtractor graphics, int x, int y, int w, Bar bar) {
+		float knobAlpha = bar.knobAlpha();
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_TRACK, x, y, w, BAR_H);
-		int knobX = x + Math.round((w - KNOB_W) * fraction);
-		if (filled && knobX > x + 1) {
+		int knobX = x + Math.round((w - KNOB_W) * bar.fraction());
+		if (bar.filled() && knobX > x + 1) {
 			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_FILL, x + 1, y + 1, knobX - x - 1 + KNOB_W / 2,
 					BAR_H - 2);
 		}

@@ -21,6 +21,7 @@ public final class ModCreativeTabs {
 	private ModCreativeTabs() {
 	}
 
+	/** Forces class loading, hence registration. */
 	public static void init() {
 	}
 }

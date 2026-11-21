@@ -21,6 +21,7 @@ public final class FolderBrowser extends TreeList {
 	private final Consumer<Path> onAdd;
 	private Predicate<Path> covered = path -> false;
 
+	/** A browser; {@code onAdd} receives the folder the player adds. */
 	public FolderBrowser(int width, int height, Consumer<Path> onAdd) {
 		super(0, 0, width, height, Component.translatable(SpeakerSprites.KEY + "folders.browser"));
 		this.onAdd = onAdd;

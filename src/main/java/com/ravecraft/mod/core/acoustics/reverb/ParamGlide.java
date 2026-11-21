@@ -12,6 +12,11 @@ public final class ParamGlide {
 	private ReverbParams current;
 	private long startMs;
 
+	/**
+	 * Creates a glide resting on {@code initial}.
+	 *
+	 * @param initial the reverb to start from
+	 */
 	public ParamGlide(ReverbParams initial) {
 		start = initial;
 		target = initial;

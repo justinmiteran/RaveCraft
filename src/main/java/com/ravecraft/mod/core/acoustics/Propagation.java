@@ -16,7 +16,7 @@ public final class Propagation {
 
 	/** Sound pressure level 1 m in front of the device at full volume (dB SPL). */
 	public static double levelAt1m(DeviceProfile profile) {
-		return profile.sensitivityDb() + 10 * Math.log10(profile.powerWatts());
+		return profile.sensitivityDb() + Decibels.fromPower(profile.powerWatts());
 	}
 
 	/**
@@ -27,8 +27,8 @@ public final class Propagation {
 		if (volume <= 0) {
 			return 0;
 		}
-		double headroomDb = levelAt1m(profile) + 20 * Math.log10(volume) - settings.audibilityThresholdDb();
-		return Math.min(settings.maxRange(), Math.pow(10, headroomDb / (20 * settings.rolloff())));
+		double headroomDb = levelAt1m(profile) + Decibels.fromAmplitude(volume) - settings.audibilityThresholdDb();
+		return Math.min(settings.maxRange(), Math.pow(Decibels.DECADE, headroomDb / (Decibels.AMPLITUDE_DB * settings.rolloff())));
 	}
 
 	/** {@code 1 / d^rolloff}, full gain inside one block. */
@@ -46,7 +46,7 @@ public final class Propagation {
 			return 1;
 		}
 		double t = (distance - start) / (fadeFraction * range);
-		return 0.5 * (1 + Math.cos(Math.PI * t));
+		return (1 + Math.cos(Math.PI * t)) / 2;
 	}
 
 	/** Linear gain at the listener, before the player's own volume settings. */
@@ -62,7 +62,7 @@ public final class Propagation {
 
 	/** Linear gain of the highs after {@code distance} blocks of air. */
 	public static double highFrequencyGain(double dbPerBlock, double distance) {
-		return Math.max(MIN_HIGH_GAIN, Math.pow(10, -dbPerBlock * distance / 20));
+		return Math.max(MIN_HIGH_GAIN, Decibels.toAmplitude(-dbPerBlock * distance));
 	}
 
 	/** Players within this distance of the device receive its stream; 0 when silent. */

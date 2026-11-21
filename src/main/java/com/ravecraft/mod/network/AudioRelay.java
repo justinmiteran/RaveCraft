@@ -39,6 +39,7 @@ public final class AudioRelay {
 	private AudioRelay() {
 	}
 
+	/** Registers the audio and stream-close receivers and the cleanup of their rate limits. */
 	public static void init() {
 		ServerPlayNetworking.registerGlobalReceiver(StreamClosePayload.TYPE,
 				(payload, context) -> SpeakerPlayback.onStreamClose(context.player(), payload.sessionId(), payload.finished()));
@@ -50,6 +51,7 @@ public final class AudioRelay {
 		ServerLifecycleEvents.SERVER_STOPPING.register(server -> BUCKETS.clear());
 	}
 
+	/** Forwards a well-formed chunk from its session's owner, within the sender's rate limit. */
 	private static void relay(ServerPlayer sender, AudioChunkPayload chunk) {
 		Optional<Session<UUID>> found = StreamSessions.table().byId(chunk.sessionId());
 		if (!chunk.isWellFormed() || found.isEmpty() || !found.get().owner().equals(sender.getUUID())) {

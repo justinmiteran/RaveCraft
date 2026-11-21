@@ -43,6 +43,7 @@ public final class AcousticDebugInfo {
 	private AcousticDebugInfo() {
 	}
 
+	/** The debug lines about the speakers heard. */
 	public static List<String> speakers() {
 		AcousticSettings settings = AcousticSettingsClient.get();
 		Vec3 ear = AcousticRenderer.listener();
@@ -58,6 +59,7 @@ public final class AcousticDebugInfo {
 		return AcousticDebug.speakers(rows, AcousticRenderer.maxSources(), SHOWN_SPEAKERS);
 	}
 
+	/** The debug lines about the listener. */
 	public static List<String> listener() {
 		AcousticSettings settings = AcousticSettingsClient.get();
 		WorldAcousticGrid grid = OcclusionScheduler.grid();
@@ -74,6 +76,7 @@ public final class AcousticDebugInfo {
 				settings.reverb().enabled()));
 	}
 
+	/** The debug lines about the received streams. */
 	public static List<String> streams() {
 		long now = Util.getMillis();
 		ClientLevel level = Minecraft.getInstance().level;
@@ -101,6 +104,7 @@ public final class AcousticDebugInfo {
 		return AcousticDebug.streams(rows);
 	}
 
+	/** The debug lines about the engine's cost. */
 	public static List<String> perf() {
 		return AcousticDebug.perf(new PerfRow(OcclusionScheduler.lastVoxels(), OcclusionScheduler.lastBudget(),
 				ReverbScheduler.lastVoxels(), ReverbScheduler.lastBudget(), ReverbScheduler.probesRunning(),
@@ -118,6 +122,7 @@ public final class AcousticDebugInfo {
 		return Optional.empty();
 	}
 
+	/** A rate sample: the bytes received and the time then, and the rate in kbit/s. */
 	private record Rate(long bytes, long ms, double kbps) {
 	}
 }

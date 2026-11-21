@@ -4,7 +4,6 @@ import com.ravecraft.mod.RaveCraft;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.material.Fluid;
@@ -20,12 +19,12 @@ public final class AcousticTags {
 	/** {@code ravecraft:acoustic/<name>}: the blocks made of the material {@code name}. */
 	public static TagKey<Block> material(String name) {
 		return MATERIALS.computeIfAbsent(name, n -> TagKey.create(Registries.BLOCK,
-				Identifier.fromNamespaceAndPath(RaveCraft.MOD_ID, "acoustic/" + n)));
+				RaveCraft.id("acoustic/" + n)));
 	}
 
 	/** {@code ravecraft:medium/<name>}: the fluids that form the medium {@code name}. */
 	public static TagKey<Fluid> medium(String name) {
 		return MEDIA.computeIfAbsent(name, n -> TagKey.create(Registries.FLUID,
-				Identifier.fromNamespaceAndPath(RaveCraft.MOD_ID, "medium/" + n)));
+				RaveCraft.id("medium/" + n)));
 	}
 }

@@ -1,5 +1,7 @@
 package com.ravecraft.mod.core.acoustics.occlusion;
 
+import com.ravecraft.mod.core.acoustics.Vec;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -25,18 +27,18 @@ class DetourTest {
 
 	/** A stone shell around the open box x, z in [0, 6], y in [0, 4]. */
 	private static TestGrid room() {
-		return new TestGrid().shell(0, 0, 0, 6, 4, 6, STONE);
+		return new TestGrid().shell(TestGrid.box(0, 0, 0, 6, 4, 6), STONE);
 	}
 
 	/** {@link #room()} with a 1x2 opening in the wall x = 7 at z = 1, y = 0..1. */
 	private static TestGrid openDoor() {
-		return room().clear(7, 0, 1, 7, 1, 1);
+		return room().clear(TestGrid.box(7, 0, 1, 7, 1, 1));
 	}
 
 	/** Listener outside the room at (12.5, 1.5, 3.5), source inside at (3.5, 1.5, 3.5). */
 	private static Occlusion roomOcclusion(TestGrid grid, OcclusionSettings settings, double range) {
 		Occlusion o = new OcclusionTracer(grid, settings)
-				.occlusion(12.5, 1.5, 3.5, 3.5, 1.5, 3.5, ROLLOFF, range, new TraceBudget(100_000));
+				.occlusion(new Vec(12.5, 1.5, 3.5), new Vec(3.5, 1.5, 3.5), ROLLOFF, range, new TraceBudget(100_000));
 		assertNotNull(o);
 		return o;
 	}
@@ -49,14 +51,16 @@ class DetourTest {
 	}
 
 	private static Occlusion occlusion(TestGrid grid, double[] l, double[] s, int maxDetours) {
-		Occlusion o = new OcclusionTracer(grid, S).occlusion(l[0], l[1], l[2], s[0], s[1], s[2], ROLLOFF, RANGE,
+		Occlusion o = new OcclusionTracer(grid, S).occlusion(new Vec(l[0], l[1], l[2]), new Vec(s[0], s[1], s[2]),
+				ROLLOFF, RANGE,
 				new TraceBudget(100_000), maxDetours);
 		assertNotNull(o);
 		return o;
 	}
 
 	private static Occlusion occlusion(TestGrid grid, double[] l, double[] s) {
-		Occlusion o = new OcclusionTracer(grid, S).occlusion(l[0], l[1], l[2], s[0], s[1], s[2], ROLLOFF, RANGE,
+		Occlusion o = new OcclusionTracer(grid, S).occlusion(new Vec(l[0], l[1], l[2]), new Vec(s[0], s[1], s[2]),
+				ROLLOFF, RANGE,
 				new TraceBudget(100_000));
 		assertNotNull(o);
 		return o;
@@ -84,8 +88,8 @@ class DetourTest {
 	void twoOpeningsLouderThanEither() {
 		double[] l = {9.5, 1.5, 3.5};
 		Occlusion near = occlusion(openDoor(), l, IN_ROOM);
-		Occlusion far = occlusion(room().clear(7, 0, 5, 7, 1, 5), l, IN_ROOM);
-		Occlusion both = occlusion(openDoor().clear(7, 0, 5, 7, 1, 5), l, IN_ROOM);
+		Occlusion far = occlusion(room().clear(TestGrid.box(7, 0, 5, 7, 1, 5)), l, IN_ROOM);
+		Occlusion both = occlusion(openDoor().clear(TestGrid.box(7, 0, 5, 7, 1, 5)), l, IN_ROOM);
 		assertTrue(both.lossDb() < near.lossDb(), near.lossDb() + " -> " + both.lossDb());
 		assertTrue(both.lossDb() < far.lossDb(), far.lossDb() + " -> " + both.lossDb());
 	}
@@ -95,7 +99,7 @@ class DetourTest {
 	 * goes through the same corner and reaches the listener along the same corridor.
 	 */
 	private static TestGrid longCorner() {
-		return new TestGrid().fill(-3, -2, -3, 10, 4, 10, STONE).clear(0, 1, 0, 6, 1, 0).clear(6, 1, 0, 6, 1, 6);
+		return new TestGrid().fill(TestGrid.box(-3, -2, -3, 10, 4, 10), STONE).clear(TestGrid.box(0, 1, 0, 6, 1, 0)).clear(TestGrid.box(6, 1, 0, 6, 1, 6));
 	}
 
 	@Test
@@ -115,7 +119,7 @@ class DetourTest {
 	 */
 	@Test
 	void pillarCornerIsNotFree() {
-		TestGrid grid = new TestGrid().fill(1, 0, -2, 2, 3, -1, STONE);
+		TestGrid grid = new TestGrid().fill(TestGrid.box(1, 0, -2, 2, 3, -1), STONE);
 		Occlusion o = occlusion(grid, new double[] {3.5, 1.5, -2.5}, new double[] {0.5, 1.5, 0.5});
 		assertTrue(o.lossDb() > 0, "lossDb " + o.lossDb());
 		assertTrue(o.highLossDb() > 0, "highLossDb " + o.highLossDb());
@@ -129,10 +133,10 @@ class DetourTest {
 	 */
 	@Test
 	void bendCostsItsPenalty() {
-		TestGrid grid = new TestGrid().fill(-3, -2, -3, 7, 4, 7, STONE).clear(0, 1, 0, 3, 1, 0).clear(3, 1, 0, 3, 1, 3);
+		TestGrid grid = new TestGrid().fill(TestGrid.box(-3, -2, -3, 7, 4, 7), STONE).clear(TestGrid.box(0, 1, 0, 3, 1, 0)).clear(TestGrid.box(3, 1, 0, 3, 1, 3));
 		double[] l = {3.5, 1.5, 3.5};
 		double[] s = {0.5, 1.5, 0.5};
-		PathLoss direct = new OcclusionTracer(grid, S).trace(l[0], l[1], l[2], s[0], s[1], s[2],
+		PathLoss direct = new OcclusionTracer(grid, S).trace(new Vec(l[0], l[1], l[2]), new Vec(s[0], s[1], s[2]),
 				new TraceBudget(100_000));
 		assertNotNull(direct);
 		double detourLoss = 20 * Math.log10(6 / direct.length()) * ROLLOFF + S.bendLossDb();
@@ -150,14 +154,17 @@ class DetourTest {
 	void budgetRunningOutDuringRoutesReturnsNull() {
 		TestGrid grid = longCorner();
 		TraceBudget full = new TraceBudget(100_000);
-		assertNotNull(new OcclusionTracer(grid, S).occlusion(6.5, 1.5, 6.5, 0.5, 1.5, 0.5, ROLLOFF, RANGE, full));
+		assertNotNull(new OcclusionTracer(grid, S).occlusion(new Vec(6.5, 1.5, 6.5), new Vec(0.5, 1.5, 0.5), ROLLOFF,
+				RANGE, full));
 		// With a range of 0 every route is skipped untraced: what is used is the direct path and the waypoints.
 		TraceBudget beforeRoutes = new TraceBudget(100_000);
-		assertNotNull(new OcclusionTracer(grid, S).occlusion(6.5, 1.5, 6.5, 0.5, 1.5, 0.5, ROLLOFF, 0, beforeRoutes));
+		assertNotNull(new OcclusionTracer(grid, S).occlusion(new Vec(6.5, 1.5, 6.5), new Vec(0.5, 1.5, 0.5), ROLLOFF,
+				0, beforeRoutes));
 		// One voxel short of the full call, but enough for every trace before the routes: a route segment is cut off.
 		assertTrue(full.used() - 1 >= beforeRoutes.used(), full.used() + " vs " + beforeRoutes.used());
 		assertNull(new OcclusionTracer(grid, S)
-				.occlusion(6.5, 1.5, 6.5, 0.5, 1.5, 0.5, ROLLOFF, RANGE, new TraceBudget(full.used() - 1)));
+				.occlusion(new Vec(6.5, 1.5, 6.5), new Vec(0.5, 1.5, 0.5), ROLLOFF, RANGE,
+				new TraceBudget(full.used() - 1)));
 	}
 
 	/**
@@ -167,22 +174,24 @@ class DetourTest {
 	 */
 	@Test
 	void lCorridorNeedsTwoBends() {
-		TestGrid grid = new TestGrid().fill(-3, -1, -3, 14, 3, 15, STONE)
-				.clear(0, 1, 0, 4, 1, 4)
-				.clear(5, 1, 2, 7, 1, 2)
-				.clear(8, 1, 1, 10, 1, 3)
-				.clear(9, 1, 4, 9, 1, 7)
-				.clear(7, 1, 8, 11, 1, 12);
+		TestGrid grid = new TestGrid().fill(TestGrid.box(-3, -1, -3, 14, 3, 15), STONE)
+				.clear(TestGrid.box(0, 1, 0, 4, 1, 4))
+				.clear(TestGrid.box(5, 1, 2, 7, 1, 2))
+				.clear(TestGrid.box(8, 1, 1, 10, 1, 3))
+				.clear(TestGrid.box(9, 1, 4, 9, 1, 7))
+				.clear(TestGrid.box(7, 1, 8, 11, 1, 12));
 		double[] listener = {9.5, 1.5, 10.5};
 		double[] source = {2.5, 1.5, 2.5};
 		assertNoSingleWaypoint(grid, listener, source);
 		assertNoSingleWaypoint(grid, source, listener);
 
 		OcclusionTracer tracer = new OcclusionTracer(grid, S);
-		PathLoss direct = tracer.trace(listener[0], listener[1], listener[2], source[0], source[1], source[2],
+		PathLoss direct = tracer.trace(new Vec(listener[0], listener[1], listener[2]), new Vec(source[0], source[1],
+				source[2]),
 				new TraceBudget(100_000));
 		assertNotNull(direct);
-		Occlusion o = tracer.occlusion(listener[0], listener[1], listener[2], source[0], source[1], source[2],
+		Occlusion o = tracer.occlusion(new Vec(listener[0], listener[1], listener[2]), new Vec(source[0], source[1],
+				source[2]),
 				ROLLOFF, RANGE, new TraceBudget(100_000));
 		assertNotNull(o);
 		assertTrue(o.lossDb() <= direct.lossDb() - 8, direct.lossDb() + " -> " + o.lossDb());
@@ -192,33 +201,36 @@ class DetourTest {
 	private static void assertNoSingleWaypoint(TestGrid grid, double[] anchor, double[] other) {
 		OcclusionTracer tracer = new OcclusionTracer(grid, S);
 		VoxelSample sample = new VoxelSample();
-		for (int dx = -1; dx <= 1; dx++) {
-			for (int dy = -1; dy <= 1; dy++) {
-				for (int dz = -1; dz <= 1; dz++) {
-					if (dx == 0 && dy == 0 && dz == 0) {
-						continue;
-					}
-					double n = Math.sqrt(dx * dx + dy * dy + dz * dz);
-					for (double r : new double[] {3, 6}) {
-						double px = Math.floor(anchor[0]) + 0.5 + dx / n * r;
-						double py = Math.floor(anchor[1]) + 0.5 + dy / n * r;
-						double pz = Math.floor(anchor[2]) + 0.5 + dz / n * r;
-						grid.sample((int) Math.floor(px), (int) Math.floor(py), (int) Math.floor(pz), sample);
-						if (sample.material != null) {
-							continue;
-						}
-						PathLoss near = tracer.trace(anchor[0], anchor[1], anchor[2], px, py, pz,
-								new TraceBudget(100_000));
-						PathLoss far = tracer.trace(px, py, pz, other[0], other[1], other[2],
-								new TraceBudget(100_000));
-						assertNotNull(near);
-						assertNotNull(far);
-						assertTrue(near.lossDb() >= 3 || far.lossDb() >= 3,
-								"waypoint (" + px + ", " + py + ", " + pz + ") sees both ends");
-					}
+		Vec from = new Vec(anchor[0], anchor[1], anchor[2]);
+		Vec to = new Vec(other[0], other[1], other[2]);
+		for (int i = 0; i < 27; i++) {
+			int dx = i / 9 - 1;
+			int dy = i / 3 % 3 - 1;
+			int dz = i % 3 - 1;
+			if (dx == 0 && dy == 0 && dz == 0) {
+				continue;
+			}
+			double n = Math.sqrt(dx * dx + dy * dy + dz * dz);
+			for (double r : new double[] {3, 6}) {
+				double px = Math.floor(anchor[0]) + 0.5 + dx / n * r;
+				double py = Math.floor(anchor[1]) + 0.5 + dy / n * r;
+				double pz = Math.floor(anchor[2]) + 0.5 + dz / n * r;
+				grid.sample((int) Math.floor(px), (int) Math.floor(py), (int) Math.floor(pz), sample);
+				if (sample.material == null) {
+					assertBlocked(tracer, from, new Vec(px, py, pz), to);
 				}
 			}
 		}
+	}
+
+	/** At least one leg through {@code waypoint} loses 3 dB or more. */
+	private static void assertBlocked(OcclusionTracer tracer, Vec from, Vec waypoint, Vec to) {
+		PathLoss near = tracer.trace(from, waypoint, new TraceBudget(100_000));
+		PathLoss far = tracer.trace(waypoint, to, new TraceBudget(100_000));
+		assertNotNull(near);
+		assertNotNull(far);
+		assertTrue(near.lossDb() >= 3 || far.lossDb() >= 3,
+				"waypoint (" + waypoint.x() + ", " + waypoint.y() + ", " + waypoint.z() + ") sees both ends");
 	}
 
 	@Test
@@ -232,9 +244,10 @@ class DetourTest {
 	void clearPathTriesNoDetour() {
 		TestGrid grid = new TestGrid();
 		TraceBudget direct = new TraceBudget(100_000);
-		assertNotNull(new OcclusionTracer(grid, S).trace(0.5, 0.5, 0.5, 6.5, 0.5, 0.5, direct));
+		assertNotNull(new OcclusionTracer(grid, S).trace(new Vec(0.5, 0.5, 0.5), new Vec(6.5, 0.5, 0.5), direct));
 		TraceBudget budget = new TraceBudget(100_000);
-		Occlusion o = new OcclusionTracer(grid, S).occlusion(0.5, 0.5, 0.5, 6.5, 0.5, 0.5, ROLLOFF, RANGE, budget);
+		Occlusion o = new OcclusionTracer(grid, S).occlusion(new Vec(0.5, 0.5, 0.5), new Vec(6.5, 0.5, 0.5), ROLLOFF,
+				RANGE, budget);
 		assertEquals(Occlusion.NONE, o);
 		assertEquals(direct.used(), budget.used());
 		assertEquals(7, budget.used());
@@ -251,7 +264,7 @@ class DetourTest {
 	void disabledVisitsNothing() {
 		TraceBudget budget = new TraceBudget(100_000);
 		Occlusion o = new OcclusionTracer(openDoor(), settings(false, true))
-				.occlusion(12.5, 1.5, 3.5, 3.5, 1.5, 3.5, ROLLOFF, RANGE, budget);
+				.occlusion(new Vec(12.5, 1.5, 3.5), new Vec(3.5, 1.5, 3.5), ROLLOFF, RANGE, budget);
 		assertSame(Occlusion.NONE, o);
 		assertEquals(0, budget.used());
 	}
@@ -265,7 +278,7 @@ class DetourTest {
 	@Test
 	void budgetExhaustedReturnsNull() {
 		assertNull(new OcclusionTracer(openDoor(), S)
-				.occlusion(12.5, 1.5, 3.5, 3.5, 1.5, 3.5, ROLLOFF, RANGE, new TraceBudget(20)));
+				.occlusion(new Vec(12.5, 1.5, 3.5), new Vec(3.5, 1.5, 3.5), ROLLOFF, RANGE, new TraceBudget(20)));
 	}
 
 	/**
@@ -275,7 +288,7 @@ class DetourTest {
 	@Test
 	void submergedSpeakerDetoursAroundPillar() {
 		AcousticMedium water = Objects.requireNonNull(S.medium("water"));
-		TestGrid grid = new TestGrid().fluidBox(-8, -8, -8, 8, 8, 8, water).fill(1, 0, -2, 2, 3, -1, STONE)
+		TestGrid grid = new TestGrid().fluidBox(TestGrid.box(-8, -8, -8, 8, 8, 8), water).fill(TestGrid.box(1, 0, -2, 2, 3, -1), STONE)
 				.solid(0, 1, 0, STONE);
 		Occlusion o = occlusion(grid, new double[] {3.5, 1.5, -2.5}, new double[] {0.5, 1.5, 0.5});
 		assertEquals(5.1347, o.lossDb(), 1e-4);
@@ -288,9 +301,10 @@ class DetourTest {
 		for (TestGrid grid : new TestGrid[] {openDoor().fluid(12, 1, 3, VACUUM), openDoor().fluid(3, 1, 3, VACUUM)}) {
 			TraceBudget direct = new TraceBudget(100_000);
 			assertTrue(Objects.requireNonNull(new OcclusionTracer(grid, S)
-					.trace(12.5, 1.5, 3.5, 3.5, 1.5, 3.5, direct)).mute());
+					.trace(new Vec(12.5, 1.5, 3.5), new Vec(3.5, 1.5, 3.5), direct)).mute());
 			TraceBudget budget = new TraceBudget(100_000);
-			Occlusion o = new OcclusionTracer(grid, S).occlusion(12.5, 1.5, 3.5, 3.5, 1.5, 3.5, ROLLOFF, RANGE, budget);
+			Occlusion o = new OcclusionTracer(grid, S).occlusion(new Vec(12.5, 1.5, 3.5), new Vec(3.5, 1.5, 3.5),
+					ROLLOFF, RANGE, budget);
 			assertEquals(Occlusion.MUTE, o);
 			assertEquals(direct.used(), budget.used());
 		}

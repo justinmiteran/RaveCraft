@@ -11,6 +11,12 @@ public final class VirtualPacer {
 	private final long blockMs;
 	private long clockMs;
 
+	/**
+	 * Creates a pacer whose clock starts at {@code startMs}.
+	 *
+	 * @param startMs the current time
+	 * @param blockMs the length of one block
+	 */
 	public VirtualPacer(long startMs, long blockMs) {
 		this.blockMs = blockMs;
 		this.clockMs = startMs;
@@ -27,6 +33,7 @@ public final class VirtualPacer {
 		return (int) blocks;
 	}
 
+	/** Restarts the clock at {@code nowMs}, dropping the remainder. */
 	public void reset(long nowMs) {
 		clockMs = nowMs;
 	}

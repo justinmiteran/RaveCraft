@@ -134,6 +134,7 @@ final class WindowsFolderDialog {
 			return process.isAlive();
 		}
 
+		/** Asks the helper for a folder; empty when the player cancelled. */
 		Optional<Path> pick(String title, String start) throws IOException {
 			in.write(oneLine(title) + "\n" + oneLine(start) + "\n");
 			in.flush();
@@ -155,7 +156,7 @@ final class WindowsFolderDialog {
 			try {
 				in.close();
 			} catch (IOException e) {
-				// the process is gone already
+				RaveCraft.LOGGER.debug("Folder dialog helper already gone: {}", e.toString());
 			}
 			process.destroy();
 		}

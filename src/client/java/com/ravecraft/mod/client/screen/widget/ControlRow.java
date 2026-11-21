@@ -67,30 +67,44 @@ public final class ControlRow {
 		boolean known = state != null;
 		// Off, only the volume and the power button work; play says the speaker is off.
 		boolean on = known && powered;
-		boolean queued = known && !state.entries().isEmpty();
-		boolean playing = known && state.playing();
-
 		boolean shuffled = known && state.shuffle();
 		shuffle.show(shuffled ? SpeakerSprites.SHUFFLE_ON : SpeakerSprites.SHUFFLE, label(shuffled ? "shuffle.on" : "shuffle.off"));
 		shuffle.active = on;
-		previous.active = on && queued;
-		play.show(playing ? SpeakerSprites.PAUSE : SpeakerSprites.PLAY,
-				known && !powered ? label("off") : label(playing ? "pause" : "play"));
-		play.active = on && queued;
-		next.active = on && state.current().isPresent();
-		RepeatMode mode = known ? state.repeat() : RepeatMode.OFF;
-		repeat.show(switch (mode) {
-			case OFF -> SpeakerSprites.REPEAT_OFF;
-			case ALL -> SpeakerSprites.REPEAT_ALL;
-			case ONE -> SpeakerSprites.REPEAT_ONE;
-		}, label("repeat." + mode.name().toLowerCase(Locale.ROOT)));
-		repeat.active = on;
+		updateTransport(state, on);
+		updateRepeat(known ? state.repeat() : RepeatMode.OFF, on);
 		volume.active = known;
 		if (known) {
 			volume.sync(state.volume());
 		}
 		power.show(powered ? SpeakerSprites.POWER_ON : SpeakerSprites.POWER_OFF, label(powered ? "power.off" : "power.on"));
 		power.active = known;
+	}
+
+	/** Previous, play and next, from the queue of {@code state}. */
+	private void updateTransport(@Nullable SpeakerStatePayload state, boolean on) {
+		boolean known = state != null;
+		boolean queued = known && !state.entries().isEmpty();
+		boolean playing = known && state.playing();
+		previous.active = on && queued;
+		play.show(playing ? SpeakerSprites.PAUSE : SpeakerSprites.PLAY, playLabel(known, playing));
+		play.active = on && queued;
+		next.active = on && state.current().isPresent();
+	}
+
+	private Component playLabel(boolean known, boolean playing) {
+		if (known && !powered) {
+			return label("off");
+		}
+		return label(playing ? "pause" : "play");
+	}
+
+	private void updateRepeat(RepeatMode mode, boolean on) {
+		repeat.show(switch (mode) {
+			case OFF -> SpeakerSprites.REPEAT_OFF;
+			case ALL -> SpeakerSprites.REPEAT_ALL;
+			case ONE -> SpeakerSprites.REPEAT_ONE;
+		}, label("repeat." + mode.name().toLowerCase(Locale.ROOT)));
+		repeat.active = on;
 	}
 
 	/** The next repeat mode on a click: ALL → ONE → OFF → ALL. */

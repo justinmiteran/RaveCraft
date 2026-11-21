@@ -16,6 +16,15 @@ public record AcousticSettings(double rolloff, double fadeFraction, double audib
 			new AcousticSettings(1.0, 0.2, 68, 256, DeviceProfile.PORTABLE, OcclusionSettings.DEFAULT,
 					ReverbSettings.DEFAULT);
 
+	private static final Bound ROLLOFF = new Bound(0.25, 3);
+	private static final Bound FADE_FRACTION = new Bound(0.05, 0.5);
+	private static final Bound AUDIBILITY_DB = new Bound(30, 100);
+	private static final Bound MAX_RANGE = new Bound(16, 512);
+	private static final Bound POWER_WATTS = new Bound(0.1, 100_000);
+	private static final Bound SENSITIVITY_DB = new Bound(70, 115);
+	private static final Bound BASS_CUT_DB = new Bound(-24, 0);
+	private static final Bound BASS_CUT_HZ = new Bound(40, 500);
+
 	/** How much treble the air absorbs, in dB per block: the extra loss of the {@code air} medium. */
 	public double airAbsorptionDbPerBlock() {
 		return occlusion.air().highLossDbPerBlock();
@@ -25,25 +34,17 @@ public record AcousticSettings(double rolloff, double fadeFraction, double audib
 	public AcousticSettings clamped(Consumer<String> warn) {
 		DeviceProfile p = portable;
 		return new AcousticSettings(
-				bound("rolloff", rolloff, 0.25, 3, warn),
-				bound("fadeFraction", fadeFraction, 0.05, 0.5, warn),
-				bound("audibilityThresholdDb", audibilityThresholdDb, 30, 100, warn),
-				bound("maxRange", maxRange, 16, 512, warn),
+				ROLLOFF.apply("rolloff", rolloff, warn),
+				FADE_FRACTION.apply("fadeFraction", fadeFraction, warn),
+				AUDIBILITY_DB.apply("audibilityThresholdDb", audibilityThresholdDb, warn),
+				MAX_RANGE.apply("maxRange", maxRange, warn),
 				new DeviceProfile(
-						bound("profiles.portable.powerWatts", p.powerWatts(), 0.1, 100_000, warn),
-						bound("profiles.portable.sensitivityDb", p.sensitivityDb(), 70, 115, warn),
-						bound("profiles.portable.bassCutDb", p.bassCutDb(), -24, 0, warn),
-						bound("profiles.portable.bassCutHz", p.bassCutHz(), 40, 500, warn),
+						POWER_WATTS.apply("profiles.portable.powerWatts", p.powerWatts(), warn),
+						SENSITIVITY_DB.apply("profiles.portable.sensitivityDb", p.sensitivityDb(), warn),
+						BASS_CUT_DB.apply("profiles.portable.bassCutDb", p.bassCutDb(), warn),
+						BASS_CUT_HZ.apply("profiles.portable.bassCutHz", p.bassCutHz(), warn),
 						p.directivity()),
 				occlusion.clamped(warn),
 				reverb.clamped(warn));
-	}
-
-	private static double bound(String name, double value, double min, double max, Consumer<String> warn) {
-		double bounded = Double.isNaN(value) ? min : Math.clamp(value, min, max);
-		if (bounded != value) {
-			warn.accept(name + " = " + value + " is outside [" + min + ", " + max + "], using " + bounded);
-		}
-		return bounded;
 	}
 }

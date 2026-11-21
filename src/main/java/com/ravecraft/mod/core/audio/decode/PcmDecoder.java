@@ -5,6 +5,7 @@ import java.io.IOException;
 
 /** Streams an audio file as 16-bit signed little-endian interleaved PCM. */
 public interface PcmDecoder extends Closeable {
+	/** The shape of the PCM {@link #read} produces. */
 	PcmFormat format();
 
 	/**

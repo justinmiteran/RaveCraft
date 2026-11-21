@@ -6,6 +6,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
 
+/** Data components: the speaker's data carried by its item. */
 public final class ModDataComponents {
 	public static final DataComponentType<SpeakerData> SPEAKER = Registry.register(
 			BuiltInRegistries.DATA_COMPONENT_TYPE,
@@ -18,6 +19,7 @@ public final class ModDataComponents {
 	private ModDataComponents() {
 	}
 
+	/** Forces class loading, hence registration. */
 	public static void init() {
 	}
 }

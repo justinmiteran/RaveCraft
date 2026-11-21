@@ -17,6 +17,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
  */
 public record SpeakerCommandPayload(UUID speakerId, Command command, Optional<UUID> entryId, long value)
 		implements CustomPacketPayload {
+	/** What the screen asks the speaker to do. */
 	public enum Command {
 		PLAY, PAUSE, NEXT, REMOVE, CLEAR, PREVIOUS, SEEK, VOLUME, POWER, REPEAT, SHUFFLE, MOVE;
 
@@ -39,6 +40,7 @@ public record SpeakerCommandPayload(UUID speakerId, Command command, Optional<UU
 			ByteBufCodecs.VAR_LONG, SpeakerCommandPayload::value,
 			SpeakerCommandPayload::new);
 
+	/** A command without a value. */
 	public SpeakerCommandPayload(UUID speakerId, Command command, Optional<UUID> entryId) {
 		this(speakerId, command, entryId, 0L);
 	}

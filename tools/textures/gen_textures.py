@@ -222,18 +222,118 @@ def portable_speaker_overlay_on():
     return speaker_icon_layer(False, on=True)
 
 
+# Party speaker (upright box, models/block/party_speaker.json, look v3). Only the meshed grille is tinted
+# (tintindex 0): a light grey period-2 mesh, the two drivers behind it shown as darker holes. Body sides, top
+# and bottom use the portable's rubber. The panel texture is a cutout overlay atlas, never tinted: equaliser
+# logo at (0,0)-(8,5) for the front, the side control panel at (0,8)-(10,13) (volume -, play, volume +, LED),
+# and an opaque 3x3 corner bumper tile at (13,0)-(16,3).
+PARTY_DRIVERS = ((8.0, 4.5, 2.2), (8.0, 10.5, 4.3))  # (u, v, radius) of the tweeter and the woofer
+
+
+def party_speaker_grille():
+    rnd = random.Random(23)
+    img = new()
+    for y in range(S):
+        for x in range(S):
+            hole = x % 2 == 1 and y % 2 == 1
+            v = 150 if hole else 228 + rnd.randint(-8, 6)
+            if hole and any(math.hypot(x + 0.5 - u, y + 0.5 - w) <= r for u, w, r in PARTY_DRIVERS):
+                v = 100
+            px(img, x, y, (v, v, v))
+    return img
+
+
+def party_speaker_rubber():
+    return portable_speaker_rubber()
+
+
+def party_panel(on):
+    img = new()
+    for y, row in enumerate(EQ_LOGO):
+        for x, ch in enumerate(row):
+            if ch == "#":
+                px(img, x, y, COPPER_L if y == 0 or EQ_LOGO[y - 1][x] != "#" else COPPER)
+    # Corner bumper: lighter rubber, lit from the top-left.
+    rect(img, 13, 0, 15, 2, RUBBER[2])
+    for i in range(3):
+        px(img, 13 + i, 0, RUBBER[3]); px(img, 13, i, RUBBER[3]); px(img, 15, i, RUBBER[1])
+    px(img, 15, 0, RUBBER[2]); px(img, 14, 2, RUBBER[1])
+    # Side control panel, painted flat: dark plate with a lighter bottom edge.
+    rect(img, 0, 8, 9, 11, RUBBER[0])
+    rect(img, 0, 12, 9, 12, RUBBER[3])
+    px(img, 1, 10, RUBBER[3]); px(img, 2, 10, RUBBER[3])                   # volume down
+    for x, y in ((3, 9), (3, 10), (3, 11), (4, 10)):                        # play
+        px(img, x, y, COPPER_L if y == 9 else COPPER)
+    for x, y in ((6, 9), (5, 10), (6, 10), (7, 10), (6, 11)):               # volume up
+        px(img, x, y, RUBBER[3])
+    px(img, 8, 10, LED_ON if on else LED_OFF)                                # power LED
+    return img
+
+
+def party_speaker_panel():
+    return party_panel(False)
+
+
+def party_speaker_panel_on():
+    return party_panel(True)
+
+
+def party_icon_layer(grille, on=False):
+    """Inventory icon, front view: grille layer (tinted) or overlay (outline, corners, logo, LED)."""
+    img = new()
+    for y in range(1, 15):
+        for x in range(3, 13):
+            edge = x in (3, 12) or y in (1, 14)
+            if grille and not edge:
+                hole = x % 2 == 0 and y % 2 == 0
+                v = 200 if y == 2 else (120 if hole else 175)
+                v = 105 if y == 13 else v
+                px(img, x, y, (v, v, v))
+            elif not grille and edge:
+                px(img, x, y, (14, 14, 18))
+    if grille:
+        return img
+    for cx, cy in ((2, 0), (11, 0), (2, 13), (11, 13)):
+        rect(img, cx, cy, cx + 2, cy + 2, RUBBER[2])
+        px(img, cx, cy, RUBBER[3]); px(img, cx + 2, cy + 2, RUBBER[1])
+    for x, top in ((5, 5), (7, 3), (9, 4)):  # equaliser logo, top-left of the grille
+        for y in range(top, 7):
+            px(img, x, y, COPPER_L if y == top else COPPER)
+    px(img, 9, 14, LED_ON if on else LED_OFF)
+    return img
+
+
+def party_speaker():
+    return party_icon_layer(True)
+
+
+def party_speaker_overlay():
+    return party_icon_layer(False)
+
+
+def party_speaker_overlay_on():
+    return party_icon_layer(False, on=True)
+
+
 BLOCKS = {
     "portable_speaker_radiator": portable_speaker_radiator,
     "portable_speaker_fabric": portable_speaker_fabric,
     "portable_speaker_rubber": portable_speaker_rubber,
     "portable_speaker_details": portable_speaker_details,
     "portable_speaker_details_on": portable_speaker_details_on,
+    "party_speaker_grille": party_speaker_grille,
+    "party_speaker_rubber": party_speaker_rubber,
+    "party_speaker_panel": party_speaker_panel,
+    "party_speaker_panel_on": party_speaker_panel_on,
 }
 ANIMATED = {}  # name -> (frames fn, frametime ticks)
 ITEMS = {  # name -> fn (flat item textures)
     "portable_speaker": portable_speaker,
     "portable_speaker_overlay": portable_speaker_overlay,
     "portable_speaker_overlay_on": portable_speaker_overlay_on,
+    "party_speaker": party_speaker,
+    "party_speaker_overlay": party_speaker_overlay,
+    "party_speaker_overlay_on": party_speaker_overlay_on,
 }
 
 

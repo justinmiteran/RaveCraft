@@ -40,6 +40,7 @@ public class RaveCraftClient implements ClientModInitializer {
 			RaveCraft.LOGGER.info("Sound Physics Remastered is loaded: RaveCraft speakers keep their own occlusion");
 		}
 		SpeakerTooltip.register();
+		OpenSpeakerKey.register();
 		SpeakerScreenOpener.set((speakerId, title) -> Minecraft.getInstance().gui.setScreen(new SpeakerScreen(speakerId, title)));
 		// The server no longer lets this player control the speaker (gone, or out of reach): close its screen.
 		ClientPlayNetworking.registerGlobalReceiver(SpeakerClosedPayload.TYPE, (payload, context) -> {

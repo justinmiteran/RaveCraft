@@ -1,5 +1,6 @@
 package com.ravecraft.mod.item;
 
+import com.ravecraft.mod.block.SpeakerScreenOpener;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.world.audio.SpeakerHosts;
@@ -24,14 +25,14 @@ public class PortableSpeakerItem extends BlockItem {
 
 	@Override
 	public InteractionResult use(Level level, Player player, InteractionHand hand) {
-		// Placeholder behaviour: the UI PR replaces this with "open the speaker screen".
+		ItemStack stack = player.getItemInHand(hand);
+		SpeakerData data = stack.get(ModDataComponents.SPEAKER);
 		if (!level.isClientSide()) {
-			ItemStack stack = player.getItemInHand(hand);
-			SpeakerData data = stack.get(ModDataComponents.SPEAKER);
 			if (data == null) {
-				data = SpeakerData.create();
+				stack.set(ModDataComponents.SPEAKER, SpeakerData.create());
 			}
-			stack.set(ModDataComponents.SPEAKER, data.withSettings(data.settings().togglePower()));
+		} else if (data != null) {
+			SpeakerScreenOpener.open(data.id(), stack.getHoverName());
 		}
 		return InteractionResult.SUCCESS;
 	}

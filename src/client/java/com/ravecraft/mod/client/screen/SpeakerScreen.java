@@ -2,6 +2,8 @@ package com.ravecraft.mod.client.screen;
 
 import com.ravecraft.mod.block.PortableSpeakerBlock;
 import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.component.SpeakerData;
+import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.client.library.LibraryFoldersStore;
 import com.ravecraft.mod.client.screen.widget.ControlRow;
 import com.ravecraft.mod.client.screen.widget.LibraryTree;
@@ -33,11 +35,15 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.DyedItemColor;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -58,6 +64,8 @@ public final class SpeakerScreen extends Screen {
 	private final UUID speakerId;
 	/** The speaker's block, found once by its id when the screen opens; null when not found. */
 	private final @Nullable BlockPos block;
+	/** The fabric colour of the carried stack of this speaker when there is no block, else null. */
+	private final @Nullable Integer carriedColour;
 	private SpeakerLayout layout = SpeakerLayout.of(0, 0);
 	private int left;
 	private int top;
@@ -80,6 +88,7 @@ public final class SpeakerScreen extends Screen {
 		super(title);
 		this.speakerId = speakerId;
 		this.block = findBlock(speakerId);
+		this.carriedColour = block == null ? findCarriedColour(speakerId) : null;
 		// A state kept from an earlier opening may be stale: wait for the one the server sends on watching.
 		SpeakerStates.forget(speakerId);
 	}
@@ -105,12 +114,33 @@ public final class SpeakerScreen extends Screen {
 		return null;
 	}
 
+	/** The fabric colour of the speaker in the local player's inventory, or null when it is not carried. */
+	private static @Nullable Integer findCarriedColour(UUID id) {
+		Player player = Minecraft.getInstance().player;
+		if (player == null) {
+			return null;
+		}
+		Inventory inventory = player.getInventory();
+		for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+			ItemStack stack = inventory.getItem(slot);
+			SpeakerData data = stack.get(ModDataComponents.SPEAKER);
+			if (data != null && data.id().equals(id)) {
+				DyedItemColor dye = stack.get(DataComponents.DYED_COLOR);
+				return ARGB.opaque(dye != null ? dye.rgb() : PortableSpeakerBlock.DEFAULT_COLOR);
+			}
+		}
+		return null;
+	}
+
 	/** The fabric colour of the speaker's block, or the undyed colour when it is not found. */
 	private int fabricColour() {
 		if (block != null && minecraft != null && minecraft.level != null
 				&& minecraft.level.getBlockEntity(block) instanceof PortableSpeakerBlockEntity speaker
 				&& speaker.data().id().equals(speakerId)) {
 			return ARGB.opaque(speaker.fabricColor());
+		}
+		if (carriedColour != null) {
+			return carriedColour;
 		}
 		return ARGB.opaque(PortableSpeakerBlock.DEFAULT_COLOR);
 	}

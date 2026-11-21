@@ -45,6 +45,9 @@ public final class SpeakerTooltip {
 			} else {
 				lines.add(gray("tooltip.ravecraft.speaker.base", number(profile.powerWatts()), range, directivity));
 			}
+			if (!OpenSpeakerKey.key().isUnbound()) {
+				lines.add(gray("tooltip.ravecraft.speaker.open_key", OpenSpeakerKey.key().getTranslatedKeyMessage()));
+			}
 			if (!queue.entries().isEmpty()) {
 				int count = queue.entries().size();
 				lines.add(gray(count == 1 ? "tooltip.ravecraft.speaker.queue.one" : "tooltip.ravecraft.speaker.queue",

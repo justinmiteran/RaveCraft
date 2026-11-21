@@ -193,7 +193,22 @@ public class PortableSpeakerGameTest {
 		player.setItemInHand(InteractionHand.MAIN_HAND, stack);
 		stack.use(h.getLevel(), player, InteractionHand.MAIN_HAND);
 		SpeakerData data = player.getMainHandItem().get(ModDataComponents.SPEAKER);
-		h.assertTrue(data != null && data.settings().powered(), "identity assigned and powered on");
+		h.assertTrue(data != null, "identity assigned");
+		h.assertTrue(!data.settings().powered(), "power left alone");
+		h.succeed();
+	}
+
+	/** A plain use opens the screen (client side); it no longer toggles power. */
+	@GameTest
+	public void useInAirNoLongerTogglesPower(GameTestHelper h) {
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		ItemStack stack = new ItemStack(ModBlocks.PORTABLE_SPEAKER);
+		stack.set(ModDataComponents.SPEAKER, new SpeakerData(UUID.randomUUID(), new SpeakerSettings(true, 40)));
+		player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+		stack.getItem().use(h.getLevel(), player, InteractionHand.MAIN_HAND);
+		SpeakerData data = player.getMainHandItem().get(ModDataComponents.SPEAKER);
+		h.assertTrue(data != null, "speaker component kept");
+		h.assertTrue(data.settings().powered(), "still powered");
 		h.succeed();
 	}
 

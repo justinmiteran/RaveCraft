@@ -18,6 +18,17 @@ repositories {
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
+	exclusiveContent {
+		forRepository {
+			maven {
+				name = "Modrinth"
+				url = "https://api.modrinth.com/maven"
+			}
+		}
+		filter {
+			includeGroup "maven.modrinth"
+		}
+	}
 }
 
 fabricApi {
@@ -71,6 +82,9 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Trinkets Updated 4.2.1+26.3: optional back slot, compile only (never in the jar, never in depends)
+	compileOnly "maven.modrinth:XaT8sLP6:lVR1OKgV"
 
 	// Audio decoders, bundled jar-in-jar (licences: LICENSE-THIRD-PARTY.md)
 	include(implementation("javazoom:jlayer:1.0.1"))

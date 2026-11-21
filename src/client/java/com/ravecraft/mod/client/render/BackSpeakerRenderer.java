@@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import net.fabricmc.fabric.api.client.rendering.v1.ArmorRenderer;
 import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRenderEvents;
 import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.block.BlockModelRenderState;
 import net.minecraft.client.renderer.block.BlockModelResolver;
@@ -50,6 +51,11 @@ public final class BackSpeakerRenderer implements ArmorRenderer {
 		this.resolver = resolver;
 	}
 
+	/** A renderer drawing with {@code resolver}; also used for the Trinkets back slot. */
+	public static BackSpeakerRenderer create(BlockModelResolver resolver) {
+		return new BackSpeakerRenderer(resolver);
+	}
+
 	/** Registers the renderer for the party speaker, and hides the cape it would cover. */
 	public static void register() {
 		ArmorRenderer.register(context -> new BackSpeakerRenderer(context.getBlockModelResolver()), ModBlocks.PARTY_SPEAKER);
@@ -63,19 +69,25 @@ public final class BackSpeakerRenderer implements ArmorRenderer {
 		if (slot != EquipmentSlot.CHEST) {
 			return;
 		}
+		submitOnBack(poseStack, submitNodeCollector, stack, contextModel.body, light, humanoidRenderState.outlineColor);
+	}
+
+	/** Draws {@code stack} on the back of {@code body}, at the current pose of the wearer's model. */
+	public void submitOnBack(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, ItemStack stack, ModelPart body,
+			int light, int outlineColor) {
 		resolver.update(model, stateOf(stack), DISPLAY_CONTEXT);
 		IntList tints = model.tintLayers();
 		if (tints.size() > GRILLE_TINT) {
 			tints.set(GRILLE_TINT, grilleColor(stack));
 		}
 		poseStack.pushPose();
-		contextModel.body.translateAndRotate(poseStack);
+		body.translateAndRotate(poseStack);
 		poseStack.translate(0.0F, BACK_Y, BACK_Z);
 		// Flipping x and y turns the y-down model space into the block's y-up space (a half turn about z, not a
 		// mirror); the south-facing state then shows its grille towards +z, out of the back.
 		poseStack.scale(-SCALE, -SCALE, SCALE);
 		poseStack.translate(-MODEL_CENTRE_X, -MODEL_CENTRE_Y, -MODEL_CENTRE_Z);
-		model.submit(poseStack, submitNodeCollector, light, OverlayTexture.NO_OVERLAY, humanoidRenderState.outlineColor);
+		model.submit(poseStack, submitNodeCollector, light, OverlayTexture.NO_OVERLAY, outlineColor);
 		poseStack.popPose();
 	}
 

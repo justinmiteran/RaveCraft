@@ -46,7 +46,10 @@ final class SpeakerLookup {
 				: findCarried(player, id).map(stack -> new CarrierHandle(player, stack, carrier.place()));
 	}
 
-	/** The stack of {@code id} the player carries, in its inventory or where nothing ticks it. */
+	/**
+	 * The stack of {@code id} the player carries: in its inventory, in an accessory back slot (Trinkets), or where
+	 * nothing ticks it.
+	 */
 	static Optional<ItemStack> findCarried(ServerPlayer player, UUID id) {
 		Inventory inventory = player.getInventory();
 		for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
@@ -54,7 +57,7 @@ final class SpeakerLookup {
 				return Optional.of(inventory.getItem(slot));
 			}
 		}
-		return findUnticked(player, id);
+		return SpeakerBackSlots.find(player, stack -> hasId(stack, id)).or(() -> findUnticked(player, id));
 	}
 
 	/**

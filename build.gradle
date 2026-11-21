@@ -1,6 +1,8 @@
 plugins {
 	id 'net.fabricmc.fabric-loom' version "${loom_version}"
 	id 'maven-publish'
+	id 'checkstyle'
+	id 'pmd'
 }
 
 version = project.mod_version
@@ -90,6 +92,29 @@ dependencies {
 
 test {
 	useJUnitPlatform()
+}
+
+// Code rules (config/checkstyle, config/pmd). Kept out of ./gradlew build on purpose:
+// run them with ./gradlew codeQuality; CI runs it as its own job (.github/workflows/quality.yml).
+// Any violation fails the task. Reports: build/reports/{checkstyle,pmd}/.
+checkstyle {
+	toolVersion = project.checkstyle_version
+	maxWarnings = 0
+	sourceSets = []
+}
+
+pmd {
+	toolVersion = project.pmd_version
+	ruleSets = []
+	ruleSetFiles = files("config/pmd/ruleset.xml")
+	consoleOutput = true
+	sourceSets = []
+}
+
+tasks.register("codeQuality") {
+	group = "verification"
+	description = "Runs Checkstyle and PMD on every source set."
+	dependsOn tasks.withType(Checkstyle), tasks.withType(Pmd)
 }
 
 processResources {

@@ -134,9 +134,7 @@ public final class StreamEmitter {
 	private void send(int seq, List<byte[]> frames, EmitterPacer pacer, long start) throws InterruptedException {
 		long sentMillis = (long) (seq + 1) * StreamFormat.FRAMES_PER_CHUNK * StreamFormat.FRAME_MS;
 		long delay = pacer.delayBeforeNextMillis(elapsedMillis(start), sentMillis);
-		if (delay > 0) {
-			Thread.sleep(delay);
-		}
+		StreamPacing.sleep(delay);
 		List<byte[]> copy = List.copyOf(frames);
 		onClientThread(() -> {
 			ClientPlayNetworking.send(new AudioChunkPayload(sessionId, seq, copy));
@@ -149,9 +147,7 @@ public final class StreamEmitter {
 
 	private void sleepUntil(long start, long audioMillis) throws InterruptedException {
 		long wait = audioMillis - elapsedMillis(start);
-		if (wait > 0) {
-			Thread.sleep(wait);
-		}
+		StreamPacing.sleep(wait);
 	}
 
 	private static long elapsedMillis(long start) {

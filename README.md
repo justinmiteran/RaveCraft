@@ -36,6 +36,7 @@ Mod Fabric pour **Minecraft 26.3** : du matériel de sonorisation, de DJ et d'é
 | `./gradlew build` | compile, tests JUnit, GameTests, jar dans `build/libs/` |
 | `./gradlew test` | tests JUnit seuls |
 | `./gradlew runGameTest` | GameTests seuls (serveur headless) |
+| `./gradlew codeQuality` | règles de code (Checkstyle, PMD), hors du build ; rapports dans `build/reports/{checkstyle,pmd}/` |
 | `./gradlew runDatagen` | régénère blockstates, modèles, loot, tags, recettes (`src/main/generated`) |
 | `./gradlew runClient` | lance le jeu |
 | `python tools/textures/gen_textures.py` | régénère les textures et `art/textures/preview.png` |
@@ -55,11 +56,12 @@ Mod Fabric pour **Minecraft 26.3** : du matériel de sonorisation, de DJ et d'é
 
 ## CI/CD
 
-Deux workflows GitHub Actions, visibles dans l'onglet **Actions** du dépôt.
+Trois workflows GitHub Actions, visibles dans l'onglet **Actions** du dépôt.
 
 | Workflow | Déclencheur | Rôle |
 |---|---|---|
 | **build** (`.github/workflows/build.yml`) | chaque pull request et chaque `push` sur `main` | compiler, tester, produire le jar |
+| **code-quality** (`.github/workflows/quality.yml`) | chaque pull request et chaque `push` sur `main` ou `develop` | vérifier les règles de code |
 | **release** (`.github/workflows/release.yml`) | push d'un tag `vX.Y.Z` | publier une version sur GitHub |
 
 ### CI : `build`
@@ -89,6 +91,20 @@ gh run list --limit 5
 ```bash
 gh run view --log-failed
 ```
+
+### CI : `code-quality`
+
+Un job séparé du build, qui lance `./gradlew codeQuality` : **Checkstyle** (`config/checkstyle/`) et **PMD** (`config/pmd/ruleset.xml`) sur tous les source sets. Une seule violation le rend rouge. Le nombre de violations par source set s'affiche dans le résumé du run, et les rapports HTML sont joints en cas d'échec (artefact `code-quality-reports`).
+
+| Famille | Règles |
+|---|---|
+| Complexité (PMD) | complexité cognitive ≤ 15, cyclomatique ≤ 10, ≤ 60 instructions par méthode |
+| Imbrication (Checkstyle) | 2 niveaux de `if` et de boucles, pas de `try` dans un `try`, ≤ 3 `&&`/`\|\|` par condition, ≤ 6 paramètres, ≤ 4 `return`, ≤ 500 lignes par fichier |
+| Architecture | `core` n'importe ni Minecraft ni Fabric ; `src/main` n'importe jamais `net.minecraft.client` |
+| Appels interdits | `System.out`/`err`, `printStackTrace()`, `Thread.sleep` (sauf `StreamPacing`), `fromNamespaceAndPath(MOD_ID, …)` au lieu de `RaveCraft.id` |
+| Lisibilité | accolades obligatoires, pas de `catch` vide, pas de code inutilisé, pas de nombre magique dans `core`, nommage standard |
+
+Les exceptions de portée sont dans `config/checkstyle/suppressions.xml`. Aucune exception fichier par fichier : on corrige le code.
 
 ### CD : `release`
 

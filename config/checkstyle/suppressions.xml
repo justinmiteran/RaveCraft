@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+		"-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+		"https://checkstyle.org/dtds/suppressions_1_2.dtd">
+<!-- Where each scoped rule does not apply. No per-file exceptions: fix the code instead. -->
+<suppressions>
+	<!-- coreNoMinecraft and coreMagicNumber only apply inside the core package. -->
+	<suppress id="coreNoMinecraft" files="^(?!.*[\\/]core[\\/]).*$"/>
+	<suppress id="coreMagicNumber" files="^(?!.*[\\/]java[\\/]com[\\/]ravecraft[\\/]mod[\\/]core[\\/]).*$"/>
+	<suppress id="coreMagicNumber" files="[\\/]src[\\/](test|gametest)[\\/]"/>
+	<!-- The client source set is the one place client code belongs. -->
+	<suppress id="mainNoClient" files="[\\/]src[\\/]client[\\/]"/>
+	<!-- The mod's own entry point defines RaveCraft.id. -->
+	<suppress checks="RegexpSinglelineJava" message="RaveCraft\.id" files="[\\/]RaveCraft\.java$"/>
+	<!-- StreamPacing is the one wrapper around Thread.sleep, for the emitter's own worker thread. -->
+	<suppress id="noSleep" files="[\\/]StreamPacing\.java$"/>
+	<!-- Tests may wait on a real clock. -->
+	<suppress id="noSleep" files="[\\/]src[\\/](test|gametest)[\\/]"/>
+</suppressions>

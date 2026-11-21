@@ -52,13 +52,14 @@ Pour monter de version : vérifier les combinaisons sur `https://meta.fabricmc.n
 ./gradlew build          # compile + tests JUnit + GameTests + jar (build/libs/<modid>-<ver>.jar)
 ./gradlew test           # tests JUnit purs (package core)
 ./gradlew runGameTest    # GameTests seuls (serveur headless)
+./gradlew codeQuality    # règles de code Checkstyle + PMD (hors build, job CI séparé)
 ./gradlew runDatagen     # génère les JSON d'assets/données dans src/main/generated
 ./gradlew runClient      # lance le jeu (préférer la run config IntelliJ)
 ./gradlew genSources     # (re)décompile Minecraft pour la navigation
 python tools/textures/gen_textures.py   # régénère les textures + art/textures/preview.png
 ```
 
-Règle : **ne jamais déclarer une tâche terminée sans `./gradlew build` vert.** Lancer aussi `runDatagen` si des blocs, objets, recettes, tags ou loot ont changé.
+Règle : **ne jamais déclarer une tâche terminée sans `./gradlew build` et `./gradlew codeQuality` verts.** Lancer aussi `runDatagen` si des blocs, objets, recettes, tags ou loot ont changé.
 
 ## ⚠️ Noms Mojang, pas Yarn
 
@@ -104,6 +105,8 @@ Source sets séparés (Loom `splitEnvironmentSourceSets`) :
 - `src/client/java` : `client` (rendu, écrans, HUD, touches) et `datagen`. Le datagen tourne côté client : `configureDataGeneration { client = true }`.
 - `src/test/java` : tests JUnit 5 de `core`.
 - `src/gametest/java` : GameTests (vrai serveur, mod séparé `ravecraft-gametest`, jamais dans le jar livré). Chaque classe doit être déclarée dans `src/gametest/resources/fabric.mod.json`.
+
+Règles de code : vérifiées par `./gradlew codeQuality` (Checkstyle `config/checkstyle/`, PMD `config/pmd/ruleset.xml`), détail dans [README.md](README.md). Écrire directement du code conforme : méthodes courtes (complexité cognitive ≤ 15, cyclomatique ≤ 10), au plus deux niveaux de `if` ou de boucles, des constantes nommées dans `core`, `RaveCraft.id(path)` pour les identifiants, `RaveCraft.LOGGER` plutôt que la console. Pas d'exception fichier par fichier : corriger le code ou, si une règle est fausse pour tout le projet, la changer dans la config.
 
 Règles de performance : aucun scan de blocs ou de chunks par tick. Les données dérivées vivent en mémoire et ne sont invalidées que sur événement (placement, casse, voisin). La persistance passe par `SavedData`. Les envois réseau sont plafonnés et à fréquence limitée.
 
@@ -189,5 +192,6 @@ Conventions :
 - Ignorés : `build/`, `.gradle/`, `.idea/`, `run/`, `logs/`, `node_modules/`. Ne pas committer `src/main/generated` modifié à la main ; le régénérer.
 - Dépôt **public** `justinmiteran/RaveCraft`. Code sous LGPL-3.0-only (`LICENSE`, `COPYING`), assets sous CC BY-NC-SA 4.0 (`LICENSE-ASSETS.md`).
 - `main` est protégée sur GitHub : CI `build` verte obligatoire, pull request requise (l'admin peut pousser directement les petits changements), force-push et suppression interdits, conversations résolues avant fusion. Seul le squash merge est autorisé ; les branches fusionnées sont supprimées automatiquement.
+- Le workflow `code-quality` (`.github/workflows/quality.yml`) lance `./gradlew codeQuality` dans un job séparé, sur chaque pull request et chaque push sur `main` ou `develop`.
 - La CI GitHub (`.github/workflows/build.yml`) lance `./gradlew build` sur chaque pull request et chaque push sur `main` (pas sur les push des autres branches, déjà construites par leur PR) et publie le rapport des tests JUnit et des GameTests (check « Test results »). Les GameTests écrivent leur XML dans `build/test-results/gameTest/` (propriété `fabric-api.gametest.report-file` dans `build.gradle`).
 - Versions : `mod_version` dans `gradle.properties`, publiées en poussant un tag `vX.Y.Z` (workflow `release.yml`). Procédure dans [docs/RELEASING.md](docs/RELEASING.md), vue d'ensemble de la CI/CD dans [README.md](README.md).

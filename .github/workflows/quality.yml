@@ -1,0 +1,52 @@
+# Check the code rules (Checkstyle + PMD, config/) on every pull request and every push to main or develop.
+# Kept apart from the build job: ./gradlew build stays about compiling and testing, ./gradlew codeQuality about rules.
+
+name: code-quality
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+      - name: setup gradle (cache)
+        uses: gradle/actions/setup-gradle@v6
+      - name: make gradle wrapper executable
+        run: chmod +x ./gradlew
+      - name: code rules (Checkstyle, PMD)
+        run: ./gradlew codeQuality --continue
+      - name: summarize violations
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "## Code rules"
+            echo "| Source set | Checkstyle | PMD |"
+            echo "|---|---|---|"
+            for s in main client test gametest; do
+              cs=$(grep -c '<error' "build/reports/checkstyle/$s.xml" 2>/dev/null || true)
+              pmd=$(grep -c '<violation' "build/reports/pmd/$s.xml" 2>/dev/null || true)
+              echo "| $s | ${cs:-0} | ${pmd:-0} |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: upload rule reports
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: code-quality-reports
+          path: |
+            build/reports/checkstyle/
+            build/reports/pmd/

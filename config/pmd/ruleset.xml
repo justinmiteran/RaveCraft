@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<ruleset name="RaveCraft"
+		xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+	<description>
+		RaveCraft complexity and practice rules. Run by ./gradlew build (pmd&lt;SourceSet&gt; tasks): any violation fails the build.
+	</description>
+
+	<!-- Complexity per method -->
+	<rule ref="category/java/design.xml/CognitiveComplexity">
+		<properties>
+			<property name="reportLevel" value="15"/>
+		</properties>
+	</rule>
+	<rule ref="category/java/design.xml/CyclomaticComplexity">
+		<properties>
+			<property name="methodReportLevel" value="10"/>
+			<property name="classReportLevel" value="80"/>
+		</properties>
+	</rule>
+	<rule ref="category/java/design.xml/NcssCount">
+		<properties>
+			<property name="methodReportLevel" value="60"/>
+			<property name="classReportLevel" value="1500"/>
+		</properties>
+	</rule>
+
+	<!-- Dead code -->
+	<rule ref="category/java/bestpractices.xml/UnusedPrivateField"/>
+	<rule ref="category/java/bestpractices.xml/UnusedPrivateMethod">
+		<properties>
+			<!-- Mixin injectors are called by the Mixin framework, never directly. -->
+			<property name="violationSuppressXPath" value="./ancestor-or-self::ClassDeclaration[pmd-java:hasAnnotation('org.spongepowered.asm.mixin.Mixin')]"/>
+		</properties>
+	</rule>
+	<rule ref="category/java/bestpractices.xml/UnusedFormalParameter">
+		<properties>
+			<!-- Mixin injectors are called by the Mixin framework, never directly. -->
+			<property name="violationSuppressXPath" value="./ancestor-or-self::ClassDeclaration[pmd-java:hasAnnotation('org.spongepowered.asm.mixin.Mixin')]"/>
+		</properties>
+	</rule>
+	<rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+	<rule ref="category/java/bestpractices.xml/UnusedAssignment"/>
+
+	<!-- Error-prone practices -->
+	<rule ref="category/java/errorprone.xml/EmptyCatchBlock"/>
+	<rule ref="category/java/bestpractices.xml/AvoidPrintStackTrace"/>
+	<rule ref="category/java/bestpractices.xml/SystemPrintln"/>
+</ruleset>

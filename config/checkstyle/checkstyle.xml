@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+		"-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+		"https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!--
+	RaveCraft code rules. Run by ./gradlew build (checkstyle<SourceSet> tasks): any violation fails the build.
+	Complexity limits live in config/pmd/ruleset.xml. Scope exceptions live in suppressions.xml.
+-->
+<module name="Checker">
+	<property name="severity" value="error"/>
+	<property name="charset" value="UTF-8"/>
+
+	<module name="SuppressionFilter">
+		<property name="file" value="${config_loc}/suppressions.xml"/>
+	</module>
+
+	<module name="FileLength">
+		<property name="max" value="500"/>
+	</module>
+
+	<module name="TreeWalker">
+		<!-- Nesting: an if inside an if is fine, a third level is not. Same for loops. No try inside a try. -->
+		<module name="NestedIfDepth">
+			<property name="max" value="1"/>
+		</module>
+		<module name="NestedForDepth">
+			<property name="max" value="1"/>
+		</module>
+		<module name="NestedTryDepth">
+			<property name="max" value="0"/>
+		</module>
+		<module name="BooleanExpressionComplexity">
+			<property name="max" value="3"/>
+		</module>
+		<module name="ParameterNumber">
+			<property name="max" value="6"/>
+			<property name="ignoreOverriddenMethods" value="true"/>
+		</module>
+		<module name="ReturnCount">
+			<property name="max" value="4"/>
+			<property name="maxForVoid" value="4"/>
+		</module>
+
+		<!-- Readability -->
+		<module name="NeedBraces"/>
+		<module name="EmptyCatchBlock"/>
+		<module name="UnusedImports"/>
+		<module name="UnusedLocalVariable"/>
+		<module name="MagicNumber">
+			<property name="id" value="coreMagicNumber"/>
+			<property name="ignoreFieldDeclaration" value="true"/>
+			<property name="ignoreHashCodeMethod" value="true"/>
+			<property name="ignoreAnnotation" value="true"/>
+		</module>
+
+		<!-- Naming -->
+		<module name="TypeName"/>
+		<module name="MethodName">
+			<!-- Mixin methods carry the mod prefix: ravecraft$name. -->
+			<property name="format" value="^(ravecraft\$)?[a-z][a-zA-Z0-9]*$"/>
+		</module>
+		<module name="MemberName"/>
+		<module name="ParameterName"/>
+		<module name="LocalVariableName"/>
+		<module name="ConstantName"/>
+		<module name="StaticVariableName"/>
+
+		<!-- Architecture: core is pure Java; common code never touches the client. -->
+		<module name="IllegalImport">
+			<property name="id" value="coreNoMinecraft"/>
+			<property name="illegalPkgs" value="net.minecraft, com.mojang, net.fabricmc"/>
+		</module>
+		<module name="IllegalImport">
+			<property name="id" value="mainNoClient"/>
+			<property name="illegalPkgs" value="net.minecraft.client, com.mojang.blaze3d"/>
+		</module>
+
+		<!-- Banned calls -->
+		<module name="RegexpSinglelineJava">
+			<property name="id" value="noConsole"/>
+			<property name="format" value="System\.(out|err)\b"/>
+			<property name="ignoreComments" value="true"/>
+			<property name="message" value="Use RaveCraft.LOGGER, not System.out or System.err."/>
+		</module>
+		<module name="RegexpSinglelineJava">
+			<property name="format" value="\.printStackTrace\("/>
+			<property name="ignoreComments" value="true"/>
+			<property name="message" value="Log the exception with RaveCraft.LOGGER instead of printStackTrace()."/>
+		</module>
+		<module name="RegexpSinglelineJava">
+			<property name="id" value="noSleep"/>
+			<property name="format" value="Thread\.sleep\("/>
+			<property name="ignoreComments" value="true"/>
+			<property name="message" value="Never block a game thread with Thread.sleep()."/>
+		</module>
+		<module name="RegexpSinglelineJava">
+			<property name="format" value="Identifier\.fromNamespaceAndPath\(\s*(RaveCraft\.MOD_ID|MOD_ID|&quot;ravecraft&quot;)"/>
+			<property name="ignoreComments" value="true"/>
+			<property name="message" value="Use RaveCraft.id(path) for mod identifiers."/>
+		</module>
+	</module>
+</module>

@@ -72,6 +72,8 @@ public final class SpeakerNetwork {
 			SpeakerWatchers.forget(id);
 			NowPlaying.forget(id);
 			SpeakerHosts.forget(id);
+			// Before its sessions end: the speakers it carries pause where they are, in its saved inventory.
+			SpeakerHosts.disconnected(handler.player);
 			SpeakerPlayback.onDisconnect(server, id);
 		});
 		SpeakerHosts.init();

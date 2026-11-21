@@ -108,14 +108,17 @@ public class AudioRelayGameTest {
 
 
 
-	@GameTest
+	/** Broken with no drop to take it over: the session ends once the id is lost for good. */
+	@GameTest(maxTicks = 40)
 	public void breakingSpeakerEndsSession(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		UUID id = Speakers.idAt(h, pos);
 		StreamSessions.open(handle(h, pos), playerAt(h, 2), UUID.randomUUID()).orElseThrow();
 		h.destroyBlock(SPEAKER);
-		h.assertTrue(sessionAt(h, id).isEmpty(), "session ended");
-		h.succeed();
+		h.runAfterDelay(22, () -> {
+			h.assertTrue(sessionAt(h, id).isEmpty(), "session ended");
+			h.succeed();
+		});
 	}
 
 	@GameTest

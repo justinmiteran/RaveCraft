@@ -30,6 +30,7 @@ record BlockHandle(ServerLevel level, BlockPos pos, PortableSpeakerBlockEntity s
 	@Override
 	public void setData(SpeakerData data) {
 		speaker.setData(data);
+		SpeakerHosts.stored(data.id(), data.queue());
 		SpeakerWatchers.markDirty(id());
 	}
 

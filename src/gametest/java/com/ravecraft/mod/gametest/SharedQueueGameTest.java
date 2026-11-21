@@ -320,7 +320,6 @@ public class SharedQueueGameTest {
 		UUID id = Speakers.idAt(h, pos);
 		h.runAfterDelay(10, () -> {
 			h.getLevel().destroyBlock(pos, true);
-			h.assertFalse(SpeakerPlayback.isPlaying(id), "stopped");
 			List<ItemEntity> drops = h.getEntities(EntityTypes.ITEM, SPEAKER, 2);
 			h.assertValueEqual(drops.size(), 1, "one drop");
 			SpeakerData data = drops.getFirst().getItem().get(ModDataComponents.SPEAKER);

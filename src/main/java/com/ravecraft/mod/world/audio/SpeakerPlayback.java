@@ -249,13 +249,38 @@ public final class SpeakerPlayback {
 	}
 
 	/**
-	 * The speaker's block is broken or its chunk unloads: stop, writing where the track was into the block entity
-	 * (which the dropped item copies), and forget what it played before. Takes the block entity's own handle: the
-	 * registry no longer resolves a block entity being removed.
+	 * The speaker leaves the world with its holder (its carrier disconnects): stop, writing where the track was
+	 * where it lives, and forget what it played before. Takes a handle built directly: the registry may no longer
+	 * resolve a host that is leaving.
 	 */
 	public static void pauseRemoved(SpeakerHandle speaker) {
 		pause(speaker);
 		HISTORY.remove(speaker.id());
+	}
+
+	/** Speaker {@code speakerId} is gone for good (destroyed, despawned): end its session and forget its history. */
+	public static void stopAt(MinecraftServer server, UUID speakerId) {
+		PLAYING.remove(speakerId);
+		HISTORY.remove(speakerId);
+		StreamSessions.endAt(server, speakerId);
+	}
+
+	/**
+	 * The host of speaker {@code speakerId} is out of reach (a chest, an unloaded chunk): end its session and return
+	 * {@code lastStored}, its last known queue, at the position the track is at now, for when it shows up again.
+	 */
+	public static SpeakerQueue detach(MinecraftServer server, UUID speakerId, SpeakerQueue lastStored) {
+		SpeakerQueue live = liveQueue(speakerId, lastStored);
+		PLAYING.remove(speakerId);
+		StreamSessions.endAt(server, speakerId);
+		return live;
+	}
+
+	/** A speaker paused by losing its host is back: play from the stored position, when powered. */
+	public static void resume(SpeakerHandle speaker) {
+		if (speaker.powered() && !isPlaying(speaker.id())) {
+			start(speaker, onlinePlayers(speaker, null));
+		}
 	}
 
 	/** The server is stopping: pause everything before the world is saved. */

@@ -101,13 +101,14 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 		}
 	}
 
-	/** Called when the block is broken or its chunk unloads: the speaker pauses, keeping its queue. */
+	/**
+	 * Called when the block is broken or its chunk unloads. The session carries on for a grace: a broken block's
+	 * drop takes it over; otherwise {@link SpeakerHosts#tick} pauses it once the id is lost for good.
+	 */
 	@Override
 	public void setRemoved() {
 		super.setRemoved();
 		if (level instanceof ServerLevel) {
-			// Through its own handle: the registry no longer resolves a block entity being removed.
-			SpeakerHosts.handleOf(this).ifPresent(SpeakerPlayback::pauseRemoved);
 			SpeakerHosts.removed(this);
 			// Open screens close: the next flush finds the speaker gone.
 			SpeakerWatchers.markDirty(data.id());

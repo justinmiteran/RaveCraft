@@ -7,6 +7,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.OptionalLong;
 
 /**
@@ -114,25 +115,41 @@ public final class TrackDuration {
 		}
 	}
 
+	/** A valid MPEG Layer III frame header: bitrate, sample rate and channel count. */
+	public record MpegHeader(int kbps, int rate, int channels) {
+	}
+
+	/** Decodes the 4 header bytes {@code h} of an MPEG-1/2/2.5 Layer III frame, or empty when invalid. */
+	public static Optional<MpegHeader> mpegHeader(int h) {
+		if ((h & 0xFFE00000) != 0xFFE00000) {
+			return Optional.empty();
+		}
+		int version = (h >>> 19) & 3; // 3 = MPEG-1, 2 = MPEG-2, 0 = MPEG-2.5
+		int layer = (h >>> 17) & 3; // 1 = Layer III
+		int bitrateIndex = (h >>> 12) & 15;
+		int rateIndex = (h >>> 10) & 3;
+		if (version == 1 || layer != 1 || bitrateIndex == 0 || bitrateIndex == 15 || rateIndex == 3) {
+			return Optional.empty();
+		}
+		boolean mpeg1 = version == 3;
+		int rate = MPEG1_RATES[rateIndex] / (mpeg1 ? 1 : version == 2 ? 2 : 4);
+		int kbps = (mpeg1 ? MPEG1_L3_KBPS : MPEG2_L3_KBPS)[bitrateIndex];
+		return Optional.of(new MpegHeader(kbps, rate, ((h >>> 6) & 3) == 3 ? 1 : 2));
+	}
+
 	/** {@code base} is the file offset of {@code b}'s first byte. */
 	private static long mp3Frames(ByteBuffer b, long base, long fileSize) {
 		for (int i = 0; i + 4 <= b.limit(); i++) {
 			int h = b.getInt(i);
-			if ((h & 0xFFE00000) != 0xFFE00000) {
+			Optional<MpegHeader> header = mpegHeader(h);
+			if (header.isEmpty()) {
 				continue;
 			}
-			int version = (h >>> 19) & 3; // 3 = MPEG-1, 2 = MPEG-2, 0 = MPEG-2.5
-			int layer = (h >>> 17) & 3; // 1 = Layer III
-			int bitrateIndex = (h >>> 12) & 15;
-			int rateIndex = (h >>> 10) & 3;
-			if (version == 1 || layer != 1 || bitrateIndex == 0 || bitrateIndex == 15 || rateIndex == 3) {
-				continue;
-			}
-			boolean mpeg1 = version == 3;
-			int rate = MPEG1_RATES[rateIndex] / (mpeg1 ? 1 : version == 2 ? 2 : 4);
-			int kbps = (mpeg1 ? MPEG1_L3_KBPS : MPEG2_L3_KBPS)[bitrateIndex];
+			int rate = header.get().rate();
+			int kbps = header.get().kbps();
+			boolean mpeg1 = ((h >>> 19) & 3) == 3;
 			int samplesPerFrame = mpeg1 ? 1152 : 576;
-			boolean mono = ((h >>> 6) & 3) == 3;
+			boolean mono = header.get().channels() == 1;
 			int side = mpeg1 ? (mono ? 17 : 32) : (mono ? 9 : 17);
 			int tagAt = i + 4 + side;
 			if (tagAt + 12 <= b.limit()) {

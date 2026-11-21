@@ -5,6 +5,7 @@ import com.ravecraft.mod.client.screen.SpeakerStates;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload.StateEntry;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
@@ -168,6 +169,12 @@ public final class PlayerBand extends AbstractWidget {
 			graphics.text(font, SpeakerSprites.fit(font, by, textW), textX, y + 17, SpeakerSprites.MUTED);
 		}
 		drawProgress(graphics, font, current.isPresent());
+		if (duration() > 0 && (seeking || overTrack(mouseX, mouseY))) {
+			long ms = seeking ? seekMs : msAt(mouseX);
+			graphics.setTooltipForNextFrame(font,
+					List.of(Component.translatable(SpeakerSprites.KEY + "time_of", time(ms), time(duration()))),
+					Optional.empty(), mouseX, mouseY);
+		}
 	}
 
 	private void drawFabric(GuiGraphicsExtractor graphics, @Nullable ClientLevel level) {

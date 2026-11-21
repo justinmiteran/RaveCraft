@@ -3,6 +3,7 @@ package com.ravecraft.mod.client.screen.widget;
 import com.ravecraft.mod.client.audio.LocalPlayback;
 import com.ravecraft.mod.client.library.LibraryIndexStore;
 import com.ravecraft.mod.client.library.OffThread;
+import com.ravecraft.mod.client.library.TrackInfos;
 import com.ravecraft.mod.client.screen.SpeakerStates;
 import com.ravecraft.mod.core.library.LibraryIndex;
 import com.ravecraft.mod.core.library.LibraryTreeModel;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.nio.file.Path;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.BlockPos;
@@ -183,7 +185,15 @@ public final class LibraryTree extends TreeList {
 				() -> add(node)).enabledIf(!full(),
 						Component.translatable(SpeakerSprites.KEY + "queue_full", SpeakerQueue.MAX_ENTRIES));
 		RowItem count = node.kind() == SourceNode.Kind.FOLDER ? RowItem.text(countLabel(node)) : null;
-		return line.item(add).item(count).tooltip(rowTooltip(node));
+		line.item(add).item(count);
+		if (node.kind() == SourceNode.Kind.TRACK) {
+			return line.tooltip(() -> {
+				Path track = Path.of(node.id());
+				return TrackTooltip.lines(track, TrackInfos.get(track), Minecraft.getInstance().hasShiftDown(),
+						model.flat() ? source.parentName(node) : null);
+			});
+		}
+		return line.tooltip(rowTooltip(node));
 	}
 
 	/**

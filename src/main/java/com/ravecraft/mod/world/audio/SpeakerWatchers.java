@@ -50,6 +50,12 @@ public final class SpeakerWatchers {
 		return DIRTY.contains(speakerId);
 	}
 
+	/** Whether {@code player} has the screen of speaker {@code speakerId} open; for tests and diagnostics. */
+	public static boolean isWatching(UUID speakerId, UUID player) {
+		Set<UUID> watchers = WATCHERS.get(speakerId);
+		return watchers != null && watchers.contains(player);
+	}
+
 	public static void markAllDirty() {
 		DIRTY.addAll(WATCHERS.keySet());
 	}

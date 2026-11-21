@@ -16,6 +16,7 @@ import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.world.audio.SpeakerHost;
 import com.ravecraft.mod.world.audio.SpeakerHosts;
 import com.ravecraft.mod.world.audio.SpeakerPlayback;
+import com.ravecraft.mod.world.audio.SpeakerWatchers;
 import com.ravecraft.mod.world.audio.StreamSessions;
 import java.util.List;
 import java.util.Optional;
@@ -170,6 +171,80 @@ public class CarriedSpeakerGameTest {
 					h.assertTrue(parked.positionMs() > 0, "position kept, got " + parked.positionMs());
 					SpeakerHosts.carried(owner, stack, true);
 					h.assertTrue(SpeakerPlayback.isPlaying(id), "resumed when carried again");
+					cleanUp(h, List.of(id), owner);
+				})
+				.thenSucceed();
+	}
+
+	/** Held on the mouse cursor, where vanilla never ticks it: still found, still playing. */
+	@GameTest(maxTicks = 60)
+	public void cursorStackKeepsPlaying(GameTestHelper h) {
+		ServerPlayer owner = online(h, 2);
+		ItemStack stack = carriedPlaying(h, owner);
+		UUID id = idOf(stack);
+		owner.getInventory().setItem(owner.getInventory().getSelectedSlot(), ItemStack.EMPTY);
+		owner.containerMenu.setCarried(stack);
+		h.runAfterDelay(25, () -> {
+			h.assertTrue(SpeakerPlayback.isPlaying(id), "still playing from the cursor");
+			h.assertTrue(SpeakerHosts.handle(server(h), id).isPresent(), "cursor stack found");
+			owner.containerMenu.setCarried(ItemStack.EMPTY);
+			cleanUp(h, List.of(id), owner);
+			h.succeed();
+		});
+	}
+
+	/** A speaker paused in a chest must not start again on its own when its carrier comes back after leaving. */
+	@GameTest(maxTicks = 60)
+	public void disconnectCancelsParkedResume(GameTestHelper h) {
+		ServerPlayer owner = online(h, 2);
+		ItemStack stack = carriedPlaying(h, owner);
+		UUID id = idOf(stack);
+		h.startSequence()
+				.thenIdle(21)
+				.thenExecute(() -> {
+					h.assertFalse(SpeakerPlayback.isPlaying(id), "paused when no longer carried");
+					h.assertTrue(SpeakerHosts.parkedQueue(id).isPresent(), "parked");
+					SpeakerHosts.disconnected(owner);
+					SpeakerHosts.carried(owner, stack, true);
+					h.assertFalse(SpeakerPlayback.isPlaying(id), "not resumed after a disconnect");
+					cleanUp(h, List.of(id), owner);
+				})
+				.thenSucceed();
+	}
+
+	/** Stored out of reach: the screens open on it close. */
+	@GameTest(maxTicks = 60)
+	public void storedCarrierClosesScreens(GameTestHelper h) {
+		ServerPlayer owner = online(h, 2);
+		ItemStack stack = carriedPlaying(h, owner);
+		UUID id = idOf(stack);
+		SpeakerWatchers.watch(owner, id, true);
+		h.assertTrue(SpeakerWatchers.isWatching(id, owner.getUUID()), "screen open");
+		h.runAfterDelay(22, () -> {
+			h.assertTrue(SpeakerHosts.parkedQueue(id).isPresent(), "parked");
+			h.assertFalse(SpeakerWatchers.isWatching(id, owner.getUUID()), "screen closed");
+			cleanUp(h, List.of(id), owner);
+			h.succeed();
+		});
+	}
+
+	/** Burnt on the ground: the screens open on it close. */
+	@GameTest
+	public void destroyedClosesScreens(GameTestHelper h) {
+		ServerPlayer owner = online(h, 2);
+		ItemEntity drop = droppedPlaying(h, owner);
+		UUID id = idOf(drop.getItem());
+		SpeakerWatchers.watch(owner, id, true);
+		h.assertTrue(SpeakerWatchers.isWatching(id, owner.getUUID()), "screen open");
+		h.startSequence()
+				.thenIdle(1) // the state sent on opening is flushed first
+				.thenExecute(() -> {
+					for (int i = 0; i < 10 && !drop.isRemoved(); i++) {
+						drop.hurtServer(h.getLevel(), h.getLevel().damageSources().lava(), 4.0F);
+					}
+				})
+				.thenExecuteAfter(1, () -> {
+					h.assertFalse(SpeakerWatchers.isWatching(id, owner.getUUID()), "screen closed");
 					cleanUp(h, List.of(id), owner);
 				})
 				.thenSucceed();

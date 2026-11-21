@@ -26,6 +26,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import org.jspecify.annotations.Nullable;
@@ -63,7 +64,8 @@ public final class SpeakerHosts {
 	 */
 	private static final List<ItemEntity> PENDING_DROPS = new ArrayList<>();
 
-	private record Parked(SpeakerQueue queue, boolean resume) {}
+	/** {@code carrier}: the player it was lost from, whose disconnect cancels {@code resume}; null otherwise. */
+	private record Parked(SpeakerQueue queue, boolean resume, @Nullable UUID carrier) {}
 
 	private enum DropLoss {
 		/** Its stack was emptied: taken by a player or a hopper, where it plays again once carried. */
@@ -125,13 +127,35 @@ public final class SpeakerHosts {
 	private static Optional<ItemStack> findCarried(ServerPlayer player, UUID id) {
 		Inventory inventory = player.getInventory();
 		for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
-			ItemStack stack = inventory.getItem(slot);
-			SpeakerData data = stack.get(ModDataComponents.SPEAKER);
-			if (data != null && data.id().equals(id)) {
-				return Optional.of(stack);
+			if (hasId(inventory.getItem(slot), id)) {
+				return Optional.of(inventory.getItem(slot));
+			}
+		}
+		return findUnticked(player, id);
+	}
+
+	/**
+	 * The stack of {@code id} where the player holds it but vanilla never ticks it, so it does not report: on the
+	 * mouse cursor of the open menu, or in the 2x2 crafting grid. The creative inventory's cursor exists only on the
+	 * client: a speaker held there is not found, and pauses once its grace runs out.
+	 */
+	private static Optional<ItemStack> findUnticked(ServerPlayer player, UUID id) {
+		ItemStack cursor = player.containerMenu.getCarried();
+		if (hasId(cursor, id)) {
+			return Optional.of(cursor);
+		}
+		CraftingContainer grid = player.inventoryMenu.getCraftSlots();
+		for (int slot = 0; slot < grid.getContainerSize(); slot++) {
+			if (hasId(grid.getItem(slot), id)) {
+				return Optional.of(grid.getItem(slot));
 			}
 		}
 		return Optional.empty();
+	}
+
+	private static boolean hasId(ItemStack stack, UUID id) {
+		SpeakerData data = stack.get(ModDataComponents.SPEAKER);
+		return data != null && data.id().equals(id);
 	}
 
 	private static Optional<SpeakerHandle> droppedHandle(MinecraftServer server, SpeakerHost.Dropped dropped, UUID id) {
@@ -261,6 +285,8 @@ public final class SpeakerHosts {
 		SpeakerPlayback.stopAt(server, id);
 		forgetId(id);
 		PARKED.remove(id);
+		// Open screens close: the next flush finds the speaker gone.
+		SpeakerWatchers.markDirty(id);
 	}
 
 	/** {@code player} is leaving: the speakers it carries pause, their position written into its inventory. */
@@ -275,8 +301,13 @@ public final class SpeakerHosts {
 						stack -> SpeakerPlayback.pauseRemoved(new CarrierHandle(player, stack, carrier.inHand())),
 						() -> SpeakerPlayback.detach(server, id, last));
 				forgetId(id);
+				SpeakerWatchers.markDirty(id);
 			}
 		}
+		// Paused speakers lost from this player stay paused when it comes back: a disconnect pauses.
+		PARKED.replaceAll((id, parked) -> parked.resume() && player.getUUID().equals(parked.carrier())
+				? new Parked(parked.queue(), false, parked.carrier())
+				: parked);
 	}
 
 	/**
@@ -326,26 +357,44 @@ public final class SpeakerHosts {
 			DropLoss loss = DROP_LOSSES.remove(id);
 			CARRIED_AT.remove(id);
 			switch (expired.lastHost()) {
-				case SpeakerHost.Carrier carrier -> park(server, id, last, true);
+				case SpeakerHost.Carrier carrier -> {
+					if (reportUnticked(server, carrier, id)) {
+						continue;
+					}
+					park(server, id, last, true, carrier.player());
+				}
 				case SpeakerHost.Dropped dropped -> {
 					if (loss == DropLoss.GONE) {
 						SpeakerPlayback.stopAt(server, id);
 					} else {
-						park(server, id, last, loss == DropLoss.PICKED_UP);
+						park(server, id, last, loss == DropLoss.PICKED_UP, null);
 					}
 				}
-				case SpeakerHost.Block block -> park(server, id, last, false);
+				case SpeakerHost.Block block -> park(server, id, last, false, null);
 			}
+			// Open screens close (or refresh): the next flush finds the speaker gone.
+			SpeakerWatchers.markDirty(id);
 		}
 	}
 
 	/** Ends the session of lost speaker {@code id}; a playing one keeps its live queue until the id shows up again. */
-	private static void park(MinecraftServer server, UUID id, @Nullable SpeakerQueue last, boolean resume) {
+	private static void park(MinecraftServer server, UUID id, @Nullable SpeakerQueue last, boolean resume, @Nullable UUID carrier) {
 		boolean playing = SpeakerPlayback.isPlaying(id);
 		SpeakerQueue live = SpeakerPlayback.detach(server, id, last != null ? last : SpeakerQueue.EMPTY);
 		if (playing && last != null) {
-			PARKED.put(id, new Parked(live, resume));
+			PARKED.put(id, new Parked(live, resume, carrier));
 		}
+	}
+
+	/**
+	 * A carrier stopped reporting {@code id}: if it still holds it where nothing ticks it (cursor, crafting grid),
+	 * report it from there and keep playing. Looked up once per grace, not every tick.
+	 */
+	private static boolean reportUnticked(MinecraftServer server, SpeakerHost.Carrier carrier, UUID id) {
+		ServerPlayer player = server.getPlayerList().getPlayer(carrier.player());
+		Optional<ItemStack> stack = player == null ? Optional.empty() : findUnticked(player, id);
+		stack.ifPresent(found -> carried(player, found, false));
+		return stack.isPresent();
 	}
 
 	private static void forgetId(UUID id) {

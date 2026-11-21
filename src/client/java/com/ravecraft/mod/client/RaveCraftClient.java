@@ -12,6 +12,7 @@ import com.ravecraft.mod.client.debug.AcousticDebugEntry;
 import com.ravecraft.mod.client.debug.SoundViewEntries;
 import com.ravecraft.mod.client.debug.SoundViewRenderer;
 import com.ravecraft.mod.client.item.SpeakerPowered;
+import com.ravecraft.mod.client.render.BackSpeakerRenderer;
 import com.ravecraft.mod.client.screen.SpeakerScreen;
 import com.ravecraft.mod.network.payload.SpeakerClosedPayload;
 import com.ravecraft.mod.registry.ModBlocks;
@@ -49,5 +50,6 @@ public class RaveCraftClient implements ClientModInitializer {
 			}
 		});
 		BlockColorRegistry.register(List.of(new SpeakerFabricTint()), ModBlocks.PORTABLE_SPEAKER, ModBlocks.PARTY_SPEAKER);
+		BackSpeakerRenderer.register();
 	}
 }

@@ -10,8 +10,11 @@ import java.util.function.Function;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -32,7 +35,9 @@ public final class ModBlocks {
 					.sound(SoundType.METAL)
 					.strength(1.0F)
 					.noOcclusion(),
-			SpeakerItem::new, new Item.Properties().stacksTo(1));
+			SpeakerItem::new, new Item.Properties().stacksTo(1)
+					// Worn on the back in the chest slot; no asset id, so no armor model: BackSpeakerRenderer draws it.
+					.component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.CHEST).build()));
 
 	private ModBlocks() {
 	}

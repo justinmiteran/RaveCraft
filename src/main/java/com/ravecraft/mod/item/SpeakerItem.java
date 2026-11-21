@@ -7,6 +7,7 @@ import com.ravecraft.mod.core.speaker.CarryPlace;
 import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.world.audio.SpeakerHosts;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -38,9 +39,16 @@ public class SpeakerItem extends BlockItem {
 		return stack.getItem() instanceof SpeakerItem item ? item.kind() : SpeakerKind.PORTABLE;
 	}
 
+	/**
+	 * Using the speaker in the air opens its screen; sneaking, a wearable one (the party speaker) goes on the back
+	 * instead, swapped with the chest slot as vanilla does for armor.
+	 */
 	@Override
 	public InteractionResult use(Level level, Player player, InteractionHand hand) {
 		ItemStack stack = player.getItemInHand(hand);
+		if (player.isShiftKeyDown() && stack.has(DataComponents.EQUIPPABLE)) {
+			return super.use(level, player, hand);
+		}
 		SpeakerData data = stack.get(ModDataComponents.SPEAKER);
 		if (!level.isClientSide()) {
 			if (data == null) {

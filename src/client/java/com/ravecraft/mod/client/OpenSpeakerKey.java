@@ -10,12 +10,18 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-/** The M key (for "music"): opens the screen of a speaker carried in the hotbar, offhand or inventory. */
+/** The M key (for "music"): opens the screen of a speaker worn on the back or carried in the hotbar, offhand or inventory. */
 public final class OpenSpeakerKey {
+	/** The inventory index of the chest equipment slot, where a speaker is worn on the back. */
+	private static final int CHEST_SLOT = EquipmentSlot.CHEST.getIndex(Inventory.INVENTORY_SIZE);
+	/** Core's offhand number. */
+	private static final int CORE_OFFHAND = 40;
+
 	private static final KeyMapping KEY = new KeyMapping("key.ravecraft.open_speaker", InputConstants.Type.KEYBOARD,
 			InputConstants.KEY_M, KeyMapping.Category.register(RaveCraft.id("ravecraft")));
 
@@ -53,8 +59,12 @@ public final class OpenSpeakerKey {
 		}
 	}
 
-	/** Core numbers the offhand 40; the inventory has its own constant for it. */
+	/** Core numbers the back 38 and the offhand 40; the inventory has its own constants for them. */
 	private static ItemStack stack(Inventory inventory, int slot) {
-		return inventory.getItem(slot == 40 ? Inventory.SLOT_OFFHAND : slot);
+		return switch (slot) {
+			case SpeakerKeyTarget.BACK -> inventory.getItem(CHEST_SLOT);
+			case CORE_OFFHAND -> inventory.getItem(Inventory.SLOT_OFFHAND);
+			default -> inventory.getItem(slot);
+		};
 	}
 }

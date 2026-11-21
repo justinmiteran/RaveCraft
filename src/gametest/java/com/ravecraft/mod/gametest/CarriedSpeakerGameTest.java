@@ -59,7 +59,7 @@ public class CarriedSpeakerGameTest {
 	}
 
 	/** Queues one track of {@code owner} on speaker {@code id}, plays it and opens its stream. */
-	private static void play(GameTestHelper h, ServerPlayer owner, UUID id) {
+	static void play(GameTestHelper h, ServerPlayer owner, UUID id) {
 		SpeakerCommands.add(owner, id, newEntries(1));
 		SpeakerCommands.command(owner, id, Command.PLAY, Optional.empty());
 		int session = StreamSessions.table().byKey(id).orElseThrow().id();
@@ -88,7 +88,7 @@ public class CarriedSpeakerGameTest {
 	}
 
 	/** Ends the speakers' sessions, removes their drops and the players. */
-	private static void cleanUp(GameTestHelper h, List<UUID> ids, ServerPlayer... players) {
+	static void cleanUp(GameTestHelper h, List<UUID> ids, ServerPlayer... players) {
 		for (UUID id : ids) {
 			SpeakerHosts.destroyed(server(h), id);
 		}

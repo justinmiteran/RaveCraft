@@ -133,11 +133,19 @@ public final class SpeakerScreen extends Screen {
 		return null;
 	}
 
+	/** The speaker's block entity, when it is placed, loaded here and still holds the id. */
+	private @Nullable PortableSpeakerBlockEntity placedSpeaker() {
+		if (block == null || minecraft == null || minecraft.level == null) {
+			return null;
+		}
+		return minecraft.level.getBlockEntity(block) instanceof PortableSpeakerBlockEntity speaker
+				&& speaker.data().id().equals(speakerId) ? speaker : null;
+	}
+
 	/** The fabric colour of the speaker's block, or the undyed colour when it is not found. */
 	private int fabricColour() {
-		if (block != null && minecraft != null && minecraft.level != null
-				&& minecraft.level.getBlockEntity(block) instanceof PortableSpeakerBlockEntity speaker
-				&& speaker.data().id().equals(speakerId)) {
+		PortableSpeakerBlockEntity speaker = placedSpeaker();
+		if (speaker != null) {
 			return ARGB.opaque(speaker.fabricColor());
 		}
 		if (carriedColour != null) {

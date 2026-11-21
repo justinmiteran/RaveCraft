@@ -11,6 +11,7 @@ import com.ravecraft.mod.network.payload.RelayedChunkPayload;
 import com.ravecraft.mod.world.audio.NowPlaying;
 import com.ravecraft.mod.network.payload.StreamClosePayload;
 import com.ravecraft.mod.world.audio.SpeakerHandle;
+import com.ravecraft.mod.world.audio.SpeakerHostNotices;
 import com.ravecraft.mod.world.audio.SpeakerHosts;
 import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import com.ravecraft.mod.world.audio.StreamSessions;
@@ -75,7 +76,7 @@ public final class AudioRelay {
 		for (ServerPlayer listener : listeners(speaker.level(), speaker.position(), session.owner(), speaker.trackers(),
 				relayRadius(speaker))) {
 			// Where it plays and what, before the first chunk: a listener walking into range mid-track learns both.
-			SpeakerHosts.tellHost(listener, chunk.sessionId());
+			SpeakerHostNotices.tellHost(listener, chunk.sessionId());
 			NowPlaying.tell(listener, chunk.sessionId());
 			Net.send(listener, relayed);
 		}

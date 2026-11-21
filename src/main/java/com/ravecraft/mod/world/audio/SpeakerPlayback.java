@@ -4,12 +4,8 @@ import com.ravecraft.mod.core.audio.stream.SessionTable.Session;
 import com.ravecraft.mod.core.queue.PlayHistory;
 import com.ravecraft.mod.core.queue.PlaybackClock;
 import com.ravecraft.mod.core.queue.QueueEntry;
-import com.ravecraft.mod.core.queue.RepeatMode;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
-import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import com.ravecraft.mod.network.Net;
-import com.ravecraft.mod.network.payload.QueueAddPayload.NewEntry;
-import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload.StateEntry;
 import com.ravecraft.mod.network.payload.StreamOrderPayload;
@@ -48,8 +44,9 @@ public final class SpeakerPlayback {
 	private static final Map<UUID, Playing> PLAYING = new HashMap<>();
 	/** What each speaker played before, for PREVIOUS. Memory only, like {@link #PLAYING}. */
 	private static final Map<UUID, PlayHistory> HISTORY = new HashMap<>();
-	private static final Random RNG = new Random();
+	static final Random RNG = new Random();
 
+	/** The session a speaker plays, the entry it plays and where it is in it. */
 	private static final class Playing {
 		final int sessionId;
 		final UUID entryId;
@@ -66,80 +63,6 @@ public final class SpeakerPlayback {
 	}
 
 	private SpeakerPlayback() {
-	}
-
-	// --- Commands ----------------------------------------------------------------------------------------------
-
-	/** Appends tracks offered by {@code player}, who owns them. Ignored out of reach. */
-	public static void add(ServerPlayer player, UUID speakerId, List<NewEntry> added) {
-		SpeakerHandle speaker = speakerInReach(player, speakerId);
-		if (speaker == null) {
-			return;
-		}
-		String name = player.getName().getString();
-		List<QueueEntry> entries = new ArrayList<>();
-		for (NewEntry entry : added) {
-			entries.add(new QueueEntry(entry.entryId(), player.getUUID(), name, entry.title()));
-		}
-		update(speaker, queueOf(speaker).add(entries, RNG));
-	}
-
-	/** A command without {@code value} (PLAY, PAUSE, NEXT, REMOVE, CLEAR, PREVIOUS). */
-	public static void command(ServerPlayer player, UUID speakerId, Command command, Optional<UUID> entryId) {
-		command(player, speakerId, command, entryId, 0);
-	}
-
-	/**
-	 * Applies a player's command; {@code value} is the argument of SEEK (ms), VOLUME, POWER, REPEAT (mode ordinal),
-	 * SHUFFLE and MOVE (index among what is still to play), validated here. Ignored out of reach.
-	 */
-	public static void command(ServerPlayer player, UUID speakerId, Command command, Optional<UUID> entryId, long value) {
-		SpeakerHandle speaker = speakerInReach(player, speakerId);
-		if (speaker == null) {
-			return;
-		}
-		switch (command) {
-			case PLAY -> {
-				if (!isPlaying(speaker.id())) {
-					start(speaker, onlinePlayers(speaker, null));
-				}
-			}
-			case PAUSE -> pause(speaker);
-			case NEXT -> advance(speaker, false);
-			case PREVIOUS -> previous(speaker);
-			case REMOVE -> entryId.filter(id -> queueOf(speaker).entry(id).isPresent()).ifPresent(id -> removeEntry(speaker, id, false));
-			case CLEAR -> {
-				stop(speaker);
-				HISTORY.remove(speaker.id());
-				update(speaker, queueOf(speaker).clear());
-			}
-			case SEEK -> seek(speaker, value);
-			case VOLUME -> {
-				int volume = Math.clamp(value, SpeakerSettings.MIN_VOLUME, SpeakerSettings.MAX_VOLUME);
-				setVolume(speaker, volume);
-				SpeakerHosts.notice(speaker.level().getServer(), speaker.id());
-				markDirty(speaker);
-			}
-			case POWER -> {
-				if ((value != 0) != speaker.powered()) {
-					togglePower(speaker);
-					SpeakerHosts.notice(speaker.level().getServer(), speaker.id());
-					markDirty(speaker);
-				}
-			}
-			case REPEAT -> {
-				if (value >= 0 && value < RepeatMode.values().length) {
-					update(speaker, queueOf(speaker).withRepeat(RepeatMode.values()[(int) value]));
-				}
-			}
-			case SHUFFLE -> {
-				if ((value != 0) != queueOf(speaker).shuffle()) {
-					update(speaker, queueOf(speaker).withShuffle(value != 0, RNG));
-				}
-			}
-			case MOVE -> entryId.filter(id -> queueOf(speaker).entry(id).isPresent())
-					.ifPresent(id -> update(speaker, queueOf(speaker).move(id, (int) Math.clamp(value, 0, SpeakerQueue.MAX_ENTRIES))));
-		}
 	}
 
 	/**
@@ -295,6 +218,7 @@ public final class SpeakerPlayback {
 
 	// --- Reading -----------------------------------------------------------------------------------------------
 
+	/** Whether speaker {@code speakerId} plays a session now. */
 	public static boolean isPlaying(UUID speakerId) {
 		return PLAYING.containsKey(speakerId);
 	}
@@ -353,13 +277,25 @@ public final class SpeakerPlayback {
 				server.getTickCount()));
 		update(speaker, queue);
 		// Hosts first: the owner must know where its own stream plays from before its first chunk.
-		SpeakerHosts.notice(server, speaker.id());
+		SpeakerHostNotices.notice(server, speaker.id());
 		Net.send(owner, new StreamOrderPayload(session.get().id(), speaker.id(), true, entry.entryId(), startMs));
 		NowPlaying.start(owner, session.get().id(), speaker.id(), entry);
 	}
 
+	/** Starts the current entry, or the next playable one. */
+	static void play(SpeakerHandle speaker) {
+		start(speaker, onlinePlayers(speaker, null));
+	}
+
+	/** Stops, forgets the history and empties the queue. */
+	static void clear(SpeakerHandle speaker) {
+		stop(speaker);
+		HISTORY.remove(speaker.id());
+		update(speaker, queueOf(speaker).clear());
+	}
+
 	/** Stops playing, storing the estimated position of the current entry. */
-	private static void pause(SpeakerHandle speaker) {
+	static void pause(SpeakerHandle speaker) {
 		SpeakerQueue live = liveQueue(speaker);
 		if (stop(speaker)) {
 			update(speaker, live);
@@ -367,31 +303,10 @@ public final class SpeakerPlayback {
 	}
 
 	/** Ends the session and forgets that the speaker plays. Returns whether it was playing. */
-	private static boolean stop(SpeakerHandle speaker) {
+	static boolean stop(SpeakerHandle speaker) {
 		boolean was = PLAYING.remove(speaker.id()) != null;
 		StreamSessions.endAt(speaker.level().getServer(), speaker.id());
 		return was;
-	}
-
-	/** A block also sends the new volume to everyone tracking it: listeners read it from their copy of the block. */
-	private static void setVolume(SpeakerHandle speaker, int volume) {
-		if (speaker instanceof BlockHandle block) {
-			block.speaker().setVolume(volume);
-		} else {
-			speaker.setData(speaker.data().withSettings(speaker.data().settings().withVolume(volume)));
-		}
-	}
-
-	/** A block keeps its POWERED property in sync, and pauses itself when switched off. */
-	private static void togglePower(SpeakerHandle speaker) {
-		if (speaker instanceof BlockHandle block) {
-			block.speaker().togglePower();
-			return;
-		}
-		speaker.setData(speaker.data().withSettings(speaker.data().settings().togglePower()));
-		if (!speaker.powered()) {
-			pause(speaker);
-		}
 	}
 
 	/**
@@ -399,7 +314,7 @@ public final class SpeakerPlayback {
 	 * left goes to the history. Nothing next: pauses on the current entry, from its start. Plays the next entry when
 	 * the speaker was playing, or at a natural end (whose session is already closed).
 	 */
-	private static void advance(SpeakerHandle speaker, boolean natural) {
+	static void advance(SpeakerHandle speaker, boolean natural) {
 		SpeakerQueue queue = queueOf(speaker);
 		Optional<QueueEntry> next = queue.next(onlinePlayers(speaker, null), natural, RNG);
 		boolean wasPlaying = stop(speaker);
@@ -419,7 +334,7 @@ public final class SpeakerPlayback {
 	 * Restarts the current entry when it has played for more than 3 s, else goes back to the latest entry of the
 	 * history still queued with its owner online (the current one if none). Keeps playing or paused.
 	 */
-	private static void previous(SpeakerHandle speaker) {
+	static void previous(SpeakerHandle speaker) {
 		SpeakerQueue queue = liveQueue(speaker);
 		Optional<UUID> target = queue.current();
 		if (queue.positionMs() <= PREVIOUS_RESTART_MS) {
@@ -443,26 +358,11 @@ public final class SpeakerPlayback {
 		}
 	}
 
-	/** Moves the current entry to {@code value} ms, clamped to its duration; ignored while that is unknown. */
-	private static void seek(SpeakerHandle speaker, long value) {
-		SpeakerQueue queue = queueOf(speaker);
-		Optional<QueueEntry> current = queue.current().flatMap(queue::entry);
-		if (current.isEmpty() || current.get().durationMs() < 0) {
-			return;
-		}
-		long position = Math.clamp(value, 0, current.get().durationMs());
-		boolean wasPlaying = stop(speaker);
-		update(speaker, queue.withPosition(position));
-		if (wasPlaying) {
-			start(speaker, onlinePlayers(speaker, null));
-		}
-	}
-
 	/**
 	 * Removes an entry and purges it from the history. Removing the current one cuts it and makes the entry that
 	 * would have played next current, played if the speaker was playing or {@code play}.
 	 */
-	private static void removeEntry(SpeakerHandle speaker, UUID entryId, boolean play) {
+	static void removeEntry(SpeakerHandle speaker, UUID entryId, boolean play) {
 		SpeakerQueue queue = queueOf(speaker);
 		PlayHistory history = HISTORY.get(speaker.id());
 		if (history != null) {
@@ -505,12 +405,12 @@ public final class SpeakerPlayback {
 		return HISTORY.computeIfAbsent(speaker.id(), key -> new PlayHistory());
 	}
 
-	private static void markDirty(SpeakerHandle speaker) {
+	static void markDirty(SpeakerHandle speaker) {
 		SpeakerWatchers.markDirty(speaker.id());
 	}
 
 	/** Writes the queue where the speaker lives; the handle marks its open screens dirty. */
-	private static void update(SpeakerHandle speaker, SpeakerQueue queue) {
+	static void update(SpeakerHandle speaker, SpeakerQueue queue) {
 		speaker.setData(speaker.data().withQueue(queue));
 	}
 
@@ -519,7 +419,7 @@ public final class SpeakerPlayback {
 		return id -> !id.equals(leaving) && server.getPlayerList().getPlayer(id) != null;
 	}
 
-	private static SpeakerQueue queueOf(SpeakerHandle speaker) {
+	static SpeakerQueue queueOf(SpeakerHandle speaker) {
 		return speaker.data().queue();
 	}
 
@@ -536,8 +436,4 @@ public final class SpeakerPlayback {
 		return Optional.empty();
 	}
 
-	/** Speaker {@code speakerId} when {@code player} can control it, or null. */
-	private static SpeakerHandle speakerInReach(ServerPlayer player, UUID speakerId) {
-		return SpeakerHosts.handle(player.level().getServer(), speakerId).filter(h -> h.canControl(player)).orElse(null);
-	}
 }

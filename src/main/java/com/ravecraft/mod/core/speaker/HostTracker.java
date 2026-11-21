@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Follows which host (block, dropped item, carrier) currently holds each speaker id, and spots
@@ -16,10 +17,13 @@ public final class HostTracker<H> {
 	/** Ticks without a report (carrier) or after a loss before an id is forgotten. */
 	public static final int LOST_AFTER_TICKS = 20;
 
+	/** What a report or a placement means: the same host, a move to a new host, or a copy of the id. */
 	public enum Verdict { SAME, MOVED, DUPLICATE }
 
+	/** An id whose host was lost for longer than the grace, with the last host that held it. */
 	public record Expired<H>(UUID id, H lastHost) {}
 
+	/** What is known of one id. */
 	private static final class Entry<H> {
 		H host; // null while lost
 		H lastHost;
@@ -49,23 +53,11 @@ public final class HostTracker<H> {
 
 	/** A host that must report every tick: a carrier. */
 	public Verdict report(UUID id, H host, long tick) {
-		Entry<H> e = entries.get(id);
-		if (e == null) {
-			e = new Entry<>();
-			entries.put(id, e);
-		} else if (e.host != null) {
-			if (e.placed) {
-				return Verdict.DUPLICATE;
-			}
-			if (e.host.equals(host)) {
-				if (e.lastReport == tick) {
-					return Verdict.DUPLICATE;
-				}
-				e.lastReport = tick;
-				return Verdict.SAME;
-			}
-			if (e.lastReport >= tick - 1) {
-				return Verdict.DUPLICATE;
+		Entry<H> e = entries.computeIfAbsent(id, k -> new Entry<>());
+		if (e.host != null) {
+			Verdict held = reportWhileHeld(e, host, tick);
+			if (held != null) {
+				return held;
 			}
 		}
 		e.host = host;
@@ -73,6 +65,24 @@ public final class HostTracker<H> {
 		e.placed = false;
 		e.lastReport = tick;
 		return Verdict.MOVED;
+	}
+
+	/**
+	 * A report for an id some host holds: a copy when a placed host or another carrier that reported this tick or
+	 * the last one holds it, the same host when it is this carrier. Null: another carrier lost it, a move.
+	 */
+	private static <H> @Nullable Verdict reportWhileHeld(Entry<H> e, H host, long tick) {
+		if (e.placed) {
+			return Verdict.DUPLICATE;
+		}
+		if (!host.equals(e.host)) {
+			return e.lastReport >= tick - 1 ? Verdict.DUPLICATE : null;
+		}
+		if (e.lastReport == tick) {
+			return Verdict.DUPLICATE;
+		}
+		e.lastReport = tick;
+		return Verdict.SAME;
 	}
 
 	/** {@code host} no longer holds {@code id}; ignored unless it is the current host. Grace starts. */
@@ -112,10 +122,12 @@ public final class HostTracker<H> {
 		return entries.containsKey(id);
 	}
 
+	/** Forgets {@code id} at once, with no grace. */
 	public void forget(UUID id) {
 		entries.remove(id);
 	}
 
+	/** Forgets every id. */
 	public void clear() {
 		entries.clear();
 	}

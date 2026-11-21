@@ -14,6 +14,7 @@ import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.world.audio.SpeakerHost;
+import com.ravecraft.mod.world.audio.SpeakerCommands;
 import com.ravecraft.mod.world.audio.SpeakerHosts;
 import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import com.ravecraft.mod.world.audio.SpeakerWatchers;
@@ -56,8 +57,8 @@ public class CarriedSpeakerGameTest {
 
 	/** Queues one track of {@code owner} on speaker {@code id}, plays it and opens its stream. */
 	private static void play(GameTestHelper h, ServerPlayer owner, UUID id) {
-		SpeakerPlayback.add(owner, id, newEntries(1));
-		SpeakerPlayback.command(owner, id, Command.PLAY, Optional.empty());
+		SpeakerCommands.add(owner, id, newEntries(1));
+		SpeakerCommands.command(owner, id, Command.PLAY, Optional.empty());
 		int session = StreamSessions.table().byKey(id).orElseThrow().id();
 		SpeakerPlayback.onStreamStarted(owner, session, DURATION_MS);
 		h.assertTrue(SpeakerPlayback.isPlaying(id), "playing at the start");
@@ -298,7 +299,7 @@ public class CarriedSpeakerGameTest {
 		ServerPlayer owner = online(h, 2);
 		ServerPlayer far = online(h, 20);
 		UUID id = idOf(droppedPlaying(h, owner).getItem());
-		SpeakerPlayback.command(far, id, Command.PAUSE, Optional.empty());
+		SpeakerCommands.command(far, id, Command.PAUSE, Optional.empty());
 		h.assertTrue(SpeakerPlayback.isPlaying(id), "out of reach: ignored");
 		cleanUp(h, List.of(id), owner, far);
 		h.succeed();
@@ -308,7 +309,7 @@ public class CarriedSpeakerGameTest {
 	public void carrierCanCommandFromAnywhere(GameTestHelper h) {
 		ServerPlayer owner = online(h, 50);
 		UUID id = idOf(carriedPlaying(h, owner));
-		SpeakerPlayback.command(owner, id, Command.PAUSE, Optional.empty());
+		SpeakerCommands.command(owner, id, Command.PAUSE, Optional.empty());
 		h.assertFalse(SpeakerPlayback.isPlaying(id), "paused by its carrier");
 		cleanUp(h, List.of(id), owner);
 		h.succeed();

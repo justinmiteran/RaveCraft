@@ -11,8 +11,9 @@ import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
 import com.ravecraft.mod.network.payload.SpeakerHostPayload;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.world.audio.SpeakerHandle;
+import com.ravecraft.mod.world.audio.SpeakerCommands;
+import com.ravecraft.mod.world.audio.SpeakerHostNotices;
 import com.ravecraft.mod.world.audio.SpeakerHosts;
-import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import com.ravecraft.mod.world.audio.StreamSessions;
 import java.util.List;
 import java.util.Optional;
@@ -41,7 +42,7 @@ public class AudioRelayGameTest {
 		return player;
 	}
 
-	private static Optional<Session<UUID>> sessionAt(GameTestHelper h, UUID id) {
+	private static Optional<Session<UUID>> sessionAt(UUID id) {
 		return StreamSessions.table().byKey(id);
 	}
 
@@ -52,9 +53,9 @@ public class AudioRelayGameTest {
 	/** Plays one track queued by {@code owner} on the speaker at {@code pos}, and returns its session id. */
 	private static int play(GameTestHelper h, BlockPos pos, ServerPlayer owner) {
 		UUID id = Speakers.idAt(h, pos);
-		SpeakerPlayback.add(owner, id, SharedQueueGameTest.newEntries(1));
-		SpeakerPlayback.command(owner, id, Command.PLAY, Optional.empty());
-		return sessionAt(h, id).orElseThrow().id();
+		SpeakerCommands.add(owner, id, SharedQueueGameTest.newEntries(1));
+		SpeakerCommands.command(owner, id, Command.PLAY, Optional.empty());
+		return sessionAt(id).orElseThrow().id();
 	}
 
 	@GameTest
@@ -63,8 +64,8 @@ public class AudioRelayGameTest {
 		ServerPlayer owner = SharedQueueGameTest.online(h, 2);
 		int sessionId = play(h, pos, owner);
 		ServerPlayer listener = playerAt(h, 5);
-		h.assertTrue(SpeakerHosts.tellHost(listener, sessionId), "told the first time");
-		h.assertFalse(SpeakerHosts.tellHost(listener, sessionId), "not told twice");
+		h.assertTrue(SpeakerHostNotices.tellHost(listener, sessionId), "told the first time");
+		h.assertFalse(SpeakerHostNotices.tellHost(listener, sessionId), "not told twice");
 		SharedQueueGameTest.finish(h, pos, owner);
 	}
 
@@ -74,14 +75,14 @@ public class AudioRelayGameTest {
 		volume(h, 70);
 		ServerPlayer owner = SharedQueueGameTest.online(h, 2);
 		int sessionId = play(h, pos, owner);
-		SpeakerHostPayload notice = SpeakerHosts.noticeOf(sessionId).orElseThrow();
+		SpeakerHostPayload notice = SpeakerHostNotices.noticeOf(sessionId).orElseThrow();
 		h.assertValueEqual(notice.speakerId(), Speakers.idAt(h, pos), "speaker id");
 		h.assertValueEqual(notice.dimension(), h.getLevel().dimension(), "dimension");
 		h.assertValueEqual(notice.block(), Optional.of(pos), "block");
 		h.assertValueEqual(notice.volume(), 70, "volume");
 		h.assertTrue(notice.powered(), "powered");
-		SpeakerPlayback.command(owner, Speakers.idAt(h, pos), Command.VOLUME, Optional.empty(), 30);
-		h.assertValueEqual(SpeakerHosts.noticeOf(sessionId).orElseThrow().volume(), 30, "volume after VOLUME");
+		SpeakerCommands.command(owner, Speakers.idAt(h, pos), Command.VOLUME, Optional.empty(), 30);
+		h.assertValueEqual(SpeakerHostNotices.noticeOf(sessionId).orElseThrow().volume(), 30, "volume after VOLUME");
 		SharedQueueGameTest.finish(h, pos, owner);
 	}
 
@@ -92,7 +93,7 @@ public class AudioRelayGameTest {
 		UUID id = Speakers.idAt(h, pos);
 		Optional<Session<UUID>> opened = StreamSessions.open(handle(h, pos), player, UUID.randomUUID());
 		h.assertTrue(opened.isPresent(), "session opened");
-		h.assertValueEqual(sessionAt(h, id).orElseThrow().owner(), player.getUUID(), "owner");
+		h.assertValueEqual(sessionAt(id).orElseThrow().owner(), player.getUUID(), "owner");
 		StreamSessions.endAt(h.getLevel().getServer(), id);
 		h.succeed();
 	}
@@ -102,7 +103,7 @@ public class AudioRelayGameTest {
 		h.setBlock(SPEAKER, ModBlocks.PORTABLE_SPEAKER);
 		BlockPos pos = h.absolutePos(SPEAKER);
 		h.assertTrue(StreamSessions.open(handle(h, pos), playerAt(h, 2), UUID.randomUUID()).isEmpty(), "rejected");
-		h.assertTrue(sessionAt(h, Speakers.idAt(h, pos)).isEmpty(), "no session");
+		h.assertTrue(sessionAt(Speakers.idAt(h, pos)).isEmpty(), "no session");
 		h.succeed();
 	}
 
@@ -116,7 +117,7 @@ public class AudioRelayGameTest {
 		StreamSessions.open(handle(h, pos), playerAt(h, 2), UUID.randomUUID()).orElseThrow();
 		h.destroyBlock(SPEAKER);
 		h.runAfterDelay(22, () -> {
-			h.assertTrue(sessionAt(h, id).isEmpty(), "session ended");
+			h.assertTrue(sessionAt(id).isEmpty(), "session ended");
 			h.succeed();
 		});
 	}
@@ -126,7 +127,7 @@ public class AudioRelayGameTest {
 		BlockPos pos = poweredSpeaker(h);
 		StreamSessions.open(handle(h, pos), playerAt(h, 2), UUID.randomUUID()).orElseThrow();
 		h.getBlockEntity(SPEAKER, PortableSpeakerBlockEntity.class).togglePower();
-		h.assertTrue(sessionAt(h, Speakers.idAt(h, pos)).isEmpty(), "session ended");
+		h.assertTrue(sessionAt(Speakers.idAt(h, pos)).isEmpty(), "session ended");
 		h.succeed();
 	}
 

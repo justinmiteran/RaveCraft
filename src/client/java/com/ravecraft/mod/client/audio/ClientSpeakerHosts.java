@@ -28,11 +28,13 @@ public final class ClientSpeakerHosts {
 	private ClientSpeakerHosts() {
 	}
 
+	/** Receives the host notices from the server, and forgets them all on disconnect. */
 	public static void register() {
 		ClientPlayNetworking.registerGlobalReceiver(SpeakerHostPayload.TYPE, (payload, context) -> put(payload));
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> clear());
 	}
 
+	/** Records where speaker {@code host.speakerId()} is, dropping the oldest notice beyond the cap. */
 	public static void put(SpeakerHostPayload host) {
 		HOSTS.remove(host.speakerId());
 		HOSTS.put(host.speakerId(), host);
@@ -43,6 +45,7 @@ public final class ClientSpeakerHosts {
 		}
 	}
 
+	/** The last notice received for speaker {@code speakerId}, if any. */
 	public static Optional<SpeakerHostPayload> get(UUID speakerId) {
 		return Optional.ofNullable(HOSTS.get(speakerId));
 	}
@@ -59,18 +62,20 @@ public final class ClientSpeakerHosts {
 		if (host.block().isPresent()) {
 			return Vec3.atCenterOf(host.block().get());
 		}
-		Entity entity = level.getEntity(host.entityId());
-		if (entity == null) {
-			return null;
-		}
+		return entityPosition(host, level.getEntity(host.entityId()));
+	}
+
+	/** Where a speaker held by {@code entity} sounds from: a carrier's eyes or chest, an item entity itself. */
+	private static @Nullable Vec3 entityPosition(SpeakerHostPayload host, @Nullable Entity entity) {
 		if (entity instanceof Player player) {
 			return host.inHand()
 					? player.getEyePosition()
 					: new Vec3(player.getX(), player.getY() + player.getBbHeight() * CHEST_HEIGHT, player.getZ());
 		}
-		return entity.position();
+		return entity == null ? null : entity.position();
 	}
 
+	/** Forgets every host. */
 	public static void clear() {
 		HOSTS.clear();
 	}

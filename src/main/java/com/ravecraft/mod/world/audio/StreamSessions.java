@@ -79,7 +79,7 @@ public final class StreamSessions {
 		TABLE.endAll();
 		ENTRIES.clear();
 		NowPlaying.clear();
-		SpeakerHosts.clearNotices();
+		SpeakerHostNotices.clear();
 	}
 
 	/**
@@ -88,7 +88,7 @@ public final class StreamSessions {
 	 */
 	private static void notifyEnded(MinecraftServer server, Session<UUID> session, boolean tellOwner, boolean drain) {
 		NowPlaying.end(session.id());
-		Set<UUID> told = SpeakerHosts.endNotice(session.id());
+		Set<UUID> told = SpeakerHostNotices.end(session.id());
 		UUID entryId = ENTRIES.remove(session.id());
 		if (tellOwner && entryId != null) {
 			ServerPlayer owner = server.getPlayerList().getPlayer(session.owner());

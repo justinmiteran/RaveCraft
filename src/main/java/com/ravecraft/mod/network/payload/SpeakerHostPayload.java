@@ -35,6 +35,7 @@ public record SpeakerHostPayload(UUID speakerId, ResourceKey<Level> dimension, O
 			ByteBufCodecs.BOOL, SpeakerHostPayload::powered,
 			SpeakerHostPayload::new);
 
+	/** Keeps an immutable copy of the block position. */
 	public SpeakerHostPayload {
 		block = block.map(BlockPos::immutable);
 	}

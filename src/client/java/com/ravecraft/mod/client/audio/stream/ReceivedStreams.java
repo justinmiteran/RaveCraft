@@ -25,6 +25,7 @@ public final class ReceivedStreams {
 	private ReceivedStreams() {
 	}
 
+	/** Ticks the streams each client tick and ends them all on disconnect. */
 	public static void register() {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> tick());
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> endAll());
@@ -51,6 +52,7 @@ public final class ReceivedStreams {
 		});
 	}
 
+	/** Stops every stream, playing or draining, and detaches them from the renderer. */
 	public static void endAll() {
 		STREAMS.clear().forEach(stream -> stream.stopped = true);
 		DRAINING.forEach(stream -> stream.stopped = true);
@@ -65,6 +67,7 @@ public final class ReceivedStreams {
 		DRAINING.removeIf(stream -> !stream.alive());
 	}
 
+	/** A received session: the speaker that plays it and its playout. */
 	private static final class Stream {
 		final UUID speakerId;
 		final StreamPlayout playout;

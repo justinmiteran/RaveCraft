@@ -25,6 +25,10 @@ public final class SpeakerWatchers {
 	private SpeakerWatchers() {
 	}
 
+	/**
+	 * {@code player} opened ({@code open}) or closed the screen of speaker {@code speakerId}; opening needs control of
+	 * it.
+	 */
 	public static void watch(ServerPlayer player, UUID speakerId, boolean open) {
 		if (!open) {
 			unwatch(speakerId, player.getUUID());
@@ -39,6 +43,7 @@ public final class SpeakerWatchers {
 		}
 	}
 
+	/** Speaker {@code speakerId} changed: its watchers get its state at the next flush. */
 	public static void markDirty(UUID speakerId) {
 		if (WATCHERS.containsKey(speakerId)) {
 			DIRTY.add(speakerId);
@@ -56,6 +61,7 @@ public final class SpeakerWatchers {
 		return watchers != null && watchers.contains(player);
 	}
 
+	/** Every watched speaker changed, such as when a player joins or leaves. */
 	public static void markAllDirty() {
 		DIRTY.addAll(WATCHERS.keySet());
 	}
@@ -90,11 +96,13 @@ public final class SpeakerWatchers {
 		DIRTY.clear();
 	}
 
+	/** {@code player} left: it watches nothing any more. */
 	public static void forget(UUID player) {
 		WATCHERS.values().forEach(set -> set.remove(player));
 		WATCHERS.values().removeIf(Set::isEmpty);
 	}
 
+	/** Forgets every watcher. */
 	public static void clear() {
 		WATCHERS.clear();
 		DIRTY.clear();

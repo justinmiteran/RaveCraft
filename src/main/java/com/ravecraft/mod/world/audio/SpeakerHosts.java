@@ -2,20 +2,14 @@ package com.ravecraft.mod.world.audio;
 
 import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
 import com.ravecraft.mod.component.SpeakerData;
-import com.ravecraft.mod.core.audio.stream.SessionNotices;
-import com.ravecraft.mod.core.audio.stream.SessionTable.Session;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.core.speaker.HostTracker;
-import com.ravecraft.mod.network.Net;
-import com.ravecraft.mod.network.payload.SpeakerHostPayload;
 import com.ravecraft.mod.registry.ModDataComponents;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
@@ -25,8 +19,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import org.jspecify.annotations.Nullable;
@@ -43,11 +35,6 @@ public final class SpeakerHosts {
 	 * item's id (or a creative refresh), and the stale id must be forgotten, not left pointing at the block.
 	 */
 	private static final Map<SpeakerHost.Block, UUID> BLOCK_IDS = new HashMap<>();
-	/**
-	 * Where each open session's speaker is, its volume and power, told once to each player who hears it: rebuilt
-	 * and sent again to everyone hearing it on each change, and to a new listener before its first relayed chunk.
-	 */
-	private static final SessionNotices<SpeakerHostPayload> NOTICES = new SessionNotices<>();
 	/** Last queue seen for each tracked id: what a session is paused at once its host is out of reach (a chest). */
 	private static final Map<UUID, SpeakerQueue> LAST_QUEUE = new HashMap<>();
 	/** Sessions paused because their host was lost, waiting for their id to show up again. Memory only. */
@@ -67,6 +54,7 @@ public final class SpeakerHosts {
 	/** {@code carrier}: the player it was lost from, whose disconnect cancels {@code resume}; null otherwise. */
 	private record Parked(SpeakerQueue queue, boolean resume, @Nullable UUID carrier) {}
 
+	/** How a dropped host was lost. */
 	private enum DropLoss {
 		/** Its stack was emptied: taken by a player or a hopper, where it plays again once carried. */
 		PICKED_UP,
@@ -79,6 +67,7 @@ public final class SpeakerHosts {
 	private SpeakerHosts() {
 	}
 
+	/** Follows speaker blocks and item entities as they load and unload. */
 	public static void init() {
 		ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.register((blockEntity, level) -> {
 			if (blockEntity instanceof PortableSpeakerBlockEntity speaker) {
@@ -99,72 +88,7 @@ public final class SpeakerHosts {
 
 	/** The speaker {@code id} where it is now; empty when unknown, lost, or its host is not loaded. */
 	public static Optional<SpeakerHandle> handle(MinecraftServer server, UUID id) {
-		return TRACKER.host(id).flatMap(host -> switch (host) {
-			case SpeakerHost.Block block -> blockHandle(server, block, id);
-			case SpeakerHost.Carrier carrier -> carrierHandle(server, carrier, id);
-			case SpeakerHost.Dropped dropped -> droppedHandle(server, dropped, id);
-		});
-	}
-
-	private static Optional<SpeakerHandle> blockHandle(MinecraftServer server, SpeakerHost.Block block, UUID id) {
-		ServerLevel level = server.getLevel(block.dimension());
-		if (level == null || !level.isLoaded(block.pos())
-				|| !(level.getBlockEntity(block.pos()) instanceof PortableSpeakerBlockEntity speaker)
-				|| !speaker.data().id().equals(id)) {
-			return Optional.empty();
-		}
-		return Optional.of(new BlockHandle(level, block.pos(), speaker));
-	}
-
-	/** Searches the carrier's inventory: only when a handle is asked for, never each tick. */
-	private static Optional<SpeakerHandle> carrierHandle(MinecraftServer server, SpeakerHost.Carrier carrier, UUID id) {
-		ServerPlayer player = server.getPlayerList().getPlayer(carrier.player());
-		return player == null
-				? Optional.empty()
-				: findCarried(player, id).map(stack -> new CarrierHandle(player, stack, carrier.inHand()));
-	}
-
-	private static Optional<ItemStack> findCarried(ServerPlayer player, UUID id) {
-		Inventory inventory = player.getInventory();
-		for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
-			if (hasId(inventory.getItem(slot), id)) {
-				return Optional.of(inventory.getItem(slot));
-			}
-		}
-		return findUnticked(player, id);
-	}
-
-	/**
-	 * The stack of {@code id} where the player holds it but vanilla never ticks it, so it does not report: on the
-	 * mouse cursor of the open menu, or in the 2x2 crafting grid. The creative inventory's cursor exists only on the
-	 * client: a speaker held there is not found, and pauses once its grace runs out.
-	 */
-	private static Optional<ItemStack> findUnticked(ServerPlayer player, UUID id) {
-		ItemStack cursor = player.containerMenu.getCarried();
-		if (hasId(cursor, id)) {
-			return Optional.of(cursor);
-		}
-		CraftingContainer grid = player.inventoryMenu.getCraftSlots();
-		for (int slot = 0; slot < grid.getContainerSize(); slot++) {
-			if (hasId(grid.getItem(slot), id)) {
-				return Optional.of(grid.getItem(slot));
-			}
-		}
-		return Optional.empty();
-	}
-
-	private static boolean hasId(ItemStack stack, UUID id) {
-		SpeakerData data = stack.get(ModDataComponents.SPEAKER);
-		return data != null && data.id().equals(id);
-	}
-
-	private static Optional<SpeakerHandle> droppedHandle(MinecraftServer server, SpeakerHost.Dropped dropped, UUID id) {
-		ServerLevel level = server.getLevel(dropped.dimension());
-		if (level == null || !(level.getEntity(dropped.entity()) instanceof ItemEntity item) || item.isRemoved()) {
-			return Optional.empty();
-		}
-		SpeakerData data = item.getItem().get(ModDataComponents.SPEAKER);
-		return data != null && data.id().equals(id) ? Optional.of(new DroppedHandle(level, item)) : Optional.empty();
+		return TRACKER.host(id).flatMap(host -> SpeakerLookup.handle(server, host, id));
 	}
 
 	/** Registers a placed or loaded speaker block; a copy of an id already placed elsewhere gets a fresh id. */
@@ -297,7 +221,7 @@ public final class SpeakerHosts {
 			if (TRACKER.host(id).orElse(null) instanceof SpeakerHost.Carrier carrier && carrier.player().equals(player.getUUID())) {
 				SpeakerQueue last = LAST_QUEUE.get(id);
 				// Searches the leaving player itself, which may already be out of the player list.
-				findCarried(player, id).ifPresentOrElse(
+				SpeakerLookup.findCarried(player, id).ifPresentOrElse(
 						stack -> SpeakerPlayback.pauseRemoved(new CarrierHandle(player, stack, carrier.inHand())),
 						() -> SpeakerPlayback.detach(server, id, last));
 				forgetId(id);
@@ -324,7 +248,7 @@ public final class SpeakerHosts {
 				SpeakerPlayback.resume(handle);
 			}
 		} else if (verdict == HostTracker.Verdict.MOVED && SpeakerPlayback.isPlaying(id)) {
-			notice(server, id);
+			SpeakerHostNotices.notice(server, id);
 		}
 	}
 
@@ -342,38 +266,57 @@ public final class SpeakerHosts {
 	 * despawned stops.
 	 */
 	public static void tick(MinecraftServer server) {
-		if (!PENDING_DROPS.isEmpty()) {
-			List<ItemEntity> pending = List.copyOf(PENDING_DROPS);
-			PENDING_DROPS.clear();
-			for (ItemEntity item : pending) {
-				if (item.level() instanceof ServerLevel level) {
-					placeDropped(level, item, true);
-				}
+		retryDrops();
+		for (HostTracker.Expired<SpeakerHost> expired : TRACKER.expire(server.getTickCount())) {
+			if (settle(server, expired)) {
+				// Open screens close (or refresh): the next flush finds the speaker gone.
+				SpeakerWatchers.markDirty(expired.id());
 			}
 		}
-		for (HostTracker.Expired<SpeakerHost> expired : TRACKER.expire(server.getTickCount())) {
-			UUID id = expired.id();
-			SpeakerQueue last = LAST_QUEUE.remove(id);
-			DropLoss loss = DROP_LOSSES.remove(id);
-			CARRIED_AT.remove(id);
-			switch (expired.lastHost()) {
-				case SpeakerHost.Carrier carrier -> {
-					if (reportUnticked(server, carrier, id)) {
-						continue;
-					}
-					park(server, id, last, true, carrier.player());
-				}
-				case SpeakerHost.Dropped dropped -> {
-					if (loss == DropLoss.GONE) {
-						SpeakerPlayback.stopAt(server, id);
-					} else {
-						park(server, id, last, loss == DropLoss.PICKED_UP, null);
-					}
-				}
-				case SpeakerHost.Block block -> park(server, id, last, false, null);
+	}
+
+	/** Places again the drops that met a live placed host this tick; still meeting one, a drop gets a fresh id. */
+	private static void retryDrops() {
+		if (PENDING_DROPS.isEmpty()) {
+			return;
+		}
+		List<ItemEntity> pending = List.copyOf(PENDING_DROPS);
+		PENDING_DROPS.clear();
+		for (ItemEntity item : pending) {
+			if (item.level() instanceof ServerLevel level) {
+				placeDropped(level, item, true);
 			}
-			// Open screens close (or refresh): the next flush finds the speaker gone.
-			SpeakerWatchers.markDirty(id);
+		}
+	}
+
+	/**
+	 * Settles an id whose host was lost for good, by its last host; returns false when a carrier still holds it
+	 * where nothing ticks it, which keeps it playing.
+	 */
+	private static boolean settle(MinecraftServer server, HostTracker.Expired<SpeakerHost> expired) {
+		UUID id = expired.id();
+		SpeakerQueue last = LAST_QUEUE.remove(id);
+		DropLoss loss = DROP_LOSSES.remove(id);
+		CARRIED_AT.remove(id);
+		switch (expired.lastHost()) {
+			case SpeakerHost.Carrier carrier -> {
+				if (reportUnticked(server, carrier, id)) {
+					return false;
+				}
+				park(server, id, last, true, carrier.player());
+			}
+			case SpeakerHost.Dropped _ -> settleDrop(server, id, last, loss);
+			case SpeakerHost.Block _ -> park(server, id, last, false, null);
+		}
+		return true;
+	}
+
+	/** A lost drop: gone with its stack, it stops; otherwise it pauses, and plays again once carried if picked up. */
+	private static void settleDrop(MinecraftServer server, UUID id, @Nullable SpeakerQueue last, @Nullable DropLoss loss) {
+		if (loss == DropLoss.GONE) {
+			SpeakerPlayback.stopAt(server, id);
+		} else {
+			park(server, id, last, loss == DropLoss.PICKED_UP, null);
 		}
 	}
 
@@ -392,7 +335,7 @@ public final class SpeakerHosts {
 	 */
 	private static boolean reportUnticked(MinecraftServer server, SpeakerHost.Carrier carrier, UUID id) {
 		ServerPlayer player = server.getPlayerList().getPlayer(carrier.player());
-		Optional<ItemStack> stack = player == null ? Optional.empty() : findUnticked(player, id);
+		Optional<ItemStack> stack = player == null ? Optional.empty() : SpeakerLookup.findUnticked(player, id);
 		stack.ifPresent(found -> carried(player, found, false));
 		return stack.isPresent();
 	}
@@ -414,87 +357,17 @@ public final class SpeakerHosts {
 		return Optional.ofNullable(PARKED.get(id)).map(Parked::queue);
 	}
 
+	/** Forgets every host, notice and parked session: the server is stopping. */
 	public static void clear() {
 		TRACKER.clear();
 		BLOCK_IDS.clear();
-		NOTICES.clear();
+		SpeakerHostNotices.clear();
 		LAST_QUEUE.clear();
 		PARKED.clear();
 		DROPPED_IDS.clear();
 		DROP_LOSSES.clear();
 		CARRIED_AT.clear();
 		PENDING_DROPS.clear();
-	}
-
-	// --- Host notices ------------------------------------------------------------------------------------------
-
-	/**
-	 * (Re)builds the host notice of speaker {@code speakerId} while it plays, and sends it to the players tracking it
-	 * and to the session owner. Called when the session starts and when the host, volume or power change; a no-op
-	 * when it does not play or its host is not reachable.
-	 */
-	public static void notice(MinecraftServer server, UUID speakerId) {
-		Optional<Session<UUID>> session = StreamSessions.table().byKey(speakerId);
-		Optional<SpeakerHandle> handle = handle(server, speakerId);
-		if (session.isEmpty() || handle.isEmpty()) {
-			return;
-		}
-		int sessionId = session.get().id();
-		NOTICES.open(sessionId, payloadOf(handle.get()));
-		Set<ServerPlayer> hearers = new LinkedHashSet<>(handle.get().trackers());
-		ServerPlayer owner = server.getPlayerList().getPlayer(session.get().owner());
-		if (owner != null) {
-			hearers.add(owner);
-		}
-		for (ServerPlayer player : hearers) {
-			tellHost(player, sessionId);
-		}
-	}
-
-	/** Sends the host of session {@code sessionId} to {@code player} unless already told; returns whether it sent. */
-	public static boolean tellHost(ServerPlayer player, int sessionId) {
-		Optional<SpeakerHostPayload> notice = NOTICES.firstFor(sessionId, player.getUUID());
-		notice.ifPresent(payload -> Net.send(player, payload));
-		return notice.isPresent();
-	}
-
-	public static Optional<SpeakerHostPayload> noticeOf(int sessionId) {
-		return NOTICES.get(sessionId);
-	}
-
-	/** Session {@code sessionId} ended: drops its notice and returns everyone told about it, who may be hearing it. */
-	static Set<UUID> endNotice(int sessionId) {
-		Set<UUID> reached = NOTICES.reached(sessionId);
-		NOTICES.end(sessionId);
-		return reached;
-	}
-
-	/** {@code player} left: tell them again if they come back while the same sessions play. */
-	public static void forget(UUID player) {
-		NOTICES.forget(player);
-	}
-
-	/** Drops every notice without telling anyone: the sessions are all gone. */
-	static void clearNotices() {
-		NOTICES.clear();
-	}
-
-	private static SpeakerHostPayload payloadOf(SpeakerHandle handle) {
-		int volume = handle.data().settings().volume();
-		boolean powered = handle.powered();
-		return switch (handle.host()) {
-			case SpeakerHost.Block block -> new SpeakerHostPayload(handle.id(), block.dimension(), Optional.of(block.pos()),
-					SpeakerHostPayload.NO_ENTITY, false, volume, powered);
-			case SpeakerHost.Carrier carrier -> new SpeakerHostPayload(handle.id(), carrier.dimension(), Optional.empty(),
-					entityId(handle.level().getServer().getPlayerList().getPlayer(carrier.player())), carrier.inHand(),
-					volume, powered);
-			case SpeakerHost.Dropped dropped -> new SpeakerHostPayload(handle.id(), dropped.dimension(), Optional.empty(),
-					entityId(handle.level().getEntity(dropped.entity())), false, volume, powered);
-		};
-	}
-
-	private static int entityId(@Nullable Entity entity) {
-		return entity != null ? entity.getId() : SpeakerHostPayload.NO_ENTITY;
 	}
 
 	private static SpeakerHost.Block blockHost(ServerLevel level, BlockPos pos) {

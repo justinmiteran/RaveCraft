@@ -39,7 +39,7 @@ class RoomProbeTest {
 
 	@Test
 	void closedStoneRoomIsClosedAndLive() {
-		RoomShape shape = shape(new TestGrid().shell(-5, -3, -5, 5, 3, 5, STONE), 0.5, 0.5, 0.5);
+		RoomShape shape = shape(new TestGrid().shell(TestGrid.box(-5, -3, -5, 5, 3, 5), STONE), 0.5, 0.5, 0.5);
 		assertEquals(0, shape.openness());
 		assertTrue(shape.meanFreePath() >= 3 && shape.meanFreePath() <= 6, "mfp " + shape.meanFreePath());
 		assertEquals(6, shape.rt60(6));
@@ -47,33 +47,33 @@ class RoomProbeTest {
 
 	@Test
 	void woolRoomDecaysFast() {
-		RoomShape wool = shape(new TestGrid().shell(-5, -3, -5, 5, 3, 5, WOOL), 0.5, 0.5, 0.5);
-		RoomShape stone = shape(new TestGrid().shell(-5, -3, -5, 5, 3, 5, STONE), 0.5, 0.5, 0.5);
+		RoomShape wool = shape(new TestGrid().shell(TestGrid.box(-5, -3, -5, 5, 3, 5), WOOL), 0.5, 0.5, 0.5);
+		RoomShape stone = shape(new TestGrid().shell(TestGrid.box(-5, -3, -5, 5, 3, 5), STONE), 0.5, 0.5, 0.5);
 		assertTrue(wool.rt60(6) < 0.3, "wool " + wool.rt60(6));
 		assertTrue(wool.rt60(6) < stone.rt60(6));
 	}
 
 	@Test
 	void openFieldIsOpen() {
-		RoomShape shape = shape(new TestGrid().fill(-40, -1, -40, 40, -1, 40, STONE), 0.5, 0.5, 0.5);
+		RoomShape shape = shape(new TestGrid().fill(TestGrid.box(-40, -1, -40, 40, -1, 40), STONE), 0.5, 0.5, 0.5);
 		assertTrue(shape.openness() > 0.4, "openness " + shape.openness());
 	}
 
 	@Test
 	void waterSurfaceStopsARay() {
-		TestGrid under = new TestGrid().fluidBox(-20, -20, -20, 20, 5, 20, WATER);
+		TestGrid under = new TestGrid().fluidBox(TestGrid.box(-20, -20, -20, 20, 5, 20), WATER);
 		List<RayHit> hits = measure(under, 0.5, 0.5, 0.5, 200, 64);
 		assertTrue(hits.stream().anyMatch(h -> !h.open() && h.absorption() == 1 && h.distance() > 4 && h.distance() < 6));
 
-		TestGrid above = new TestGrid().fluidBox(-20, -20, -20, 20, 0, 20, WATER);
+		TestGrid above = new TestGrid().fluidBox(TestGrid.box(-20, -20, -20, 20, 0, 20), WATER);
 		List<RayHit> down = measure(above, 0.5, 5.5, 0.5, 200, 64);
 		assertTrue(down.stream().anyMatch(h -> !h.open() && h.absorption() == 0.01 && h.distance() > 4 && h.distance() < 6));
 	}
 
 	@Test
 	void startingInsideASolidStillMeasures() {
-		TestGrid air = new TestGrid().shell(-5, -3, -5, 5, 3, 5, STONE);
-		TestGrid solid = new TestGrid().shell(-5, -3, -5, 5, 3, 5, STONE).solid(0, 0, 0, STONE);
+		TestGrid air = new TestGrid().shell(TestGrid.box(-5, -3, -5, 5, 3, 5), STONE);
+		TestGrid solid = new TestGrid().shell(TestGrid.box(-5, -3, -5, 5, 3, 5), STONE).solid(0, 0, 0, STONE);
 		RoomShape a = shape(air, 0.5, 0.5, 0.5);
 		RoomShape b = shape(solid, 0.5, 0.5, 0.5);
 		assertEquals(a.openness(), b.openness());
@@ -82,7 +82,7 @@ class RoomProbeTest {
 
 	@Test
 	void resumedProbeEqualsOneShot() {
-		TestGrid grid = new TestGrid().shell(-5, -3, -5, 5, 3, 5, STONE).fluidBox(-2, -2, -2, 1, 1, 1, WATER);
+		TestGrid grid = new TestGrid().shell(TestGrid.box(-5, -3, -5, 5, 3, 5), STONE).fluidBox(TestGrid.box(-2, -2, -2, 1, 1, 1), WATER);
 		List<RayHit> whole = measure(grid, 0.5, 0.5, 0.5, 32, 64);
 		RoomProbe probe = new RoomProbe(grid);
 		probe.start(0.5, 0.5, 0.5, 32, 64);
@@ -109,25 +109,25 @@ class RoomProbeTest {
 
 	@Test
 	void smoothBoxIsRegular() {
-		RoomShape shape = shape(new TestGrid().shell(-5, -3, -5, 5, 3, 5, STONE), 0.5, 0.5, 0.5);
+		RoomShape shape = shape(new TestGrid().shell(TestGrid.box(-5, -3, -5, 5, 3, 5), STONE), 0.5, 0.5, 0.5);
 		assertEquals(0, shape.irregularity());
 	}
 
 	@Test
 	void ruggedCaveIsIrregular() {
-		TestGrid cave = new TestGrid().shell(-5, -3, -5, 5, 3, 5, STONE);
+		TestGrid cave = new TestGrid().shell(TestGrid.box(-5, -3, -5, 5, 3, 5), STONE);
 		for (int a = -4; a <= 4; a++) {
 			for (int b = -4; b <= 4; b++) {
 				int d = Math.floorMod(a * 7 + b * 13, 3);
 				if (d > 0) {
-					cave.fill(a, -2, b, a, -3 + d, b, STONE);
-					cave.fill(a, 3 - d, b, a, 2, b, STONE);
-					cave.fill(-4, Math.clamp(a, -2, 2), b, -5 + d, Math.clamp(a, -2, 2), b, STONE);
-					cave.fill(5 - d, Math.clamp(a, -2, 2), b, 4, Math.clamp(a, -2, 2), b, STONE);
+					cave.fill(TestGrid.box(a, -2, b, a, -3 + d, b), STONE);
+					cave.fill(TestGrid.box(a, 3 - d, b, a, 2, b), STONE);
+					cave.fill(TestGrid.box(-4, Math.clamp(a, -2, 2), b, -5 + d, Math.clamp(a, -2, 2), b), STONE);
+					cave.fill(TestGrid.box(5 - d, Math.clamp(a, -2, 2), b, 4, Math.clamp(a, -2, 2), b), STONE);
 				}
 			}
 		}
-		cave.clear(-1, -1, -1, 1, 1, 1);
+		cave.clear(TestGrid.box(-1, -1, -1, 1, 1, 1));
 		RoomShape shape = RoomShape.of(measure(cave, 0.5, 0.5, 0.5, 48, 64), 64);
 		assertTrue(shape.irregularity() > 0.4, "irregularity " + shape.irregularity());
 	}
@@ -143,7 +143,7 @@ class RoomProbeTest {
 
 	@Test
 	void wallDistanceIsPerpendicularToTheFace() {
-		List<RayHit> hits = measure(new TestGrid().fill(20, -30, -30, 20, 30, 30, STONE), 0.5, 0.5, 0.5, 32, 64);
+		List<RayHit> hits = measure(new TestGrid().fill(TestGrid.box(20, -30, -30, 20, 30, 30), STONE), 0.5, 0.5, 0.5, 32, 64);
 		List<RayHit> wall = hits.stream().filter(h -> !h.open()).toList();
 		assertTrue(wall.size() > 3, "wall hits " + wall.size());
 		for (RayHit hit : wall) {

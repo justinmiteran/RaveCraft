@@ -27,12 +27,12 @@ class DetourTest {
 
 	/** A stone shell around the open box x, z in [0, 6], y in [0, 4]. */
 	private static TestGrid room() {
-		return new TestGrid().shell(0, 0, 0, 6, 4, 6, STONE);
+		return new TestGrid().shell(TestGrid.box(0, 0, 0, 6, 4, 6), STONE);
 	}
 
 	/** {@link #room()} with a 1x2 opening in the wall x = 7 at z = 1, y = 0..1. */
 	private static TestGrid openDoor() {
-		return room().clear(7, 0, 1, 7, 1, 1);
+		return room().clear(TestGrid.box(7, 0, 1, 7, 1, 1));
 	}
 
 	/** Listener outside the room at (12.5, 1.5, 3.5), source inside at (3.5, 1.5, 3.5). */
@@ -88,8 +88,8 @@ class DetourTest {
 	void twoOpeningsLouderThanEither() {
 		double[] l = {9.5, 1.5, 3.5};
 		Occlusion near = occlusion(openDoor(), l, IN_ROOM);
-		Occlusion far = occlusion(room().clear(7, 0, 5, 7, 1, 5), l, IN_ROOM);
-		Occlusion both = occlusion(openDoor().clear(7, 0, 5, 7, 1, 5), l, IN_ROOM);
+		Occlusion far = occlusion(room().clear(TestGrid.box(7, 0, 5, 7, 1, 5)), l, IN_ROOM);
+		Occlusion both = occlusion(openDoor().clear(TestGrid.box(7, 0, 5, 7, 1, 5)), l, IN_ROOM);
 		assertTrue(both.lossDb() < near.lossDb(), near.lossDb() + " -> " + both.lossDb());
 		assertTrue(both.lossDb() < far.lossDb(), far.lossDb() + " -> " + both.lossDb());
 	}
@@ -99,7 +99,7 @@ class DetourTest {
 	 * goes through the same corner and reaches the listener along the same corridor.
 	 */
 	private static TestGrid longCorner() {
-		return new TestGrid().fill(-3, -2, -3, 10, 4, 10, STONE).clear(0, 1, 0, 6, 1, 0).clear(6, 1, 0, 6, 1, 6);
+		return new TestGrid().fill(TestGrid.box(-3, -2, -3, 10, 4, 10), STONE).clear(TestGrid.box(0, 1, 0, 6, 1, 0)).clear(TestGrid.box(6, 1, 0, 6, 1, 6));
 	}
 
 	@Test
@@ -119,7 +119,7 @@ class DetourTest {
 	 */
 	@Test
 	void pillarCornerIsNotFree() {
-		TestGrid grid = new TestGrid().fill(1, 0, -2, 2, 3, -1, STONE);
+		TestGrid grid = new TestGrid().fill(TestGrid.box(1, 0, -2, 2, 3, -1), STONE);
 		Occlusion o = occlusion(grid, new double[] {3.5, 1.5, -2.5}, new double[] {0.5, 1.5, 0.5});
 		assertTrue(o.lossDb() > 0, "lossDb " + o.lossDb());
 		assertTrue(o.highLossDb() > 0, "highLossDb " + o.highLossDb());
@@ -133,7 +133,7 @@ class DetourTest {
 	 */
 	@Test
 	void bendCostsItsPenalty() {
-		TestGrid grid = new TestGrid().fill(-3, -2, -3, 7, 4, 7, STONE).clear(0, 1, 0, 3, 1, 0).clear(3, 1, 0, 3, 1, 3);
+		TestGrid grid = new TestGrid().fill(TestGrid.box(-3, -2, -3, 7, 4, 7), STONE).clear(TestGrid.box(0, 1, 0, 3, 1, 0)).clear(TestGrid.box(3, 1, 0, 3, 1, 3));
 		double[] l = {3.5, 1.5, 3.5};
 		double[] s = {0.5, 1.5, 0.5};
 		PathLoss direct = new OcclusionTracer(grid, S).trace(new Vec(l[0], l[1], l[2]), new Vec(s[0], s[1], s[2]),
@@ -174,12 +174,12 @@ class DetourTest {
 	 */
 	@Test
 	void lCorridorNeedsTwoBends() {
-		TestGrid grid = new TestGrid().fill(-3, -1, -3, 14, 3, 15, STONE)
-				.clear(0, 1, 0, 4, 1, 4)
-				.clear(5, 1, 2, 7, 1, 2)
-				.clear(8, 1, 1, 10, 1, 3)
-				.clear(9, 1, 4, 9, 1, 7)
-				.clear(7, 1, 8, 11, 1, 12);
+		TestGrid grid = new TestGrid().fill(TestGrid.box(-3, -1, -3, 14, 3, 15), STONE)
+				.clear(TestGrid.box(0, 1, 0, 4, 1, 4))
+				.clear(TestGrid.box(5, 1, 2, 7, 1, 2))
+				.clear(TestGrid.box(8, 1, 1, 10, 1, 3))
+				.clear(TestGrid.box(9, 1, 4, 9, 1, 7))
+				.clear(TestGrid.box(7, 1, 8, 11, 1, 12));
 		double[] listener = {9.5, 1.5, 10.5};
 		double[] source = {2.5, 1.5, 2.5};
 		assertNoSingleWaypoint(grid, listener, source);
@@ -201,33 +201,36 @@ class DetourTest {
 	private static void assertNoSingleWaypoint(TestGrid grid, double[] anchor, double[] other) {
 		OcclusionTracer tracer = new OcclusionTracer(grid, S);
 		VoxelSample sample = new VoxelSample();
-		for (int dx = -1; dx <= 1; dx++) {
-			for (int dy = -1; dy <= 1; dy++) {
-				for (int dz = -1; dz <= 1; dz++) {
-					if (dx == 0 && dy == 0 && dz == 0) {
-						continue;
-					}
-					double n = Math.sqrt(dx * dx + dy * dy + dz * dz);
-					for (double r : new double[] {3, 6}) {
-						double px = Math.floor(anchor[0]) + 0.5 + dx / n * r;
-						double py = Math.floor(anchor[1]) + 0.5 + dy / n * r;
-						double pz = Math.floor(anchor[2]) + 0.5 + dz / n * r;
-						grid.sample((int) Math.floor(px), (int) Math.floor(py), (int) Math.floor(pz), sample);
-						if (sample.material != null) {
-							continue;
-						}
-						PathLoss near = tracer.trace(new Vec(anchor[0], anchor[1], anchor[2]), new Vec(px, py, pz),
-								new TraceBudget(100_000));
-						PathLoss far = tracer.trace(new Vec(px, py, pz), new Vec(other[0], other[1], other[2]),
-								new TraceBudget(100_000));
-						assertNotNull(near);
-						assertNotNull(far);
-						assertTrue(near.lossDb() >= 3 || far.lossDb() >= 3,
-								"waypoint (" + px + ", " + py + ", " + pz + ") sees both ends");
-					}
+		Vec from = new Vec(anchor[0], anchor[1], anchor[2]);
+		Vec to = new Vec(other[0], other[1], other[2]);
+		for (int i = 0; i < 27; i++) {
+			int dx = i / 9 - 1;
+			int dy = i / 3 % 3 - 1;
+			int dz = i % 3 - 1;
+			if (dx == 0 && dy == 0 && dz == 0) {
+				continue;
+			}
+			double n = Math.sqrt(dx * dx + dy * dy + dz * dz);
+			for (double r : new double[] {3, 6}) {
+				double px = Math.floor(anchor[0]) + 0.5 + dx / n * r;
+				double py = Math.floor(anchor[1]) + 0.5 + dy / n * r;
+				double pz = Math.floor(anchor[2]) + 0.5 + dz / n * r;
+				grid.sample((int) Math.floor(px), (int) Math.floor(py), (int) Math.floor(pz), sample);
+				if (sample.material == null) {
+					assertBlocked(tracer, from, new Vec(px, py, pz), to);
 				}
 			}
 		}
+	}
+
+	/** At least one leg through {@code waypoint} loses 3 dB or more. */
+	private static void assertBlocked(OcclusionTracer tracer, Vec from, Vec waypoint, Vec to) {
+		PathLoss near = tracer.trace(from, waypoint, new TraceBudget(100_000));
+		PathLoss far = tracer.trace(waypoint, to, new TraceBudget(100_000));
+		assertNotNull(near);
+		assertNotNull(far);
+		assertTrue(near.lossDb() >= 3 || far.lossDb() >= 3,
+				"waypoint (" + waypoint.x() + ", " + waypoint.y() + ", " + waypoint.z() + ") sees both ends");
 	}
 
 	@Test
@@ -285,7 +288,7 @@ class DetourTest {
 	@Test
 	void submergedSpeakerDetoursAroundPillar() {
 		AcousticMedium water = Objects.requireNonNull(S.medium("water"));
-		TestGrid grid = new TestGrid().fluidBox(-8, -8, -8, 8, 8, 8, water).fill(1, 0, -2, 2, 3, -1, STONE)
+		TestGrid grid = new TestGrid().fluidBox(TestGrid.box(-8, -8, -8, 8, 8, 8), water).fill(TestGrid.box(1, 0, -2, 2, 3, -1), STONE)
 				.solid(0, 1, 0, STONE);
 		Occlusion o = occlusion(grid, new double[] {3.5, 1.5, -2.5}, new double[] {0.5, 1.5, 0.5});
 		assertEquals(5.1347, o.lossDb(), 1e-4);

@@ -43,17 +43,19 @@ public class RoomProbeGameTest {
 		}
 	}
 
+	private static boolean edge(int v, int min, int max) {
+		return v == min || v == max;
+	}
+
 	@GameTest
 	public void stoneRoomIsClosed(GameTestHelper h) {
 		// A 7x5x7 hollow stone shell: x and z from 0 to 6, y from 1 to 5, air inside.
-		for (int x = 0; x <= 6; x++) {
-			for (int y = 1; y <= 5; y++) {
-				for (int z = 0; z <= 6; z++) {
-					boolean wall = x == 0 || x == 6 || y == 1 || y == 5 || z == 0 || z == 6;
-					h.setBlock(new BlockPos(x, y, z), wall ? Blocks.STONE.defaultBlockState()
-							: Blocks.AIR.defaultBlockState());
-				}
-			}
+		for (int i = 0; i < 7 * 5 * 7; i++) {
+			int x = i / 35;
+			int y = 1 + i / 7 % 5;
+			int z = i % 7;
+			boolean wall = edge(x, 0, 6) || edge(y, 1, 5) || edge(z, 0, 6);
+			h.setBlock(new BlockPos(x, y, z), wall ? Blocks.STONE.defaultBlockState() : Blocks.AIR.defaultBlockState());
 		}
 		BlockPos centre = h.absolutePos(new BlockPos(3, 3, 3));
 		RoomProbe probe = new RoomProbe(new ServerGrid(h.getLevel()));

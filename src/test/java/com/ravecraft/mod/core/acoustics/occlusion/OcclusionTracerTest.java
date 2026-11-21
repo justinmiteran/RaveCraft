@@ -22,16 +22,15 @@ class OcclusionTracerTest {
 		return S.materials().stream().filter(m -> m.name().equals(name)).findFirst().orElseThrow();
 	}
 
-	private static PathLoss trace(TestGrid grid, double x0, double y0, double z0, double x1, double y1, double z1) {
-		PathLoss loss = new OcclusionTracer(grid, S).trace(new Vec(x0, y0, z0), new Vec(x1, y1, z1),
-				new TraceBudget(10_000));
+	private static PathLoss trace(TestGrid grid, Vec from, Vec to) {
+		PathLoss loss = new OcclusionTracer(grid, S).trace(from, to, new TraceBudget(10_000));
 		assertNotNull(loss);
 		return loss;
 	}
 
 	/** Listener at (0.5, 0.5, 0.5), source at (6.5, 0.5, 0.5). */
 	private static PathLoss traceX(TestGrid grid) {
-		return trace(grid, 0.5, 0.5, 0.5, 6.5, 0.5, 0.5);
+		return trace(grid, new Vec(0.5, 0.5, 0.5), new Vec(6.5, 0.5, 0.5));
 	}
 
 	@Test
@@ -63,7 +62,7 @@ class OcclusionTracerTest {
 
 	@Test
 	void slabCountsHalfAlongY() {
-		PathLoss loss = trace(new TestGrid().slab(0, 3, 0, STONE), 0.5, 0.5, 0.5, 0.5, 6.5, 0.5);
+		PathLoss loss = trace(new TestGrid().slab(0, 3, 0, STONE), new Vec(0.5, 0.5, 0.5), new Vec(0.5, 6.5, 0.5));
 		assertEquals(7.5, loss.lossDb(), 1e-9);
 	}
 
@@ -77,21 +76,21 @@ class OcclusionTracerTest {
 		double tOut = (1 - x0) / dx;
 		double clipped = (tOut - tIn) * Math.hypot(dx, dy);
 		assertTrue(clipped > 0 && clipped < 0.2);
-		PathLoss loss = trace(new TestGrid().solid(0, 1, 0, STONE), x0, y0, 0.5, x1, y1, 0.5);
+		PathLoss loss = trace(new TestGrid().solid(0, 1, 0, STONE), new Vec(x0, y0, 0.5), new Vec(x1, y1, 0.5));
 		assertEquals(15 * clipped, loss.lossDb(), 1e-9);
 		assertEquals(30 * clipped, loss.highLossDb(), 1e-9);
 	}
 
 	@Test
 	void rayAlongGridLineCountsWallOnce() {
-		PathLoss loss = trace(new TestGrid().wall(3, STONE), 0, 0.5, 0.5, 6, 0.5, 0.5);
+		PathLoss loss = trace(new TestGrid().wall(3, STONE), new Vec(0, 0.5, 0.5), new Vec(6, 0.5, 0.5));
 		assertEquals(15, loss.lossDb(), 1e-9);
 	}
 
 	@Test
 	void rayOnVoxelEdgeCountsWallOnce() {
 		// Along y = 1, z = 1, the shared edge of four voxel rows: one wall, whichever row is walked.
-		PathLoss loss = trace(new TestGrid().wall(3, STONE), 0.5, 1, 1, 6.5, 1, 1);
+		PathLoss loss = trace(new TestGrid().wall(3, STONE), new Vec(0.5, 1, 1), new Vec(6.5, 1, 1));
 		assertEquals(15, loss.lossDb(), 1e-9);
 	}
 
@@ -104,7 +103,7 @@ class OcclusionTracerTest {
 
 	@Test
 	void airToWaterInterface() {
-		PathLoss loss = traceX(new TestGrid().fluidBox(3, -8, -8, 20, 8, 8, WATER));
+		PathLoss loss = traceX(new TestGrid().fluidBox(TestGrid.box(3, -8, -8, 20, 8, 8), WATER));
 		assertEquals(19.8, loss.lossDb(), 0.3);
 		assertEquals(9.9 + 0.02 * 3.5, loss.highLossDb(), 0.3);
 		assertEquals(Interfaces.lossDb(S.air(), WATER, S.interfaceScale()), loss.lossDb(), 1e-9);
@@ -154,7 +153,7 @@ class OcclusionTracerTest {
 
 	@Test
 	void zeroLengthSegmentAddsNothing() {
-		PathLoss loss = trace(new TestGrid().solid(0, 0, 0, STONE), 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
+		PathLoss loss = trace(new TestGrid().solid(0, 0, 0, STONE), new Vec(0.5, 0.5, 0.5), new Vec(0.5, 0.5, 0.5));
 		assertEquals(0, loss.lossDb());
 		assertEquals(0, loss.length());
 	}
@@ -162,15 +161,15 @@ class OcclusionTracerTest {
 	@Test
 	void reverseDirectionMatches() {
 		TestGrid grid = new TestGrid().wall(3, STONE).slab(5, 0, 0, STONE);
-		PathLoss forward = trace(grid, 0.5, 0.5, 0.5, 6.5, 0.5, 0.5);
-		PathLoss backward = trace(grid, 6.5, 0.5, 0.5, 0.5, 0.5, 0.5);
+		PathLoss forward = trace(grid, new Vec(0.5, 0.5, 0.5), new Vec(6.5, 0.5, 0.5));
+		PathLoss backward = trace(grid, new Vec(6.5, 0.5, 0.5), new Vec(0.5, 0.5, 0.5));
 		assertEquals(22.5, forward.lossDb(), 1e-9);
 		assertEquals(forward.lossDb(), backward.lossDb(), 1e-9);
 	}
 
 	/** A lake: water in x in [-8, 20], y, z in [-8, 8], air around. */
 	private static TestGrid lake() {
-		return new TestGrid().fluidBox(-8, -8, -8, 20, 8, 8, WATER);
+		return new TestGrid().fluidBox(TestGrid.box(-8, -8, -8, 20, 8, 8), WATER);
 	}
 
 	@Test
@@ -183,7 +182,7 @@ class OcclusionTracerTest {
 	@Test
 	void speakerVoxelWithoutFluidUnderwater() {
 		// A speaker that cannot be waterlogged is a solid voxel without fluid: it is in the water around it.
-		PathLoss loss = trace(lake().solid(2, 0, 0, STONE), 0.5, 0.5, 0.5, 2.5, 0.5, 0.5);
+		PathLoss loss = trace(lake().solid(2, 0, 0, STONE), new Vec(0.5, 0.5, 0.5), new Vec(2.5, 0.5, 0.5));
 		assertEquals(0, loss.lossDb(), 1e-9);
 		assertEquals(0.02 * 2, loss.highLossDb(), 1e-9);
 	}
@@ -207,18 +206,16 @@ class OcclusionTracerTest {
 	@Test
 	void solidVoxelAtTheSurfaceKeepsTheMediumItCameFrom() {
 		// Water up to x = 3, a solid at x = 4, air beyond: one interface, where the air begins.
-		TestGrid grid = new TestGrid().fluidBox(-8, -8, -8, 4, 8, 8, WATER).solid(4, 0, 0, STONE);
+		TestGrid grid = new TestGrid().fluidBox(TestGrid.box(-8, -8, -8, 4, 8, 8), WATER).solid(4, 0, 0, STONE);
 		PathLoss loss = traceX(grid);
 		assertEquals(15 + Interfaces.lossDb(WATER, S.air(), S.interfaceScale()), loss.lossDb(), 1e-9);
 	}
 
 	@Test
 	void onlySolidVoxelsTakeTheDefaultMedium() {
-		PathLoss inWater = trace(new TestGrid(WATER).solid(0, 0, 0, STONE).solid(1, 0, 0, STONE),
-				0.5, 0.5, 0.5, 1.5, 0.5, 0.5);
+		PathLoss inWater = trace(new TestGrid(WATER).solid(0, 0, 0, STONE).solid(1, 0, 0, STONE), new Vec(0.5, 0.5, 0.5), new Vec(1.5, 0.5, 0.5));
 		assertEquals(0, inWater.lossDb(), 1e-9);
 		assertEquals(0.02, inWater.highLossDb(), 1e-9);
-		assertTrue(trace(new TestGrid(VACUUM).solid(0, 0, 0, STONE).solid(1, 0, 0, STONE),
-				0.5, 0.5, 0.5, 1.5, 0.5, 0.5).mute());
+		assertTrue(trace(new TestGrid(VACUUM).solid(0, 0, 0, STONE).solid(1, 0, 0, STONE), new Vec(0.5, 0.5, 0.5), new Vec(1.5, 0.5, 0.5)).mute());
 	}
 }

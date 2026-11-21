@@ -88,7 +88,7 @@ class EchoFinderTest {
 
 	@Test
 	void probeFindsAStoneWallAt25Blocks() {
-		TestGrid grid = new TestGrid().fill(25, -20, -20, 25, 20, 20, STONE).fill(-3, -1, -3, 3, -1, 3, STONE);
+		TestGrid grid = new TestGrid().fill(TestGrid.box(25, -20, -20, 25, 20, 20), STONE).fill(TestGrid.box(-3, -1, -3, 3, -1, 3), STONE);
 		RoomProbe probe = new RoomProbe(grid);
 		probe.start(0.5, 0.5, 0.5, 128, 64);
 		assertTrue(probe.run(new TraceBudget(Integer.MAX_VALUE)));
@@ -114,7 +114,7 @@ class EchoFinderTest {
 	@Test
 	void flatCliffEchoesAtMediumQuality() {
 		// A flat stone cliff 81 blocks wide, 20 blocks away on open ground, probed with the 32 rays of the medium quality.
-		TestGrid grid = new TestGrid().fill(-60, -1, -40, 60, -1, 40, EARTH).fill(-40, 0, 20, 40, 29, 20, STONE);
+		TestGrid grid = new TestGrid().fill(TestGrid.box(-60, -1, -40, 60, -1, 40), EARTH).fill(TestGrid.box(-40, 0, 20, 40, 29, 20), STONE);
 		RoomProbe probe = new RoomProbe(grid);
 		probe.start(0.5, 1.62, 0.5, 32, 64);
 		assertTrue(probe.run(new TraceBudget(Integer.MAX_VALUE)));
@@ -124,7 +124,7 @@ class EchoFinderTest {
 	@Test
 	void stoneGroundDoesNotEcho() {
 		// Grazing rays land on the ground 17 to 35 blocks away, but the ground is right under the listener.
-		TestGrid grid = new TestGrid().fill(-70, -1, -70, 70, -1, 70, STONE);
+		TestGrid grid = new TestGrid().fill(TestGrid.box(-70, -1, -70, 70, -1, 70), STONE);
 		RoomProbe probe = new RoomProbe(grid);
 		probe.start(0.5, 1.62, 0.5, 48, 64);
 		assertTrue(probe.run(new TraceBudget(Integer.MAX_VALUE)));

@@ -21,7 +21,7 @@ class ReverbParamsTest {
 	}
 
 	private static RoomShape room(AcousticMaterial m) {
-		RoomProbe probe = new RoomProbe(new TestGrid().shell(-5, -3, -5, 5, 3, 5, m));
+		RoomProbe probe = new RoomProbe(new TestGrid().shell(TestGrid.box(-5, -3, -5, 5, 3, 5), m));
 		probe.start(0.5, 0.5, 0.5, 32, 64);
 		assertTrue(probe.run(new TraceBudget(Integer.MAX_VALUE)));
 		return RoomShape.of(probe.hits(), 64);
@@ -75,17 +75,22 @@ class ReverbParamsTest {
 	void extremeSettingsStayInEaxBounds() {
 		ReverbSettings extreme = new ReverbSettings(true, 128, 20, 1, 6, EchoSettings.DEFAULT, List.of());
 		for (double l : new double[] { 0, 0.5, 128 }) {
-			for (double openness : new double[] { 0, 1 }) {
-				for (double a : new double[] { 0, 0.5, 1 }) {
-					for (double irregularity : new double[] { 0, 1 }) {
-						assertInBounds(ReverbParams.of(new RoomShape(openness, l, a, a, irregularity), extreme));
-					}
-				}
+			for (double a : new double[] { 0, 0.5, 1 }) {
+				assertShapesInBounds(l, a, extreme);
 			}
 		}
 		assertInBounds(ReverbParams.SILENT);
 		assertInBounds(ReverbParams.of(FluidReverb.WATER));
 		assertInBounds(ReverbParams.of(FluidReverb.LAVA));
+	}
+
+	/** Closed and open, regular and irregular rooms of length {@code l} and absorption {@code a}. */
+	private static void assertShapesInBounds(double l, double a, ReverbSettings settings) {
+		for (int k = 0; k < 4; k++) {
+			double openness = k / 2;
+			double irregularity = k % 2;
+			assertInBounds(ReverbParams.of(new RoomShape(openness, l, a, a, irregularity), settings));
+		}
 	}
 
 	@Test

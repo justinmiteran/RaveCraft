@@ -67,7 +67,7 @@ class PathCaptureTest {
 	@Test
 	void waterGivesInterfaces() {
 		PathCapture capture = new PathCapture();
-		alongX(new TestGrid().fluidBox(3, -8, -8, 5, 8, 8, WATER), S, 8, capture);
+		alongX(new TestGrid().fluidBox(TestGrid.box(3, -8, -8, 5, 8, 8), WATER), S, 8, capture);
 		List<String> names = capture.steps().stream().map(PathCapture.Step::name).toList();
 		assertEquals(List.of("air→water", "water→air"), names);
 		assertEquals(3, capture.steps().get(0).x());
@@ -94,7 +94,7 @@ class PathCaptureTest {
 
 	/** The room of {@code DetourTest}: a stone shell around x, z in [0, 6], y in [0, 4], door at x = 7, z = 1. */
 	private static TestGrid openDoor() {
-		return new TestGrid().shell(0, 0, 0, 6, 4, 6, STONE).clear(7, 0, 1, 7, 1, 1);
+		return new TestGrid().shell(TestGrid.box(0, 0, 0, 6, 4, 6), STONE).clear(TestGrid.box(7, 0, 1, 7, 1, 1));
 	}
 
 	@Test

@@ -37,12 +37,7 @@ class StreamPlayoutTest {
 		for (int seq = 0; seq < 12; seq++) {
 			List<byte[]> frames = new ArrayList<>();
 			for (int i = 0; i < StreamFormat.FRAMES_PER_CHUNK; i++) {
-				short[] pcm = new short[StreamFormat.FRAME_SAMPLES];
-				for (int s = 0; s < pcm.length; s++) {
-					long n = (long) frame * StreamFormat.FRAME_SAMPLES + s;
-					pcm[s] = (short) Math.round(10_000 * Math.sin(2 * Math.PI * 1000 * n / StreamFormat.SAMPLE_RATE));
-				}
-				frames.add(encoder.encode(pcm));
+				frames.add(encoder.encode(tone(frame)));
 				frame++;
 			}
 			playout.offer(seq, frames, 0);
@@ -97,5 +92,15 @@ class StreamPlayoutTest {
 		assertEquals(2 * StreamFormat.FRAME_MS, stats.bufferedMs());
 		assertEquals(0, stats.lostFrames());
 		assertEquals(0, stats.underruns());
+	}
+
+	/** Frame {@code frame} of a 1 kHz tone. */
+	private static short[] tone(int frame) {
+		short[] pcm = new short[StreamFormat.FRAME_SAMPLES];
+		for (int s = 0; s < pcm.length; s++) {
+			long n = (long) frame * StreamFormat.FRAME_SAMPLES + s;
+			pcm[s] = (short) Math.round(10_000 * Math.sin(2 * Math.PI * 1000 * n / StreamFormat.SAMPLE_RATE));
+		}
+		return pcm;
 	}
 }

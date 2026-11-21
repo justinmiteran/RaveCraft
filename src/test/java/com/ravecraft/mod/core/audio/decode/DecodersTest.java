@@ -125,12 +125,15 @@ class DecodersTest {
 		new Random(42).nextBytes(noise);
 		Path mp3 = Files.write(dir.resolve("noise.mp3"), noise);
 		try {
-			Optional<PcmDecoder> opened = Decoders.open(mp3);
-			try (PcmDecoder decoder = opened.orElseThrow()) {
-				decodeAll(decoder);
-			}
+			decodeAllOf(Decoders.open(mp3));
 		} catch (IOException expected) {
 			// a clean failure is fine too
+		}
+	}
+
+	private static void decodeAllOf(Optional<PcmDecoder> opened) throws IOException {
+		try (PcmDecoder decoder = opened.orElseThrow()) {
+			decodeAll(decoder);
 		}
 	}
 

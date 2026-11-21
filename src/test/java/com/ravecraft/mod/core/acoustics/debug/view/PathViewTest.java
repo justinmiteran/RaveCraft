@@ -80,7 +80,7 @@ class PathViewTest {
 
 	@Test
 	void detourPointsInOrder() {
-		TestGrid room = new TestGrid().shell(0, 0, 0, 6, 4, 6, material("stone")).clear(7, 0, 1, 7, 1, 1);
+		TestGrid room = new TestGrid().shell(TestGrid.box(0, 0, 0, 6, 4, 6), material("stone")).clear(TestGrid.box(7, 0, 1, 7, 1, 1));
 		PathCapture capture = new PathCapture();
 		Occlusion occlusion = Objects.requireNonNull(new OcclusionTracer(room, S).occlusion(new Vec(12.5, 1.5, 3.5),
 				new Vec(3.5, 1.5, 3.5), 1, 64, new TraceBudget(100_000), capture));

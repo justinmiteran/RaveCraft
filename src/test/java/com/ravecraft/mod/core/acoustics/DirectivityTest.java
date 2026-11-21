@@ -13,6 +13,16 @@ class DirectivityTest {
 	}
 
 	@Test
+	void partyFullGainAtSixtyDegrees() {
+		assertEquals(1, DeviceProfile.PARTY.directivity().gain(cosDeg(60)), 1e-9);
+	}
+
+	@Test
+	void partyMinusTenAtRear() {
+		assertEquals(-10, 20 * Math.log10(DeviceProfile.PARTY.directivity().gain(-1)), 1e-9);
+	}
+
+	@Test
 	void omniIsFlat() {
 		assertEquals(1, Directivity.OMNI.gain(1), 1e-9);
 		assertEquals(1, Directivity.OMNI.gain(0), 1e-9);

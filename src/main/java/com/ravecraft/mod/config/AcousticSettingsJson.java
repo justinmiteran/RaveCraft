@@ -10,12 +10,14 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.DeviceProfile;
+import com.ravecraft.mod.core.acoustics.DeviceProfiles;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
 import com.ravecraft.mod.core.acoustics.reverb.EchoSettings;
 import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
 import com.ravecraft.mod.core.acoustics.reverb.ReverbSettings;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
@@ -83,15 +85,14 @@ public final class AcousticSettingsJson {
 			}
 			JsonObject o = root.getAsJsonObject();
 			Reading r = new Reading();
-			JsonObject p = r.object(r.object(o, "profiles"), "portable");
-			DeviceProfile dp = d.portable();
+			JsonObject profiles = r.object(o, "profiles");
 			AcousticSettings read = new AcousticSettings(
 					r.number(o, "rolloff", d.rolloff()),
 					r.number(o, "fadeFraction", d.fadeFraction()),
 					r.number(o, "audibilityThresholdDb", d.audibilityThresholdDb()),
 					r.number(o, "maxRange", d.maxRange()),
-					new DeviceProfile(r.number(p, "powerWatts", dp.powerWatts()), r.number(p, "sensitivityDb", dp.sensitivityDb()),
-							r.number(p, "bassCutDb", dp.bassCutDb()), r.number(p, "bassCutHz", dp.bassCutHz()), dp.directivity()),
+					new DeviceProfiles(readProfile(r, r.object(profiles, SpeakerKind.PORTABLE.id()), d.profiles().portable()),
+							readProfile(r, r.object(profiles, SpeakerKind.PARTY.id()), d.profiles().party())),
 					readOcclusion(r, o, d.occlusion(), warn),
 					readReverb(r, o, d.reverb()));
 			if (o.has(OLD_AIR_KEY)) {
@@ -103,6 +104,12 @@ public final class AcousticSettingsJson {
 			warn.accept("unreadable (" + e.getMessage() + "), using the defaults until the file is fixed");
 			return new Result(d, true);
 		}
+	}
+
+	/** Reads one speaker profile, each missing key taking its value in {@code d}. */
+	private static DeviceProfile readProfile(Reading r, JsonObject p, DeviceProfile d) {
+		return new DeviceProfile(r.number(p, "powerWatts", d.powerWatts()), r.number(p, "sensitivityDb", d.sensitivityDb()),
+				r.number(p, "bassCutDb", d.bassCutDb()), r.number(p, "bassCutHz", d.bassCutHz()), d.directivity());
 	}
 
 	/** Reads the {@code occlusion} section, each missing key taking its value in {@code d}. */
@@ -242,7 +249,6 @@ public final class AcousticSettingsJson {
 
 	/** Writes the settings as a commented file, one comment above each setting. */
 	public static void write(AcousticSettings s, Writer out) {
-		DeviceProfile p = s.portable();
 		String text = """
 				// RaveCraft server acoustics. Read when the server starts; restart it after editing.
 				// Every player receives these settings when joining, so everyone hears speakers the same way.
@@ -265,31 +271,9 @@ public final class AcousticSettingsJson {
 				  // still receive the stream, so a high value costs bandwidth. Bounds: 16 to 512.
 				  "maxRange": %s,
 
-				  // Each device is described by its data sheet; its range is computed from it:
-				  //   level at 1 m = sensitivityDb + 10 x log10(powerWatts)
-				  //   range = distance where that level, falling with "rolloff", reaches "audibilityThresholdDb"
-				  // Four times the power doubles the range (with rolloff 1). The speaker's volume scales it down.
-				  "profiles": {
-				    "portable": {
-				      // Amplifier power, in watts. Bounds: 0.1 to 100000.
-				      "powerWatts": %s,
-
-				      // Sound level 1 m in front of the speaker for 1 W (dB SPL). Bounds: 70 to 115.
-				      "sensitivityDb": %s,
-
-				      // Bass shelf: gain applied below "bassCutHz", in dB. Negative = less bass (small drivers).
-				      // 0 keeps the bass intact. Bounds: -24 to 0.
-				      "bassCutDb": %s,
-
-				      // Frequency under which the bass shelf applies, in Hz. Bounds: 40 to 500.
-				      "bassCutHz": %s
-				    }
-				  },
-
-				%s%s}
+				%s%s%s}
 				""".formatted(n(s.rolloff()), n(s.fadeFraction()), n(s.audibilityThresholdDb()), n(s.maxRange()),
-				n(p.powerWatts()), n(p.sensitivityDb()), n(p.bassCutDb()), n(p.bassCutHz()), occlusionText(s.occlusion()),
-				reverbText(s.reverb()));
+				ProfilesText.section(s.profiles()), occlusionText(s.occlusion()), reverbText(s.reverb()));
 		try {
 			out.write(text);
 			out.flush();
@@ -488,7 +472,7 @@ public final class AcousticSettingsJson {
 	}
 
 	/** A number as JSON writes it: no trailing ".0" on whole values, never a locale decimal comma. */
-	private static String n(double value) {
+	static String n(double value) {
 		return value == Math.rint(value) && Math.abs(value) < 1e15 ? Long.toString((long) value) : Double.toString(value);
 	}
 }

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.DeviceProfile;
+import com.ravecraft.mod.core.acoustics.DeviceProfiles;
 import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
@@ -11,6 +12,7 @@ import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
 import com.ravecraft.mod.core.acoustics.reverb.EchoSettings;
 import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
 import com.ravecraft.mod.core.acoustics.reverb.ReverbSettings;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.util.ArrayList;
@@ -21,14 +23,15 @@ import org.junit.jupiter.api.Test;
 class AcousticSettingsPayloadTest {
 	private static AcousticSettings with(OcclusionSettings occlusion) {
 		AcousticSettings d = AcousticSettings.DEFAULT;
-		return new AcousticSettings(d.rolloff(), d.fadeFraction(), d.audibilityThresholdDb(), d.maxRange(), d.portable(),
+		return new AcousticSettings(d.rolloff(), d.fadeFraction(), d.audibilityThresholdDb(), d.maxRange(), d.profiles(),
 				occlusion, d.reverb());
 	}
 
 	@Test
 	void codecRoundTrip() {
 		AcousticSettingsPayload payload = new AcousticSettingsPayload(
-				new AcousticSettings(0.5, 0.3, 60, 128, new DeviceProfile(40, 90, -9, 120, Directivity.OMNI),
+				new AcousticSettings(0.5, 0.3, 60, 128,
+						new DeviceProfiles(new DeviceProfile(40, 90, -9, 120, Directivity.OMNI), DeviceProfile.PARTY),
 						OcclusionSettings.DEFAULT, ReverbSettings.DEFAULT));
 		ByteBuf buf = Unpooled.buffer();
 		AcousticSettingsPayload.CODEC.encode(buf, payload);
@@ -37,16 +40,31 @@ class AcousticSettingsPayloadTest {
 	}
 
 	@Test
+	void partyProfileRoundTrips() {
+		DeviceProfile party = new DeviceProfile(200, 90, -3, 100, new Directivity(45, -8));
+		AcousticSettings d = AcousticSettings.DEFAULT;
+		AcousticSettingsPayload payload = new AcousticSettingsPayload(new AcousticSettings(d.rolloff(),
+				d.fadeFraction(), d.audibilityThresholdDb(), d.maxRange(),
+				new DeviceProfiles(DeviceProfile.PORTABLE, party), d.occlusion(), d.reverb()));
+		ByteBuf buf = Unpooled.buffer();
+		AcousticSettingsPayload.CODEC.encode(buf, payload);
+		AcousticSettingsPayload decoded = AcousticSettingsPayload.CODEC.decode(buf);
+		assertEquals(party, decoded.settings().profile(SpeakerKind.PARTY));
+		assertEquals(0, buf.readableBytes());
+	}
+
+	@Test
 	void decodeBoundsValuesFromServer() {
 		AcousticSettingsPayload payload = new AcousticSettingsPayload(
-				new AcousticSettings(Double.NaN, 0.3, 68, 9999, new DeviceProfile(20, 85, -9, 30_000, Directivity.OMNI),
+				new AcousticSettings(Double.NaN, 0.3, 68, 9999,
+						new DeviceProfiles(new DeviceProfile(20, 85, -9, 30_000, Directivity.OMNI), DeviceProfile.PARTY),
 						OcclusionSettings.DEFAULT, ReverbSettings.DEFAULT));
 		ByteBuf buf = Unpooled.buffer();
 		AcousticSettingsPayload.CODEC.encode(buf, payload);
 		AcousticSettings decoded = AcousticSettingsPayload.CODEC.decode(buf).settings();
 		assertEquals(0.25, decoded.rolloff());
 		assertEquals(512, decoded.maxRange());
-		assertEquals(500, decoded.portable().bassCutHz());
+		assertEquals(500, decoded.profile(SpeakerKind.PORTABLE).bassCutHz());
 	}
 
 	@Test
@@ -72,7 +90,7 @@ class AcousticSettingsPayloadTest {
 				new EchoSettings(20, 30, 6, 0.3, 0.4, 0.25, 0.7), media);
 		AcousticSettings d = AcousticSettings.DEFAULT;
 		AcousticSettingsPayload payload = new AcousticSettingsPayload(new AcousticSettings(d.rolloff(),
-				d.fadeFraction(), d.audibilityThresholdDb(), d.maxRange(), d.portable(), d.occlusion(), custom));
+				d.fadeFraction(), d.audibilityThresholdDb(), d.maxRange(), d.profiles(), d.occlusion(), custom));
 		ByteBuf buf = Unpooled.buffer();
 		AcousticSettingsPayload.CODEC.encode(buf, payload);
 		assertEquals(payload, AcousticSettingsPayload.CODEC.decode(buf));

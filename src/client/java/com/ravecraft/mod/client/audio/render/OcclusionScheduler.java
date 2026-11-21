@@ -17,6 +17,7 @@ import com.ravecraft.mod.core.acoustics.occlusion.OcclusionTracer;
 import com.ravecraft.mod.core.acoustics.occlusion.PathCapture;
 import com.ravecraft.mod.core.acoustics.occlusion.PathLoss;
 import com.ravecraft.mod.core.acoustics.occlusion.TraceBudget;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.world.acoustics.BlockAcoustics;
 import com.ravecraft.mod.world.acoustics.MediumResolver;
 import java.util.ArrayList;
@@ -323,7 +324,7 @@ public final class OcclusionScheduler {
 	}
 
 	private static double range(AcousticSettings settings, RenderStream stream) {
-		return Propagation.range(settings, settings.portable(), stream.volume);
+		return Propagation.range(settings, settings.profile(SpeakerKind.PORTABLE), stream.volume);
 	}
 
 	/** The straight-line occlusion alone, without a voxel budget (a segment visits a bounded number of voxels). */

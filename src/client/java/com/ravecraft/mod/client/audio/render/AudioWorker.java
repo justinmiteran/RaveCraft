@@ -11,6 +11,7 @@ import com.ravecraft.mod.core.acoustics.occlusion.LossSmoother;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionGate;
 import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -225,7 +226,7 @@ final class AudioWorker extends Thread {
 		double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 		double cos = distance < 1e-6 ? 1 : (stream.facingX * dx + stream.facingZ * dz) / distance;
 		stream.distance = distance;
-		stream.gain = stream.powered ? Propagation.gain(settings, settings.portable(),
+		stream.gain = stream.powered ? Propagation.gain(settings, settings.profile(SpeakerKind.PORTABLE),
 				stream.volume, distance, cos) : 0;
 		boolean known = occlude(stream, dt);
 		// Before the selection: the sources go to the speakers that are loudest once muffled. A stream not

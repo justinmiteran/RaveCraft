@@ -20,10 +20,12 @@ class AcousticSettingsTest {
 	void clampsEveryField() {
 		List<String> warnings = new ArrayList<>();
 		AcousticSettings wild = new AcousticSettings(10, 0, 5, 2000,
-				new DeviceProfile(0, 200, 5, 1, Directivity.OMNI), OcclusionSettings.DEFAULT,
+				new DeviceProfiles(new DeviceProfile(0, 200, 5, 1, Directivity.OMNI), DeviceProfile.PARTY),
+				OcclusionSettings.DEFAULT,
 				ReverbSettings.DEFAULT);
 		AcousticSettings clamped = wild.clamped(warnings::add);
-		assertEquals(new AcousticSettings(3, 0.05, 30, 512, new DeviceProfile(0.1, 115, 0, 40, Directivity.OMNI),
+		assertEquals(new AcousticSettings(3, 0.05, 30, 512,
+				new DeviceProfiles(new DeviceProfile(0.1, 115, 0, 40, Directivity.OMNI), DeviceProfile.PARTY),
 				OcclusionSettings.DEFAULT, ReverbSettings.DEFAULT), clamped);
 		assertEquals(8, warnings.size(), warnings.toString());
 	}
@@ -35,7 +37,7 @@ class AcousticSettingsTest {
 				d.interfaceHighRatio(), d.dimensions(), d.materials(), d.detours(), d.bendLossDb(), d.bendHighLossDb());
 		AcousticSettings s = AcousticSettings.DEFAULT;
 		AcousticSettings wild = new AcousticSettings(s.rolloff(), s.fadeFraction(), s.audibilityThresholdDb(),
-				s.maxRange(), s.portable(), loud, s.reverb());
+				s.maxRange(), s.profiles(), loud, s.reverb());
 		assertEquals(120, wild.clamped(w -> { }).occlusion().maxLossDb());
 	}
 

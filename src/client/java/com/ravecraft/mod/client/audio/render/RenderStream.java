@@ -12,6 +12,7 @@ import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
 import com.ravecraft.mod.core.acoustics.reverb.SendRoute;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import com.ravecraft.mod.network.payload.SpeakerHostPayload;
 import com.ravecraft.mod.registry.ModBlocks;
@@ -125,7 +126,7 @@ final class RenderStream {
 
 	/** Audio thread: (re)builds the equalizer for the server's portable profile. */
 	void configure(AcousticSettings settings) {
-		eq = new Equalizer(StreamFormat.SAMPLE_RATE, settings.portable().bassCutHz(), settings.portable().bassCutDb());
+		eq = new Equalizer(StreamFormat.SAMPLE_RATE, settings.profile(SpeakerKind.PORTABLE).bassCutHz(), settings.profile(SpeakerKind.PORTABLE).bassCutDb());
 	}
 
 	/**

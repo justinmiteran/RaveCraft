@@ -7,6 +7,7 @@ import com.ravecraft.mod.core.acoustics.DeviceProfile;
 import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.acoustics.Propagation;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModDataComponents;
@@ -34,7 +35,7 @@ public final class SpeakerTooltip {
 	/** Adds the lines of the speaker item {@code stack}: its specs, with {@code Shift} its volume and track too. */
 	private static void addLines(ItemStack stack, List<Component> lines) {
 		AcousticSettings settings = AcousticSettingsClient.get();
-		DeviceProfile profile = settings.portable();
+		DeviceProfile profile = settings.profile(SpeakerKind.PORTABLE);
 		SpeakerData data = stack.get(ModDataComponents.SPEAKER);
 		int volume = data != null ? data.settings().volume() : SpeakerSettings.DEFAULT_VOLUME;
 		long range = Math.round(Propagation.range(settings, profile, volume / (double) SpeakerSettings.MAX_VOLUME));

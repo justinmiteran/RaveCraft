@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
+import com.ravecraft.mod.core.acoustics.DeviceProfile;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
@@ -46,7 +48,7 @@ class AcousticSettingsJsonTest {
 		AcousticSettings settings = read("{\"rolloff\":0.5}");
 		assertEquals(0.5, settings.rolloff());
 		assertEquals(AcousticSettings.DEFAULT.fadeFraction(), settings.fadeFraction());
-		assertEquals(AcousticSettings.DEFAULT.portable(), settings.portable());
+		assertEquals(AcousticSettings.DEFAULT.profiles(), settings.profiles());
 	}
 
 	@Test
@@ -59,7 +61,7 @@ class AcousticSettingsJsonTest {
 
 	@Test
 	void outOfRangeIsClamped() {
-		assertEquals(115, read("{\"profiles\":{\"portable\":{\"sensitivityDb\":999}}}").portable().sensitivityDb());
+		assertEquals(115, read("{\"profiles\":{\"portable\":{\"sensitivityDb\":999}}}").profile(SpeakerKind.PORTABLE).sensitivityDb());
 	}
 
 	@Test
@@ -68,8 +70,21 @@ class AcousticSettingsJsonTest {
 				+ "\"profiles\":{\"portable\":{\"powerWatts\":40,\"sensitivityDb\":90}}}");
 		assertEquals(60, settings.audibilityThresholdDb());
 		assertEquals(128, settings.maxRange());
-		assertEquals(40, settings.portable().powerWatts());
-		assertEquals(90, settings.portable().sensitivityDb());
+		assertEquals(40, settings.profile(SpeakerKind.PORTABLE).powerWatts());
+		assertEquals(90, settings.profile(SpeakerKind.PORTABLE).sensitivityDb());
+	}
+
+	@Test
+	void missingPartyUsesDefault() {
+		AcousticSettings s = read("{\"profiles\":{\"portable\":{\"powerWatts\":40}}}");
+		assertEquals(DeviceProfile.PARTY, s.profile(SpeakerKind.PARTY));
+		assertEquals(40, s.profile(SpeakerKind.PORTABLE).powerWatts());
+	}
+
+	@Test
+	void partySectionIsRead() {
+		assertEquals(200, read("{\"profiles\":{\"party\":{\"powerWatts\":200}}}")
+				.profile(SpeakerKind.PARTY).powerWatts());
 	}
 
 	@Test
@@ -82,7 +97,7 @@ class AcousticSettingsJsonTest {
 				}
 				""");
 		assertEquals(0.5, settings.rolloff());
-		assertEquals(40, settings.portable().powerWatts());
+		assertEquals(40, settings.profile(SpeakerKind.PORTABLE).powerWatts());
 		assertEquals(List.of(), warnings);
 	}
 
@@ -163,7 +178,7 @@ class AcousticSettingsJsonTest {
 				d.bendHighLossDb());
 		AcousticSettings s = AcousticSettings.DEFAULT;
 		AcousticSettings withCustom = new AcousticSettings(s.rolloff(), s.fadeFraction(), s.audibilityThresholdDb(),
-				s.maxRange(), s.portable(), custom, s.reverb());
+				s.maxRange(), s.profiles(), custom, s.reverb());
 		StringWriter out = new StringWriter();
 		AcousticSettingsJson.write(withCustom, out);
 		AcousticSettingsJson.Result r = result(out.toString());
@@ -179,7 +194,7 @@ class AcousticSettingsJsonTest {
 				new EchoSettings(20, 30, 6, 0.3, 0.4, 0.25, 0.7), media);
 		AcousticSettings s = AcousticSettings.DEFAULT;
 		AcousticSettings withCustom = new AcousticSettings(s.rolloff(), s.fadeFraction(), s.audibilityThresholdDb(),
-				s.maxRange(), s.portable(), s.occlusion(), custom);
+				s.maxRange(), s.profiles(), s.occlusion(), custom);
 		StringWriter out = new StringWriter();
 		AcousticSettingsJson.write(withCustom, out);
 		AcousticSettingsJson.Result r = result(out.toString());

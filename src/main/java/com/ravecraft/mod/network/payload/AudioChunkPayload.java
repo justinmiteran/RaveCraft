@@ -17,6 +17,7 @@ public record AudioChunkPayload(int sessionId, int seq, List<byte[]> frames) imp
 			Frames.CODEC, AudioChunkPayload::frames,
 			AudioChunkPayload::new);
 
+	/** The size of the Opus frames in bytes. */
 	public int byteSize() {
 		int total = 0;
 		for (byte[] frame : frames) {

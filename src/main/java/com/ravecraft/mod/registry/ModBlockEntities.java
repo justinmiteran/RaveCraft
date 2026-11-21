@@ -16,6 +16,7 @@ public final class ModBlockEntities {
 	private ModBlockEntities() {
 	}
 
+	/** Forces class loading, hence registration. */
 	public static void init() {
 	}
 }

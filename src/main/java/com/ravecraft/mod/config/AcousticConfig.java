@@ -26,12 +26,14 @@ public final class AcousticConfig {
 	private AcousticConfig() {
 	}
 
+	/** Loads the file when the server starts and sends the settings to each player who joins. */
 	public static void init() {
 		ServerLifecycleEvents.SERVER_STARTING.register(server -> load(FabricLoader.getInstance().getConfigDir().resolve(FILE_NAME)));
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
 				Net.send(handler.player, new AcousticSettingsPayload(settings)));
 	}
 
+	/** The settings in force on the server. */
 	public static AcousticSettings get() {
 		return settings;
 	}
@@ -41,6 +43,7 @@ public final class AcousticConfig {
 		settings = value;
 	}
 
+	/** Reads {@code file}, writing the defaults when it is missing and completing it when it lacks keys. */
 	static void load(Path file) {
 		if (Files.notExists(file)) {
 			settings = AcousticSettings.DEFAULT;

@@ -35,6 +35,7 @@ public enum NotificationLevel implements StringRepresentable {
 		return errors;
 	}
 
+	/** The level's name in the options. */
 	public Component caption() {
 		return caption;
 	}

@@ -71,6 +71,7 @@ public final class SpeakerScreen extends Screen {
 	/** The {@code Folders…} popup while it is open; it then gets all the input. */
 	private @Nullable FoldersPopup folders;
 
+	/** The screen of the speaker at {@code pos}. */
 	public SpeakerScreen(BlockPos pos) {
 		super(titleOf(pos));
 		this.pos = pos.immutable();

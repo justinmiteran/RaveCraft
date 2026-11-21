@@ -30,6 +30,7 @@ public final class LibraryIndexStore {
 	private static final long FRESH_MILLIS = 60_000L;
 	private static final int BATCH = 256;
 
+	/** The index shown and the scan under way. */
 	private static final class State {
 		LibraryIndex shown;
 		boolean loaded;
@@ -97,10 +98,7 @@ public final class LibraryIndexStore {
 		if (!state.shown.scope().equals(scope)) {
 			state.shown = state.shown.restrictTo(scope);
 		}
-		if (state.scan != null) {
-			state.scan.cancel();
-			state.scan = null;
-		}
+		stopScan(state);
 		if (scope.roots().isEmpty()) {
 			state.shown = new LibraryIndex(scope);
 			state.shown.finish(false);
@@ -138,6 +136,13 @@ public final class LibraryIndexStore {
 				save(source.id(), building);
 			});
 		}, Util.ioPool());
+	}
+
+	private static void stopScan(State state) {
+		if (state.scan != null) {
+			state.scan.cancel();
+			state.scan = null;
+		}
 	}
 
 	private static State state(MusicSource source) {

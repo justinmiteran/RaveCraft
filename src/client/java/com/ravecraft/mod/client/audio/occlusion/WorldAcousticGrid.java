@@ -40,6 +40,7 @@ public final class WorldAcousticGrid implements AcousticGrid {
 		this.dimension = media.dimensionMedium(level.dimension().identifier().toString());
 	}
 
+	/** The level the grid reads. */
 	public ClientLevel level() {
 		return level;
 	}

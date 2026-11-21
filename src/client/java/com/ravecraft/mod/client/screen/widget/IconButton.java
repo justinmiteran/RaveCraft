@@ -20,18 +20,16 @@ public final class IconButton extends AbstractButton {
 	private Component label;
 	private boolean copper;
 
+	/** A square button of side {@code size} showing {@code icon}, {@code label} as its tooltip. */
 	public IconButton(int x, int y, int size, Identifier icon, Component label, Runnable onPress) {
-		this(x, y, size, size, icon, label, onPress);
-	}
-
-	public IconButton(int x, int y, int width, int height, Identifier icon, Component label, Runnable onPress) {
-		super(x, y, width, height, label);
+		super(x, y, size, size, label);
 		this.onPress = onPress;
 		this.icon = icon;
 		this.label = label;
 		setTooltip(Tooltip.create(label));
 	}
 
+	/** Draws the button in copper. */
 	public IconButton copper() {
 		copper = true;
 		return this;

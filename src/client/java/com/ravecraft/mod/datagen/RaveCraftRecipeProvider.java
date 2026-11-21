@@ -12,7 +12,9 @@ import net.minecraft.data.worldgen.BootstrapContext;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Recipe;
 
+/** Crafting recipes. */
 public class RaveCraftRecipeProvider extends FabricRecipeProvider {
+	/** A provider writing to {@code output}. */
 	public RaveCraftRecipeProvider(FabricPackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
 		super(output, registries);
 	}

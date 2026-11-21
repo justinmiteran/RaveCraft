@@ -1,6 +1,7 @@
 package com.ravecraft.mod.client.item;
 
 import com.mojang.serialization.MapCodec;
+import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.registry.ModDataComponents;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -15,7 +16,7 @@ import org.jspecify.annotations.Nullable;
 /** Item model condition {@code ravecraft:speaker/powered}: true when the speaker item carries powered settings. */
 public record SpeakerPowered() implements ConditionalItemModelProperty {
 	public static final MapCodec<SpeakerPowered> MAP_CODEC = MapCodec.unit(new SpeakerPowered());
-	public static final Identifier ID = Identifier.fromNamespaceAndPath("ravecraft", "speaker/powered");
+	public static final Identifier ID = RaveCraft.id("speaker/powered");
 	private static boolean registered;
 
 	/** Registers the property; called by the client and by datagen (which encodes it), safe to call twice. */

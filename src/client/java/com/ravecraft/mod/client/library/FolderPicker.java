@@ -20,10 +20,13 @@ public final class FolderPicker {
 
 	/** Outcome of a folder pick. */
 	public sealed interface PickResult {
+		/** The player chose {@code folder}. */
 		record Chosen(Path folder) implements PickResult {}
 
+		/** The player closed the dialog. */
 		record Cancelled() implements PickResult {}
 
+		/** No dialog could open, for {@code reason}. */
 		record Unavailable(String reason) implements PickResult {}
 	}
 

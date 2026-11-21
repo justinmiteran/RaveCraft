@@ -23,6 +23,7 @@ public abstract class TreeList extends RowList {
 	protected final LibraryTreeModel model = new LibraryTreeModel();
 	private boolean closed;
 
+	/** An empty tree. */
 	protected TreeList(int x, int y, int width, int height, Component label) {
 		super(x, y, width, height, ROW_H, label);
 	}

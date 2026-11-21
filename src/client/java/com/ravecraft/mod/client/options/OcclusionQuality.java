@@ -30,6 +30,7 @@ public enum OcclusionQuality implements StringRepresentable {
 		this.caption = Component.translatable("options.ravecraft.occlusionQuality." + serializedName);
 	}
 
+	/** How many voxels the occlusion tracer may visit per tick. */
 	public int voxelsPerTick() {
 		return voxelsPerTick;
 	}
@@ -44,6 +45,7 @@ public enum OcclusionQuality implements StringRepresentable {
 		return reverbVoxelsPerTick;
 	}
 
+	/** The quality's name in the options. */
 	public Component caption() {
 		return caption;
 	}

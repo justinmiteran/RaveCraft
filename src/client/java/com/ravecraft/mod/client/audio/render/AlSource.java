@@ -52,19 +52,11 @@ final class AlSource {
 		if (source == 0 || !AL10.alIsSource(source)) {
 			return null;
 		}
-		int[] buffers = new int[BUFFERS];
-		AL10.alGenBuffers(buffers);
-		for (int buffer : buffers) {
-			if (buffer == 0 || !AL10.alIsBuffer(buffer)) {
-				for (int created : buffers) {
-					if (created != 0 && AL10.alIsBuffer(created)) {
-						AL10.alDeleteBuffers(created);
-					}
-				}
-				AL10.alDeleteSources(source);
-				AL10.alGetError();
-				return null;
-			}
+		int[] buffers = createBuffers();
+		if (buffers == null) {
+			AL10.alDeleteSources(source);
+			AL10.alGetError();
+			return null;
 		}
 		AL10.alSourcei(source, AL10.AL_SOURCE_RELATIVE, AL10.AL_FALSE);
 		AL10.alSourcei(source, AL_DISTANCE_MODEL, AL10.AL_NONE);
@@ -74,6 +66,31 @@ final class AlSource {
 		boolean radius = AL10.alIsExtensionPresent("AL_EXT_SOURCE_RADIUS");
 		AL10.alGetError();
 		return new AlSource(source, buffers, filter, radius);
+	}
+
+	/** {@link #BUFFERS} new buffers, or null, none kept, when the driver could not make them all. */
+	private static int @Nullable [] createBuffers() {
+		int[] buffers = new int[BUFFERS];
+		AL10.alGenBuffers(buffers);
+		for (int buffer : buffers) {
+			if (!isBuffer(buffer)) {
+				deleteBuffers(buffers);
+				return null;
+			}
+		}
+		return buffers;
+	}
+
+	private static boolean isBuffer(int buffer) {
+		return buffer != 0 && AL10.alIsBuffer(buffer);
+	}
+
+	private static void deleteBuffers(int[] buffers) {
+		for (int buffer : buffers) {
+			if (isBuffer(buffer)) {
+				AL10.alDeleteBuffers(buffer);
+			}
+		}
 	}
 
 	/** Blocks queued but not played yet. */
@@ -148,15 +165,24 @@ final class AlSource {
 			return;
 		}
 		if (slotId == 0) {
-			if (sendSlots[index] != 0) {
-				Efx.send(source, index, EXTEfx.AL_EFFECTSLOT_NULL, EXTEfx.AL_FILTER_NULL);
-				sendSlots[index] = 0;
-			}
+			detach(index);
 			return;
 		}
-		if (slotId == sendSlots[index] && Math.abs(gain - sendGains[index]) <= 1e-3f) {
-			return;
+		if (slotId != sendSlots[index] || Math.abs(gain - sendGains[index]) > 1e-3f) {
+			attach(index, slotId, gain);
 		}
+	}
+
+	/** Detaches send {@code index} if it was routed. */
+	private void detach(int index) {
+		if (sendSlots[index] != 0) {
+			Efx.send(source, index, EXTEfx.AL_EFFECTSLOT_NULL, EXTEfx.AL_FILTER_NULL);
+			sendSlots[index] = 0;
+		}
+	}
+
+	/** Routes send {@code index} into slot {@code slotId} at {@code gain}, through its own low-pass when there is one. */
+	private void attach(int index, int slotId, float gain) {
 		if (sendFilters[index] == 0) {
 			sendFilters[index] = Efx.createLowpass();
 		}
@@ -195,6 +221,7 @@ final class AlSource {
 		}
 	}
 
+	/** Stops the source and deletes it with its buffers. */
 	void delete() {
 		detachSends();
 		AL10.alSourceStop(source);

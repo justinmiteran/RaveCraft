@@ -17,6 +17,7 @@ import net.minecraft.util.Util;
  * when leaving the world.
  */
 public final class SpeakerStates {
+	/** A state and when it arrived. */
 	private record Received(SpeakerStatePayload state, long atMs) {
 	}
 
@@ -25,14 +26,17 @@ public final class SpeakerStates {
 	private SpeakerStates() {
 	}
 
+	/** Forgets every state on leaving. */
 	public static void register() {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> STATES.clear());
 	}
 
+	/** Keeps {@code state}, the latest of its speaker. */
 	public static void put(SpeakerStatePayload state) {
 		STATES.put(state.pos().immutable(), new Received(state, Util.getMillis()));
 	}
 
+	/** The latest state of the speaker at {@code pos}, if any. */
 	public static Optional<SpeakerStatePayload> get(BlockPos pos) {
 		return Optional.ofNullable(STATES.get(pos)).map(Received::state);
 	}
@@ -73,6 +77,7 @@ public final class SpeakerStates {
 		}
 	}
 
+	/** Forgets the state of the speaker at {@code pos}. */
 	public static void forget(BlockPos pos) {
 		STATES.remove(pos);
 	}

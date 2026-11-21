@@ -94,10 +94,10 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 		setChanged();
 		if (level instanceof ServerLevel serverLevel) {
 			if (!data.settings().powered()) {
-				SpeakerPlayback.pauseAt(this);
+				SpeakerPlayback.pauseAt(serverLevel.getServer(), data.id());
 			}
 			// Open screens show the power state, whoever toggled it (the POWER command or a sneak-click).
-			SpeakerWatchers.markDirty(serverLevel, worldPosition);
+			SpeakerWatchers.markDirty(data.id());
 		}
 	}
 
@@ -106,8 +106,11 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 	public void setRemoved() {
 		super.setRemoved();
 		if (level instanceof ServerLevel) {
-			SpeakerPlayback.pauseAt(this);
+			// Through its own handle: the registry no longer resolves a block entity being removed.
+			SpeakerHosts.handleOf(this).ifPresent(SpeakerPlayback::pauseRemoved);
 			SpeakerHosts.removed(this);
+			// Open screens close: the next flush finds the speaker gone.
+			SpeakerWatchers.markDirty(data.id());
 		}
 	}
 
@@ -115,7 +118,7 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 	protected void saveAdditional(ValueOutput output) {
 		super.saveAdditional(output);
 		// A chunk is saved before its block entities are removed: while playing, save where the track is now.
-		output.store(KEY, SpeakerData.CODEC, level instanceof ServerLevel ? data.withQueue(SpeakerPlayback.liveQueue(this)) : data);
+		output.store(KEY, SpeakerData.CODEC, level instanceof ServerLevel ? data.withQueue(SpeakerPlayback.liveQueue(data.id(), data.queue())) : data);
 		output.storeNullable(COLOR_KEY, DyedItemColor.CODEC, color);
 		output.storeNullable(NAME_KEY, ComponentSerialization.CODEC, customName);
 	}
@@ -153,7 +156,7 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 	protected void collectImplicitComponents(DataComponentMap.Builder components) {
 		super.collectImplicitComponents(components);
 		// While playing, the stored position is stale: the item gets where the track is now.
-		components.set(ModDataComponents.SPEAKER, level instanceof ServerLevel ? data.withQueue(SpeakerPlayback.liveQueue(this)) : data);
+		components.set(ModDataComponents.SPEAKER, level instanceof ServerLevel ? data.withQueue(SpeakerPlayback.liveQueue(data.id(), data.queue())) : data);
 		if (color != null) {
 			components.set(DataComponents.DYED_COLOR, color);
 		}

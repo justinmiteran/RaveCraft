@@ -1,6 +1,5 @@
 package com.ravecraft.mod.network;
 
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
 import com.ravecraft.mod.config.AcousticConfig;
 import com.ravecraft.mod.core.acoustics.Propagation;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
@@ -11,7 +10,9 @@ import com.ravecraft.mod.network.payload.AudioChunkPayload;
 import com.ravecraft.mod.network.payload.RelayedChunkPayload;
 import com.ravecraft.mod.world.audio.NowPlaying;
 import com.ravecraft.mod.network.payload.StreamClosePayload;
-import com.ravecraft.mod.world.audio.SpeakerKey;
+import com.ravecraft.mod.world.audio.SpeakerHandle;
+import com.ravecraft.mod.world.audio.SpeakerHost;
+import com.ravecraft.mod.world.audio.SpeakerHosts;
 import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import com.ravecraft.mod.world.audio.StreamSessions;
 import java.util.ArrayList;
@@ -53,7 +54,7 @@ public final class AudioRelay {
 	}
 
 	private static void relay(ServerPlayer sender, AudioChunkPayload chunk) {
-		Optional<Session<SpeakerKey>> found = StreamSessions.table().byId(chunk.sessionId());
+		Optional<Session<UUID>> found = StreamSessions.table().byId(chunk.sessionId());
 		if (!chunk.isWellFormed() || found.isEmpty() || !found.get().owner().equals(sender.getUUID())) {
 			return;
 		}
@@ -63,15 +64,17 @@ public final class AudioRelay {
 		if (!bucket.tryConsume(chunk.cost(), now)) {
 			return;
 		}
-		Session<SpeakerKey> session = found.get();
+		Session<UUID> session = found.get();
 		SpeakerPlayback.onChunk(chunk.sessionId());
-		ServerLevel level = sender.level().getServer().getLevel(session.key().dimension());
-		if (level == null) {
+		Optional<SpeakerHandle> speaker = SpeakerHosts.handle(sender.level().getServer(), session.key());
+		// The relayed chunk still names the speaker by its block, the only host that plays so far.
+		if (speaker.isEmpty() || !(speaker.get().host() instanceof SpeakerHost.Block block)) {
 			return;
 		}
-		BlockPos pos = session.key().pos();
+		ServerLevel level = speaker.get().level();
+		BlockPos pos = block.pos();
 		RelayedChunkPayload relayed = new RelayedChunkPayload(chunk.sessionId(), pos, chunk.seq(), chunk.frames());
-		double radius = relayRadius(level, pos);
+		double radius = relayRadius(speaker.get());
 		for (ServerPlayer listener : listeners(level, pos, session.owner(), PlayerLookup.tracking(level, pos), radius)) {
 			NowPlaying.tell(listener, chunk.sessionId());
 			Net.send(listener, relayed);
@@ -79,11 +82,11 @@ public final class AudioRelay {
 	}
 
 	/**
-	 * How far the speaker at {@code pos} is relayed: its profile range at its current volume, plus a margin. 0 when
-	 * there is no powered speaker there.
+	 * How far {@code speaker} is relayed: its profile range at its current volume, plus a margin. 0 when it is
+	 * unpowered.
 	 */
-	public static double relayRadius(ServerLevel level, BlockPos pos) {
-		if (!(level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) || !speaker.data().settings().powered()) {
+	public static double relayRadius(SpeakerHandle speaker) {
+		if (!speaker.powered()) {
 			return 0;
 		}
 		double volume = speaker.data().settings().volume() / (double) SpeakerSettings.MAX_VOLUME;

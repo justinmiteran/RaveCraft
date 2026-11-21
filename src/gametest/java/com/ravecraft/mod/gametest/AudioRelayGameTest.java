@@ -8,7 +8,8 @@ import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.audio.stream.SessionTable.Session;
 import com.ravecraft.mod.network.AudioRelay;
 import com.ravecraft.mod.registry.ModBlocks;
-import com.ravecraft.mod.world.audio.SpeakerKey;
+import com.ravecraft.mod.world.audio.SpeakerHandle;
+import com.ravecraft.mod.world.audio.SpeakerHosts;
 import com.ravecraft.mod.world.audio.StreamSessions;
 import java.util.List;
 import java.util.Optional;
@@ -37,18 +38,23 @@ public class AudioRelayGameTest {
 		return player;
 	}
 
-	private static Optional<Session<SpeakerKey>> sessionAt(GameTestHelper h, BlockPos absolute) {
-		return StreamSessions.table().byKey(new SpeakerKey(h.getLevel().dimension(), absolute));
+	private static Optional<Session<UUID>> sessionAt(GameTestHelper h, UUID id) {
+		return StreamSessions.table().byKey(id);
+	}
+
+	private static SpeakerHandle handle(GameTestHelper h, BlockPos absolute) {
+		return SpeakerHosts.handle(h.getLevel().getServer(), Speakers.idAt(h, absolute)).orElseThrow();
 	}
 
 	@GameTest
 	public void openInRangeCreatesSession(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		ServerPlayer player = playerAt(h, 2);
-		Optional<Session<SpeakerKey>> opened = StreamSessions.open(h.getLevel(), pos, player, UUID.randomUUID());
+		UUID id = Speakers.idAt(h, pos);
+		Optional<Session<UUID>> opened = StreamSessions.open(handle(h, pos), player, UUID.randomUUID());
 		h.assertTrue(opened.isPresent(), "session opened");
-		h.assertValueEqual(sessionAt(h, pos).orElseThrow().owner(), player.getUUID(), "owner");
-		StreamSessions.endAt(h.getLevel(), pos);
+		h.assertValueEqual(sessionAt(h, id).orElseThrow().owner(), player.getUUID(), "owner");
+		StreamSessions.endAt(h.getLevel().getServer(), id);
 		h.succeed();
 	}
 
@@ -56,8 +62,8 @@ public class AudioRelayGameTest {
 	public void openOnUnpoweredSpeakerRejected(GameTestHelper h) {
 		h.setBlock(SPEAKER, ModBlocks.PORTABLE_SPEAKER);
 		BlockPos pos = h.absolutePos(SPEAKER);
-		h.assertTrue(StreamSessions.open(h.getLevel(), pos, playerAt(h, 2), UUID.randomUUID()).isEmpty(), "rejected");
-		h.assertTrue(sessionAt(h, pos).isEmpty(), "no session");
+		h.assertTrue(StreamSessions.open(handle(h, pos), playerAt(h, 2), UUID.randomUUID()).isEmpty(), "rejected");
+		h.assertTrue(sessionAt(h, Speakers.idAt(h, pos)).isEmpty(), "no session");
 		h.succeed();
 	}
 
@@ -66,18 +72,19 @@ public class AudioRelayGameTest {
 	@GameTest
 	public void breakingSpeakerEndsSession(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
-		StreamSessions.open(h.getLevel(), pos, playerAt(h, 2), UUID.randomUUID()).orElseThrow();
+		UUID id = Speakers.idAt(h, pos);
+		StreamSessions.open(handle(h, pos), playerAt(h, 2), UUID.randomUUID()).orElseThrow();
 		h.destroyBlock(SPEAKER);
-		h.assertTrue(sessionAt(h, pos).isEmpty(), "session ended");
+		h.assertTrue(sessionAt(h, id).isEmpty(), "session ended");
 		h.succeed();
 	}
 
 	@GameTest
 	public void poweringOffEndsSession(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
-		StreamSessions.open(h.getLevel(), pos, playerAt(h, 2), UUID.randomUUID()).orElseThrow();
+		StreamSessions.open(handle(h, pos), playerAt(h, 2), UUID.randomUUID()).orElseThrow();
 		h.getBlockEntity(SPEAKER, PortableSpeakerBlockEntity.class).togglePower();
-		h.assertTrue(sessionAt(h, pos).isEmpty(), "session ended");
+		h.assertTrue(sessionAt(h, Speakers.idAt(h, pos)).isEmpty(), "session ended");
 		h.succeed();
 	}
 
@@ -89,7 +96,7 @@ public class AudioRelayGameTest {
 
 	private static boolean hears(GameTestHelper h, BlockPos pos, ServerPlayer owner, ServerPlayer player) {
 		return AudioRelay.listeners(h.getLevel(), pos, owner.getUUID(), List.of(owner, player),
-				AudioRelay.relayRadius(h.getLevel(), pos)).contains(player);
+				AudioRelay.relayRadius(handle(h, pos))).contains(player);
 	}
 
 	@GameTest
@@ -100,7 +107,7 @@ public class AudioRelayGameTest {
 		ServerPlayer near = playerAt(h, 5);
 		ServerPlayer far = playerAt(h, 45);
 		List<ServerPlayer> listeners = AudioRelay.listeners(h.getLevel(), pos, owner.getUUID(), List.of(owner, near, far),
-				AudioRelay.relayRadius(h.getLevel(), pos));
+				AudioRelay.relayRadius(handle(h, pos)));
 		h.assertValueEqual(listeners, List.of(near), "listeners");
 		h.succeed();
 	}
@@ -155,7 +162,7 @@ public class AudioRelayGameTest {
 	public void relayRadiusIsZeroAtVolumeZero(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		volume(h, 0);
-		h.assertValueEqual(AudioRelay.relayRadius(h.getLevel(), pos), 0.0, "radius");
+		h.assertValueEqual(AudioRelay.relayRadius(handle(h, pos)), 0.0, "radius");
 		h.assertFalse(hears(h, pos, playerAt(h, 5), playerAt(h, 1)), "not heard at 1 block");
 		h.succeed();
 	}

@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
 
 /**
  * Server registry of where each speaker id lives, so audio follows the id rather than a block position.
@@ -54,6 +55,16 @@ public final class SpeakerHosts {
 		return Optional.of(new BlockHandle(level, block.pos(), speaker));
 	}
 
+	/**
+	 * The handle of a speaker block entity built directly, without the registry: still valid while the block entity
+	 * is being removed, when {@link #handle} no longer resolves it. Empty off the server.
+	 */
+	public static Optional<SpeakerHandle> handleOf(PortableSpeakerBlockEntity speaker) {
+		return speaker.getLevel() instanceof ServerLevel level
+				? Optional.of(new BlockHandle(level, speaker.getBlockPos(), speaker))
+				: Optional.empty();
+	}
+
 	/** Registers a placed or loaded speaker block; a copy of an id already placed elsewhere gets a fresh id. */
 	public static void placed(PortableSpeakerBlockEntity speaker) {
 		if (!(speaker.getLevel() instanceof ServerLevel level)) {
@@ -69,6 +80,8 @@ public final class SpeakerHosts {
 		if (TRACKER.place(speaker.data().id(), host, tick) == HostTracker.Verdict.DUPLICATE) {
 			speaker.setData(speaker.data().withId(UUID.randomUUID()));
 			TRACKER.place(speaker.data().id(), host, tick);
+			// Clients open the screen by the id they hold: send them the new one.
+			level.sendBlockUpdated(speaker.getBlockPos(), speaker.getBlockState(), speaker.getBlockState(), Block.UPDATE_CLIENTS);
 		}
 		BLOCK_IDS.put(host, speaker.data().id());
 	}

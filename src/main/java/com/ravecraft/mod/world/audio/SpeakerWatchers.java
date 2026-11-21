@@ -1,56 +1,53 @@
 package com.ravecraft.mod.world.audio;
 
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
 import com.ravecraft.mod.network.Net;
+import com.ravecraft.mod.network.payload.SpeakerClosedPayload;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Who has which speaker's screen open. They alone receive its {@link SpeakerStatePayload}: once on opening, then
- * after each change, at most once per tick. A watcher who walked out of reach is dropped. Server thread only.
+ * after each change, at most once per tick. A watcher who can no longer control the speaker (gone, or out of reach)
+ * is dropped and told to close the screen. Server thread only.
  */
 public final class SpeakerWatchers {
-	private static final Map<SpeakerKey, Set<UUID>> WATCHERS = new HashMap<>();
-	private static final Set<SpeakerKey> DIRTY = new HashSet<>();
+	private static final Map<UUID, Set<UUID>> WATCHERS = new HashMap<>();
+	private static final Set<UUID> DIRTY = new HashSet<>();
 
 	private SpeakerWatchers() {
 	}
 
-	public static void watch(ServerPlayer player, BlockPos pos, boolean open) {
-		if (!(player.level() instanceof ServerLevel level)) {
-			return;
-		}
-		SpeakerKey key = new SpeakerKey(level.dimension(), pos.immutable());
+	public static void watch(ServerPlayer player, UUID speakerId, boolean open) {
 		if (!open) {
-			unwatch(key, player.getUUID());
+			unwatch(speakerId, player.getUUID());
 			return;
 		}
-		if (level.isLoaded(pos) && level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity
-				&& player.isWithinBlockInteractionRange(pos, 1.0)) {
-			WATCHERS.computeIfAbsent(key, k -> new HashSet<>()).add(player.getUUID());
-			DIRTY.add(key);
+		if (SpeakerHosts.handle(player.level().getServer(), speakerId).filter(h -> h.canControl(player)).isPresent()) {
+			WATCHERS.computeIfAbsent(speakerId, k -> new HashSet<>()).add(player.getUUID());
+			DIRTY.add(speakerId);
+		} else {
+			// Unknown or out of reach: no state will ever come, so the screen must not stay open empty.
+			Net.send(player, new SpeakerClosedPayload(speakerId));
 		}
 	}
 
-	public static void markDirty(ServerLevel level, BlockPos pos) {
-		SpeakerKey key = new SpeakerKey(level.dimension(), pos);
-		if (WATCHERS.containsKey(key)) {
-			DIRTY.add(key);
+	public static void markDirty(UUID speakerId) {
+		if (WATCHERS.containsKey(speakerId)) {
+			DIRTY.add(speakerId);
 		}
 	}
 
-	/** Whether the speaker at {@code pos} has a state waiting to be sent to its watchers. */
-	public static boolean isDirty(ServerLevel level, BlockPos pos) {
-		return DIRTY.contains(new SpeakerKey(level.dimension(), pos));
+	/** Whether speaker {@code speakerId} has a state waiting to be sent to its watchers. */
+	public static boolean isDirty(UUID speakerId) {
+		return DIRTY.contains(speakerId);
 	}
 
 	public static void markAllDirty() {
@@ -62,24 +59,26 @@ public final class SpeakerWatchers {
 		if (DIRTY.isEmpty()) {
 			return;
 		}
-		for (SpeakerKey key : DIRTY) {
-			Set<UUID> watchers = WATCHERS.get(key);
-			ServerLevel level = server.getLevel(key.dimension());
-			if (watchers == null || level == null) {
-				WATCHERS.remove(key);
+		for (UUID id : DIRTY) {
+			Set<UUID> watchers = WATCHERS.get(id);
+			if (watchers == null) {
 				continue;
 			}
-			SpeakerStatePayload state = SpeakerPlayback.stateOf(level, key.pos());
+			Optional<SpeakerHandle> handle = SpeakerHosts.handle(server, id);
+			SpeakerStatePayload state = handle.map(SpeakerPlayback::stateOf).orElse(null);
 			for (Iterator<UUID> it = watchers.iterator(); it.hasNext(); ) {
 				ServerPlayer player = server.getPlayerList().getPlayer(it.next());
-				if (player == null || player.level() != level || !player.isWithinBlockInteractionRange(key.pos(), 1.0)) {
+				if (player == null) {
 					it.remove();
+				} else if (state == null || !handle.get().canControl(player)) {
+					it.remove();
+					Net.send(player, new SpeakerClosedPayload(id));
 				} else {
 					Net.send(player, state);
 				}
 			}
 			if (watchers.isEmpty()) {
-				WATCHERS.remove(key);
+				WATCHERS.remove(id);
 			}
 		}
 		DIRTY.clear();
@@ -95,10 +94,10 @@ public final class SpeakerWatchers {
 		DIRTY.clear();
 	}
 
-	private static void unwatch(SpeakerKey key, UUID player) {
-		Set<UUID> watchers = WATCHERS.get(key);
+	private static void unwatch(UUID speakerId, UUID player) {
+		Set<UUID> watchers = WATCHERS.get(speakerId);
 		if (watchers != null && watchers.remove(player) && watchers.isEmpty()) {
-			WATCHERS.remove(key);
+			WATCHERS.remove(speakerId);
 		}
 	}
 }

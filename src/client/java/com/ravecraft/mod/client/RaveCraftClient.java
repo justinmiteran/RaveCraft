@@ -13,10 +13,12 @@ import com.ravecraft.mod.client.debug.SoundViewEntries;
 import com.ravecraft.mod.client.debug.SoundViewRenderer;
 import com.ravecraft.mod.client.item.SpeakerPowered;
 import com.ravecraft.mod.client.screen.SpeakerScreen;
+import com.ravecraft.mod.network.payload.SpeakerClosedPayload;
 import com.ravecraft.mod.registry.ModBlocks;
 import java.util.List;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.BlockColorRegistry;
 import net.minecraft.client.Minecraft;
 
@@ -38,7 +40,13 @@ public class RaveCraftClient implements ClientModInitializer {
 			RaveCraft.LOGGER.info("Sound Physics Remastered is loaded: RaveCraft speakers keep their own occlusion");
 		}
 		SpeakerTooltip.register();
-		SpeakerScreenOpener.set(pos -> Minecraft.getInstance().gui.setScreen(new SpeakerScreen(pos)));
+		SpeakerScreenOpener.set((speakerId, title) -> Minecraft.getInstance().gui.setScreen(new SpeakerScreen(speakerId, title)));
+		// The server no longer lets this player control the speaker (gone, or out of reach): close its screen.
+		ClientPlayNetworking.registerGlobalReceiver(SpeakerClosedPayload.TYPE, (payload, context) -> {
+			if (context.client().gui.screen() instanceof SpeakerScreen screen && screen.speakerId().equals(payload.speakerId())) {
+				screen.onClose();
+			}
+		});
 		BlockColorRegistry.register(List.of(new SpeakerFabricTint()), ModBlocks.PORTABLE_SPEAKER);
 	}
 }

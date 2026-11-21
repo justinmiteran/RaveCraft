@@ -135,8 +135,9 @@ public class PortableSpeakerBlock extends BaseEntityBlock implements SimpleWater
 			if (!level.isClientSide() && level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) {
 				speaker.togglePower();
 			}
-		} else if (level.isClientSide()) {
-			SpeakerScreenOpener.open(pos);
+		} else if (level.isClientSide() && level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) {
+			// Titled with the item's custom name when it has one, otherwise the block's name.
+			SpeakerScreenOpener.open(speaker.data().id(), speaker.customName() != null ? speaker.customName() : getName());
 		}
 		return InteractionResult.SUCCESS;
 	}

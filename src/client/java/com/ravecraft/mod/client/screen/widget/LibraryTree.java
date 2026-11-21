@@ -14,12 +14,12 @@ import com.ravecraft.mod.core.queue.SpeakerQueue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.nio.file.Path;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -36,15 +36,15 @@ public final class LibraryTree extends TreeList {
 	private static final int SEPARATOR = 0xFF6A6A6A;
 
 	private final MusicSource source;
-	private final BlockPos pos;
+	private final UUID speakerId;
 	/** The index the rows were last built from, and its version then. */
 	private @org.jspecify.annotations.Nullable LibraryIndex index;
 	private int indexVersion;
 
-	public LibraryTree(int x, int y, int width, int height, MusicSource source, BlockPos pos) {
+	public LibraryTree(int x, int y, int width, int height, MusicSource source, UUID speakerId) {
 		super(x, y, width, height, Component.translatable(SpeakerSprites.KEY + "library"));
 		this.source = source;
-		this.pos = pos;
+		this.speakerId = speakerId;
 		loadRoots();
 		LibraryIndexStore.open(source);
 		syncIndex();
@@ -112,7 +112,7 @@ public final class LibraryTree extends TreeList {
 			List<Path> indexed =
 					LibraryIndexStore.get(source).tracksUnder(node.id(), SpeakerQueue.roomLeft(queued()));
 			if (!indexed.isEmpty()) {
-				LocalPlayback.add(pos, indexed);
+				LocalPlayback.add(speakerId, indexed);
 				return;
 			}
 		}
@@ -120,7 +120,7 @@ public final class LibraryTree extends TreeList {
 			// Cap to the room left now, so no entry is registered for an id the server would drop.
 			int room = Math.min(tracks.size(), SpeakerQueue.roomLeft(queued()));
 			if (room > 0) {
-				LocalPlayback.add(pos, tracks.subList(0, room));
+				LocalPlayback.add(speakerId, tracks.subList(0, room));
 			}
 		}, () -> {
 		});
@@ -128,7 +128,7 @@ public final class LibraryTree extends TreeList {
 
 	/** Entries in the queue as last reported by the server. */
 	private int queued() {
-		return SpeakerStates.get(pos).map(state -> state.entries().size()).orElse(0);
+		return SpeakerStates.get(speakerId).map(state -> state.entries().size()).orElse(0);
 	}
 
 	private boolean full() {

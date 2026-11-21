@@ -1,5 +1,6 @@
 package com.ravecraft.mod.client.audio.stream;
 
+import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
 import com.ravecraft.mod.client.audio.render.AcousticRenderer;
 import com.ravecraft.mod.client.options.RaveCraftOptions;
 import com.ravecraft.mod.client.screen.SpeakerScreen;
@@ -12,9 +13,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.UUID;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 
@@ -71,12 +74,26 @@ public final class NowPlayingToasts {
 			}
 		}
 		OptionalLong open = client.gui.screen() instanceof SpeakerScreen screen
-				? OptionalLong.of(screen.pos().asLong())
+				? noticePosOf(client.level, screen.speakerId())
 				: OptionalLong.empty();
 		Optional<Heard> announce = followed.update(Util.getMillis(), heard, open);
 		announce.flatMap(NowPlayingToasts::noticeOf).ifPresent(notice -> SpeakerTrackToast.show(
 				client.gui.toastManager(), client.font, Component.translatable("toast.ravecraft.now_playing.title"),
 				Component.translatable("toast.ravecraft.now_playing.message", notice.title(), notice.ownerName())));
+	}
+
+	/**
+	 * The position of the notice whose speaker block holds {@code speakerId}: notices still name speakers by their
+	 * block while the screen names them by id.
+	 */
+	private static OptionalLong noticePosOf(ClientLevel level, UUID speakerId) {
+		for (NowPlayingPayload notice : NOTICES.values()) {
+			if (level.getBlockEntity(notice.pos()) instanceof PortableSpeakerBlockEntity speaker
+					&& speaker.data().id().equals(speakerId)) {
+				return OptionalLong.of(notice.pos().asLong());
+			}
+		}
+		return OptionalLong.empty();
 	}
 
 	private static Optional<NowPlayingPayload> noticeOf(Heard heard) {

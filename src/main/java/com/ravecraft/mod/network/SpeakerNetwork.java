@@ -44,13 +44,13 @@ public final class SpeakerNetwork {
 	public static void init() {
 		ServerPlayNetworking.registerGlobalReceiver(QueueAddPayload.TYPE, (payload, context) -> {
 			if (allowAdd(context.player())) {
-				SpeakerPlayback.add(context.player(), payload.pos(), payload.entries());
+				SpeakerPlayback.add(context.player(), payload.speakerId(), payload.entries());
 			}
 		});
 		ServerPlayNetworking.registerGlobalReceiver(SpeakerCommandPayload.TYPE, (payload, context) -> {
 			boolean allowed = payload.command() == Command.VOLUME ? allowVolume(context.player()) : allowCommand(context.player());
 			if (allowed) {
-				SpeakerPlayback.command(context.player(), payload.pos(), payload.command(), payload.entryId(), payload.value());
+				SpeakerPlayback.command(context.player(), payload.speakerId(), payload.command(), payload.entryId(), payload.value());
 			}
 		});
 		ServerPlayNetworking.registerGlobalReceiver(StreamStartedPayload.TYPE, (payload, context) -> {
@@ -59,7 +59,7 @@ public final class SpeakerNetwork {
 			}
 		});
 		ServerPlayNetworking.registerGlobalReceiver(SpeakerWatchPayload.TYPE, (payload, context) ->
-				SpeakerWatchers.watch(context.player(), payload.pos(), payload.open()));
+				SpeakerWatchers.watch(context.player(), payload.speakerId(), payload.open()));
 		ServerPlayNetworking.registerGlobalReceiver(StreamResultPayload.TYPE, (payload, context) ->
 				SpeakerPlayback.onStreamResult(context.player(), payload.sessionId()));
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> SpeakerPlayback.onJoin(handler.player));

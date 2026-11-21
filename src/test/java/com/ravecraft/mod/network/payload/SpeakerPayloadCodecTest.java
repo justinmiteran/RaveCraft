@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 class SpeakerPayloadCodecTest {
 	private static final BlockPos POS = new BlockPos(3, 64, -7);
+	private static final UUID SPEAKER = UUID.fromString("8a3c1f52-0d7e-4b6a-9c21-5e4f7a6b3d10");
 
 	private static <T> T roundTrip(StreamCodec<ByteBuf, T> codec, T value) {
 		ByteBuf buf = Unpooled.buffer();
@@ -36,16 +37,16 @@ class SpeakerPayloadCodecTest {
 
 	@Test
 	void commandRoundTripsValue() {
-		SpeakerCommandPayload payload = new SpeakerCommandPayload(POS, Command.SEEK, Optional.empty(), 93_000L);
+		SpeakerCommandPayload payload = new SpeakerCommandPayload(SPEAKER, Command.SEEK, Optional.empty(), 93_000L);
 		SpeakerCommandPayload read = roundTrip(SpeakerCommandPayload.CODEC, payload);
 		assertEquals(payload, read);
 		assertEquals(93_000L, read.value());
-		assertEquals(0L, new SpeakerCommandPayload(POS, Command.PLAY, Optional.empty()).value());
+		assertEquals(0L, new SpeakerCommandPayload(SPEAKER, Command.PLAY, Optional.empty()).value());
 	}
 
 	@Test
 	void stateRoundTripsModes() {
-		SpeakerStatePayload payload = new SpeakerStatePayload(POS, true, Optional.of(UUID.randomUUID()), 90_000L,
+		SpeakerStatePayload payload = new SpeakerStatePayload(SPEAKER, true, Optional.of(UUID.randomUUID()), 90_000L,
 				entries(5), RepeatMode.ONE, true, 35, true, 3);
 		SpeakerStatePayload read = roundTrip(SpeakerStatePayload.CODEC, payload);
 		assertEquals(payload, read);
@@ -55,11 +56,17 @@ class SpeakerPayloadCodecTest {
 
 	@Test
 	void stateCapsEntriesAndSeparator() {
-		SpeakerStatePayload payload = new SpeakerStatePayload(POS, false, Optional.empty(), 0L, entries(250),
+		SpeakerStatePayload payload = new SpeakerStatePayload(SPEAKER, false, Optional.empty(), 0L, entries(250),
 				RepeatMode.ALL, false, 70, false, 230);
 		SpeakerStatePayload read = roundTrip(SpeakerStatePayload.CODEC, payload);
 		assertEquals(200, read.entries().size());
 		assertEquals(-1, read.nextRoundIndex());
+	}
+
+	@Test
+	void closedRoundTripsId() {
+		SpeakerClosedPayload payload = new SpeakerClosedPayload(SPEAKER);
+		assertEquals(payload, roundTrip(SpeakerClosedPayload.CODEC, payload));
 	}
 
 	@Test

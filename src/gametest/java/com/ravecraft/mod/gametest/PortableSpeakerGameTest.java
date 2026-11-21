@@ -375,7 +375,7 @@ public class PortableSpeakerGameTest {
 		SpeakerHosts.placed(second);
 		h.assertTrue(!second.data().id().equals(first.data().id()), "duplicate got a new id");
 		h.assertValueEqual(second.data().queue(), first.data().queue(), "queue kept");
-		h.assertFalse(SpeakerPlayback.isPlaying(h.getLevel(), h.absolutePos(b)), "duplicate not playing");
+		h.assertFalse(SpeakerPlayback.isPlaying(Speakers.idAt(h, h.absolutePos(b))), "duplicate not playing");
 		h.assertTrue(SpeakerHosts.handle(h.getLevel().getServer(), second.data().id()).isPresent(), "new id hosted");
 		h.succeed();
 	}

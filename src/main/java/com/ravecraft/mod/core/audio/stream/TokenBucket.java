@@ -2,13 +2,21 @@ package com.ravecraft.mod.core.audio.stream;
 
 /** Rate limiter: refills continuously at {@code ratePerSecond}, holds at most {@code capacity}, starts full. */
 public final class TokenBucket {
+	private static final double NANOS_PER_SECOND = 1e9;
 	private final double ratePerNano;
 	private final long capacity;
 	private double tokens;
 	private long lastNanos;
 
+	/**
+	 * Creates a full bucket.
+	 *
+	 * @param ratePerSecond the tokens added per second
+	 * @param capacity the most tokens held
+	 * @param nowNanos the current time
+	 */
 	public TokenBucket(long ratePerSecond, long capacity, long nowNanos) {
-		this.ratePerNano = ratePerSecond / 1e9;
+		this.ratePerNano = ratePerSecond / NANOS_PER_SECOND;
 		this.capacity = capacity;
 		this.tokens = capacity;
 		this.lastNanos = nowNanos;

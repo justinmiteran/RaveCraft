@@ -21,6 +21,11 @@ public final class SessionRoster<T> {
 	private final Map<Integer, T> streams = new HashMap<>();
 	private final SequencedSet<Integer> ended = new LinkedHashSet<>();
 
+	/**
+	 * Creates an empty roster.
+	 *
+	 * @param rememberedEnds how many ended sessions are remembered
+	 */
 	public SessionRoster(int rememberedEnds) {
 		this.rememberedEnds = rememberedEnds;
 	}

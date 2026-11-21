@@ -8,6 +8,7 @@ import io.github.jaredmdobson.concentus.OpusException;
 public final class OpusMonoDecoder {
 	private final OpusDecoder decoder;
 
+	/** Creates a mono 48 kHz decoder. */
 	public OpusMonoDecoder() {
 		try {
 			decoder = new OpusDecoder(StreamFormat.SAMPLE_RATE, 1);

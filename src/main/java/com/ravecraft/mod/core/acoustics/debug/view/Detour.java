@@ -1,5 +1,7 @@
 package com.ravecraft.mod.core.acoustics.debug.view;
 
+import com.ravecraft.mod.core.acoustics.Vec;
+
 import java.util.List;
 
 /** A detour summed with the direct path: its points from source to listener, and its loss. */

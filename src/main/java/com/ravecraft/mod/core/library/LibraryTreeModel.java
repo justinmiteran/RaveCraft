@@ -176,28 +176,41 @@ public final class LibraryTreeModel {
 	/** The visible rows, top to bottom. The same list is returned until something changes. */
 	public List<Row> rows() {
 		if (dirty) {
-			List<Row> built = new ArrayList<>();
-			if (flat) {
-				for (SourceNode node : flatNodes) {
-					if (node.name().toLowerCase(Locale.ROOT).contains(filter)) {
-						built.add(new Row(node, 0, false));
-					}
-				}
-			} else if (loadingRoots) {
-				built.add(ROOTS_LOADING);
-			} else if (filter.isEmpty()) {
-				for (SourceNode root : roots) {
-					addExpanded(built, root, 0);
-				}
-			} else {
-				for (SourceNode root : roots) {
-					addMatching(built, root, 0);
-				}
-			}
-			rows = List.copyOf(built);
+			rows = List.copyOf(build());
 			dirty = false;
 		}
 		return rows;
+	}
+
+	/** The visible rows, built afresh: the filtered flat list, the loading line, or the tree. */
+	private List<Row> build() {
+		if (flat) {
+			return flatRows();
+		}
+		List<Row> built = new ArrayList<>();
+		if (loadingRoots) {
+			built.add(ROOTS_LOADING);
+		} else {
+			for (SourceNode root : roots) {
+				if (filter.isEmpty()) {
+					addExpanded(built, root, 0);
+				} else {
+					addMatching(built, root, 0);
+				}
+			}
+		}
+		return built;
+	}
+
+	/** The flat list's tracks and playlists whose name holds the filter. */
+	private List<Row> flatRows() {
+		List<Row> built = new ArrayList<>();
+		for (SourceNode node : flatNodes) {
+			if (node.name().toLowerCase(Locale.ROOT).contains(filter)) {
+				built.add(new Row(node, 0, false));
+			}
+		}
+		return built;
 	}
 
 	/** Adds the line of {@code node}, then, when it is expanded, its children or their placeholder. */

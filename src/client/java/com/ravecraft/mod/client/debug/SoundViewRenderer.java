@@ -10,7 +10,7 @@ import com.ravecraft.mod.core.acoustics.debug.view.PathView;
 import com.ravecraft.mod.core.acoustics.debug.view.Ray;
 import com.ravecraft.mod.core.acoustics.debug.view.RoomView;
 import com.ravecraft.mod.core.acoustics.debug.view.SoundViewMode;
-import com.ravecraft.mod.core.acoustics.debug.view.Vec;
+import com.ravecraft.mod.core.acoustics.Vec;
 import com.ravecraft.mod.core.acoustics.debug.view.Waypoint;
 import com.ravecraft.mod.core.acoustics.reverb.Echo;
 import com.ravecraft.mod.core.acoustics.reverb.RoomShape;

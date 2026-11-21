@@ -241,27 +241,29 @@ public final class LibraryFolders {
 			if (list.size() >= MAX) {
 				break;
 			}
-			if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
-				continue;
-			}
-			try {
-				String text = element.getAsString();
-				if (text.isBlank()) {
-					continue;
-				}
-				Path raw = Path.of(text);
-				if (!raw.isAbsolute()) {
-					continue;
-				}
-				Path path = raw.normalize();
-				if (!list.contains(path)) {
-					list.add(path);
-				}
-			} catch (RuntimeException e) {
-				// invalid path: skipped
+			Path path = absolute(element);
+			if (path != null && !list.contains(path)) {
+				list.add(path);
 			}
 		}
 		return list;
+	}
+
+	/** The normalized absolute path a JSON string holds; null for anything else, a blank or an invalid path. */
+	private static @Nullable Path absolute(JsonElement element) {
+		if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
+			return null;
+		}
+		String text = element.getAsString();
+		if (text.isBlank()) {
+			return null;
+		}
+		try {
+			Path raw = Path.of(text);
+			return raw.isAbsolute() ? raw.normalize() : null;
+		} catch (RuntimeException e) {
+			return null;
+		}
 	}
 
 	/** The chosen and excluded folders as the JSON {@link #fromJson} reads. */

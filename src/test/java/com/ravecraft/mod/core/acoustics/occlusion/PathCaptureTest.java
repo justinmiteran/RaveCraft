@@ -1,5 +1,7 @@
 package com.ravecraft.mod.core.acoustics.occlusion;
 
+import com.ravecraft.mod.core.acoustics.Vec;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -30,7 +32,8 @@ class PathCaptureTest {
 
 	/** Listener at (0.5, 0.5, 0.5), source at (x + 0.5, 0.5, 0.5). */
 	private static Occlusion alongX(TestGrid grid, OcclusionSettings settings, int x, PathCapture capture) {
-		Occlusion o = new OcclusionTracer(grid, settings).occlusion(0.5, 0.5, 0.5, x + 0.5, 0.5, 0.5, ROLLOFF, RANGE,
+		Occlusion o = new OcclusionTracer(grid, settings).occlusion(new Vec(0.5, 0.5, 0.5), new Vec(x + 0.5, 0.5,
+				0.5), ROLLOFF, RANGE,
 				new TraceBudget(1_000_000), capture);
 		assertNotNull(o);
 		return o;
@@ -82,7 +85,7 @@ class PathCaptureTest {
 			grid.solid(2 + 2 * i, 0, 0, STONE);
 		}
 		PathCapture capture = new PathCapture();
-		new OcclusionTracer(grid, S).occlusion(0.5, 0.5, 0.5, 145.5, 0.5, 0.5, ROLLOFF, 1000,
+		new OcclusionTracer(grid, S).occlusion(new Vec(0.5, 0.5, 0.5), new Vec(145.5, 0.5, 0.5), ROLLOFF, 1000,
 				new TraceBudget(1_000_000), capture);
 		assertEquals(PathCapture.MAX_STEPS, capture.steps().size());
 		assertEquals(6, capture.truncated());
@@ -97,9 +100,11 @@ class PathCaptureTest {
 	@Test
 	void detoursAreTheSummedOnes() {
 		PathCapture capture = new PathCapture();
-		Occlusion with = new OcclusionTracer(openDoor(), S).occlusion(12.5, 1.5, 3.5, 3.5, 1.5, 3.5, ROLLOFF, RANGE,
+		Occlusion with = new OcclusionTracer(openDoor(), S).occlusion(new Vec(12.5, 1.5, 3.5), new Vec(3.5, 1.5, 3.5),
+				ROLLOFF, RANGE,
 				new TraceBudget(100_000), capture);
-		Occlusion without = new OcclusionTracer(openDoor(), S).occlusion(12.5, 1.5, 3.5, 3.5, 1.5, 3.5, ROLLOFF,
+		Occlusion without = new OcclusionTracer(openDoor(), S).occlusion(new Vec(12.5, 1.5, 3.5), new Vec(3.5, 1.5,
+				3.5), ROLLOFF,
 				RANGE, new TraceBudget(100_000));
 		assertEquals(without, with);
 		double direct = Objects.requireNonNull(capture.direct()).lossDb();

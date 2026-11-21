@@ -148,14 +148,8 @@ public record OcclusionSettings(boolean enabled, double maxLossDb, List<Acoustic
 	private Map<String, String> clampedDimensions(Set<String> mediumNames, Consumer<String> warn) {
 		Map<String, String> kept = new LinkedHashMap<>();
 		for (Map.Entry<String, String> e : dimensions.entrySet()) {
-			String id = e.getKey();
-			String medium = e.getValue();
-			if (id == null || id.length() > MAX_DIMENSION_ID || !DIMENSION_ID.matcher(id).matches()) {
-				warn.accept("occlusion.dimensions." + id + " is not a valid dimension id, dropped");
-			} else if (medium == null || !mediumNames.contains(medium)) {
-				warn.accept("occlusion.dimensions." + id + " names the unknown medium " + medium + ", dropped");
-			} else {
-				kept.put(id, medium);
+			if (validDimension(e.getKey(), e.getValue(), mediumNames, warn)) {
+				kept.put(e.getKey(), e.getValue());
 			}
 		}
 		if (kept.size() <= MAX_DIMENSIONS) {
@@ -169,6 +163,19 @@ public record OcclusionSettings(boolean enabled, double maxLossDb, List<Acoustic
 			}
 		}
 		return head;
+	}
+
+	/** True for a well-formed dimension id mapped to a known medium; otherwise warns and returns false. */
+	private static boolean validDimension(String id, String medium, Set<String> mediumNames, Consumer<String> warn) {
+		if (id == null || id.length() > MAX_DIMENSION_ID || !DIMENSION_ID.matcher(id).matches()) {
+			warn.accept("occlusion.dimensions." + id + " is not a valid dimension id, dropped");
+			return false;
+		}
+		if (medium == null || !mediumNames.contains(medium)) {
+			warn.accept("occlusion.dimensions." + id + " names the unknown medium " + medium + ", dropped");
+			return false;
+		}
+		return true;
 	}
 
 	/** True for a well-formed, not yet seen name; otherwise warns and returns false. */

@@ -7,7 +7,7 @@ import com.ravecraft.mod.client.options.RaveCraftOptions;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.Propagation;
 import com.ravecraft.mod.core.acoustics.debug.view.PathView;
-import com.ravecraft.mod.core.acoustics.debug.view.Vec;
+import com.ravecraft.mod.core.acoustics.Vec;
 import com.ravecraft.mod.core.acoustics.occlusion.ListenerPerception;
 import com.ravecraft.mod.core.acoustics.occlusion.Occlusion;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionPass;
@@ -212,7 +212,8 @@ public final class OcclusionScheduler {
 						double sx = stream.pos.getX() + 0.5;
 						double sy = stream.pos.getY() + 0.5;
 						double sz = stream.pos.getZ() + 0.5;
-						Occlusion result = pathTracer.occlusion(ear.x, ear.y, ear.z, sx, sy, sz, rolloff,
+						Occlusion result = pathTracer.occlusion(new Vec(ear.x, ear.y, ear.z), new Vec(sx, sy, sz),
+								rolloff,
 								range(settings, stream), budget, capture);
 						// Only a finished trace is shown: a budget-out or the direct fallback would draw a partial path.
 						if (capture != null && result != null) {
@@ -279,7 +280,8 @@ public final class OcclusionScheduler {
 
 	/** The straight-line occlusion alone, without a voxel budget (a segment visits a bounded number of voxels). */
 	private static Occlusion direct(OcclusionTracer tracer, Vec3 ear, double sx, double sy, double sz) {
-		PathLoss path = tracer.trace(ear.x, ear.y, ear.z, sx, sy, sz, new TraceBudget(Integer.MAX_VALUE));
+		PathLoss path = tracer.trace(new Vec(ear.x, ear.y, ear.z), new Vec(sx, sy, sz),
+				new TraceBudget(Integer.MAX_VALUE));
 		if (path == null || path.mute()) {
 			return Occlusion.MUTE;
 		}

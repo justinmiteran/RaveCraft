@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Browses the player's own files: drives, folders, playlists and tracks. Never recursive; callers run it off the
  * render thread because a folder on a slow drive can take a while to list.
@@ -91,17 +93,22 @@ public final class MusicLibrary {
 		if (fileName == null || isHidden(path)) {
 			return null;
 		}
-		String name = fileName.toString();
+		Kind kind = kindOf(path);
+		if (kind == null) {
+			return null;
+		}
+		return new LibraryEntry(path, kind, kind == Kind.TRACK ? AudioFiles.baseName(path) : fileName.toString());
+	}
+
+	/** What {@code path} is in the browser; null for a file that is neither audio nor a playlist. */
+	private static @Nullable Kind kindOf(Path path) {
 		if (Files.isDirectory(path)) {
-			return new LibraryEntry(path, Kind.FOLDER, name);
+			return Kind.FOLDER;
 		}
 		if (AudioFiles.isPlaylist(path)) {
-			return new LibraryEntry(path, Kind.PLAYLIST, name);
+			return Kind.PLAYLIST;
 		}
-		if (AudioFiles.isAudio(path)) {
-			return new LibraryEntry(path, Kind.TRACK, AudioFiles.baseName(path));
-		}
-		return null;
+		return AudioFiles.isAudio(path) ? Kind.TRACK : null;
 	}
 
 	private static boolean isHidden(Path path) {

@@ -1,5 +1,7 @@
 package com.ravecraft.mod.core.acoustics.occlusion;
 
+import com.ravecraft.mod.core.acoustics.Vec;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -21,7 +23,8 @@ class OcclusionTracerTest {
 	}
 
 	private static PathLoss trace(TestGrid grid, double x0, double y0, double z0, double x1, double y1, double z1) {
-		PathLoss loss = new OcclusionTracer(grid, S).trace(x0, y0, z0, x1, y1, z1, new TraceBudget(10_000));
+		PathLoss loss = new OcclusionTracer(grid, S).trace(new Vec(x0, y0, z0), new Vec(x1, y1, z1),
+				new TraceBudget(10_000));
 		assertNotNull(loss);
 		return loss;
 	}
@@ -135,14 +138,16 @@ class OcclusionTracerTest {
 	@Test
 	void budgetStopsTrace() {
 		TraceBudget budget = new TraceBudget(3);
-		assertNull(new OcclusionTracer(new TestGrid(), S).trace(0.5, 0.5, 0.5, 6.5, 0.5, 0.5, budget));
+		assertNull(new OcclusionTracer(new TestGrid(), S).trace(new Vec(0.5, 0.5, 0.5), new Vec(6.5, 0.5, 0.5),
+				budget));
 		assertTrue(budget.exhausted());
 	}
 
 	@Test
 	void budgetCountsVisitedVoxels() {
 		TraceBudget budget = new TraceBudget(100);
-		assertNotNull(new OcclusionTracer(new TestGrid(), S).trace(0.5, 0.5, 0.5, 6.5, 0.5, 0.5, budget));
+		assertNotNull(new OcclusionTracer(new TestGrid(), S).trace(new Vec(0.5, 0.5, 0.5), new Vec(6.5, 0.5, 0.5),
+				budget));
 		assertEquals(7, budget.used());
 		assertFalse(budget.exhausted());
 	}

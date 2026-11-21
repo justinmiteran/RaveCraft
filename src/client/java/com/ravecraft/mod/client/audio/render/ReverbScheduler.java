@@ -7,7 +7,7 @@ import com.ravecraft.mod.client.options.OcclusionQuality;
 import com.ravecraft.mod.client.options.RaveCraftOptions;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.debug.view.RoomView;
-import com.ravecraft.mod.core.acoustics.debug.view.Vec;
+import com.ravecraft.mod.core.acoustics.Vec;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.TraceBudget;
 import com.ravecraft.mod.core.acoustics.reverb.Echo;

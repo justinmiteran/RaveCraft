@@ -1,5 +1,7 @@
 package com.ravecraft.mod.core.acoustics.debug.view;
 
+import com.ravecraft.mod.core.acoustics.Vec;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -28,8 +30,8 @@ class PathViewTest {
 	}
 
 	private static Occlusion trace(TestGrid grid, PathCapture capture) {
-		return Objects.requireNonNull(new OcclusionTracer(grid, S).occlusion(LISTENER.x(), LISTENER.y(), LISTENER.z(),
-				SOURCE.x(), SOURCE.y(), SOURCE.z(), 1, 64, new TraceBudget(1_000_000), capture));
+		return Objects.requireNonNull(new OcclusionTracer(grid, S).occlusion(LISTENER, SOURCE, 1, 64,
+				new TraceBudget(1_000_000), capture));
 	}
 
 	private static TestGrid stoneThenWood() {
@@ -64,7 +66,8 @@ class PathViewTest {
 			grid.solid(2 + 2 * i, 0, 0, material("stone"));
 		}
 		PathCapture capture = new PathCapture();
-		new OcclusionTracer(grid, S).occlusion(0.5, 0.5, 0.5, 145.5, 0.5, 0.5, 1, 1000, new TraceBudget(1_000_000),
+		new OcclusionTracer(grid, S).occlusion(new Vec(0.5, 0.5, 0.5), new Vec(145.5, 0.5, 0.5), 1, 1000,
+				new TraceBudget(1_000_000),
 				capture);
 		Occlusion occlusion = new Occlusion(12, 4);
 		PathView view = PathView.of(1, SOURCE, LISTENER, capture, occlusion);
@@ -79,8 +82,8 @@ class PathViewTest {
 	void detourPointsInOrder() {
 		TestGrid room = new TestGrid().shell(0, 0, 0, 6, 4, 6, material("stone")).clear(7, 0, 1, 7, 1, 1);
 		PathCapture capture = new PathCapture();
-		Occlusion occlusion = Objects.requireNonNull(new OcclusionTracer(room, S).occlusion(12.5, 1.5, 3.5, 3.5, 1.5,
-				3.5, 1, 64, new TraceBudget(100_000), capture));
+		Occlusion occlusion = Objects.requireNonNull(new OcclusionTracer(room, S).occlusion(new Vec(12.5, 1.5, 3.5),
+				new Vec(3.5, 1.5, 3.5), 1, 64, new TraceBudget(100_000), capture));
 		PathView view = PathView.of(1, new Vec(3.5, 1.5, 3.5), new Vec(12.5, 1.5, 3.5), capture, occlusion);
 		assertEquals(capture.detours().size(), view.detours().size());
 		for (int d = 0; d < view.detours().size(); d++) {

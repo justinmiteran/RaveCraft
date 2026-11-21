@@ -1,5 +1,7 @@
 package com.ravecraft.mod.core.acoustics.debug.view;
 
+import com.ravecraft.mod.core.acoustics.Vec;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

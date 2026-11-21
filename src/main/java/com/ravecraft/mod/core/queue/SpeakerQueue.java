@@ -85,32 +85,34 @@ public record SpeakerQueue(List<QueueEntry> entries, Optional<UUID> current, lon
 		if (repeat == RepeatMode.ONE && natural && now.isPresent() && online.test(now.get().owner())) {
 			return now;
 		}
-		for (QueueEntry candidate : upcoming()) {
+		Optional<QueueEntry> ahead = firstOnline(upcoming(), online);
+		if (ahead.isPresent() || repeat == RepeatMode.OFF) {
+			return ahead;
+		}
+		if (shuffle) {
+			return reshuffled(online, now, rng);
+		}
+		return firstOnline(entries.subList(0, indexOfCurrent() + 1), online);
+	}
+
+	/** The first entry of {@code list} whose owner is online. */
+	private static Optional<QueueEntry> firstOnline(List<QueueEntry> list, Predicate<UUID> online) {
+		for (QueueEntry candidate : list) {
 			if (online.test(candidate.owner())) {
 				return Optional.of(candidate);
 			}
 		}
-		if (repeat == RepeatMode.OFF) {
-			return Optional.empty();
-		}
-		if (shuffle) {
-			List<QueueEntry> fresh = new ArrayList<>(entries);
-			Collections.shuffle(fresh, rng);
-			Optional<QueueEntry> other = fresh.stream()
-					.filter(e -> online.test(e.owner()) && !Optional.of(e.entryId()).equals(current))
-					.findFirst();
-			if (other.isPresent()) {
-				return other;
-			}
-			return now.filter(e -> online.test(e.owner()));
-		}
-		int index = indexOfCurrent();
-		for (int i = 0; i <= index; i++) {
-			if (online.test(entries.get(i).owner())) {
-				return Optional.of(entries.get(i));
-			}
-		}
 		return Optional.empty();
+	}
+
+	/** A new shuffle round's first online entry other than the current one; the current one when it is alone. */
+	private Optional<QueueEntry> reshuffled(Predicate<UUID> online, Optional<QueueEntry> now, RandomGenerator rng) {
+		List<QueueEntry> fresh = new ArrayList<>(entries);
+		Collections.shuffle(fresh, rng);
+		Optional<QueueEntry> other = fresh.stream()
+				.filter(e -> online.test(e.owner()) && !Optional.of(e.entryId()).equals(current))
+				.findFirst();
+		return other.isPresent() ? other : now.filter(e -> online.test(e.owner()));
 	}
 
 	/** The queue once {@code nextId} becomes current from its start, with the shuffle round updated. */

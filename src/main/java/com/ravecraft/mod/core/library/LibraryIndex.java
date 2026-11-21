@@ -232,27 +232,10 @@ public final class LibraryIndex {
 		List<Path> excluded = new ArrayList<>();
 		List<SourceNode> nodes = new ArrayList<>();
 		for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-			if (line.length() <= ENTRY_PREFIX || line.charAt(ENTRY_PREFIX - 1) != ' ') {
-				continue;
-			}
-			Optional<Path> path = path(line.substring(ENTRY_PREFIX));
-			if (path.isEmpty()) {
-				continue;
-			}
-			Path p = path.get();
-			switch (line.charAt(0)) {
-				case 'R' -> roots.add(p);
-				case 'X' -> excluded.add(p);
-				case 'T' -> nodes.add(new SourceNode(p.toString(), SourceNode.Kind.TRACK, AudioFiles.baseName(p),
-						false));
-				case 'P' -> {
-					Path name = p.getFileName();
-					if (name != null) {
-						nodes.add(new SourceNode(p.toString(), SourceNode.Kind.PLAYLIST, name.toString(), false));
-					}
-				}
-				default -> {
-				}
+			Optional<Path> path = line.length() <= ENTRY_PREFIX || line.charAt(ENTRY_PREFIX - 1) != ' '
+					? Optional.empty() : path(line.substring(ENTRY_PREFIX));
+			if (path.isPresent()) {
+				readEntry(line.charAt(0), path.get(), roots, excluded, nodes);
 			}
 		}
 		LibraryIndex index = new LibraryIndex(roots, excluded);
@@ -261,6 +244,23 @@ public final class LibraryIndex {
 			index.finish(Boolean.parseBoolean(state[1]));
 		}
 		return Optional.of(index);
+	}
+
+	/** Files the entry {@code p} of kind {@code kind} into its list; an unknown kind is skipped. */
+	private static void readEntry(char kind, Path p, List<Path> roots, List<Path> excluded, List<SourceNode> nodes) {
+		switch (kind) {
+			case 'R' -> roots.add(p);
+			case 'X' -> excluded.add(p);
+			case 'T' -> nodes.add(new SourceNode(p.toString(), SourceNode.Kind.TRACK, AudioFiles.baseName(p), false));
+			case 'P' -> {
+				Path name = p.getFileName();
+				if (name != null) {
+					nodes.add(new SourceNode(p.toString(), SourceNode.Kind.PLAYLIST, name.toString(), false));
+				}
+			}
+			default -> {
+			}
+		}
 	}
 
 	private void count(String id) {

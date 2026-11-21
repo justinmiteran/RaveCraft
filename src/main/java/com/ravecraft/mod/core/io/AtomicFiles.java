@@ -29,16 +29,25 @@ public final class AtomicFiles {
 		Files.createDirectories(dir);
 		Path temp = Files.createTempFile(dir, file.getFileName().toString(), ".tmp");
 		try {
-			try (Writer out = Files.newBufferedWriter(temp, StandardCharsets.UTF_8)) {
-				content.write(out);
-			}
-			try {
-				Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-			} catch (AtomicMoveNotSupportedException e) {
-				Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
-			}
+			fill(temp, content);
+			replace(temp, file);
 		} finally {
 			Files.deleteIfExists(temp);
+		}
+	}
+
+	private static void fill(Path temp, Content content) throws IOException {
+		try (Writer out = Files.newBufferedWriter(temp, StandardCharsets.UTF_8)) {
+			content.write(out);
+		}
+	}
+
+	/** Moves {@code temp} over {@code file}, atomically when the filesystem can. */
+	private static void replace(Path temp, Path file) throws IOException {
+		try {
+			Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+		} catch (AtomicMoveNotSupportedException e) {
+			Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
 		}
 	}
 

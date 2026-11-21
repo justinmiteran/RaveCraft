@@ -53,6 +53,32 @@
 			<property name="ignoreAnnotation" value="true"/>
 		</module>
 
+		<!-- Javadoc: every type; every public or protected method; other methods past 10 lines.
+		     Tests and mixins are exempt from the "missing" rules (see suppressions.xml). -->
+		<module name="MissingJavadocType">
+			<property name="id" value="missingJavadoc"/>
+			<property name="scope" value="private"/>
+		</module>
+		<module name="MissingJavadocMethod">
+			<property name="id" value="missingJavadoc"/>
+			<property name="scope" value="protected"/>
+			<property name="allowMissingPropertyJavadoc" value="true"/>
+		</module>
+		<module name="MissingJavadocMethod">
+			<property name="id" value="missingJavadoc"/>
+			<property name="scope" value="private"/>
+			<property name="excludeScope" value="protected"/>
+			<property name="minLineCount" value="10"/>
+		</module>
+		<!-- A Javadoc opens with a non-empty first sentence ending in a period. -->
+		<module name="SummaryJavadoc"/>
+		<module name="JavadocMethod">
+			<property name="allowMissingParamTags" value="true"/>
+			<property name="allowMissingReturnTag" value="true"/>
+		</module>
+		<module name="NonEmptyAtclauseDescription"/>
+		<module name="InvalidJavadocPosition"/>
+
 		<!-- Naming -->
 		<module name="TypeName"/>
 		<module name="MethodName">

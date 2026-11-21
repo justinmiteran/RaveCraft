@@ -16,4 +16,7 @@
 	<suppress id="noSleep" files="[\\/]StreamPacing\.java$"/>
 	<!-- Tests may wait on a real clock. -->
 	<suppress id="noSleep" files="[\\/]src[\\/](test|gametest)[\\/]"/>
+	<!-- A test's name says what it checks; a mixin is explained by its target. -->
+	<suppress id="missingJavadoc" files="[\\/]src[\\/](test|gametest)[\\/]"/>
+	<suppress id="missingJavadoc" files="[\\/]mixin[\\/]"/>
 </suppressions>

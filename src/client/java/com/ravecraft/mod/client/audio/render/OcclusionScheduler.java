@@ -7,7 +7,7 @@ import com.ravecraft.mod.client.options.RaveCraftOptions;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.Propagation;
 import com.ravecraft.mod.core.acoustics.debug.view.PathView;
-import com.ravecraft.mod.core.acoustics.debug.view.Vec;
+import com.ravecraft.mod.core.acoustics.Vec;
 import com.ravecraft.mod.core.acoustics.occlusion.ListenerPerception;
 import com.ravecraft.mod.core.acoustics.occlusion.Occlusion;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionPass;
@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.CommonLifecycleEvents;
@@ -109,16 +110,43 @@ public final class OcclusionScheduler {
 		}
 	}
 
+	/** Traces the occlusion of the streams due this tick, within the tick's budget. */
 	private static void traceTick(Minecraft minecraft) {
 		tick++;
 		AcousticSettings settings = AcousticSettingsClient.get();
 		OcclusionSettings occlusion = settings.occlusion();
+		refreshAcoustics(occlusion);
+		ClientLevel level = minecraft.level;
+		boolean showPaths = level != null && SoundViewEntries.mode().paths();
+		if (!showPaths) {
+			SoundViewSnapshots.clearPaths();
+		}
+		if (level == null) {
+			leaveLevel();
+			return;
+		}
+		OcclusionTracer pathTracer = tracerFor(level, occlusion);
+		Vec3 ear = AcousticRenderer.listener();
+		WorldAcousticGrid world = Objects.requireNonNull(grid);
+		AcousticRenderer.headPerception(occlusion.enabled() ? world.perceptionAt(ear) : ListenerPerception.NONE);
+		sortAudible(settings, ear);
+		if (!occlusion.enabled()) {
+			publishUnoccluded();
+			return;
+		}
+		trace(new TraceOps(pathTracer, settings, ear, showPaths ? CAPTURE : null));
+		if (showPaths) {
+			SoundViewSnapshots.retainPaths(AUDIBLE_IDS);
+		}
+	}
+
+	/** Builds the block acoustics again when the settings changed, or forgets the materials after new tags. */
+	private static void refreshAcoustics(OcclusionSettings occlusion) {
 		BlockAcoustics blockAcoustics = blocks;
-		MediumResolver resolver = media;
-		if (occlusion != built || blockAcoustics == null || resolver == null) {
+		if (occlusion != built || blockAcoustics == null || media == null) {
 			built = occlusion;
-			blockAcoustics = blocks = new BlockAcoustics(occlusion);
-			resolver = media = new MediumResolver(occlusion);
+			blocks = new BlockAcoustics(occlusion);
+			media = new MediumResolver(occlusion);
 			grid = null;
 			tracer = null;
 			tagsReloaded = false;
@@ -126,34 +154,40 @@ public final class OcclusionScheduler {
 			tagsReloaded = false;
 			blockAcoustics.clearCache();
 		}
+	}
 
-		ClientLevel level = minecraft.level;
-		boolean showPaths = level != null && SoundViewEntries.mode().paths();
-		if (!showPaths) {
-			SoundViewSnapshots.clearPaths();
+	/** No level: every stream's occlusion becomes unknown and the per-level state is dropped. */
+	private static void leaveLevel() {
+		grid = null;
+		tracer = null;
+		AcousticRenderer.headPerception(ListenerPerception.NONE);
+		for (RenderStream stream : AcousticRenderer.streams()) {
+			stream.occlusionKnown = false;
 		}
-		if (level == null) {
-			grid = null;
-			tracer = null;
-			AcousticRenderer.headPerception(ListenerPerception.NONE);
-			for (RenderStream stream : AcousticRenderer.streams()) {
-				stream.occlusionKnown = false;
-			}
-			ROTA.forget(Set.of());
-			previousById.clear();
-			byId.clear();
-			FAILED_SESSIONS.clear();
-			return;
-		}
-		OcclusionTracer tracer = OcclusionScheduler.tracer;
-		if (grid == null || tracer == null || grid.level() != level) {
-			grid = new WorldAcousticGrid(level, blockAcoustics, resolver, occlusion);
-			tracer = OcclusionScheduler.tracer = new OcclusionTracer(grid, occlusion);
-		}
+		ROTA.forget(Set.of());
+		previousById.clear();
+		byId.clear();
+		FAILED_SESSIONS.clear();
+	}
 
-		Vec3 ear = AcousticRenderer.listener();
+	/** The tracer for {@code level}, built again with its grid when the level or the settings changed. */
+	private static OcclusionTracer tracerFor(ClientLevel level, OcclusionSettings occlusion) {
+		OcclusionTracer current = tracer;
 		WorldAcousticGrid world = grid;
-		AcousticRenderer.headPerception(occlusion.enabled() ? world.perceptionAt(ear) : ListenerPerception.NONE);
+		if (world == null || current == null || world.level() != level) {
+			world = new WorldAcousticGrid(level, Objects.requireNonNull(blocks), Objects.requireNonNull(media), occlusion);
+			grid = world;
+			current = new OcclusionTracer(world, occlusion);
+			tracer = current;
+		}
+		return current;
+	}
+
+	/**
+	 * Lists the audible streams loudest first in {@link #AUDIBLE} (the others' occlusion becomes unknown), indexes them
+	 * by session, and tells the rota which sessions are still the same stream.
+	 */
+	private static void sortAudible(AcousticSettings settings, Vec3 ear) {
 		AUDIBLE.clear();
 		for (RenderStream stream : AcousticRenderer.streams()) {
 			if (isAudible(settings, stream, ear)) {
@@ -181,74 +215,89 @@ public final class OcclusionScheduler {
 			}
 		}
 		ROTA.forget(ALIVE);
+	}
 
+	/** Occlusion is off: every audible stream is heard without loss. */
+	private static void publishUnoccluded() {
 		lastVoxels = 0;
-		if (!occlusion.enabled()) {
-			SoundViewSnapshots.clearPaths();
-			for (RenderStream stream : AUDIBLE) {
-				publish(stream, 0, 0);
-			}
-			return;
+		SoundViewSnapshots.clearPaths();
+		for (RenderStream stream : AUDIBLE) {
+			publish(stream, 0, 0);
 		}
-		@Nullable PathCapture capture = showPaths ? CAPTURE : null;
+	}
 
+	/** Traces the streams the rota picks this tick, within the player's voxel budget. */
+	private static void trace(TraceOps ops) {
 		DUE.clear();
 		for (Integer id : ROTA.pick(AUDIBLE_IDS, tick)) {
 			DUE.add(byId.get(id));
 		}
-		OcclusionTracer pathTracer = tracer;
-		double rolloff = settings.rolloff();
 		lastBudget = RaveCraftOptions.occlusionQuality().get().voxelsPerTick();
 		TraceBudget budget = new TraceBudget(lastBudget);
-		OcclusionPass.run(DUE, budget,
-				new OcclusionPass.Ops<RenderStream>() {
-					@Override
-					public boolean known(RenderStream stream) {
-						return stream.occlusionKnown;
-					}
-
-					@Override
-					public @Nullable Occlusion occlusion(RenderStream stream, TraceBudget budget) {
-						double sx = stream.pos.getX() + 0.5;
-						double sy = stream.pos.getY() + 0.5;
-						double sz = stream.pos.getZ() + 0.5;
-						Occlusion result = pathTracer.occlusion(ear.x, ear.y, ear.z, sx, sy, sz, rolloff,
-								range(settings, stream), budget, capture);
-						// Only a finished trace is shown: a budget-out or the direct fallback would draw a partial path.
-						if (capture != null && result != null) {
-							SoundViewSnapshots.putPath(PathView.of(stream.sessionId, new Vec(sx, sy, sz),
-									new Vec(ear.x, ear.y, ear.z), capture, result));
-						}
-						return result;
-					}
-
-					@Override
-					public Occlusion direct(RenderStream stream) {
-						return OcclusionScheduler.direct(pathTracer, ear, stream.pos.getX() + 0.5,
-								stream.pos.getY() + 0.5, stream.pos.getZ() + 0.5);
-					}
-
-					@Override
-					public void publish(RenderStream stream, Occlusion occlusion) {
-						OcclusionScheduler.publish(stream, occlusion.lossDb(), occlusion.highLossDb());
-					}
-
-					@Override
-					public void unfinished(RenderStream stream) {
-						ROTA.unfinished(stream.sessionId);
-					}
-
-					@Override
-					public void failed(RenderStream stream, RuntimeException e) {
-						if (FAILED_SESSIONS.add(stream.sessionId)) {
-							RaveCraft.LOGGER.error("Occlusion trace failed for speaker session {} at {}; it keeps its"
-									+ " last value", stream.sessionId, stream.pos, e);
-						}
-					}
-				});
+		OcclusionPass.run(DUE, budget, ops);
 		lastVoxels = budget.used();
-		if (showPaths) {
-			SoundViewSnapshots.retainPaths(AUDIBLE_IDS);
+	}
+
+	/** How a tick's pass traces a stream, publishes the result and reports failures. */
+	private static final class TraceOps implements OcclusionPass.Ops<RenderStream> {
+		private final OcclusionTracer pathTracer;
+		private final AcousticSettings settings;
+		private final Vec3 ear;
+		private final double rolloff;
+		/** Where the traces record their paths while the sound view shows them, else null. */
+		private final @Nullable PathCapture capture;
+
+		TraceOps(OcclusionTracer pathTracer, AcousticSettings settings, Vec3 ear, @Nullable PathCapture capture) {
+			this.pathTracer = pathTracer;
+			this.settings = settings;
+			this.ear = ear;
+			this.rolloff = settings.rolloff();
+			this.capture = capture;
+		}
+
+		@Override
+		public boolean known(RenderStream stream) {
+			return stream.occlusionKnown;
+		}
+
+		@Override
+		public @Nullable Occlusion occlusion(RenderStream stream, TraceBudget budget) {
+			double sx = stream.pos.getX() + 0.5;
+			double sy = stream.pos.getY() + 0.5;
+			double sz = stream.pos.getZ() + 0.5;
+			Occlusion result = pathTracer.occlusion(new Vec(ear.x, ear.y, ear.z), new Vec(sx, sy, sz),
+					rolloff,
+					range(settings, stream), budget, capture);
+			// Only a finished trace is shown: a budget-out or the direct fallback would draw a partial path.
+			if (capture != null && result != null) {
+				SoundViewSnapshots.putPath(PathView.of(stream.sessionId, new Vec(sx, sy, sz),
+						new Vec(ear.x, ear.y, ear.z), capture, result));
+			}
+			return result;
+		}
+
+		@Override
+		public Occlusion direct(RenderStream stream) {
+			return OcclusionScheduler.direct(pathTracer, ear, stream.pos.getX() + 0.5,
+					stream.pos.getY() + 0.5, stream.pos.getZ() + 0.5);
+		}
+
+		@Override
+		public void publish(RenderStream stream, Occlusion occlusion) {
+			OcclusionScheduler.publish(stream, occlusion.lossDb(), occlusion.highLossDb());
+		}
+
+		@Override
+		public void unfinished(RenderStream stream) {
+			ROTA.unfinished(stream.sessionId);
+		}
+
+		@Override
+		public void failed(RenderStream stream, RuntimeException e) {
+			if (FAILED_SESSIONS.add(stream.sessionId)) {
+				RaveCraft.LOGGER.error("Occlusion trace failed for speaker session {} at {}; it keeps its"
+						+ " last value", stream.sessionId, stream.pos, e);
+			}
 		}
 	}
 
@@ -279,7 +328,8 @@ public final class OcclusionScheduler {
 
 	/** The straight-line occlusion alone, without a voxel budget (a segment visits a bounded number of voxels). */
 	private static Occlusion direct(OcclusionTracer tracer, Vec3 ear, double sx, double sy, double sz) {
-		PathLoss path = tracer.trace(ear.x, ear.y, ear.z, sx, sy, sz, new TraceBudget(Integer.MAX_VALUE));
+		PathLoss path = tracer.trace(new Vec(ear.x, ear.y, ear.z), new Vec(sx, sy, sz),
+				new TraceBudget(Integer.MAX_VALUE));
 		if (path == null || path.mute()) {
 			return Occlusion.MUTE;
 		}

@@ -1,5 +1,7 @@
 package com.ravecraft.mod.core.acoustics.debug.view;
 
+import com.ravecraft.mod.core.acoustics.Vec;
+
 /**
  * Where to draw an end that sits at the listener's eye. A line from the eye is seen end-on in first person, a dot at
  * best, and flickers against the near plane; dropped below the eye, it shows as a line coming up from the bottom of
@@ -14,6 +16,7 @@ public final class EyeAnchor {
 	private EyeAnchor() {
 	}
 
+	/** Where to draw {@code point}: {@link #DROP} below it when it is within {@link #NEAR} of the camera. */
 	public static Vec of(Vec point, Vec camera) {
 		double dx = point.x() - camera.x();
 		double dy = point.y() - camera.y();

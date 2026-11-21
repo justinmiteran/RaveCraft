@@ -14,6 +14,7 @@ import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** The mod's entry point: registers its content, payloads, config and server handlers. */
 public class RaveCraft implements ModInitializer {
 	public static final String MOD_ID = "ravecraft";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
@@ -33,6 +34,7 @@ public class RaveCraft implements ModInitializer {
 		LOGGER.info("RaveCraft initialized");
 	}
 
+	/** An identifier in the mod's namespace. */
 	public static Identifier id(String path) {
 		return Identifier.fromNamespaceAndPath(MOD_ID, path);
 	}

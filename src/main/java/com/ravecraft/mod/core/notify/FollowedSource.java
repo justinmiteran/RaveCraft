@@ -28,15 +28,8 @@ public final class FollowedSource {
 	 * {@code openSpeaker} is open, its entry counts as announced without being returned.
 	 */
 	public Optional<Heard> update(long nowMs, List<Heard> heard, OptionalLong openSpeaker) {
-		Heard loudest = loudest(heard);
-		if (loudest == null) {
-			candidate = OptionalLong.empty();
-		} else if (candidate.isEmpty() || candidate.getAsLong() != loudest.speaker()) {
-			candidate = OptionalLong.of(loudest.speaker());
-			candidateSince = nowMs;
-		}
-		if (candidate.isPresent() && (followed.isEmpty()
-				|| followed.getAsLong() != candidate.getAsLong() && nowMs - candidateSince >= FOLLOW_DELAY_MS)) {
+		track(nowMs, loudest(heard));
+		if (switches(nowMs)) {
 			followed = candidate;
 		}
 		if (followed.isEmpty()) {
@@ -52,16 +45,40 @@ public final class FollowedSource {
 		return open ? Optional.empty() : Optional.of(playing);
 	}
 
+	/** Makes {@code loudest} the candidate, timing it from {@code nowMs} when it changes. */
+	private void track(long nowMs, Heard loudest) {
+		if (loudest == null) {
+			candidate = OptionalLong.empty();
+		} else if (candidate.isEmpty() || candidate.getAsLong() != loudest.speaker()) {
+			candidate = OptionalLong.of(loudest.speaker());
+			candidateSince = nowMs;
+		}
+	}
+
+	/** Whether to follow the candidate now: at once when nothing is followed, else once it lasted the delay. */
+	private boolean switches(long nowMs) {
+		if (candidate.isEmpty()) {
+			return false;
+		}
+		if (followed.isEmpty()) {
+			return true;
+		}
+		return followed.getAsLong() != candidate.getAsLong() && nowMs - candidateSince >= FOLLOW_DELAY_MS;
+	}
+
 	/** The loudest audible speaker, ties going to the smaller key; null when nothing is audible. */
 	private static Heard loudest(List<Heard> heard) {
 		Heard best = null;
 		for (Heard h : heard) {
-			if (h.gain() > 0 && (best == null || h.gain() > best.gain()
-					|| h.gain() == best.gain() && h.speaker() < best.speaker())) {
+			if (h.gain() > 0 && louder(h, best)) {
 				best = h;
 			}
 		}
 		return best;
+	}
+
+	private static boolean louder(Heard h, Heard best) {
+		return best == null || h.gain() > best.gain() || h.gain() == best.gain() && h.speaker() < best.speaker();
 	}
 
 	private static Heard audible(List<Heard> heard, long speaker) {

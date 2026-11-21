@@ -9,6 +9,7 @@ import java.util.TreeMap;
  * again from the newest frames instead of concealing the whole gap. Not thread-safe.
  */
 public final class JitterBuffer {
+	/** What {@link #poll()} hands out for the frame due now. */
 	public sealed interface Slot permits Audio, Lost, Waiting {
 	}
 
@@ -41,6 +42,12 @@ public final class JitterBuffer {
 	private long lostFrames;
 	private long underruns;
 
+	/**
+	 * Creates an empty buffer.
+	 *
+	 * @param targetFrames the frames spanned before playing starts
+	 * @param maxAheadFrames how far past the cursor a frame may land before the buffer restarts from it
+	 */
 	public JitterBuffer(int targetFrames, int maxAheadFrames) {
 		this.targetFrames = targetFrames;
 		this.maxAheadFrames = maxAheadFrames;
@@ -65,19 +72,14 @@ public final class JitterBuffer {
 		}
 	}
 
+	/**
+	 * Hands out the frame due now and moves to the next one.
+	 *
+	 * @return the frame, a lost frame, or waiting while buffering
+	 */
 	public Slot poll() {
-		if (!playing) {
-			if (frames.isEmpty() || (!draining && frames.lastKey() - frames.firstKey() < targetFrames)) {
-				return WAITING;
-			}
-			playing = true;
-			cursor = frames.firstKey();
-			if (underran) {
-				// After a stall the whole backlog arrives at once (TCP loses nothing): resume at target latency.
-				cursor = Math.max(cursor, frames.lastKey() - targetFrames);
-				frames.headMap(cursor).clear();
-				underran = false;
-			}
+		if (!playing && !start()) {
+			return WAITING;
 		}
 		if (frames.isEmpty()) {
 			playing = false;
@@ -94,11 +96,28 @@ public final class JitterBuffer {
 		return new Audio(frame);
 	}
 
+	/** Starts playing once enough frames are buffered; false while still buffering. */
+	private boolean start() {
+		if (frames.isEmpty() || !draining && frames.lastKey() - frames.firstKey() < targetFrames) {
+			return false;
+		}
+		playing = true;
+		cursor = frames.firstKey();
+		if (underran) {
+			// After a stall the whole backlog arrives at once (TCP loses nothing): resume at target latency.
+			cursor = Math.max(cursor, frames.lastKey() - targetFrames);
+			frames.headMap(cursor).clear();
+			underran = false;
+		}
+		return true;
+	}
+
 	/** No more frames will come: play what is buffered without waiting for the target. */
 	public void drain() {
 		draining = true;
 	}
 
+	/** Frames held, played or not yet. */
 	public int bufferedFrames() {
 		return frames.size();
 	}

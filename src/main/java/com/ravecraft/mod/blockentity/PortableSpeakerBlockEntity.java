@@ -28,6 +28,7 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import org.jspecify.annotations.Nullable;
 
+/** A placed portable speaker: its data (id, settings, queue), its fabric colour and its name. */
 public class PortableSpeakerBlockEntity extends BlockEntity {
 	public static final String KEY = "speaker";
 	private static final String COLOR_KEY = "color";
@@ -39,14 +40,17 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 	/** The name given to the item in an anvil, shown as the screen's title; null when unnamed. */
 	private @Nullable Component customName;
 
+	/** A speaker with fresh data, undyed and unnamed. */
 	public PortableSpeakerBlockEntity(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.PORTABLE_SPEAKER, pos, state);
 	}
 
+	/** The speaker's id, settings and queue. */
 	public SpeakerData data() {
 		return data;
 	}
 
+	/** Replaces the speaker's data and marks the block entity changed. */
 	public void setData(SpeakerData data) {
 		this.data = data;
 		setChanged();
@@ -63,6 +67,7 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 		}
 	}
 
+	/** The dye on the fabric, or null when undyed. */
 	public @Nullable DyedItemColor dyedColor() {
 		return color;
 	}
@@ -72,10 +77,12 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 		return color != null ? color.rgb() : PortableSpeakerBlock.DEFAULT_COLOR;
 	}
 
+	/** The name given in an anvil, or null when unnamed. */
 	public @Nullable Component customName() {
 		return customName;
 	}
 
+	/** Dyes the fabric (null: undyed) and sends it to the clients tracking the chunk. */
 	public void setDyedColor(@Nullable DyedItemColor color) {
 		this.color = color;
 		setChanged();

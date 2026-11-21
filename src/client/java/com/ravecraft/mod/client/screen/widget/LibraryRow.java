@@ -27,16 +27,19 @@ public abstract sealed class LibraryRow implements ListRow permits FolderRow, Fi
 	private final List<RowItem> items = new ArrayList<>();
 	private Supplier<List<Component>> tooltip = List::of;
 
+	/** The row of {@code node}, at {@code depth}, labelled with its name. */
 	protected LibraryRow(SourceNode node, int depth) {
 		this.depth = depth;
 		this.label = node.name();
 	}
 
+	/** Shows {@code label} instead of the name. */
 	public LibraryRow label(String label) {
 		this.label = label;
 		return this;
 	}
 
+	/** Dims the row when {@code greyed}. */
 	public LibraryRow greyed(boolean greyed) {
 		this.greyed = greyed;
 		return this;
@@ -62,6 +65,7 @@ public abstract sealed class LibraryRow implements ListRow permits FolderRow, Fi
 		return this;
 	}
 
+	/** Shows {@code tooltip} when the row is hovered. */
 	public LibraryRow tooltip(List<Component> tooltip) {
 		return tooltip(() -> tooltip);
 	}
@@ -72,6 +76,7 @@ public abstract sealed class LibraryRow implements ListRow permits FolderRow, Fi
 		return this;
 	}
 
+	/** Whether the row is dimmed. */
 	protected final boolean greyed() {
 		return greyed;
 	}

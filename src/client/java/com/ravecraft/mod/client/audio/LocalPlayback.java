@@ -50,6 +50,7 @@ public final class LocalPlayback {
 	private LocalPlayback() {
 	}
 
+	/** Sends the queued additions each tick and stops every local stream on leaving. */
 	public static void register() {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> stopAll());
 		ClientTickEvents.END_CLIENT_TICK.register(client -> sendPending());
@@ -96,6 +97,7 @@ public final class LocalPlayback {
 		}
 	}
 
+	/** Registers {@code tracks} under fresh entry ids and asks the server to queue them on the speaker at {@code pos}. */
 	private static void enqueue(BlockPos pos, List<Path> tracks, List<String> titles) {
 		Map<UUID, Path> registered = new LinkedHashMap<>();
 		List<QueueAddPayload.NewEntry> batch = new ArrayList<>();
@@ -174,7 +176,8 @@ public final class LocalPlayback {
 			previous.cancel();
 		}
 		StreamEmitter emitter = new StreamEmitter(id, order.dimension(), order.pos(), track.get(), order.positionMs(),
-				durationMs -> ClientPlayNetworking.send(new StreamStartedPayload(id, durationMs)), () -> finished(id), e -> failed(id));
+				new StreamEmitter.Callbacks(durationMs -> ClientPlayNetworking.send(new StreamStartedPayload(id, durationMs)),
+						() -> finished(id), e -> failed(id)));
 		EMITTERS.put(id, emitter);
 		emitter.start();
 	}

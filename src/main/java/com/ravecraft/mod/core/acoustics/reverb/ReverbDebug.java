@@ -8,6 +8,7 @@ import org.jspecify.annotations.Nullable;
 /** The debug screen (F3) lines describing the listener's space: what was measured and the reverb it gives. */
 public final class ReverbDebug {
 	private static final String TITLE = "RaveCraft reverb: ";
+	private static final double PERCENT = 100;
 
 	private ReverbDebug() {
 	}
@@ -30,7 +31,7 @@ public final class ReverbDebug {
 			return List.of(TITLE + "measuring...");
 		}
 		String measure = format("open %d%% | free path %.1f | absorption %.2f | irregular %.2f",
-				Math.round(shape.openness() * 100), shape.meanFreePath(), shape.absorption(), shape.irregularity());
+				Math.round(shape.openness() * PERCENT), shape.meanFreePath(), shape.absorption(), shape.irregularity());
 		String echoLine = echo.gain() <= 0 ? "  echo: none"
 				: format("  echo: %.2f s, gain %.2f", echo.delaySeconds(), echo.gain());
 		return List.of(TITLE + measure, reverb, echoLine);

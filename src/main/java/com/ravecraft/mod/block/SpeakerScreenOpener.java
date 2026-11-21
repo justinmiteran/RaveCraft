@@ -14,10 +14,12 @@ public final class SpeakerScreenOpener {
 	private SpeakerScreenOpener() {
 	}
 
+	/** Sets what opens the speaker screen; the client calls it at startup. */
 	public static void set(Consumer<BlockPos> screenOpener) {
 		opener = screenOpener;
 	}
 
+	/** Opens the screen of the speaker at {@code pos}, when a client set an opener. */
 	public static void open(BlockPos pos) {
 		opener.accept(pos);
 	}

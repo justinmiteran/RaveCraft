@@ -1,5 +1,7 @@
 package com.ravecraft.mod.core.acoustics.debug.view;
 
+import com.ravecraft.mod.core.acoustics.Vec;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -20,6 +22,7 @@ import com.ravecraft.mod.core.acoustics.reverb.RoomShape;
  */
 public record RoomView(Vec origin, List<Ray> rays, @Nullable RoomShape shape, double rt60, Echo echo,
 		@Nullable String fluid) {
+	/** Copies {@code rays}, so the view never changes. */
 	public RoomView {
 		rays = List.copyOf(rays);
 	}

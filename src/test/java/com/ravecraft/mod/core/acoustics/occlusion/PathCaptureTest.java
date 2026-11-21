@@ -1,5 +1,7 @@
 package com.ravecraft.mod.core.acoustics.occlusion;
 
+import com.ravecraft.mod.core.acoustics.Vec;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -30,7 +32,8 @@ class PathCaptureTest {
 
 	/** Listener at (0.5, 0.5, 0.5), source at (x + 0.5, 0.5, 0.5). */
 	private static Occlusion alongX(TestGrid grid, OcclusionSettings settings, int x, PathCapture capture) {
-		Occlusion o = new OcclusionTracer(grid, settings).occlusion(0.5, 0.5, 0.5, x + 0.5, 0.5, 0.5, ROLLOFF, RANGE,
+		Occlusion o = new OcclusionTracer(grid, settings).occlusion(new Vec(0.5, 0.5, 0.5), new Vec(x + 0.5, 0.5,
+				0.5), ROLLOFF, RANGE,
 				new TraceBudget(1_000_000), capture);
 		assertNotNull(o);
 		return o;
@@ -64,7 +67,7 @@ class PathCaptureTest {
 	@Test
 	void waterGivesInterfaces() {
 		PathCapture capture = new PathCapture();
-		alongX(new TestGrid().fluidBox(3, -8, -8, 5, 8, 8, WATER), S, 8, capture);
+		alongX(new TestGrid().fluidBox(TestGrid.box(3, -8, -8, 5, 8, 8), WATER), S, 8, capture);
 		List<String> names = capture.steps().stream().map(PathCapture.Step::name).toList();
 		assertEquals(List.of("air→water", "water→air"), names);
 		assertEquals(3, capture.steps().get(0).x());
@@ -82,7 +85,7 @@ class PathCaptureTest {
 			grid.solid(2 + 2 * i, 0, 0, STONE);
 		}
 		PathCapture capture = new PathCapture();
-		new OcclusionTracer(grid, S).occlusion(0.5, 0.5, 0.5, 145.5, 0.5, 0.5, ROLLOFF, 1000,
+		new OcclusionTracer(grid, S).occlusion(new Vec(0.5, 0.5, 0.5), new Vec(145.5, 0.5, 0.5), ROLLOFF, 1000,
 				new TraceBudget(1_000_000), capture);
 		assertEquals(PathCapture.MAX_STEPS, capture.steps().size());
 		assertEquals(6, capture.truncated());
@@ -91,15 +94,17 @@ class PathCaptureTest {
 
 	/** The room of {@code DetourTest}: a stone shell around x, z in [0, 6], y in [0, 4], door at x = 7, z = 1. */
 	private static TestGrid openDoor() {
-		return new TestGrid().shell(0, 0, 0, 6, 4, 6, STONE).clear(7, 0, 1, 7, 1, 1);
+		return new TestGrid().shell(TestGrid.box(0, 0, 0, 6, 4, 6), STONE).clear(TestGrid.box(7, 0, 1, 7, 1, 1));
 	}
 
 	@Test
 	void detoursAreTheSummedOnes() {
 		PathCapture capture = new PathCapture();
-		Occlusion with = new OcclusionTracer(openDoor(), S).occlusion(12.5, 1.5, 3.5, 3.5, 1.5, 3.5, ROLLOFF, RANGE,
+		Occlusion with = new OcclusionTracer(openDoor(), S).occlusion(new Vec(12.5, 1.5, 3.5), new Vec(3.5, 1.5, 3.5),
+				ROLLOFF, RANGE,
 				new TraceBudget(100_000), capture);
-		Occlusion without = new OcclusionTracer(openDoor(), S).occlusion(12.5, 1.5, 3.5, 3.5, 1.5, 3.5, ROLLOFF,
+		Occlusion without = new OcclusionTracer(openDoor(), S).occlusion(new Vec(12.5, 1.5, 3.5), new Vec(3.5, 1.5,
+				3.5), ROLLOFF,
 				RANGE, new TraceBudget(100_000));
 		assertEquals(without, with);
 		double direct = Objects.requireNonNull(capture.direct()).lossDb();

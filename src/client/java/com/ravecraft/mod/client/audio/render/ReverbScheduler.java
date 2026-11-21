@@ -6,8 +6,9 @@ import com.ravecraft.mod.client.debug.SoundViewEntries;
 import com.ravecraft.mod.client.options.OcclusionQuality;
 import com.ravecraft.mod.client.options.RaveCraftOptions;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
+import com.ravecraft.mod.core.acoustics.RetryCooldown;
 import com.ravecraft.mod.core.acoustics.debug.view.RoomView;
-import com.ravecraft.mod.core.acoustics.debug.view.Vec;
+import com.ravecraft.mod.core.acoustics.Vec;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.TraceBudget;
 import com.ravecraft.mod.core.acoustics.reverb.Echo;
@@ -21,6 +22,7 @@ import com.ravecraft.mod.core.acoustics.reverb.RoomProbe;
 import com.ravecraft.mod.core.acoustics.reverb.RoomShape;
 import com.ravecraft.mod.core.acoustics.reverb.SendRoute;
 import com.ravecraft.mod.core.acoustics.reverb.SpaceSlots;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +57,7 @@ public final class ReverbScheduler {
 	private static int lastVoxels;
 	private static int lastBudget;
 
-	private static long lastTickFailureLog = Long.MIN_VALUE;
+	private static final RetryCooldown TICK_FAILURE_LOG = new RetryCooldown(TICK_FAILURE_LOG_MS);
 	private static long tick;
 
 	private static final Map<Integer, Double> OUTSIDE = new HashMap<>();
@@ -120,17 +122,20 @@ public final class ReverbScheduler {
 		} catch (RuntimeException e) {
 			// A probe that failed half-way starts again from scratch at its next turn; the published values stay.
 			listenerRunning = false;
-			for (int i = 0; i < SpaceSlots.SLOTS; i++) {
-				SLOT_RUNNING[i] = false;
-			}
+			Arrays.fill(SLOT_RUNNING, false);
 			long now = System.currentTimeMillis();
-			if (lastTickFailureLog == Long.MIN_VALUE || now - lastTickFailureLog >= TICK_FAILURE_LOG_MS) {
-				lastTickFailureLog = now;
+			if (TICK_FAILURE_LOG.canTry(now)) {
+				TICK_FAILURE_LOG.failed(now);
 				RaveCraft.LOGGER.error("Reverb tick failed; the spaces keep their last measure", e);
 			}
 		}
 	}
 
+	/** What the probes of one tick share: the settings, the budget, and whether the sound view shows the rooms. */
+	private record Pass(ReverbSettings reverb, TraceBudget budget, int rays, double rayLength, boolean showRooms) {
+	}
+
+	/** Measures the spaces due this tick, within the tick's budget. */
 	private static void measureTick(Minecraft minecraft) {
 		tick++;
 		AcousticSettings settings = AcousticSettingsClient.get();
@@ -138,6 +143,41 @@ public final class ReverbScheduler {
 		ClientLevel level = minecraft.level;
 		WorldAcousticGrid grid = OcclusionScheduler.grid();
 		boolean showRooms = level != null && SoundViewEntries.mode().rooms();
+		toggleRooms(showRooms);
+		if (!active(level, grid, reverb)) {
+			silence();
+			return;
+		}
+		OcclusionQuality quality = RaveCraftOptions.occlusionQuality().get();
+		int rays = quality.reverbRays();
+		reprobeIfChanged(grid, reverb, rays);
+		lastBudget = quality.reverbVoxelsPerTick();
+		Pass pass = new Pass(reverb, new TraceBudget(lastBudget), rays, reverb.rayLength(), showRooms);
+		Vec3 ear = AcousticRenderer.listener();
+
+		// The listener's space: a fluid around the head replaces the measure and silences the echo.
+		AcousticMedium head = grid.headMedium(ear);
+		FluidReverb fluid = head == null ? null : reverb.fluid(head.name());
+		ReverbParams targetL;
+		Echo echo;
+		if (fluid != null) {
+			inFluid(fluid, ear, showRooms);
+			targetL = headFluidParams;
+			echo = Echo.NONE;
+		} else {
+			measureListener(ear, pass);
+			targetL = listenerParams;
+			echo = listenerEcho;
+		}
+
+		assignSlots(settings, ear, pass);
+		runSlots(pass);
+		lastVoxels = pass.budget().used();
+		publish(targetL, SLOT_PARAMS[0], SLOT_PARAMS[1], echo, reverb.echo());
+	}
+
+	/** Follows the sound view's rooms layer: cleared when off, every space measured at once when it turns on. */
+	private static void toggleRooms(boolean showRooms) {
 		if (!showRooms) {
 			SoundViewSnapshots.clearRooms();
 		} else if (!roomsShown) {
@@ -150,99 +190,94 @@ public final class ReverbScheduler {
 			}
 		}
 		roomsShown = showRooms;
-		if (level == null || grid == null || grid.level() != level || !reverb.enabled()
-				|| !RaveCraftOptions.acousticEffects().get()) {
-			silence();
+	}
+
+	/** Whether there is anything to measure: a world, its grid, and reverb on. */
+	private static boolean active(@Nullable ClientLevel level, @Nullable WorldAcousticGrid grid, ReverbSettings reverb) {
+		if (level == null || grid == null || grid.level() != level) {
+			return false;
+		}
+		return reverb.enabled() && RaveCraftOptions.acousticEffects().get();
+	}
+
+	/**
+	 * A new world, new settings or a new quality: every space is measured again, keeping its old value until then.
+	 */
+	private static void reprobeIfChanged(WorldAcousticGrid grid, ReverbSettings reverb, int rays) {
+		if (grid == probedGrid && reverb == measured && rays == measuredRays) {
 			return;
 		}
-
-		OcclusionQuality quality = RaveCraftOptions.occlusionQuality().get();
-		int rays = quality.reverbRays();
-		double rayLength = reverb.rayLength();
-		if (grid != probedGrid || reverb != measured || rays != measuredRays) {
-			// A new world, new settings or a new quality: every space is measured again, keeping its old value
-			// until then.
-			probedGrid = grid;
-			measured = reverb;
-			measuredRays = rays;
-			listenerProbe = new RoomProbe(grid);
-			listenerRunning = false;
-			listenerStarted = false;
-			for (int i = 0; i < SpaceSlots.SLOTS; i++) {
-				SLOT_PROBES[i] = new RoomProbe(grid);
-				SLOT_RUNNING[i] = false;
-				slotSessions[i] = null;
-			}
+		probedGrid = grid;
+		measured = reverb;
+		measuredRays = rays;
+		listenerProbe = new RoomProbe(grid);
+		listenerRunning = false;
+		listenerStarted = false;
+		for (int i = 0; i < SpaceSlots.SLOTS; i++) {
+			SLOT_PROBES[i] = new RoomProbe(grid);
+			SLOT_RUNNING[i] = false;
+			slotSessions[i] = null;
 		}
-		lastBudget = quality.reverbVoxelsPerTick();
-		TraceBudget budget = new TraceBudget(lastBudget);
-		Vec3 ear = AcousticRenderer.listener();
+	}
 
-		// The listener's space: a fluid around the head replaces the measure and silences the echo.
-		ReverbParams targetL;
-		Echo echo;
-		AcousticMedium head = grid.headMedium(ear);
-		FluidReverb fluid = head == null ? null : reverb.fluid(head.name());
-		if (fluid != null) {
-			if (fluid != headFluid) {
-				headFluid = fluid;
-				headFluidParams = ReverbParams.of(fluid);
-			}
-			targetL = headFluidParams;
-			echo = Echo.NONE;
-			if (showRooms) {
-				SoundViewSnapshots.listenerRoom(RoomView.fluid(new Vec(ear.x, ear.y, ear.z), fluid.medium()));
-			}
-			AcousticRenderer.headChorus(fluid);
-			// Out of the fluid, the space around is measured again at once.
-			listenerRunning = false;
-			listenerStarted = false;
-		} else {
-			if (headFluid != null && showRooms) {
-				// The fluid's view goes; the room shows again once the new measure ends.
-				SoundViewSnapshots.listenerRoom(null);
-			}
-			headFluid = null;
-			AcousticRenderer.headChorus(null);
-			RoomProbe probe = Objects.requireNonNull(listenerProbe);
-			if (!listenerRunning && listenerDue(ear)) {
-				listenerX = ear.x;
-				listenerY = ear.y;
-				listenerZ = ear.z;
-				listenerStartTick = tick;
-				listenerStarted = true;
-				probe.start(ear.x, ear.y, ear.z, rays, rayLength);
-				listenerRunning = true;
-			}
-			if (listenerRunning && probe.run(budget)) {
-				listenerRunning = false;
-				listenerShape = RoomShape.of(probe.hits(), rayLength);
-				listenerParams = ReverbParams.of(listenerShape, reverb);
-				listenerEcho = EchoFinder.find(probe.hits(), reverb.echo());
-				if (showRooms) {
-					SoundViewSnapshots.listenerRoom(RoomView.of(new Vec(listenerX, listenerY, listenerZ), probe.hits(),
-							reverb));
-				}
-			}
-			targetL = listenerParams;
-			echo = listenerEcho;
+	/** The head is in {@code fluid}: its reverb and chorus replace the listener's space. */
+	private static void inFluid(FluidReverb fluid, Vec3 ear, boolean showRooms) {
+		if (fluid != headFluid) {
+			headFluid = fluid;
+			headFluidParams = ReverbParams.of(fluid);
 		}
+		if (showRooms) {
+			SoundViewSnapshots.listenerRoom(RoomView.fluid(new Vec(ear.x, ear.y, ear.z), fluid.medium()));
+		}
+		AcousticRenderer.headChorus(fluid);
+		// Out of the fluid, the space around is measured again at once.
+		listenerRunning = false;
+		listenerStarted = false;
+	}
 
-		// The two loudest audible speakers outside the listener's space take S1 and S2.
+	/** Out of any fluid: measures the listener's space when it is due, going on with a measure in progress. */
+	private static void measureListener(Vec3 ear, Pass pass) {
+		if (headFluid != null && pass.showRooms()) {
+			// The fluid's view goes; the room shows again once the new measure ends.
+			SoundViewSnapshots.listenerRoom(null);
+		}
+		headFluid = null;
+		AcousticRenderer.headChorus(null);
+		RoomProbe probe = Objects.requireNonNull(listenerProbe);
+		if (!listenerRunning && listenerDue(ear)) {
+			listenerX = ear.x;
+			listenerY = ear.y;
+			listenerZ = ear.z;
+			listenerStartTick = tick;
+			listenerStarted = true;
+			probe.start(ear.x, ear.y, ear.z, pass.rays(), pass.rayLength());
+			listenerRunning = true;
+		}
+		if (listenerRunning && probe.run(pass.budget())) {
+			endListener(probe, pass);
+		}
+	}
+
+	/** The listener's measure ended: its shape, reverb and echo. */
+	private static void endListener(RoomProbe probe, Pass pass) {
+		ReverbSettings reverb = pass.reverb();
+		listenerRunning = false;
+		listenerShape = RoomShape.of(probe.hits(), pass.rayLength());
+		listenerParams = ReverbParams.of(listenerShape, reverb);
+		listenerEcho = EchoFinder.find(probe.hits(), reverb.echo());
+		if (pass.showRooms()) {
+			SoundViewSnapshots.listenerRoom(RoomView.of(new Vec(listenerX, listenerY, listenerZ), probe.hits(), reverb));
+		}
+	}
+
+	/** The two loudest audible speakers outside the listener's space take S1 and S2. */
+	private static void assignSlots(AcousticSettings settings, Vec3 ear, Pass pass) {
 		OUTSIDE.clear();
 		BY_ID.clear();
-		double sameSpaceLossDb = reverb.sameSpaceLossDb();
+		double sameSpaceLossDb = pass.reverb().sameSpaceLossDb();
 		for (RenderStream stream : AcousticRenderer.streams()) {
 			if (OcclusionScheduler.isAudible(settings, stream, ear)) {
-				Boolean was = WAS_SAME.get(stream.sessionId);
-				boolean same = was == null
-						? SpaceSlots.sameSpace(stream.occlusionKnown, stream.occlusionLossDb, sameSpaceLossDb)
-						: SpaceSlots.sameSpace(stream.occlusionKnown, stream.occlusionLossDb, sameSpaceLossDb, was);
-				SAME_NOW.put(stream.sessionId, same);
-				if (!same) {
-					OUTSIDE.put(stream.sessionId, stream.heardGain);
-					BY_ID.put(stream.sessionId, stream);
-				}
+				sortSpace(stream, sameSpaceLossDb);
 			}
 		}
 		WAS_SAME.clear();
@@ -253,44 +288,68 @@ public final class ReverbScheduler {
 			stream.reverbSlot = slotOf(assigned, stream.sessionId);
 		}
 		for (int i = 0; i < SpaceSlots.SLOTS; i++) {
-			Integer session = assigned[i];
-			boolean entered = !Objects.equals(session, slotSessions[i]);
-			if (session == null) {
-				SLOT_RUNNING[i] = false;
-				SLOT_PARAMS[i] = ReverbParams.SILENT;
-				if (showRooms) {
-					SoundViewSnapshots.slotRoom(i, null);
-				}
-				continue;
-			}
-			// A speaker entering the slot is measured at once, even if the previous one's probe was running; the
-			// slot keeps its last value until the probe ends.
-			if (entered || (!SLOT_RUNNING[i] && tick - SLOT_START_TICK[i] >= SPEAKER_PERIOD)) {
-				RenderStream stream = Objects.requireNonNull(BY_ID.get(session));
-				double[] origin = SLOT_ORIGINS[i];
-				origin[0] = stream.pos.getX() + 0.5;
-				origin[1] = stream.pos.getY() + 0.5;
-				origin[2] = stream.pos.getZ() + 0.5;
-				SLOT_PROBES[i].start(origin[0], origin[1], origin[2], rays, rayLength);
-				SLOT_START_TICK[i] = tick;
-				SLOT_RUNNING[i] = true;
-			}
+			updateSlot(i, assigned[i], pass);
 		}
 		slotSessions = assigned;
+	}
+
+	/** Whether {@code stream} is in the listener's space, with hysteresis; one outside is a candidate for a slot. */
+	private static void sortSpace(RenderStream stream, double sameSpaceLossDb) {
+		Boolean was = WAS_SAME.get(stream.sessionId);
+		boolean same = was == null
+				? SpaceSlots.sameSpace(stream.occlusionKnown, stream.occlusionLossDb, sameSpaceLossDb)
+				: SpaceSlots.sameSpace(stream.occlusionKnown, stream.occlusionLossDb, sameSpaceLossDb, was);
+		SAME_NOW.put(stream.sessionId, same);
+		if (!same) {
+			OUTSIDE.put(stream.sessionId, stream.heardGain);
+			BY_ID.put(stream.sessionId, stream);
+		}
+	}
+
+	/**
+	 * Slot {@code i} now holds {@code session}, or nothing. A speaker entering the slot is measured at once, even if
+	 * the previous one's probe was running; the slot keeps its last value until the probe ends.
+	 */
+	private static void updateSlot(int i, @Nullable Integer session, Pass pass) {
+		if (session == null) {
+			SLOT_RUNNING[i] = false;
+			SLOT_PARAMS[i] = ReverbParams.SILENT;
+			if (pass.showRooms()) {
+				SoundViewSnapshots.slotRoom(i, null);
+			}
+			return;
+		}
+		boolean entered = !Objects.equals(session, slotSessions[i]);
+		if (entered || !SLOT_RUNNING[i] && tick - SLOT_START_TICK[i] >= SPEAKER_PERIOD) {
+			RenderStream stream = Objects.requireNonNull(BY_ID.get(session));
+			double[] origin = SLOT_ORIGINS[i];
+			origin[0] = stream.pos.getX() + 0.5;
+			origin[1] = stream.pos.getY() + 0.5;
+			origin[2] = stream.pos.getZ() + 0.5;
+			SLOT_PROBES[i].start(origin[0], origin[1], origin[2], pass.rays(), pass.rayLength());
+			SLOT_START_TICK[i] = tick;
+			SLOT_RUNNING[i] = true;
+		}
+	}
+
+	/** Runs the slots' probes within what is left of the budget, and takes the measures that end. */
+	private static void runSlots(Pass pass) {
 		for (int i = 0; i < SpaceSlots.SLOTS; i++) {
-			if (SLOT_RUNNING[i] && SLOT_PROBES[i].run(budget)) {
-				SLOT_RUNNING[i] = false;
-				SLOT_PARAMS[i] = ReverbParams.of(RoomShape.of(SLOT_PROBES[i].hits(), rayLength), reverb);
-				if (showRooms) {
-					double[] origin = SLOT_ORIGINS[i];
-					SoundViewSnapshots.slotRoom(i, RoomView.of(new Vec(origin[0], origin[1], origin[2]),
-							SLOT_PROBES[i].hits(), reverb));
-				}
+			if (SLOT_RUNNING[i] && SLOT_PROBES[i].run(pass.budget())) {
+				endSlot(i, pass);
 			}
 		}
+	}
 
-		lastVoxels = budget.used();
-		publish(targetL, SLOT_PARAMS[0], SLOT_PARAMS[1], echo, reverb.echo());
+	private static void endSlot(int i, Pass pass) {
+		ReverbSettings reverb = pass.reverb();
+		SLOT_RUNNING[i] = false;
+		SLOT_PARAMS[i] = ReverbParams.of(RoomShape.of(SLOT_PROBES[i].hits(), pass.rayLength()), reverb);
+		if (pass.showRooms()) {
+			double[] origin = SLOT_ORIGINS[i];
+			SoundViewSnapshots.slotRoom(i, RoomView.of(new Vec(origin[0], origin[1], origin[2]),
+					SLOT_PROBES[i].hits(), reverb));
+		}
 	}
 
 	/** Voxels the last tick's probes used (debug screen). */
@@ -315,8 +374,10 @@ public final class ReverbScheduler {
 	/** The debug screen lines for the listener's space. Client thread only. */
 	public static List<String> debugLines() {
 		FluidReverb fluid = headFluid;
-		return ReverbDebug.lines(probedGrid != null, listenerShape, fluid != null ? headFluidParams : listenerParams,
-				fluid != null ? Echo.NONE : listenerEcho, fluid != null ? fluid.medium() : null);
+		if (fluid == null) {
+			return ReverbDebug.lines(probedGrid != null, listenerShape, listenerParams, listenerEcho, null);
+		}
+		return ReverbDebug.lines(probedGrid != null, listenerShape, headFluidParams, Echo.NONE, fluid.medium());
 	}
 
 	/** Whether the listener's space is due for a new measure: never measured, moved 1 block, or 2 s old. */
@@ -369,11 +430,14 @@ public final class ReverbScheduler {
 		publish(ReverbParams.SILENT, ReverbParams.SILENT, ReverbParams.SILENT, Echo.NONE, publishedEchoSettings);
 	}
 
+	private static boolean spacesUnchanged(ReverbParams l, ReverbParams s1, ReverbParams s2) {
+		return l.equals(publishedL) && s1.equals(publishedS1) && s2.equals(publishedS2);
+	}
+
 	/** Hands the targets to the audio thread, as one snapshot, only when one of them changed. */
 	private static void publish(ReverbParams l, ReverbParams s1, ReverbParams s2, Echo echo,
 			EchoSettings echoSettings) {
-		if (l.equals(publishedL) && s1.equals(publishedS1) && s2.equals(publishedS2) && echo.equals(publishedEcho)
-				&& echoSettings.equals(publishedEchoSettings)) {
+		if (spacesUnchanged(l, s1, s2) && echo.equals(publishedEcho) && echoSettings.equals(publishedEchoSettings)) {
 			return;
 		}
 		publishedL = l;

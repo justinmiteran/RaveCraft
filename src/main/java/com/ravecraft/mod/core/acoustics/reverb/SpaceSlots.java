@@ -17,6 +17,29 @@ public final class SpaceSlots {
 	 * free indexes in loudness order. Ties are broken by the smaller session id.
 	 */
 	public static Integer[] assign(Map<Integer, Double> outsideGains, Integer[] previous) {
+		List<Integer> ranked = ranked(outsideGains);
+		Integer[] result = new Integer[SLOTS];
+		List<Integer> unplaced = new ArrayList<>(ranked);
+		if (previous != null) {
+			for (int i = 0; i < Math.min(SLOTS, previous.length); i++) {
+				Integer p = previous[i];
+				if (p != null && unplaced.remove(p)) {
+					result[i] = p;
+				}
+			}
+		}
+		int free = 0;
+		for (Integer id : unplaced) {
+			while (result[free] != null) {
+				free++;
+			}
+			result[free] = id;
+		}
+		return result;
+	}
+
+	/** The ids with a gain above zero, loudest first and the smaller id first on a tie, at most {@link #SLOTS}. */
+	private static List<Integer> ranked(Map<Integer, Double> outsideGains) {
 		List<Map.Entry<Integer, Double>> ranked = new ArrayList<>();
 		for (Map.Entry<Integer, Double> e : outsideGains.entrySet()) {
 			Double g = e.getValue();
@@ -28,35 +51,11 @@ public final class SpaceSlots {
 			int c = Double.compare(b.getValue(), a.getValue());
 			return c != 0 ? c : Integer.compare(a.getKey(), b.getKey());
 		});
-		int n = Math.min(SLOTS, ranked.size());
-		Integer[] result = new Integer[SLOTS];
-		boolean[] placed = new boolean[n];
-		if (previous != null) {
-			for (int i = 0; i < Math.min(SLOTS, previous.length); i++) {
-				Integer p = previous[i];
-				if (p == null) {
-					continue;
-				}
-				for (int j = 0; j < n; j++) {
-					if (!placed[j] && ranked.get(j).getKey().equals(p)) {
-						result[i] = p;
-						placed[j] = true;
-						break;
-					}
-				}
-			}
+		List<Integer> ids = new ArrayList<>();
+		for (int j = 0; j < Math.min(SLOTS, ranked.size()); j++) {
+			ids.add(ranked.get(j).getKey());
 		}
-		int free = 0;
-		for (int j = 0; j < n; j++) {
-			if (placed[j]) {
-				continue;
-			}
-			while (result[free] != null) {
-				free++;
-			}
-			result[free] = ranked.get(j).getKey();
-		}
-		return result;
+		return ids;
 	}
 
 	/** True when the occlusion is unknown or its loss is below the same-space threshold. */

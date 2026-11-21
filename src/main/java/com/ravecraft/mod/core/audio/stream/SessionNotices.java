@@ -30,6 +30,7 @@ public final class SessionNotices<T> {
 		return Optional.of(notice);
 	}
 
+	/** The notice of {@code sessionId}, if it is open. */
 	public Optional<T> get(int sessionId) {
 		return Optional.ofNullable(notices.get(sessionId));
 	}
@@ -41,11 +42,13 @@ public final class SessionNotices<T> {
 		}
 	}
 
+	/** Forgets {@code sessionId} and who was told about it. */
 	public void end(int sessionId) {
 		notices.remove(sessionId);
 		told.remove(sessionId);
 	}
 
+	/** Forgets every session. */
 	public void clear() {
 		notices.clear();
 		told.clear();

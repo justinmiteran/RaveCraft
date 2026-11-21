@@ -9,6 +9,7 @@ public final class FolderRow extends LibraryRow {
 	private final boolean expanded;
 	private final Runnable toggle;
 
+	/** The row of the folder {@code node}, at {@code depth}; {@code toggle} opens or folds it. */
 	public FolderRow(SourceNode node, int depth, boolean expanded, Runnable toggle) {
 		super(node, depth);
 		this.expanded = expanded;

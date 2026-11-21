@@ -9,6 +9,7 @@ public final class FileRow extends LibraryRow {
 	private final boolean playlist;
 	private @Nullable Runnable doubleClick;
 
+	/** The row of the file {@code node}, at {@code depth}. */
 	public FileRow(SourceNode node, int depth) {
 		super(node, depth);
 		this.playlist = node.kind() == SourceNode.Kind.PLAYLIST;
@@ -19,6 +20,7 @@ public final class FileRow extends LibraryRow {
 		return playlist ? SpeakerSprites.PLAYLIST : SpeakerSprites.TRACK;
 	}
 
+	/** Runs {@code action} on a double click. */
 	public FileRow onDoubleClick(Runnable action) {
 		this.doubleClick = action;
 		return this;

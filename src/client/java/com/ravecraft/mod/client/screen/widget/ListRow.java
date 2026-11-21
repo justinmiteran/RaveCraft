@@ -15,6 +15,10 @@ public interface ListRow {
 	/** Space between two items, and between the items and the rest of the row. */
 	int ITEM_GAP = 2;
 
+	/** Where a row is drawn: from {@code left} to {@code right}, {@code h} high from {@code y}. */
+	record Box(int left, int right, int y, int h) {
+	}
+
 	/** The items at the right end, from right to left. */
 	default List<RowItem> items() {
 		return List.of();
@@ -49,20 +53,19 @@ public interface ListRow {
 	}
 
 	/**
-	 * Draws the items from {@code right} leftwards, then the rest of the row up to them. {@code hovered}: the mouse is
+	 * Draws the items from the right of {@code box} leftwards, then the rest of the row up to them. {@code hovered}: the mouse is
 	 * on this row, at {@code mouseX}; items drawn only on hover wait for it.
 	 */
-	default void render(GuiGraphicsExtractor graphics, Font font, int left, int right, int y, int h, boolean hovered,
-			int mouseX) {
+	default void render(GuiGraphicsExtractor graphics, Font font, Box box, boolean hovered, int mouseX) {
 		List<RowItem> items = items();
-		int[] xs = itemXs(font, right);
+		int[] xs = itemXs(font, box.right());
 		for (int i = 0; i < items.size(); i++) {
 			RowItem item = items.get(i);
 			if (hovered || !item.hoverOnly()) {
-				item.draw(graphics, font, xs[i], y, h, hovered && over(font, item, xs[i], mouseX));
+				item.draw(graphics, font, xs[i], box.y(), box.h(), hovered && over(font, item, xs[i], mouseX));
 			}
 		}
-		draw(graphics, font, left, xs[items.size()], y);
+		draw(graphics, font, box.left(), xs[items.size()], box.y());
 	}
 
 	/** A click at {@code mouseX}: the item under it takes the click, or else the row; true when it did something. */

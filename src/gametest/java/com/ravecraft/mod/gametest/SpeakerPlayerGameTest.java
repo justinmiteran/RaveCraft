@@ -15,6 +15,7 @@ import com.ravecraft.mod.core.queue.RepeatMode;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.network.SpeakerNetwork;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
+import com.ravecraft.mod.world.audio.SpeakerCommands;
 import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import com.ravecraft.mod.world.audio.SpeakerWatchers;
 import java.util.Optional;
@@ -28,7 +29,7 @@ import net.minecraft.world.level.ChunkPos;
 
 public class SpeakerPlayerGameTest {
 	private static void command(ServerPlayer player, BlockPos pos, Command command, long value) {
-		SpeakerPlayback.command(player, pos, command, Optional.empty(), value);
+		SpeakerCommands.command(player, pos, command, Optional.empty(), value);
 	}
 
 	/** Makes entry {@code index} current at {@code positionMs} without playing, optionally with a known duration. */
@@ -46,9 +47,9 @@ public class SpeakerPlayerGameTest {
 	public void naturalEndKeepsEntryAndAdvances(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		ServerPlayer owner = online(h, 2);
-		SpeakerPlayback.add(owner, pos, newEntries(2));
+		SpeakerCommands.add(owner, pos, newEntries(2));
 		UUID second = entryId(h, 1);
-		SpeakerPlayback.command(owner, pos, Command.PLAY, Optional.empty());
+		SpeakerCommands.command(owner, pos, Command.PLAY, Optional.empty());
 		int first = sessionId(h, pos);
 		SpeakerPlayback.onStreamClose(owner, first, true);
 		h.assertValueEqual(queue(h).entries().size(), 2, "played entry kept");
@@ -62,10 +63,10 @@ public class SpeakerPlayerGameTest {
 	public void repeatOffStopsAfterLast(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		ServerPlayer owner = online(h, 2);
-		SpeakerPlayback.add(owner, pos, newEntries(2));
+		SpeakerCommands.add(owner, pos, newEntries(2));
 		UUID second = entryId(h, 1);
 		command(owner, pos, Command.REPEAT, RepeatMode.OFF.ordinal());
-		SpeakerPlayback.command(owner, pos, Command.PLAY, Optional.empty());
+		SpeakerCommands.command(owner, pos, Command.PLAY, Optional.empty());
 		SpeakerPlayback.onStreamClose(owner, sessionId(h, pos), true);
 		h.assertValueEqual(queue(h).current(), Optional.of(second), "second");
 		SpeakerPlayback.onStreamClose(owner, sessionId(h, pos), true);
@@ -80,17 +81,17 @@ public class SpeakerPlayerGameTest {
 	public void previousAfterThreeSecondsRestarts(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		ServerPlayer owner = online(h, 2);
-		SpeakerPlayback.add(owner, pos, newEntries(2));
+		SpeakerCommands.add(owner, pos, newEntries(2));
 		UUID second = entryId(h, 1);
-		SpeakerPlayback.command(owner, pos, Command.PLAY, Optional.empty());
+		SpeakerCommands.command(owner, pos, Command.PLAY, Optional.empty());
 		// NEXT fills the history, so going back would be possible under 3 s.
-		SpeakerPlayback.command(owner, pos, Command.NEXT, Optional.empty());
+		SpeakerCommands.command(owner, pos, Command.NEXT, Optional.empty());
 		// The session clock starts at the stored position: 5 s into the second entry.
-		SpeakerPlayback.command(owner, pos, Command.PAUSE, Optional.empty());
+		SpeakerCommands.command(owner, pos, Command.PAUSE, Optional.empty());
 		setCurrent(h, 1, 5_000, QueueEntry.UNKNOWN_DURATION);
-		SpeakerPlayback.command(owner, pos, Command.PLAY, Optional.empty());
+		SpeakerCommands.command(owner, pos, Command.PLAY, Optional.empty());
 		int before = sessionId(h, pos);
-		SpeakerPlayback.command(owner, pos, Command.PREVIOUS, Optional.empty());
+		SpeakerCommands.command(owner, pos, Command.PREVIOUS, Optional.empty());
 		h.assertValueEqual(queue(h).current(), Optional.of(second), "same entry");
 		h.assertValueEqual(queue(h).positionMs(), 0L, "from its start");
 		h.assertTrue(SpeakerPlayback.isPlaying(h.getLevel(), pos), "playing");
@@ -102,18 +103,18 @@ public class SpeakerPlayerGameTest {
 	public void previousEarlyGoesBack(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		ServerPlayer owner = online(h, 2);
-		SpeakerPlayback.add(owner, pos, newEntries(3));
+		SpeakerCommands.add(owner, pos, newEntries(3));
 		UUID first = entryId(h, 0);
 		UUID second = entryId(h, 1);
-		SpeakerPlayback.command(owner, pos, Command.PLAY, Optional.empty());
-		SpeakerPlayback.command(owner, pos, Command.NEXT, Optional.empty());
+		SpeakerCommands.command(owner, pos, Command.PLAY, Optional.empty());
+		SpeakerCommands.command(owner, pos, Command.NEXT, Optional.empty());
 		h.assertValueEqual(queue(h).current(), Optional.of(second), "moved on");
-		SpeakerPlayback.command(owner, pos, Command.PREVIOUS, Optional.empty());
+		SpeakerCommands.command(owner, pos, Command.PREVIOUS, Optional.empty());
 		h.assertValueEqual(queue(h).current(), Optional.of(first), "back");
 		h.assertValueEqual(queue(h).positionMs(), 0L, "from its start");
 		h.assertTrue(SpeakerPlayback.isPlaying(h.getLevel(), pos), "playing");
 		// History empty now: previous restarts the current entry.
-		SpeakerPlayback.command(owner, pos, Command.PREVIOUS, Optional.empty());
+		SpeakerCommands.command(owner, pos, Command.PREVIOUS, Optional.empty());
 		h.assertValueEqual(queue(h).current(), Optional.of(first), "stays");
 		finish(h, pos, owner);
 	}
@@ -122,7 +123,7 @@ public class SpeakerPlayerGameTest {
 	public void seekWithoutDurationIgnored(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		ServerPlayer owner = online(h, 2);
-		SpeakerPlayback.add(owner, pos, newEntries(1));
+		SpeakerCommands.add(owner, pos, newEntries(1));
 		setCurrent(h, 0, 0, QueueEntry.UNKNOWN_DURATION);
 		command(owner, pos, Command.SEEK, 4_000);
 		h.assertValueEqual(queue(h).positionMs(), 0L, "unchanged");
@@ -133,7 +134,7 @@ public class SpeakerPlayerGameTest {
 	public void seekWhilePausedStoresPosition(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		ServerPlayer owner = online(h, 2);
-		SpeakerPlayback.add(owner, pos, newEntries(1));
+		SpeakerCommands.add(owner, pos, newEntries(1));
 		setCurrent(h, 0, 0, 10_000);
 		command(owner, pos, Command.SEEK, 4_000);
 		h.assertValueEqual(queue(h).positionMs(), 4_000L, "stored");
@@ -145,8 +146,8 @@ public class SpeakerPlayerGameTest {
 	public void seekClampsToDuration(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		ServerPlayer owner = online(h, 2);
-		SpeakerPlayback.add(owner, pos, newEntries(1));
-		SpeakerPlayback.command(owner, pos, Command.PLAY, Optional.empty());
+		SpeakerCommands.add(owner, pos, newEntries(1));
+		SpeakerCommands.command(owner, pos, Command.PLAY, Optional.empty());
 		int first = sessionId(h, pos);
 		SpeakerPlayback.onStreamStarted(owner, first, 10_000);
 		command(owner, pos, Command.SEEK, 99_000);
@@ -190,7 +191,7 @@ public class SpeakerPlayerGameTest {
 		ServerPlayer player = online(h, 2);
 		ChunkHolder holder = h.getLevel().getChunkSource().chunkMap.getUpdatingChunkIfPresent(ChunkPos.pack(pos));
 		holder.broadcastChanges(h.getLevel().getChunkAt(pos));
-		SpeakerPlayback.add(player, pos, newEntries(1));
+		SpeakerCommands.add(player, pos, newEntries(1));
 		h.assertFalse(holder.hasChangesToBroadcast(), "queue changes only go to the watchers");
 		finish(h, pos, player);
 	}
@@ -213,8 +214,8 @@ public class SpeakerPlayerGameTest {
 	public void powerCommandTurnsOff(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		ServerPlayer owner = online(h, 2);
-		SpeakerPlayback.add(owner, pos, newEntries(1));
-		SpeakerPlayback.command(owner, pos, Command.PLAY, Optional.empty());
+		SpeakerCommands.add(owner, pos, newEntries(1));
+		SpeakerCommands.command(owner, pos, Command.PLAY, Optional.empty());
 		command(owner, pos, Command.POWER, 0);
 		h.assertFalse(be(h).data().settings().powered(), "off");
 		h.assertFalse(SpeakerPlayback.isPlaying(h.getLevel(), pos), "paused");
@@ -242,8 +243,8 @@ public class SpeakerPlayerGameTest {
 		BlockPos pos = poweredSpeaker(h);
 		ServerPlayer owner = online(h, 2);
 		ServerPlayer other = online(h, -2);
-		SpeakerPlayback.add(owner, pos, newEntries(1));
-		SpeakerPlayback.command(owner, pos, Command.PLAY, Optional.empty());
+		SpeakerCommands.add(owner, pos, newEntries(1));
+		SpeakerCommands.command(owner, pos, Command.PLAY, Optional.empty());
 		int id = sessionId(h, pos);
 		SpeakerPlayback.onStreamStarted(other, id, 1_000);
 		h.assertValueEqual(queue(h).entries().getFirst().durationMs(), QueueEntry.UNKNOWN_DURATION, "not the owner");

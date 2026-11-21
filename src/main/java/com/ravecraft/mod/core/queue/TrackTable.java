@@ -19,16 +19,19 @@ public final class TrackTable {
 		}
 	};
 
+	/** A table holding {@code ordered}, oldest first. */
 	public static TrackTable of(Map<UUID, String> ordered) {
 		TrackTable table = new TrackTable();
 		ordered.forEach(table::put);
 		return table;
 	}
 
+	/** Records the file of {@code entryId}. */
 	public void put(UUID entryId, String path) {
 		paths.put(entryId, path);
 	}
 
+	/** The file of {@code entryId}, if known. */
 	public Optional<String> get(UUID entryId) {
 		return Optional.ofNullable(paths.get(entryId));
 	}

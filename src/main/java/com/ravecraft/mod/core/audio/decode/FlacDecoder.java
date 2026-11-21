@@ -1,5 +1,6 @@
 package com.ravecraft.mod.core.audio.decode;
 
+import com.ravecraft.mod.core.audio.Pcm16;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,11 +12,18 @@ import org.jflac.metadata.StreamInfo;
 
 /** FLAC through jFLAC, frame by frame; any bit depth is scaled to 16-bit. */
 final class FlacDecoder extends BlockPcmDecoder {
+	private static final int TARGET_BITS = 16;
 	private final InputStream input;
 	private final org.jflac.FLACDecoder decoder;
 	private final PcmFormat format;
 	private final int bitsPerSample;
 
+	/**
+	 * Opens {@code file} and reads its stream info.
+	 *
+	 * @param file the FLAC file
+	 * @throws IOException when the file cannot be read or is not FLAC
+	 */
 	FlacDecoder(Path file) throws IOException {
 		input = new BufferedInputStream(Files.newInputStream(file));
 		try {
@@ -56,9 +64,8 @@ final class FlacDecoder extends BlockPcmDecoder {
 		int at = 0;
 		for (int i = 0; i < samples; i++) {
 			for (int channel = 0; channel < count; channel++) {
-				int sample = to16Bit(channels[channel].getOutput()[i]);
-				pcm[at++] = (byte) sample;
-				pcm[at++] = (byte) (sample >> 8);
+				Pcm16.put(pcm, at, to16Bit(channels[channel].getOutput()[i]));
+				at += Pcm16.SAMPLE_BYTES;
 			}
 		}
 		setPending(pcm, at);
@@ -66,7 +73,7 @@ final class FlacDecoder extends BlockPcmDecoder {
 	}
 
 	private int to16Bit(int sample) {
-		return bitsPerSample >= 16 ? sample >> (bitsPerSample - 16) : sample << (16 - bitsPerSample);
+		return bitsPerSample >= TARGET_BITS ? sample >> bitsPerSample - TARGET_BITS : sample << TARGET_BITS - bitsPerSample;
 	}
 
 	@Override

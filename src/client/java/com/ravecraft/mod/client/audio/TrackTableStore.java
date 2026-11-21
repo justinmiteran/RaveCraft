@@ -30,12 +30,14 @@ public final class TrackTableStore {
 	private TrackTableStore() {
 	}
 
+	/** Remembers which file each new entry id plays, and saves the table. */
 	public static void register(Map<UUID, Path> added) {
 		TrackTable loaded = table();
 		added.forEach((id, path) -> loaded.put(id, path.toAbsolutePath().toString()));
 		save(loaded);
 	}
 
+	/** The file entry {@code entryId} plays, if this player queued it. */
 	public static Optional<Path> resolve(UUID entryId) {
 		return table().get(entryId).flatMap(TrackTableStore::toPath);
 	}
@@ -59,6 +61,7 @@ public final class TrackTableStore {
 		return table;
 	}
 
+	/** Reads the table from {@code file}; an empty table when it is missing or unreadable. */
 	private static TrackTable load(Path file) {
 		if (!Files.isRegularFile(file)) {
 			return new TrackTable();
@@ -76,6 +79,7 @@ public final class TrackTableStore {
 		}
 	}
 
+	/** Writes {@code table} to its file, logging a failure. */
 	private static void save(TrackTable table) {
 		JsonArray array = new JsonArray();
 		table.snapshot().forEach((id, path) -> {

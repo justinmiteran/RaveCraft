@@ -12,6 +12,7 @@ public final class OpusMonoEncoder {
 	private final OpusEncoder encoder;
 	private final byte[] out = new byte[StreamFormat.MAX_FRAME_BYTES];
 
+	/** Creates a mono 48 kHz encoder tuned for music. */
 	public OpusMonoEncoder() {
 		try {
 			encoder = new OpusEncoder(StreamFormat.SAMPLE_RATE, 1, OpusApplication.OPUS_APPLICATION_AUDIO);
@@ -23,6 +24,12 @@ public final class OpusMonoEncoder {
 		encoder.setSignalType(OpusSignal.OPUS_SIGNAL_MUSIC);
 	}
 
+	/**
+	 * Encodes one frame.
+	 *
+	 * @param frame exactly {@link StreamFormat#FRAME_SAMPLES} samples
+	 * @return the Opus packet
+	 */
 	public byte[] encode(short[] frame) {
 		if (frame.length != StreamFormat.FRAME_SAMPLES) {
 			throw new IllegalArgumentException("Expected " + StreamFormat.FRAME_SAMPLES + " samples, got " + frame.length);

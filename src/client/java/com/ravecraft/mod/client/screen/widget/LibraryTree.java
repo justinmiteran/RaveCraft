@@ -41,6 +41,7 @@ public final class LibraryTree extends TreeList {
 	private @org.jspecify.annotations.Nullable LibraryIndex index;
 	private int indexVersion;
 
+	/** The library of {@code source}, adding to the queue of the speaker at {@code pos}. */
 	public LibraryTree(int x, int y, int width, int height, MusicSource source, BlockPos pos) {
 		super(x, y, width, height, Component.translatable(SpeakerSprites.KEY + "library"));
 		this.source = source;
@@ -106,6 +107,7 @@ public final class LibraryTree extends TreeList {
 		return !model.isEmpty() && super.isMouseOver(mouseX, mouseY);
 	}
 
+	/** Queues the track {@code node}, or every track of the folder {@code node}. */
 	private void add(SourceNode node) {
 		if (node.kind() == SourceNode.Kind.FOLDER) {
 			// A folder brings its subfolders' tracks too, as found by the library walk.

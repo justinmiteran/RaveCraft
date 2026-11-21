@@ -68,6 +68,7 @@ public final class AcousticSettingsJson {
 		}
 	}
 
+	/** Reads settings, each missing key taking its default; an unreadable file gives the defaults. */
 	public static Result read(Reader in, Consumer<String> warn) {
 		AcousticSettings d = AcousticSettings.DEFAULT;
 		try {
@@ -104,9 +105,22 @@ public final class AcousticSettingsJson {
 		}
 	}
 
+	/** Reads the {@code occlusion} section, each missing key taking its value in {@code d}. */
 	private static OcclusionSettings readOcclusion(Reading r, JsonObject root, OcclusionSettings d, Consumer<String> warn) {
 		JsonObject o = r.object(root, "occlusion");
+		List<AcousticMedium> media = readMedia(r, o, defaultMedia(root, o, d, warn));
+		List<AcousticMaterial> materials = readMaterials(r, o, d);
+		Map<String, String> dimensions = readDimensions(r, o, warn);
+		return new OcclusionSettings(r.bool(o, "enabled", d.enabled()), r.number(o, "maxLossDb", d.maxLossDb()), media,
+				r.number(o, "interfaceScale", d.interfaceScale()),
+				r.number(o, "interfaceHighRatio", d.interfaceHighRatio()), dimensions, materials,
+				r.bool(o, "detours", d.detours()), r.number(o, "bendLossDb", d.bendLossDb()),
+				r.number(o, "bendHighLossDb", d.bendHighLossDb()));
+	}
 
+	/** The default media, with the treble loss of air migrated from {@link #OLD_AIR_KEY} when the file has it. */
+	private static List<AcousticMedium> defaultMedia(JsonObject root, JsonObject o, OcclusionSettings d,
+			Consumer<String> warn) {
 		List<AcousticMedium> defaultMedia = new ArrayList<>(d.media());
 		boolean fileDefinesAir = o.has("media") && o.get("media").isJsonObject() && o.getAsJsonObject("media").has("air");
 		if (root.has(OLD_AIR_KEY) && !fileDefinesAir) {
@@ -120,6 +134,11 @@ public final class AcousticSettingsJson {
 			defaultMedia.replaceAll(m -> m.name().equals("air")
 					? new AcousticMedium(m.name(), m.impedance(), m.lossDbPerBlock(), old) : m);
 		}
+		return defaultMedia;
+	}
+
+	/** The media of the {@code occlusion} section {@code o}, starting from {@code defaultMedia}. */
+	private static List<AcousticMedium> readMedia(Reading r, JsonObject o, List<AcousticMedium> defaultMedia) {
 		// Entries keep file order and start from the default of the same name; defaults the file lacks follow them.
 		List<AcousticMedium> media = new ArrayList<>();
 		for (Map.Entry<String, JsonElement> e : r.object(o, "media").entrySet()) {
@@ -140,7 +159,11 @@ public final class AcousticSettingsJson {
 				media.add(m);
 			}
 		}
+		return media;
+	}
 
+	/** The materials of the {@code occlusion} section {@code o}, starting from those of {@code d}. */
+	private static List<AcousticMaterial> readMaterials(Reading r, JsonObject o, OcclusionSettings d) {
 		List<AcousticMaterial> materials = new ArrayList<>();
 		for (Map.Entry<String, JsonElement> e : r.object(o, "materials").entrySet()) {
 			AcousticMaterial base = named(d.materials(), e.getKey(), AcousticMaterial::name,
@@ -156,7 +179,11 @@ public final class AcousticSettingsJson {
 				materials.add(m);
 			}
 		}
+		return materials;
+	}
 
+	/** The medium of each dimension named in the {@code occlusion} section {@code o}; drops the others. */
+	private static Map<String, String> readDimensions(Reading r, JsonObject o, Consumer<String> warn) {
 		Map<String, String> dimensions = new LinkedHashMap<>();
 		for (Map.Entry<String, JsonElement> e : r.object(o, "dimensions").entrySet()) {
 			JsonElement v = e.getValue();
@@ -166,14 +193,10 @@ public final class AcousticSettingsJson {
 				warn.accept("occlusion.dimensions." + e.getKey() + " is not a medium name, dropped");
 			}
 		}
-
-		return new OcclusionSettings(r.bool(o, "enabled", d.enabled()), r.number(o, "maxLossDb", d.maxLossDb()), media,
-				r.number(o, "interfaceScale", d.interfaceScale()),
-				r.number(o, "interfaceHighRatio", d.interfaceHighRatio()), dimensions, materials,
-				r.bool(o, "detours", d.detours()), r.number(o, "bendLossDb", d.bendLossDb()),
-				r.number(o, "bendHighLossDb", d.bendHighLossDb()));
+		return dimensions;
 	}
 
+	/** Reads the {@code reverb} section, each missing key taking its value in {@code d}. */
 	private static ReverbSettings readReverb(Reading r, JsonObject root, ReverbSettings d) {
 		JsonObject o = r.object(root, "reverb");
 
@@ -275,6 +298,7 @@ public final class AcousticSettingsJson {
 		}
 	}
 
+	/** The {@code occlusion} section as JSON text. */
 	private static String occlusionText(OcclusionSettings o) {
 		StringBuilder b = new StringBuilder();
 		b.append("""
@@ -367,6 +391,7 @@ public final class AcousticSettingsJson {
 		return b.toString();
 	}
 
+	/** The {@code reverb} section as JSON text. */
 	private static String reverbText(ReverbSettings v) {
 		EchoSettings e = v.echo();
 		StringBuilder b = new StringBuilder();

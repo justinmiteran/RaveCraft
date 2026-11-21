@@ -53,3 +53,6 @@ src/main/generated/.cache/
 
 # Throwaway visual proposals (see art/ workflow), regenerable
 art/proposals/
+
+# Python bytecode
+__pycache__/

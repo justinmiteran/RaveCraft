@@ -6,6 +6,8 @@ package com.ravecraft.mod.core.acoustics.occlusion;
  * crossed to get in. Reusable ({@link #start} resets it) and not thread-safe.
  */
 public final class VoxelWalk {
+	private static final int AXES = 3;
+
 	private final int[] cell = new int[3];
 	private final int[] end = new int[3];
 	private final int[] step = new int[3];
@@ -31,7 +33,7 @@ public final class VoxelWalk {
 		end[1] = (int) Math.floor(y1);
 		end[2] = (int) Math.floor(z1);
 		entryAxis = 0;
-		for (int a = 0; a < 3; a++) {
+		for (int a = 0; a < AXES; a++) {
 			double d = delta[a];
 			if (d > 0) {
 				step[a] = 1;
@@ -75,7 +77,7 @@ public final class VoxelWalk {
 		exitT = 1;
 		if (!last) {
 			// Lowest axis first on ties; an axis already at its end coordinate never steps again.
-			for (int a = 0; a < 3; a++) {
+			for (int a = 0; a < AXES; a++) {
 				if (cell[a] != end[a] && (next < 0 || tMax[a] < tMax[next])) {
 					next = a;
 				}
@@ -84,14 +86,17 @@ public final class VoxelWalk {
 		}
 	}
 
+	/** The current voxel's x. */
 	public int x() {
 		return cell[0];
 	}
 
+	/** The current voxel's y. */
 	public int y() {
 		return cell[1];
 	}
 
+	/** The current voxel's z. */
 	public int z() {
 		return cell[2];
 	}
@@ -116,10 +121,12 @@ public final class VoxelWalk {
 		return entryAxis;
 	}
 
+	/** Whether the current voxel holds the segment's start. */
 	public boolean first() {
 		return first;
 	}
 
+	/** Whether the current voxel holds the segment's end. */
 	public boolean last() {
 		return last;
 	}

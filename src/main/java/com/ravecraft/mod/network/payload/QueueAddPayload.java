@@ -15,6 +15,7 @@ public record QueueAddPayload(BlockPos pos, List<NewEntry> entries) implements C
 	public static final int MAX_ENTRIES = 50;
 	public static final int MAX_TITLE = 128;
 
+	/** A track to add: its id and its title. */
 	public record NewEntry(UUID entryId, String title) {
 		public static final StreamCodec<ByteBuf, NewEntry> CODEC = StreamCodec.composite(
 				UUIDUtil.STREAM_CODEC, NewEntry::entryId,
@@ -28,6 +29,7 @@ public record QueueAddPayload(BlockPos pos, List<NewEntry> entries) implements C
 			NewEntry.CODEC.apply(ByteBufCodecs.list(MAX_ENTRIES)), QueueAddPayload::entries,
 			QueueAddPayload::new);
 
+	/** Copies {@code entries}. */
 	public QueueAddPayload {
 		entries = List.copyOf(entries);
 	}

@@ -25,11 +25,13 @@ public final class ReceivedStreams {
 	private ReceivedStreams() {
 	}
 
+	/** Registers the idle check and the cleanup on leaving. */
 	public static void register() {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> tick());
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> endAll());
 	}
 
+	/** Adds chunk {@code seq} of session {@code sessionId}, starting its stream when new. */
 	public static void offer(int sessionId, BlockPos pos, int seq, List<byte[]> frames) {
 		long now = Util.getMillis();
 		STREAMS.admit(sessionId, () -> new Stream(pos.immutable(), new StreamPlayout(now))).ifPresent(stream -> {
@@ -50,6 +52,7 @@ public final class ReceivedStreams {
 		});
 	}
 
+	/** Ends every stream at once. */
 	public static void endAll() {
 		STREAMS.clear().forEach(stream -> stream.stopped = true);
 		DRAINING.forEach(stream -> stream.stopped = true);
@@ -64,6 +67,7 @@ public final class ReceivedStreams {
 		DRAINING.removeIf(stream -> !stream.alive());
 	}
 
+	/** A received stream: its speaker, its playout and whether it was stopped. */
 	private static final class Stream {
 		final BlockPos pos;
 		final StreamPlayout playout;

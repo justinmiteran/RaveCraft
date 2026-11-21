@@ -1,5 +1,7 @@
 package com.ravecraft.mod.core.acoustics.debug.view;
 
+import com.ravecraft.mod.core.acoustics.Vec;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;

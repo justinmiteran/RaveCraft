@@ -10,6 +10,7 @@ public record TrackInfo(String title, String artist, String album, String year, 
 		int bitrateKbps, int sampleRateHz, int channels, long durationMs) {
 	public static final int MAX_TEXT = 128;
 
+	/** Trims the text fields, turns null into {@code ""} and cuts them to {@link #MAX_TEXT}. */
 	public TrackInfo {
 		title = clean(title);
 		artist = clean(artist);
@@ -27,6 +28,7 @@ public record TrackInfo(String title, String artist, String album, String year, 
 		return t.length() > MAX_TEXT ? t.substring(0, MAX_TEXT) : t;
 	}
 
+	/** A track with nothing known but its format. */
 	public static TrackInfo empty(String format) {
 		return new TrackInfo("", "", "", "", "", format, 0, 0, 0, -1);
 	}

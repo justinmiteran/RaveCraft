@@ -1,5 +1,6 @@
 package com.ravecraft.mod.core.audio.stream;
 
+import com.ravecraft.mod.core.audio.Pcm16;
 import com.ravecraft.mod.core.audio.opus.OpusMonoDecoder;
 import com.ravecraft.mod.core.audio.stream.JitterBuffer.Audio;
 import com.ravecraft.mod.core.audio.stream.JitterBuffer.Lost;
@@ -21,6 +22,11 @@ public final class StreamPlayout {
 	/** Blocks served since a finished stream ran out of frames. */
 	private int blocksAfterEmpty;
 
+	/**
+	 * Creates an empty playout.
+	 *
+	 * @param nowMillis the current time, from which idleness is measured
+	 */
 	public StreamPlayout(long nowMillis) {
 		this.lastOfferMillis = nowMillis;
 	}
@@ -51,10 +57,9 @@ public final class StreamPlayout {
 			} else {
 				continue;
 			}
-			int base = f * StreamFormat.FRAME_SAMPLES * 2;
+			int base = f * StreamFormat.FRAME_SAMPLES * Pcm16.SAMPLE_BYTES;
 			for (int i = 0; i < pcm.length; i++) {
-				out[base + i * 2] = (byte) pcm[i];
-				out[base + i * 2 + 1] = (byte) (pcm[i] >> 8);
+				Pcm16.put(out, base + i * Pcm16.SAMPLE_BYTES, pcm[i]);
 			}
 		}
 		return out;

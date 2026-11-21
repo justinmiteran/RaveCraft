@@ -8,6 +8,7 @@ import com.ravecraft.mod.network.payload.SpeakerWatchPayload;
 import com.ravecraft.mod.network.payload.StreamResultPayload;
 import com.ravecraft.mod.network.payload.StreamStartedPayload;
 import com.ravecraft.mod.world.audio.NowPlaying;
+import com.ravecraft.mod.world.audio.SpeakerCommands;
 import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import com.ravecraft.mod.world.audio.SpeakerWatchers;
 import java.util.HashMap;
@@ -40,16 +41,17 @@ public final class SpeakerNetwork {
 	private SpeakerNetwork() {
 	}
 
+	/** Registers the receivers of the speaker screen's requests and the per-player cleanup. */
 	public static void init() {
 		ServerPlayNetworking.registerGlobalReceiver(QueueAddPayload.TYPE, (payload, context) -> {
 			if (allowAdd(context.player())) {
-				SpeakerPlayback.add(context.player(), payload.pos(), payload.entries());
+				SpeakerCommands.add(context.player(), payload.pos(), payload.entries());
 			}
 		});
 		ServerPlayNetworking.registerGlobalReceiver(SpeakerCommandPayload.TYPE, (payload, context) -> {
 			boolean allowed = payload.command() == Command.VOLUME ? allowVolume(context.player()) : allowCommand(context.player());
 			if (allowed) {
-				SpeakerPlayback.command(context.player(), payload.pos(), payload.command(), payload.entryId(), payload.value());
+				SpeakerCommands.command(context.player(), payload.pos(), payload.command(), payload.entryId(), payload.value());
 			}
 		});
 		ServerPlayNetworking.registerGlobalReceiver(StreamStartedPayload.TYPE, (payload, context) -> {

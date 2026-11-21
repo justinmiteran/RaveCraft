@@ -10,6 +10,7 @@ public final class MonoFramer {
 	private short[] partial = new short[StreamFormat.FRAME_SAMPLES];
 	private int filled;
 
+	/** Adds the first {@code length} samples; each frame they complete becomes ready for {@link #poll()}. */
 	public void push(short[] samples, int length) {
 		int at = 0;
 		while (at < length) {

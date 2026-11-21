@@ -1,8 +1,10 @@
 package com.ravecraft.mod.item;
 
+import com.ravecraft.mod.block.SpeakerBlock;
 import com.ravecraft.mod.block.SpeakerScreenOpener;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.core.speaker.CarryPlace;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.world.audio.SpeakerHosts;
 import net.minecraft.server.level.ServerLevel;
@@ -19,11 +21,21 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import org.jspecify.annotations.Nullable;
 
-/** The portable speaker as an item: places the block and keeps its data. */
-public class PortableSpeakerItem extends BlockItem {
+/** A speaker as an item, of the kind of the block it places: places the block and keeps its data. */
+public class SpeakerItem extends BlockItem {
 	/** The item that places {@code block}. */
-	public PortableSpeakerItem(Block block, Properties properties) {
+	public SpeakerItem(Block block, Properties properties) {
 		super(block, properties);
+	}
+
+	/** The kind of speaker this item places, read from its block. */
+	public SpeakerKind kind() {
+		return getBlock() instanceof SpeakerBlock block ? block.kind() : SpeakerKind.PORTABLE;
+	}
+
+	/** The kind of the speaker in {@code stack}; a portable one if the stack is somehow not a speaker. */
+	public static SpeakerKind kindOf(ItemStack stack) {
+		return stack.getItem() instanceof SpeakerItem item ? item.kind() : SpeakerKind.PORTABLE;
 	}
 
 	@Override

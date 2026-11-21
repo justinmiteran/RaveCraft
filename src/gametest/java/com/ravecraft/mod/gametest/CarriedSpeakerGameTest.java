@@ -5,7 +5,7 @@ import static com.ravecraft.mod.gametest.SharedQueueGameTest.newEntries;
 import static com.ravecraft.mod.gametest.SharedQueueGameTest.online;
 import static com.ravecraft.mod.gametest.SharedQueueGameTest.poweredSpeaker;
 
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.blockentity.SpeakerBlockEntity;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.core.queue.QueueEntry;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
@@ -124,7 +124,7 @@ public class CarriedSpeakerGameTest {
 		BlockPos above = hopperPos.above();
 		h.setBlock(hopperPos, Blocks.HOPPER);
 		h.setBlock(above, ModBlocks.PORTABLE_SPEAKER);
-		h.getBlockEntity(above, PortableSpeakerBlockEntity.class).togglePower();
+		h.getBlockEntity(above, SpeakerBlockEntity.class).togglePower();
 		ServerPlayer owner = online(h, 2);
 		UUID id = Speakers.idAt(h, h.absolutePos(above));
 		play(h, owner, id);

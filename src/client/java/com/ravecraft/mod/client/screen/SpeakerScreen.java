@@ -1,7 +1,7 @@
 package com.ravecraft.mod.client.screen;
 
-import com.ravecraft.mod.block.PortableSpeakerBlock;
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.block.SpeakerBlock;
+import com.ravecraft.mod.blockentity.SpeakerBlockEntity;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.client.library.LibraryFoldersStore;
@@ -108,7 +108,7 @@ public final class SpeakerScreen extends Screen {
 		}
 		BlockPos centre = player.blockPosition();
 		for (BlockPos pos : BlockPos.withinClippedManhattan(centre, BLOCK_SEARCH_RADIUS, BLOCK_SEARCH_RADIUS, BLOCK_SEARCH_RADIUS)) {
-			if (client.level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker && speaker.data().id().equals(id)) {
+			if (client.level.getBlockEntity(pos) instanceof SpeakerBlockEntity speaker && speaker.data().id().equals(id)) {
 				return pos.immutable();
 			}
 		}
@@ -127,31 +127,31 @@ public final class SpeakerScreen extends Screen {
 			SpeakerData data = stack.get(ModDataComponents.SPEAKER);
 			if (data != null && data.id().equals(id)) {
 				DyedItemColor dye = stack.get(DataComponents.DYED_COLOR);
-				return ARGB.opaque(dye != null ? dye.rgb() : PortableSpeakerBlock.DEFAULT_COLOR);
+				return ARGB.opaque(dye != null ? dye.rgb() : SpeakerBlock.DEFAULT_COLOR);
 			}
 		}
 		return null;
 	}
 
 	/** The speaker's block entity, when it is placed, loaded here and still holds the id. */
-	private @Nullable PortableSpeakerBlockEntity placedSpeaker() {
+	private @Nullable SpeakerBlockEntity placedSpeaker() {
 		if (block == null || minecraft == null || minecraft.level == null) {
 			return null;
 		}
-		return minecraft.level.getBlockEntity(block) instanceof PortableSpeakerBlockEntity speaker
+		return minecraft.level.getBlockEntity(block) instanceof SpeakerBlockEntity speaker
 				&& speaker.data().id().equals(speakerId) ? speaker : null;
 	}
 
 	/** The fabric colour of the speaker's block, or the undyed colour when it is not found. */
 	private int fabricColour() {
-		PortableSpeakerBlockEntity speaker = placedSpeaker();
+		SpeakerBlockEntity speaker = placedSpeaker();
 		if (speaker != null) {
 			return ARGB.opaque(speaker.fabricColor());
 		}
 		if (carriedColour != null) {
 			return carriedColour;
 		}
-		return ARGB.opaque(PortableSpeakerBlock.DEFAULT_COLOR);
+		return ARGB.opaque(SpeakerBlock.DEFAULT_COLOR);
 	}
 
 	@Override

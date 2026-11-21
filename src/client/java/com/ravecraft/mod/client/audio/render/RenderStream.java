@@ -1,6 +1,6 @@
 package com.ravecraft.mod.client.audio.render;
 
-import com.ravecraft.mod.block.PortableSpeakerBlock;
+import com.ravecraft.mod.block.SpeakerBlock;
 import com.ravecraft.mod.client.audio.ClientSpeakerHosts;
 import com.ravecraft.mod.core.acoustics.DeviceProfile;
 import com.ravecraft.mod.core.acoustics.Directivity;
@@ -16,7 +16,6 @@ import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import com.ravecraft.mod.network.payload.SpeakerHostPayload;
-import com.ravecraft.mod.registry.ModBlocks;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.UUID;
@@ -131,10 +130,10 @@ final class RenderStream {
 	private static @Nullable SpeakerAxis axisOf(SpeakerHostPayload host, ClientLevel level) {
 		if (host.block().isPresent()) {
 			BlockState state = level.getBlockState(host.block().get());
-			if (!state.is(ModBlocks.PORTABLE_SPEAKER)) {
+			if (!(state.getBlock() instanceof SpeakerBlock)) {
 				return null;
 			}
-			Direction facing = state.getValue(PortableSpeakerBlock.FACING);
+			Direction facing = state.getValue(SpeakerBlock.FACING);
 			return SpeakerAxis.block(facing.getStepX(), facing.getStepZ());
 		}
 		Entity entity = level.getEntity(host.entityId());

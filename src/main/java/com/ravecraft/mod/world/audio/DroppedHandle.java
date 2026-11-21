@@ -1,6 +1,8 @@
 package com.ravecraft.mod.world.audio;
 
 import com.ravecraft.mod.component.SpeakerData;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
+import com.ravecraft.mod.item.SpeakerItem;
 import com.ravecraft.mod.registry.ModDataComponents;
 import java.util.Collection;
 import java.util.Objects;
@@ -16,6 +18,11 @@ record DroppedHandle(ServerLevel level, ItemEntity entity) implements SpeakerHan
 	@Override
 	public UUID id() {
 		return data().id();
+	}
+
+	@Override
+	public SpeakerKind kind() {
+		return SpeakerItem.kindOf(entity.getItem());
 	}
 
 	@Override

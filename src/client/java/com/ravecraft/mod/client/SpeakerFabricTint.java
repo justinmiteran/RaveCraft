@@ -1,7 +1,7 @@
 package com.ravecraft.mod.client;
 
-import com.ravecraft.mod.block.PortableSpeakerBlock;
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.block.SpeakerBlock;
+import com.ravecraft.mod.blockentity.SpeakerBlockEntity;
 import net.minecraft.client.color.block.BlockTintSource;
 import net.minecraft.client.renderer.block.BlockAndTintGetter;
 import net.minecraft.core.BlockPos;
@@ -12,12 +12,12 @@ import net.minecraft.world.level.block.state.BlockState;
 public final class SpeakerFabricTint implements BlockTintSource {
 	@Override
 	public int color(BlockState state) {
-		return ARGB.opaque(PortableSpeakerBlock.DEFAULT_COLOR);
+		return ARGB.opaque(SpeakerBlock.DEFAULT_COLOR);
 	}
 
 	@Override
 	public int colorInWorld(BlockState state, BlockAndTintGetter level, BlockPos pos) {
-		return level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker
+		return level.getBlockEntity(pos) instanceof SpeakerBlockEntity speaker
 				? ARGB.opaque(speaker.fabricColor())
 				: color(state);
 	}

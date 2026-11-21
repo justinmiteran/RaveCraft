@@ -1,6 +1,6 @@
 package com.ravecraft.mod.world.audio;
 
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.blockentity.SpeakerBlockEntity;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.registry.ModDataComponents;
 import java.util.Optional;
@@ -31,7 +31,7 @@ final class SpeakerLookup {
 	private static Optional<SpeakerHandle> blockHandle(MinecraftServer server, SpeakerHost.Block block, UUID id) {
 		ServerLevel level = server.getLevel(block.dimension());
 		if (level == null || !level.isLoaded(block.pos())
-				|| !(level.getBlockEntity(block.pos()) instanceof PortableSpeakerBlockEntity speaker)
+				|| !(level.getBlockEntity(block.pos()) instanceof SpeakerBlockEntity speaker)
 				|| !speaker.data().id().equals(id)) {
 			return Optional.empty();
 		}

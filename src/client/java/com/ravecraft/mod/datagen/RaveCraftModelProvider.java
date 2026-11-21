@@ -1,6 +1,6 @@
 package com.ravecraft.mod.datagen;
 
-import com.ravecraft.mod.block.PortableSpeakerBlock;
+import com.ravecraft.mod.block.SpeakerBlock;
 import com.ravecraft.mod.client.item.SpeakerPowered;
 import com.ravecraft.mod.registry.ModBlocks;
 import net.fabricmc.fabric.api.client.datagen.v1.provider.FabricModelProvider;
@@ -37,7 +37,7 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 		Identifier off = ModelLocationUtils.getModelLocation(ModBlocks.PORTABLE_SPEAKER);
 		Identifier on = ModelLocationUtils.getModelLocation(ModBlocks.PORTABLE_SPEAKER, "_on");
 		generators.blockStateOutput.accept(MultiVariantGenerator.dispatch(ModBlocks.PORTABLE_SPEAKER)
-				.with(BlockModelGenerators.createBooleanModelDispatch(PortableSpeakerBlock.POWERED,
+				.with(BlockModelGenerators.createBooleanModelDispatch(SpeakerBlock.POWERED,
 						BlockModelGenerators.plainVariant(on), BlockModelGenerators.plainVariant(off)))
 				.with(BlockModelGenerators.ROTATION_HORIZONTAL_FACING));
 		// Flat 2D icon in the inventory, the 3D block model everywhere else (hand, ground, item frame), like the
@@ -47,7 +47,7 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 		Identifier icon = flatIcon(speaker, "", "_overlay", generators);
 		Identifier iconOn = flatIcon(speaker, "_on", "_overlay_on", generators);
 		// Item tints are ARGB: without an opaque alpha the undyed fabric would be invisible.
-		Dye fabricTint = new Dye(ARGB.opaque(PortableSpeakerBlock.DEFAULT_COLOR));
+		Dye fabricTint = new Dye(ARGB.opaque(SpeakerBlock.DEFAULT_COLOR));
 		generators.itemModelOutput.accept(speaker, ItemModelUtils.select(new DisplayContext(),
 				powered(ItemModelUtils.tintedModel(on, fabricTint), ItemModelUtils.tintedModel(off, fabricTint)),
 				ItemModelUtils.when(ItemDisplayContext.GUI,

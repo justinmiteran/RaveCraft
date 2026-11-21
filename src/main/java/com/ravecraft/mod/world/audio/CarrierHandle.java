@@ -2,6 +2,8 @@ package com.ravecraft.mod.world.audio;
 
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.core.speaker.CarryPlace;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
+import com.ravecraft.mod.item.SpeakerItem;
 import com.ravecraft.mod.registry.ModDataComponents;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,6 +29,11 @@ record CarrierHandle(ServerPlayer player, ItemStack stack, CarryPlace place) imp
 	@Override
 	public ServerLevel level() {
 		return player.level();
+	}
+
+	@Override
+	public SpeakerKind kind() {
+		return SpeakerItem.kindOf(stack);
 	}
 
 	@Override

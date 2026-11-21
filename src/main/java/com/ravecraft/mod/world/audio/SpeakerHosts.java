@@ -1,6 +1,6 @@
 package com.ravecraft.mod.world.audio;
 
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.blockentity.SpeakerBlockEntity;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.core.speaker.CarryPlace;
@@ -71,7 +71,7 @@ public final class SpeakerHosts {
 	/** Follows speaker blocks and item entities as they load and unload. */
 	public static void init() {
 		ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.register((blockEntity, level) -> {
-			if (blockEntity instanceof PortableSpeakerBlockEntity speaker) {
+			if (blockEntity instanceof SpeakerBlockEntity speaker) {
 				placed(speaker);
 			}
 		});
@@ -93,7 +93,7 @@ public final class SpeakerHosts {
 	}
 
 	/** Registers a placed or loaded speaker block; a copy of an id already placed elsewhere gets a fresh id. */
-	public static void placed(PortableSpeakerBlockEntity speaker) {
+	public static void placed(SpeakerBlockEntity speaker) {
 		if (!(speaker.getLevel() instanceof ServerLevel level)) {
 			return;
 		}
@@ -116,7 +116,7 @@ public final class SpeakerHosts {
 	}
 
 	/** The block was broken or its chunk unloaded: the id is lost, and expires unless it shows up again. */
-	public static void removed(PortableSpeakerBlockEntity speaker) {
+	public static void removed(SpeakerBlockEntity speaker) {
 		if (!(speaker.getLevel() instanceof ServerLevel level)) {
 			return;
 		}

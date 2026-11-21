@@ -1,6 +1,6 @@
 package com.ravecraft.mod.client.audio.render;
 
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.blockentity.SpeakerBlockEntity;
 import com.ravecraft.mod.client.audio.ClientSpeakerHosts;
 import com.ravecraft.mod.client.audio.occlusion.WorldAcousticGrid;
 import com.ravecraft.mod.client.options.RaveCraftOptions;
@@ -114,7 +114,7 @@ public final class AcousticDebugInfo {
 	/** The track the speaker of {@code stream} is playing, when it is a block whose block entity knows it. */
 	private static Optional<QueueEntry> current(@Nullable ClientLevel level, RenderStream stream) {
 		Optional<BlockPos> block = ClientSpeakerHosts.get(stream.speakerId).flatMap(SpeakerHostPayload::block);
-		if (level != null && block.isPresent() && level.getBlockEntity(block.get()) instanceof PortableSpeakerBlockEntity speaker
+		if (level != null && block.isPresent() && level.getBlockEntity(block.get()) instanceof SpeakerBlockEntity speaker
 				&& speaker.data().id().equals(stream.speakerId)) {
 			SpeakerQueue queue = speaker.data().queue();
 			return queue.current().flatMap(queue::entry);

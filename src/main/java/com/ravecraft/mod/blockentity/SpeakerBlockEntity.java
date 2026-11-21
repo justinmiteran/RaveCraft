@@ -1,9 +1,10 @@
 package com.ravecraft.mod.blockentity;
 
 import com.ravecraft.mod.RaveCraft;
-import com.ravecraft.mod.block.PortableSpeakerBlock;
+import com.ravecraft.mod.block.SpeakerBlock;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.registry.ModBlockEntities;
 import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.world.audio.SpeakerHosts;
@@ -29,21 +30,26 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import org.jspecify.annotations.Nullable;
 
-/** A placed portable speaker: its data (id, settings, queue), its fabric colour and its name. */
-public class PortableSpeakerBlockEntity extends BlockEntity {
+/** A placed speaker of any kind: its data (id, settings, queue), its fabric colour and its name. */
+public class SpeakerBlockEntity extends BlockEntity {
 	public static final String KEY = "speaker";
 	private static final String COLOR_KEY = "color";
 	private static final String NAME_KEY = "CustomName";
 
 	private SpeakerData data = SpeakerData.create();
-	/** Dye applied to the fabric, or null when undyed ({@link PortableSpeakerBlock#DEFAULT_COLOR}). */
+	/** Dye applied to the fabric, or null when undyed ({@link SpeakerBlock#DEFAULT_COLOR}). */
 	private @Nullable DyedItemColor color;
 	/** The name given to the item in an anvil, shown as the screen's title; null when unnamed. */
 	private @Nullable Component customName;
 
 	/** A speaker with fresh data, undyed and unnamed. */
-	public PortableSpeakerBlockEntity(BlockPos pos, BlockState state) {
-		super(ModBlockEntities.PORTABLE_SPEAKER, pos, state);
+	public SpeakerBlockEntity(BlockPos pos, BlockState state) {
+		super(ModBlockEntities.SPEAKER, pos, state);
+	}
+
+	/** The kind of speaker, read from its block; a portable one if the block is somehow not a speaker. */
+	public SpeakerKind kind() {
+		return getBlockState().getBlock() instanceof SpeakerBlock block ? block.kind() : SpeakerKind.PORTABLE;
 	}
 
 	/** The speaker's id, settings and queue. */
@@ -75,7 +81,7 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 
 	/** RGB colour of the fabric, as tinted by the client. */
 	public int fabricColor() {
-		return color != null ? color.rgb() : PortableSpeakerBlock.DEFAULT_COLOR;
+		return color != null ? color.rgb() : SpeakerBlock.DEFAULT_COLOR;
 	}
 
 	/** The name given in an anvil, or null when unnamed. */
@@ -96,7 +102,7 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 	public void togglePower() {
 		data = data.withSettings(data.settings().togglePower());
 		if (level != null) {
-			level.setBlock(worldPosition, getBlockState().setValue(PortableSpeakerBlock.POWERED, data.settings().powered()), 3);
+			level.setBlock(worldPosition, getBlockState().setValue(SpeakerBlock.POWERED, data.settings().powered()), 3);
 		}
 		setChanged();
 		if (level instanceof ServerLevel serverLevel) {
@@ -137,7 +143,7 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 		input.read(KEY, SpeakerData.CODEC).ifPresentOrElse(read -> data = read, () -> {
 			// Present but undecodable: keep the random id from construction, but do not fail silently.
 			if (input.child(KEY).isPresent()) {
-				RaveCraft.LOGGER.warn("Portable speaker at {} has undecodable data, using a fresh identity", worldPosition);
+				RaveCraft.LOGGER.warn("Speaker at {} has undecodable data, using a fresh identity", worldPosition);
 			}
 		});
 		DyedItemColor previous = color;

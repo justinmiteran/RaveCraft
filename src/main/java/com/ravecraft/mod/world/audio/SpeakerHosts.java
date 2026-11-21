@@ -19,7 +19,7 @@ public final class SpeakerHosts {
 	private static final HostTracker<SpeakerHost> TRACKER = new HostTracker<>();
 	/**
 	 * Id last placed at each block host: a block entity first registers with its construction id, then gets the
-	 * item's id (or a creative refresh), and the stale id must not keep pointing at the block.
+	 * item's id (or a creative refresh), and the stale id must be forgotten, not left pointing at the block.
 	 */
 	private static final Map<SpeakerHost.Block, UUID> BLOCK_IDS = new HashMap<>();
 
@@ -62,8 +62,9 @@ public final class SpeakerHosts {
 		long tick = level.getServer().getTickCount();
 		SpeakerHost.Block host = blockHost(level, speaker.getBlockPos());
 		UUID previous = BLOCK_IDS.get(host);
-		if (previous != null && !previous.equals(speaker.data().id())) {
-			TRACKER.lose(previous, host, tick);
+		// The previous id no longer exists anywhere: drop it with no grace, so it never expires against this block.
+		if (previous != null && !previous.equals(speaker.data().id()) && TRACKER.host(previous).equals(Optional.of(host))) {
+			TRACKER.forget(previous);
 		}
 		if (TRACKER.place(speaker.data().id(), host, tick) == HostTracker.Verdict.DUPLICATE) {
 			speaker.setData(speaker.data().withId(UUID.randomUUID()));
@@ -85,6 +86,11 @@ public final class SpeakerHosts {
 	/** Called first in each server tick. */
 	public static void tick(MinecraftServer server) {
 		TRACKER.expire(server.getTickCount());
+	}
+
+	/** Whether {@code id} is known, hosted or in its grace after a loss; for tests and diagnostics. */
+	public static boolean isTracked(UUID id) {
+		return TRACKER.contains(id);
 	}
 
 	public static void clear() {

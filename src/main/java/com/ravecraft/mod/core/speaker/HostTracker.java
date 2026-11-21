@@ -107,6 +107,11 @@ public final class HostTracker<H> {
 		return out;
 	}
 
+	/** Whether {@code id} has an entry, hosted or within its grace after a loss. */
+	public boolean contains(UUID id) {
+		return entries.containsKey(id);
+	}
+
 	public void forget(UUID id) {
 		entries.remove(id);
 	}

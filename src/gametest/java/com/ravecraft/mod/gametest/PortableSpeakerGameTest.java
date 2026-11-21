@@ -393,4 +393,23 @@ public class PortableSpeakerGameTest {
 			h.succeed();
 		});
 	}
+
+	@GameTest(maxTicks = 40)
+	public void replacedConstructionIdIsForgotten(GameTestHelper h) {
+		BlockPos pos = new BlockPos(1, 1, 1);
+		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER); // BLOCK_ENTITY_LOAD registers the construction id
+		PortableSpeakerBlockEntity be = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class);
+		UUID constructionId = be.data().id();
+		h.assertTrue(SpeakerHosts.isTracked(constructionId), "construction id registered on load");
+		UUID newId = UUID.randomUUID();
+		be.setData(be.data().withId(newId));
+		SpeakerHosts.placed(be);
+		// Dropped at once, with no grace that would later expire with this block as its last host.
+		h.assertFalse(SpeakerHosts.isTracked(constructionId), "construction id forgotten");
+		h.runAfterDelay(21, () -> {
+			h.assertFalse(SpeakerHosts.isTracked(constructionId), "construction id still forgotten");
+			h.assertTrue(SpeakerHosts.handle(h.getLevel().getServer(), newId).isPresent(), "new id hosted");
+			h.succeed();
+		});
+	}
 }

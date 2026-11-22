@@ -222,12 +222,25 @@ def portable_speaker_overlay_on():
     return speaker_icon_layer(False, on=True)
 
 
-# Party speaker (upright box, models/block/party_speaker.json, look v3). Only the meshed grille is tinted
-# (tintindex 0): a light grey period-2 mesh, the two drivers behind it shown as darker holes. Body sides, top
-# and bottom use the portable's rubber. The panel texture is a cutout overlay atlas, never tinted: equaliser
-# logo at (0,0)-(8,5) for the front, the side control panel at (0,8)-(10,13) (volume -, play, volume +, LED),
-# and an opaque 3x3 corner bumper tile at (13,0)-(16,3).
-PARTY_DRIVERS = ((8.0, 4.5, 2.2), (8.0, 10.5, 4.3))  # (u, v, radius) of the tweeter and the woofer
+# Party speaker (upright box, models/block/party_speaker.json, look v3). Only the woven grille is tinted
+# (tintindex 0): a period-2 checker of light and dark threads with random variation, a lit top-left edge and a
+# shaded bottom-right edge, as on the v3 proposal. The front face maps u 2..14, v 0..16. Body sides, top and
+# bottom use the portable's rubber. The panel texture is a cutout overlay atlas, never tinted: equaliser logo at
+# (0,0)-(8,5) for the front, the side control panel at (0,8)-(10,13) (volume -, play, volume +, LED), and an opaque
+# 3x3 corner bumper tile at (13,0)-(16,3).
+PANEL_SLOT = (0x18, 0x19, 0x1E)  # side panel strip and its key colours, from the v3 proposal
+PANEL_KEY = (0x4E, 0x53, 0x5F)
+PANEL_LEDGE = (0x2C, 0x2F, 0x37)
+GRILLE_LIGHT = (229, 202)  # threads on even (x + y), mostly the first
+GRILLE_DARK = (179, 152, 126)  # threads on odd (x + y), mostly the first, rarely the last
+GRILLE_EDGE = (240, 152)  # top-left and bottom-right borders of the face
+
+
+def party_grille_thread(rnd, x, y):
+    if (x + y) % 2 == 0:
+        return GRILLE_LIGHT[0] if rnd.random() < 0.7 else GRILLE_LIGHT[1]
+    roll = rnd.random()
+    return GRILLE_DARK[0] if roll < 0.6 else GRILLE_DARK[1] if roll < 0.97 else GRILLE_DARK[2]
 
 
 def party_speaker_grille():
@@ -235,10 +248,11 @@ def party_speaker_grille():
     img = new()
     for y in range(S):
         for x in range(S):
-            hole = x % 2 == 1 and y % 2 == 1
-            v = 150 if hole else 228 + rnd.randint(-8, 6)
-            if hole and any(math.hypot(x + 0.5 - u, y + 0.5 - w) <= r for u, w, r in PARTY_DRIVERS):
-                v = 100
+            v = party_grille_thread(rnd, x, y)
+            if x == 2 or y == 0:
+                v = GRILLE_EDGE[0]
+            elif x == 13 or y == 15:
+                v = GRILLE_EDGE[1]
             px(img, x, y, (v, v, v))
     return img
 
@@ -258,15 +272,13 @@ def party_panel(on):
     for i in range(3):
         px(img, 13 + i, 0, RUBBER[3]); px(img, 13, i, RUBBER[3]); px(img, 15, i, RUBBER[1])
     px(img, 15, 0, RUBBER[2]); px(img, 14, 2, RUBBER[1])
-    # Side control panel, painted flat: dark plate with a lighter bottom edge.
-    rect(img, 0, 8, 9, 11, RUBBER[0])
-    rect(img, 0, 12, 9, 12, RUBBER[3])
-    px(img, 1, 10, RUBBER[3]); px(img, 2, 10, RUBBER[3])                   # volume down
-    for x, y in ((3, 9), (3, 10), (3, 11), (4, 10)):                        # play
-        px(img, x, y, COPPER_L if y == 9 else COPPER)
-    for x, y in ((6, 9), (5, 10), (6, 10), (7, 10), (6, 11)):               # volume up
-        px(img, x, y, RUBBER[3])
-    px(img, 8, 10, LED_ON if on else LED_OFF)                                # power LED
+    # Side control panel, as on the v3 proposal: a recessed dark strip holding volume -, play, volume + and the
+    # power LED, over a lighter ledge. Rows 8 and 12 stay clear so the body rubber shows around the panel.
+    rect(img, 1, 9, 8, 10, PANEL_SLOT)
+    rect(img, 1, 11, 8, 11, PANEL_LEDGE)
+    px(img, 2, 10, PANEL_KEY); px(img, 6, 10, PANEL_KEY)                   # volume down, volume up
+    px(img, 4, 9, COPPER_L); px(img, 4, 10, COPPER)                        # play
+    px(img, 8, 10, LED_ON if on else LED_OFF)                               # power LED
     return img
 
 
@@ -285,9 +297,8 @@ def party_icon_layer(grille, on=False):
         for x in range(3, 13):
             edge = x in (3, 12) or y in (1, 14)
             if grille and not edge:
-                hole = x % 2 == 0 and y % 2 == 0
-                v = 200 if y == 2 else (120 if hole else 175)
-                v = 105 if y == 13 else v
+                v = 175 if (x + y) % 2 == 0 else 135
+                v = 200 if y == 2 or x == 4 else 105 if y == 13 or x == 11 else v
                 px(img, x, y, (v, v, v))
             elif not grille and edge:
                 px(img, x, y, (14, 14, 18))

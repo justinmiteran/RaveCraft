@@ -1,6 +1,9 @@
 package com.ravecraft.mod.datagen;
 
+import com.ravecraft.mod.registry.ModBlockFamilies;
 import com.ravecraft.mod.registry.ModBlocks;
+import com.ravecraft.mod.registry.ModItems;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
@@ -8,12 +11,22 @@ import net.minecraft.advancements.Advancement;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.recipes.RecipeCategory;
 import net.minecraft.data.recipes.RecipeProvider;
+import net.minecraft.data.BlockFamily;
 import net.minecraft.data.worldgen.BootstrapContext;
+import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.CookingBookCategory;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.level.ItemLike;
 
-/** Crafting recipes. */
+/** Crafting, cooking and stonecutter recipes. */
 public class RaveCraftRecipeProvider extends FabricRecipeProvider {
+	private static final int SMELT_TIME = 200;
+	private static final int BLAST_TIME = 100;
+	private static final float INGOT_XP = 1.0F;
+	private static final float SILICON_XP = 0.5F;
+	private static final float BITUMEN_XP = 0.1F;
+
 	/**
 	 * A provider writing to {@code output}.
 	 *
@@ -55,7 +68,33 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 						.unlockedBy("has_portable_speaker", has(ModBlocks.PORTABLE_SPEAKER))
 						.save(output);
 				dyedItem(ModBlocks.PARTY_SPEAKER.asItem(), "party_speaker_dye");
+				materials(this);
+				for (BlockFamily family : List.of(ModBlockFamilies.SHALE, ModBlockFamilies.POLISHED_SHALE,
+						ModBlockFamilies.SHALE_BRICKS)) {
+					generateRecipes(family, FeatureFlags.VANILLA_SET);
+				}
 			}
 		};
+	}
+
+	/**
+	 * Ore smelting: furnace and blast furnace for neodymium and bitumen, blast furnace only for silicon (it needs the
+	 * heat), furnace only for the wafer (a slow anneal).
+	 */
+	private static void materials(RecipeProvider recipes) {
+		List<ItemLike> neodymium = List.of(ModItems.RAW_NEODYMIUM, ModBlocks.DEEPSLATE_NEODYMIUM_ORE);
+		List<ItemLike> oilShale = List.of(ModBlocks.OIL_SHALE);
+		recipes.oreSmelting(neodymium, RecipeCategory.MISC, CookingBookCategory.MISC, ModItems.NEODYMIUM_INGOT,
+				INGOT_XP, SMELT_TIME, "neodymium_ingot");
+		recipes.oreBlasting(neodymium, RecipeCategory.MISC, CookingBookCategory.MISC, ModItems.NEODYMIUM_INGOT,
+				INGOT_XP, BLAST_TIME, "neodymium_ingot");
+		recipes.oreBlasting(List.of(Items.QUARTZ), RecipeCategory.MISC, CookingBookCategory.MISC, ModItems.SILICON,
+				SILICON_XP, BLAST_TIME, "silicon");
+		recipes.oreSmelting(List.of(ModItems.SILICON), RecipeCategory.MISC, CookingBookCategory.MISC,
+				ModItems.SILICON_WAFER, SILICON_XP, SMELT_TIME, "silicon_wafer");
+		recipes.oreSmelting(oilShale, RecipeCategory.MISC, CookingBookCategory.MISC, ModItems.BITUMEN, BITUMEN_XP,
+				SMELT_TIME, "bitumen");
+		recipes.oreBlasting(oilShale, RecipeCategory.MISC, CookingBookCategory.MISC, ModItems.BITUMEN, BITUMEN_XP,
+				BLAST_TIME, "bitumen");
 	}
 }

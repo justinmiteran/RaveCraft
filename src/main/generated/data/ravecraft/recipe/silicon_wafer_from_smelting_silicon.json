@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:smelting",
+  "cookingtime": 200,
+  "experience": 0.5,
+  "group": "silicon_wafer",
+  "ingredient": "ravecraft:silicon",
+  "result": {
+    "id": "ravecraft:silicon_wafer"
+  }
+}

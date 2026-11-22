@@ -1,14 +1,18 @@
 package com.ravecraft.mod.gametest;
 
+import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModCreativeTabs;
 import com.ravecraft.mod.registry.ModItems;
 import com.ravecraft.mod.registry.ModTags;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceKey;
@@ -17,6 +21,14 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.AbstractCookingRecipe;
+import net.minecraft.world.item.crafting.CraftingInput;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.ItemLike;
@@ -32,6 +44,13 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
 
 public class MaterialsGameTest {
+	private static final Cook SMELT = new Cook(RecipeType.SMELTING, "smelting", 200);
+	private static final Cook BLAST = new Cook(RecipeType.BLASTING, "blasting", 100);
+
+	/** A cooking station: its recipe type, the recipe id word and the expected cooking time. */
+	private record Cook(RecipeType<?> type, String kind, int time) {
+	}
+
 	@GameTest
 	public void oresRequireTheirTool(GameTestHelper h) {
 		for (Block ore : ModBlocks.ores()) {
@@ -186,6 +205,78 @@ public class MaterialsGameTest {
 		h.assertTrue(exploded < 25, "explosion decays drops, got " + exploded);
 		h.assertTrue(mined >= 50, "mining drops at least 50, got " + mined);
 		h.succeed();
+	}
+
+	@GameTest
+	public void smeltingRecipes(GameTestHelper h) {
+		RecipeManager recipes = h.getLevel().getServer().getRecipeManager();
+		for (ItemLike input : List.of(ModItems.RAW_NEODYMIUM, ModBlocks.DEEPSLATE_NEODYMIUM_ORE)) {
+			cooking(h, recipes, input, ModItems.NEODYMIUM_INGOT, SMELT, 1.0F);
+			cooking(h, recipes, input, ModItems.NEODYMIUM_INGOT, BLAST, 1.0F);
+		}
+		cooking(h, recipes, Items.QUARTZ, ModItems.SILICON, BLAST, 0.5F);
+		cooking(h, recipes, ModItems.SILICON, ModItems.SILICON_WAFER, SMELT, 0.5F);
+		cooking(h, recipes, ModBlocks.OIL_SHALE, ModItems.BITUMEN, SMELT, 0.1F);
+		cooking(h, recipes, ModBlocks.OIL_SHALE, ModItems.BITUMEN, BLAST, 0.1F);
+		h.assertTrue(recipe(recipes, "silicon_from_smelting_quartz").isEmpty(), "no smelting for quartz");
+		h.assertTrue(recipe(recipes, "silicon_wafer_from_blasting_silicon").isEmpty(), "no blasting for silicon");
+		h.succeed();
+	}
+
+	@GameTest
+	public void shaleRecipes(GameTestHelper h) {
+		RecipeManager recipes = h.getLevel().getServer().getRecipeManager();
+		crafted(h, recipes, ModBlocks.POLISHED_SHALE, CraftingInput.of(2, 2, copies(ModBlocks.SHALE, 4)), 4);
+		crafted(h, recipes, ModBlocks.SHALE_BRICKS, CraftingInput.of(2, 2, copies(ModBlocks.POLISHED_SHALE, 4)), 4);
+		crafted(h, recipes, ModBlocks.CHISELED_SHALE, CraftingInput.of(1, 2, copies(ModBlocks.SHALE_BRICK_SLAB, 2)), 1);
+		for (Block shape : ModBlocks.shaleFamily()) {
+			if (shape instanceof StairBlock || shape instanceof SlabBlock || shape instanceof WallBlock) {
+				h.assertTrue(recipe(recipes, name(shape)).isPresent(), shape + " crafting recipe");
+			}
+		}
+		List<Block> family = ModBlocks.shaleFamily();
+		stonecut(h, recipes, ModBlocks.SHALE, family.subList(1, family.size()));
+		stonecut(h, recipes, ModBlocks.POLISHED_SHALE, family.subList(5, family.size()));
+		stonecut(h, recipes, ModBlocks.SHALE_BRICKS, family.subList(9, family.size()));
+		h.succeed();
+	}
+
+	private static void cooking(GameTestHelper h, RecipeManager recipes, ItemLike input, ItemLike result, Cook cook,
+			float xp) {
+		String id = name(result) + "_from_" + cook.kind() + "_" + name(input);
+		Recipe<?> recipe = recipe(recipes, id).orElseThrow(() -> h.assertionException(id + " missing"));
+		h.assertTrue(recipe.getType() == cook.type(), id + " type");
+		AbstractCookingRecipe cooking = (AbstractCookingRecipe) recipe;
+		h.assertTrue(cooking.assemble(new SingleRecipeInput(new ItemStack(input))).is(result.asItem()), id + " result");
+		h.assertValueEqual(cooking.cookingTime(), cook.time(), id + " time");
+		h.assertValueEqual(cooking.experience(), xp, id + " xp");
+	}
+
+	private static void crafted(GameTestHelper h, RecipeManager recipes, Block result, CraftingInput input, int count) {
+		Recipe<?> recipe = recipe(recipes, name(result)).orElseThrow(() -> h.assertionException(result + " missing"));
+		ItemStack out = ((CraftingRecipe) recipe).assemble(input);
+		h.assertTrue(out.is(result.asItem()), result + " result, got " + out);
+		h.assertValueEqual(out.getCount(), count, result + " count");
+	}
+
+	private static void stonecut(GameTestHelper h, RecipeManager recipes, Block base, List<Block> results) {
+		for (Block result : results) {
+			String id = name(result) + "_from_" + name(base) + "_stonecutting";
+			Recipe<?> recipe = recipe(recipes, id).orElseThrow(() -> h.assertionException(id + " missing"));
+			h.assertTrue(recipe.getType() == RecipeType.STONECUTTING, id + " type");
+		}
+	}
+
+	private static Optional<Recipe<?>> recipe(RecipeManager recipes, String name) {
+		return recipes.byKey(ResourceKey.create(Registries.RECIPE, RaveCraft.id(name))).map(RecipeHolder::value);
+	}
+
+	private static String name(ItemLike item) {
+		return BuiltInRegistries.ITEM.getKey(item.asItem()).getPath();
+	}
+
+	private static List<ItemStack> copies(ItemLike item, int n) {
+		return Collections.nCopies(n, new ItemStack(item));
 	}
 
 	private static List<ItemStack> drops(GameTestHelper h, BlockState state, ItemStack tool) {

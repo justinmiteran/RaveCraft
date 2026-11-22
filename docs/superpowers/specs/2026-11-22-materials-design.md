@@ -55,7 +55,7 @@ Chaque PR commence par ses propositions visuelles (3 à 4 rendus par modèle ou 
 | D10 | Déblocage d'une recette par n'importe lequel de ses ingrédients | Déblocage par l'ingrédient le plus rare |
 | D11 | Schiste en roche à part entière (poches comme l'andésite) avec sa famille décorative comme le tuf ; le schiste bitumineux reprend sa texture avec des veines de bitume | Schiste bitumineux seul |
 | D12 | Textures du schiste bitumineux et du minerai de néodyme en plusieurs variantes tirées au hasard par bloc (blockstate `variants`), pour un rendu organique sans motif répété | Une texture unique ; rotation aléatoire |
-| D13 | Le fond d'ardoise du minerai de néodyme est la texture `deepslate.png` de Minecraft, copiée sans modification, comme les minerais vanilla (choix de l'utilisateur, exception à la règle « aucune texture Mojang », signalée dans `LICENSE-ASSETS.md`) | Superposition en jeu sur le modèle vanilla ; fond redessiné |
+| D13 | Le fond d'ardoise du minerai de néodyme est la texture `deepslate.png` de Minecraft, copiée sans modification, comme les minerais vanilla ; le lingot de néodyme reprend la forme du lingot de fer vanilla, recolorée (choix de l'utilisateur, exceptions à la règle « aucune texture Mojang », signalées dans `LICENSE-ASSETS.md`) | Superposition en jeu sur le modèle vanilla ; fond et lingot redessinés |
 
 ## 3. Contenu
 
@@ -279,7 +279,7 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
   - minerai de néodyme : 6 variantes, grains lilas (couleur des composés du néodyme) sur l'ardoise des abîmes vanilla (D13) ;
   - schiste poli : dégradés façon blocs polis vanilla (7 teintes proches, lignes claires et sombres alternées, transitions douces), cadre ;
   - briques de schiste : 8×4 en quinconce ; schiste sculpté : onde sonore gravée ;
-  - bitume : morceau noir brillant ; néodyme brut : morceau lilas ; lingot de néodyme : argent (le métal pur) ; silicium : morceau gris-bleu métallique ; plaquette de silicium : disque vu de biais, irisé, sans puces.
+  - bitume : morceau noir brillant ; néodyme brut : morceau lilas ; lingot de néodyme : forme du lingot vanilla, argent (le métal pur) ; silicium : morceau gris-bleu métallique ; plaquette de silicium : disque vu de biais, irisé, sans puces.
 - Modèles des machines dans `art/models`, exportés en JSON de bloc.
 
 ## 10. Mise à jour de la SPEC

@@ -54,7 +54,7 @@ Chaque PR commence par ses propositions visuelles (3 à 4 rendus par modèle ou 
 | D9 | Silicium tiré du quartz du Nether au haut fourneau (réaliste : le silicium industriel vient du quartz) | Minerai de silicium dans la pierre et l'ardoise ; cristal sur les parois des grottes |
 | D10 | Déblocage d'une recette par n'importe lequel de ses ingrédients | Déblocage par l'ingrédient le plus rare |
 | D11 | Schiste en roche à part entière (poches comme l'andésite) avec sa famille décorative comme le tuf ; le schiste bitumineux reprend sa texture avec des veines de bitume | Schiste bitumineux seul |
-| D12 | Textures du schiste bitumineux et du minerai de néodyme en plusieurs variantes tirées au hasard par bloc (blockstate `variants`), pour un rendu organique sans motif répété | Une texture unique ; rotation aléatoire |
+| D12 | Textures du schiste, du schiste bitumineux et du minerai de néodyme en plusieurs variantes tirées au hasard par bloc (blockstate `variants`), pour un rendu organique sans motif répété | Une texture unique ; rotation aléatoire |
 | D13 | Le fond d'ardoise du minerai de néodyme est la texture `deepslate.png` de Minecraft, copiée sans modification, comme les minerais vanilla ; le lingot de néodyme reprend la forme du lingot de fer vanilla, recolorée (choix de l'utilisateur, exceptions à la règle « aucune texture Mojang », signalées dans `LICENSE-ASSETS.md`) | Superposition en jeu sur le modèle vanilla ; fond et lingot redessinés |
 
 ## 3. Contenu
@@ -274,12 +274,14 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 - Propositions avant implémentation (3 à 4 rendus chacune) : minerais et famille du schiste, 4 machines (modèle Blockbench, face `_on` animée, fond d'écran), 23 objets.
 - Textures produites par `tools/textures/gen_textures.py`, palette commune `C`.
 - Choix de 7a (rendus dans `art/proposals/materials-ores/`, non versionnés) :
-  - schiste : gris-bleu, traits obliques organiques ;
-  - schiste bitumineux : 8 variantes, veine de bitume tressée qui traverse, s'arrête, commence ou se coupe, ancrée au bord à la même hauteur pour se raccorder d'un bloc à l'autre ;
-  - minerai de néodyme : 6 variantes, grains lilas (couleur des composés du néodyme) sur l'ardoise des abîmes vanilla (D13) ;
-  - schiste poli : dégradés façon blocs polis vanilla (7 teintes proches, lignes claires et sombres alternées, transitions douces), cadre ;
-  - briques de schiste : 8×4 en quinconce ; schiste sculpté : onde sonore gravée ;
-  - bitume : morceau noir brillant ; néodyme brut : morceau lilas ; lingot de néodyme : forme du lingot vanilla, argent (le métal pur) ; silicium : morceau gris-bleu métallique ; plaquette de silicium : disque vu de biais, irisé, sans puces.
+  - direction artistique : toujours partir des textures vanilla équivalentes (tuf, ardoise des abîmes, minerais, objets bruts), pas de contour noir sur les objets (le bord prend les tons sombres de la matière), 10 couleurs au plus par bloc ;
+  - schiste : 6 variantes, feuilleté, couleurs relevées sur une photo de schiste réel (gris-bleu, gris chaud, rouille, ocre), fentes sombres et bords éclairés, palette commune de 10 couleurs ;
+  - schiste bitumineux : 8 variantes sur le fond du schiste, veine de bitume droite dans le sens des feuillets (1 à 2 pixels, sans coulure), ancrée à la même hauteur pour se raccorder d'un bloc à l'autre ;
+  - minerai de néodyme : 6 variantes, grains lilas moyens sans contour (comme le minerai de fer) sur l'ardoise des abîmes vanilla (D13) ;
+  - schiste poli : dégradés gris-bleu façon tuf poli (8 tons, lignes claires et sombres alternées), cadre discret ;
+  - briques de schiste : 8×4 en quinconce, chaque brique gris-bleu ou brun chaud ; schiste sculpté : onde sonore gravée, creux brun chaud, reliefs gris-bleu ;
+  - bitume : galet de goudron brillant ; néodyme brut : pépites lilas ; lingot de néodyme : forme du lingot vanilla, argent lilas clair ; silicium : morceau gris-bleu taillé ; plaquette de silicium : disque vu de biais, irisé, sans puces.
+- Rendus finaux de 7a : `art/proposals/materials-ores/final/` et `summary_final_v2.png` (non versionnés).
 - Modèles des machines dans `art/models`, exportés en JSON de bloc.
 
 ## 10. Mise à jour de la SPEC

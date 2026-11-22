@@ -145,7 +145,8 @@ Conventions :
 - Textures **16×16 PNG RGBA**, style vanilla : palette limitée, pas de dégradés lisses, ombrage venant du haut-gauche. Animations : bande verticale de frames 16×16 + fichier `.png.mcmeta`.
 - Noms en `snake_case`, égaux à l'id du bloc ou de l'objet (suffixes `_front`, `_side`, `_top`, `_on`).
 - Blockstates, modèles et `assets/<modid>/items/*.json` sont **générés** par le datagen.
-- Référence de style : textures vanilla dans `~/.gradle/caches/fabric-loom/26.3/minecraft-client.jar` (`assets/minecraft/textures/block/`). Lecture locale uniquement : **ne jamais copier de texture Mojang dans le mod**.
+- Référence de style : textures vanilla dans `~/.gradle/caches/fabric-loom/26.3/minecraft-client.jar` (`assets/minecraft/textures/block/` et `item/`). Lecture locale uniquement : **ne jamais copier de texture Mojang dans le mod** (sauf exceptions listées dans `LICENSE-ASSETS.md`).
+- **Toujours partir d'exemples vanilla** : avant de dessiner une texture, extraire les textures vanilla les plus proches, les mesurer (nombre de tons, couleurs du bord, grain), les afficher à côté des propositions et suivre leur direction artistique. Objets : **pas de contour noir**, le bord prend les tons les plus sombres de la matière (plus sombre en bas à droite, plus clair en haut à gauche), 6 à 8 tons proches, lumière en haut à gauche, du grain plutôt que des aplats. Une forme validée se retexture, elle ne se redessine pas.
 - Vérifier visuellement chaque modèle et chaque texture (rendu `blockbench` ou `runClient`) avant de le considérer fini.
 
 ## Façon de travailler

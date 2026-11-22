@@ -16,6 +16,9 @@ public final class ModCreativeTabs {
 					.title(Component.translatable("itemGroup.ravecraft.main"))
 					.icon(() -> new ItemStack(ModBlocks.PORTABLE_SPEAKER))
 					.displayItems((parameters, output) -> {
+						ModBlocks.ores().forEach(output::accept);
+						ModBlocks.shaleFamily().forEach(output::accept);
+						ModItems.materials().forEach(output::accept);
 						output.accept(ModBlocks.PORTABLE_SPEAKER);
 						output.accept(ModBlocks.PARTY_SPEAKER);
 					})

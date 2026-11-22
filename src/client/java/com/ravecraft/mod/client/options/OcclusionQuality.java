@@ -30,20 +30,38 @@ public enum OcclusionQuality implements StringRepresentable {
 		this.caption = Component.translatable("options.ravecraft.occlusionQuality." + serializedName);
 	}
 
+	/**
+	 * How many voxels the occlusion tracer may visit per tick.
+	 *
+	 * @return the voxel budget per tick
+	 */
 	public int voxelsPerTick() {
 		return voxelsPerTick;
 	}
 
-	/** Rays cast by each room probe. */
+	/**
+	 * Rays cast by each room probe.
+	 *
+	 * @return the number of rays per probe
+	 */
 	public int reverbRays() {
 		return reverbRays;
 	}
 
-	/** Voxels the room probes may visit per client tick, shared by the listener's and the speakers' spaces. */
+	/**
+	 * Voxels the room probes may visit per client tick, shared by the listener's and the speakers' spaces.
+	 *
+	 * @return the voxel budget per tick of the room probes
+	 */
 	public int reverbVoxelsPerTick() {
 		return reverbVoxelsPerTick;
 	}
 
+	/**
+	 * The quality's name in the options.
+	 *
+	 * @return the quality's caption
+	 */
 	public Component caption() {
 		return caption;
 	}

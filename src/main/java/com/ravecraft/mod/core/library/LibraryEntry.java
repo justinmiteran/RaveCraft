@@ -4,6 +4,7 @@ import java.nio.file.Path;
 
 /** One line of the music browser: a drive or home folder, a folder, a playlist or a track. */
 public record LibraryEntry(Path path, Kind kind, String name) {
+	/** What the line shows. */
 	public enum Kind {
 		ROOT, FOLDER, PLAYLIST, TRACK
 	}

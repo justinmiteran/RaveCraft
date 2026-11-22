@@ -24,6 +24,11 @@ public final class LibraryFoldersStore {
 		return FabricLoader.getInstance().getConfigDir().resolve("ravecraft-library.json");
 	}
 
+	/**
+	 * The chosen folders, read from their file the first time.
+	 *
+	 * @return the chosen folders
+	 */
 	public static synchronized LibraryFolders get() {
 		if (cached == null) {
 			cached = load();
@@ -31,7 +36,11 @@ public final class LibraryFoldersStore {
 		return cached;
 	}
 
-	/** Keeps {@code folders} at once and saves them off thread, one save after the other. */
+	/**
+	 * Keeps {@code folders} at once and saves them off thread, one save after the other.
+	 *
+	 * @param folders the new chosen folders
+	 */
 	public static synchronized void set(LibraryFolders folders) {
 		cached = folders;
 		Path file = file();

@@ -19,6 +19,7 @@ public final class ClientRelay {
 	private ClientRelay() {
 	}
 
+	/** Registers the receivers of the relayed audio, of the session ends and of what plays. */
 	public static void init() {
 		ReceivedStreams.register();
 		NowPlayingToasts.register();

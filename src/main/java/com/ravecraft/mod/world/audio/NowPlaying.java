@@ -19,30 +19,58 @@ public final class NowPlaying {
 	private NowPlaying() {
 	}
 
-	/** Session {@code sessionId} starts streaming {@code entry}: remembers it and tells the owner. */
+	/**
+	 * Session {@code sessionId} starts streaming {@code entry}: remembers it and tells the owner.
+	 *
+	 * @param owner the player streaming
+	 * @param sessionId the session
+	 * @param pos where the speaker stands
+	 * @param entry the entry played
+	 */
 	public static void start(ServerPlayer owner, int sessionId, BlockPos pos, QueueEntry entry) {
 		NOTICES.open(sessionId, NowPlayingPayload.of(sessionId, pos, entry));
 		tell(owner, sessionId);
 	}
 
-	/** Tells {@code player} what session {@code sessionId} plays, unless they were already told. */
+	/**
+	 * Tells {@code player} what session {@code sessionId} plays, unless they were already told.
+	 *
+	 * @param player the player
+	 * @param sessionId the session
+	 */
 	public static void tell(ServerPlayer player, int sessionId) {
 		NOTICES.firstFor(sessionId, player.getUUID()).ifPresent(notice -> Net.send(player, notice));
 	}
 
+	/**
+	 * The notice of session {@code sessionId}, while it plays.
+	 *
+	 * @param sessionId the session
+	 * @return the notice, or empty
+	 */
 	public static Optional<NowPlayingPayload> of(int sessionId) {
 		return NOTICES.get(sessionId);
 	}
 
-	/** {@code player} left: tell them again if they come back while the same sessions play. */
+	/**
+	 * {@code player} left: tell them again if they come back while the same sessions play.
+	 *
+	 * @param player the player who left
+	 */
 	public static void forget(UUID player) {
 		NOTICES.forget(player);
 	}
 
+	/**
+	 * Session {@code sessionId} stopped: forgets its notice.
+	 *
+	 * @param sessionId the session
+	 */
 	public static void end(int sessionId) {
 		NOTICES.end(sessionId);
 	}
 
+	/** Forgets every notice (server stop). */
 	public static void clear() {
 		NOTICES.clear();
 	}

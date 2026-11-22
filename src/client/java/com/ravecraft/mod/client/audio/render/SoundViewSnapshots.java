@@ -22,17 +22,30 @@ public final class SoundViewSnapshots {
 	private SoundViewSnapshots() {
 	}
 
-	/** The last path traced for each audible speaker, loudest first. */
+	/**
+	 * The last path traced for each audible speaker, loudest first.
+	 *
+	 * @return the paths, loudest first
+	 */
 	public static Collection<PathView> paths() {
 		return PATHS_VIEW;
 	}
 
-	/** The last room measured around the listener, or null. */
+	/**
+	 * The last room measured around the listener, or null.
+	 *
+	 * @return the listener's room, or null
+	 */
 	public static @Nullable RoomView listenerRoom() {
 		return listenerRoom;
 	}
 
-	/** The last room measured around the speaker of reverb slot {@code slot} (0 or 1), or null. */
+	/**
+	 * The last room measured around the speaker of reverb slot {@code slot} (0 or 1), or null.
+	 *
+	 * @param slot the reverb slot, 0 or 1
+	 * @return the room of that slot's speaker, or null
+	 */
 	public static @Nullable RoomView slotRoom(int slot) {
 		return SLOT_ROOMS[slot];
 	}

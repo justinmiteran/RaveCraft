@@ -1,5 +1,6 @@
 package com.ravecraft.mod.core.audio.decode;
 
+import com.ravecraft.mod.core.audio.Pcm16;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,16 +13,23 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 /** WAV through {@code javax.sound.sampled}, converted to 16-bit signed little-endian whatever the source depth. */
 final class WavDecoder implements PcmDecoder {
+	private static final int TARGET_BITS = 16;
 	private final AudioInputStream stream;
 	private final PcmFormat format;
 
+	/**
+	 * Opens {@code file} through a stream converting it to 16-bit signed little-endian.
+	 *
+	 * @param file the WAV file
+	 * @throws IOException when the file cannot be read or its format is not supported
+	 */
 	WavDecoder(Path file) throws IOException {
 		InputStream raw = new BufferedInputStream(Files.newInputStream(file));
 		try {
 			AudioInputStream source = AudioSystem.getAudioInputStream(raw);
 			AudioFormat in = source.getFormat();
-			AudioFormat target = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, in.getSampleRate(), 16,
-					in.getChannels(), in.getChannels() * 2, in.getSampleRate(), false);
+			AudioFormat target = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, in.getSampleRate(), TARGET_BITS,
+					in.getChannels(), in.getChannels() * Pcm16.SAMPLE_BYTES, in.getSampleRate(), false);
 			this.stream = AudioSystem.getAudioInputStream(target, source);
 			this.format = new PcmFormat(Math.round(in.getSampleRate()), in.getChannels());
 		} catch (UnsupportedAudioFileException | IllegalArgumentException e) {

@@ -12,15 +12,30 @@ public final class EchoRamp {
 	private double delay;
 	private double gain;
 
+	/**
+	 * The delay applied now.
+	 *
+	 * @return the delay, in seconds
+	 */
 	public double delaySeconds() {
 		return delay;
 	}
 
+	/**
+	 * The gain applied now.
+	 *
+	 * @return the gain
+	 */
 	public double gain() {
 		return gain;
 	}
 
-	/** Advances by {@code dtMs} toward {@code target}. {@link Echo#NONE} (or no gain) only fades the gain out. */
+	/**
+	 * Advances by {@code dtMs} toward {@code target}. {@link Echo#NONE} (or no gain) only fades the gain out.
+	 *
+	 * @param target the echo to reach
+	 * @param dtMs the time elapsed, in milliseconds
+	 */
 	public void step(Echo target, double dtMs) {
 		boolean silent = target.gain() <= 0 || target.delaySeconds() <= 0;
 		double goal = silent ? 0 : target.gain();

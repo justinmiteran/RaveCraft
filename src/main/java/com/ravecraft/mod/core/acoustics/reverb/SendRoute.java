@@ -10,14 +10,30 @@ public final class SendRoute {
 	private int slot = LISTENER;
 	private double gain = 1.0;
 
+	/**
+	 * The slot the send goes to now.
+	 *
+	 * @return the slot index
+	 */
 	public int slot() {
 		return slot;
 	}
 
+	/**
+	 * The send's gain now, from 0 to 1.
+	 *
+	 * @return the gain, 0 to 1
+	 */
 	public double gain() {
 		return gain;
 	}
 
+	/**
+	 * Advances by {@code dtMs} toward {@code targetSlot}: fades out, switches, then fades back in.
+	 *
+	 * @param targetSlot the slot to reach
+	 * @param dtMs the time elapsed, in milliseconds
+	 */
 	public void step(int targetSlot, double dtMs) {
 		if (!(dtMs > 0)) {
 			return;

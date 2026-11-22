@@ -1,5 +1,6 @@
 package com.ravecraft.mod.core.audio.stream;
 
+import com.ravecraft.mod.core.audio.Pcm16;
 import com.ravecraft.mod.core.audio.opus.OpusMonoDecoder;
 import com.ravecraft.mod.core.audio.stream.JitterBuffer.Audio;
 import com.ravecraft.mod.core.audio.stream.JitterBuffer.Lost;
@@ -21,11 +22,22 @@ public final class StreamPlayout {
 	/** Blocks served since a finished stream ran out of frames. */
 	private int blocksAfterEmpty;
 
+	/**
+	 * Creates an empty playout.
+	 *
+	 * @param nowMillis the current time, from which idleness is measured
+	 */
 	public StreamPlayout(long nowMillis) {
 		this.lastOfferMillis = nowMillis;
 	}
 
-	/** Adds chunk {@code seq}; its frames are numbered from {@code seq * FRAMES_PER_CHUNK}. */
+	/**
+	 * Adds chunk {@code seq}; its frames are numbered from {@code seq * FRAMES_PER_CHUNK}.
+	 *
+	 * @param seq the chunk's sequence number
+	 * @param frames the chunk's encoded frames
+	 * @param nowMillis the current time, in milliseconds
+	 */
 	public synchronized void offer(int seq, List<byte[]> frames, long nowMillis) {
 		buffer.offer((long) seq * StreamFormat.FRAMES_PER_CHUNK, frames);
 		lastOfferMillis = nowMillis;
@@ -34,7 +46,11 @@ public final class StreamPlayout {
 		}
 	}
 
-	/** Exactly {@link StreamFormat#CHUNK_SAMPLES} samples of 16-bit little-endian mono PCM. */
+	/**
+	 * Exactly {@link StreamFormat#CHUNK_SAMPLES} samples of 16-bit little-endian mono PCM.
+	 *
+	 * @return the PCM block
+	 */
 	public synchronized byte[] nextBlock() {
 		byte[] out = new byte[StreamFormat.CHUNK_SAMPLES * 2];
 		if (finished && buffer.bufferedFrames() == 0) {
@@ -51,16 +67,19 @@ public final class StreamPlayout {
 			} else {
 				continue;
 			}
-			int base = f * StreamFormat.FRAME_SAMPLES * 2;
+			int base = f * StreamFormat.FRAME_SAMPLES * Pcm16.SAMPLE_BYTES;
 			for (int i = 0; i < pcm.length; i++) {
-				out[base + i * 2] = (byte) pcm[i];
-				out[base + i * 2 + 1] = (byte) (pcm[i] >> 8);
+				Pcm16.put(out, base + i * Pcm16.SAMPLE_BYTES, pcm[i]);
 			}
 		}
 		return out;
 	}
 
-	/** How the stream is doing, for the debug screen. */
+	/**
+	 * How the stream is doing, for the debug screen.
+	 *
+	 * @return the stream's statistics
+	 */
 	public synchronized PlayoutStats stats() {
 		return new PlayoutStats(buffer.bufferedFrames() * StreamFormat.FRAME_MS, buffer.underruns(),
 				buffer.lostFrames(), receivedBytes);
@@ -75,12 +94,20 @@ public final class StreamPlayout {
 	/**
 	 * True once {@link #finish()} was called and everything buffered has been played, including the
 	 * {@link #TAIL_BLOCKS} blocks the sound engine may still have queued.
+	 *
+	 * @return true once everything has been played
 	 */
 	public synchronized boolean isDrained() {
 		return finished && buffer.bufferedFrames() == 0 && blocksAfterEmpty >= TAIL_BLOCKS;
 	}
 
-	/** True when nothing arrived during the last {@code millis}. */
+	/**
+	 * True when nothing arrived during the last {@code millis}.
+	 *
+	 * @param millis the idle time, in milliseconds
+	 * @param nowMillis the current time, in milliseconds
+	 * @return true when nothing arrived meanwhile
+	 */
 	public synchronized boolean idleFor(long millis, long nowMillis) {
 		return nowMillis - lastOfferMillis >= millis;
 	}

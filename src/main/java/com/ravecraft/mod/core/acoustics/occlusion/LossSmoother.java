@@ -9,6 +9,7 @@ package com.ravecraft.mod.core.acoustics.occlusion;
 public final class LossSmoother {
 	/** The finite loss a ramp to or from mute passes through. */
 	public static final double MUTE_DB = 120;
+	private static final double MIN_RAMP_MS = 1e-9;
 
 	private final double rampMs;
 	private boolean started;
@@ -17,11 +18,22 @@ public final class LossSmoother {
 	/** dB per ms toward the current target. */
 	private double rate;
 
+	/**
+	 * Creates a smoother.
+	 *
+	 * @param rampMs how long a change of target takes to reach
+	 */
 	public LossSmoother(double rampMs) {
-		this.rampMs = Math.max(rampMs, 1e-9);
+		this.rampMs = Math.max(rampMs, MIN_RAMP_MS);
 	}
 
-	/** The smoothed loss after {@code dtMs} more milliseconds toward {@code target}. */
+	/**
+	 * The smoothed loss after {@code dtMs} more milliseconds toward {@code target}.
+	 *
+	 * @param target the loss to reach, in decibels
+	 * @param dtMs the time elapsed, in milliseconds
+	 * @return the smoothed loss, in decibels
+	 */
 	public double step(double target, double dtMs) {
 		if (Double.isNaN(target)) {
 			target = 0;

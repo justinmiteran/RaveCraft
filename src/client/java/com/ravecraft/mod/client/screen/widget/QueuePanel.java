@@ -32,12 +32,25 @@ public final class QueuePanel extends RowList {
 	private final BlockPos pos;
 	private List<Row> rows = List.of();
 
+	/**
+	 * The queue of the speaker at {@code pos}.
+	 *
+	 * @param x the panel's left edge
+	 * @param y the panel's top
+	 * @param width the panel's width
+	 * @param height the panel's height
+	 * @param pos where the speaker stands
+	 */
 	public QueuePanel(int x, int y, int width, int height, BlockPos pos) {
 		super(x, y, width, height, ROW_H, Component.translatable(SpeakerSprites.KEY + "queue"));
 		this.pos = pos;
 	}
 
-	/** Rebuilds the rows from a new state; the scroll position is kept while it still fits. */
+	/**
+	 * Rebuilds the rows from a new state; the scroll position is kept while it still fits.
+	 *
+	 * @param state the speaker's new state, or null
+	 */
 	public void show(@Nullable SpeakerStatePayload state) {
 		List<Row> built = new ArrayList<>();
 		if (state != null) {
@@ -150,6 +163,7 @@ public final class QueuePanel extends RowList {
 		graphics.text(font, label, centre - labelW / 2, rowY + 2, SEPARATOR, false);
 	}
 
+	/** Draws the entry of {@code row}: its title and its owner, dimmed when the owner is offline. */
 	private void drawEntry(GuiGraphicsExtractor graphics, Font font, Row row, int left, int end, int rowY) {
 		StateEntry entry = row.entry();
 		int textY = rowY + 2;

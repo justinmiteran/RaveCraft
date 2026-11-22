@@ -63,12 +63,19 @@ public final class BlockAcoustics {
 		}
 	}
 
+	/** What a block state is made of and how much of its voxel it fills along each axis. */
 	private record Entry(@Nullable AcousticMaterial material, double fillX, double fillY, double fillZ) {
 	}
 
 	/** Where a block state's collision shape comes from. */
 	@FunctionalInterface
 	public interface ShapeSource {
+		/**
+		 * The collision shape of {@code state}.
+		 *
+		 * @param state the block state
+		 * @return the shape
+		 */
 		VoxelShape shape(BlockState state);
 	}
 
@@ -80,21 +87,43 @@ public final class BlockAcoustics {
 	private final ShapeSource shapes;
 	private final Map<BlockState, Entry> cache = new ConcurrentHashMap<>();
 
+	/**
+	 * With the materials of {@code settings} and the blocks' collision shapes.
+	 *
+	 * @param settings the occlusion settings
+	 */
 	public BlockAcoustics(OcclusionSettings settings) {
 		this(settings, COLLISION);
 	}
 
-	/** With the shapes taken from {@code shapes} instead of the collision shapes (for tests). */
+	/**
+	 * With the shapes taken from {@code shapes} instead of the collision shapes (for tests).
+	 *
+	 * @param settings the occlusion settings
+	 * @param shapes gives each state's shape
+	 */
 	public BlockAcoustics(OcclusionSettings settings, ShapeSource shapes) {
 		this.settings = settings;
 		this.shapes = shapes;
 	}
 
+	/**
+	 * The material of {@code state}, or null when sound goes through it.
+	 *
+	 * @param state the block state
+	 * @return the material, or null
+	 */
 	public @Nullable AcousticMaterial material(BlockState state) {
 		return entry(state).material();
 	}
 
-	/** How much of the voxel the block fills seen along {@code axis}, 0 to 1. */
+	/**
+	 * How much of the voxel the block fills seen along {@code axis}, 0 to 1.
+	 *
+	 * @param state the block state
+	 * @param axis the axis of the ray
+	 * @return the fill, 0 to 1
+	 */
 	public double fill(BlockState state, Direction.Axis axis) {
 		Entry e = entry(state);
 		return switch (axis) {
@@ -107,6 +136,11 @@ public final class BlockAcoustics {
 	/**
 	 * Fills {@code out} with the state's material and fills, and its own medium as {@code media} resolves it
 	 * ({@link MediumResolver#voxelMedium}): {@code dimension} must come from the same settings.
+	 *
+	 * @param state the block state
+	 * @param media resolves the mediums
+	 * @param dimension the dimension's medium
+	 * @param out receives the voxel
 	 */
 	public void sample(BlockState state, MediumResolver media, AcousticMedium dimension, VoxelSample out) {
 		Entry e = entry(state);
@@ -117,6 +151,7 @@ public final class BlockAcoustics {
 		out.medium = media.voxelMedium(state.getFluidState(), e.material() != null, dimension);
 	}
 
+	/** Forgets what it learned about each state, so that changed tags apply. */
 	public void clearCache() {
 		cache.clear();
 	}
@@ -130,6 +165,7 @@ public final class BlockAcoustics {
 		return e;
 	}
 
+	/** Works out the material and fills of {@code state}: its tag, else its footstep sound, else stone. */
 	private Entry compute(BlockState state) {
 		VoxelShape shape;
 		try {
@@ -142,27 +178,29 @@ public final class BlockAcoustics {
 			}
 			shape = Shapes.block();
 		}
-		AcousticMaterial material = null;
-		for (AcousticMaterial m : settings.materials()) {
-			if (state.is(AcousticTags.material(m.name()))) {
-				material = m;
-				break;
-			}
-		}
-		if (material == null && !shape.isEmpty()) {
-			// Footstep sounds only count for blocks with a collision shape: grass and torches are not obstacles.
-			String name = BY_SOUND.get(state.getSoundType());
-			material = name == null ? null : named(name);
-			if (material == null) {
-				material = named("stone");
-			}
-		}
+		AcousticMaterial material = material(state, shape);
 		if (material == null) {
 			return new Entry(null, 0, 0, 0);
 		}
 		List<AABB> boxes = shape.toAabbs();
 		return new Entry(material, fill(boxes, Direction.Axis.X), fill(boxes, Direction.Axis.Y),
 				fill(boxes, Direction.Axis.Z));
+	}
+
+	/** The material of {@code state}: its tag, else its footstep sound when it has a {@code shape}, else stone. */
+	private @Nullable AcousticMaterial material(BlockState state, VoxelShape shape) {
+		for (AcousticMaterial m : settings.materials()) {
+			if (state.is(AcousticTags.material(m.name()))) {
+				return m;
+			}
+		}
+		if (shape.isEmpty()) {
+			return null;
+		}
+		// Footstep sounds only count for blocks with a collision shape: grass and torches are not obstacles.
+		String name = BY_SOUND.get(state.getSoundType());
+		AcousticMaterial material = name == null ? null : named(name);
+		return material != null ? material : named("stone");
 	}
 
 	private @Nullable AcousticMaterial named(String name) {
@@ -174,13 +212,13 @@ public final class BlockAcoustics {
 		return null;
 	}
 
+	/** How much of the voxel {@code boxes} fill seen along {@code axis}: 1 for a sealing panel. */
 	private static double fill(List<AABB> boxes, Direction.Axis axis) {
 		Direction.Axis b = axis == Direction.Axis.X ? Direction.Axis.Y : Direction.Axis.X;
 		Direction.Axis c = axis == Direction.Axis.Z ? Direction.Axis.Y : Direction.Axis.Z;
 		double volume = 0;
 		for (AABB box : boxes) {
-			boolean inside = box.minX >= -EPSILON && box.minY >= -EPSILON && box.minZ >= -EPSILON
-					&& box.maxX <= 1 + EPSILON && box.maxY <= 1 + EPSILON && box.maxZ <= 1 + EPSILON;
+			boolean inside = startsInside(box) && endsInside(box);
 			boolean spans = box.min(b) <= EPSILON && box.max(b) >= 1 - EPSILON
 					&& box.min(c) <= EPSILON && box.max(c) >= 1 - EPSILON;
 			double thickness = box.max(axis) - box.min(axis);
@@ -192,6 +230,16 @@ public final class BlockAcoustics {
 			volume += clippedVolume(box);
 		}
 		return Math.min(volume, 1);
+	}
+
+	/** Whether {@code box} starts inside the voxel on every axis. */
+	private static boolean startsInside(AABB box) {
+		return box.minX >= -EPSILON && box.minY >= -EPSILON && box.minZ >= -EPSILON;
+	}
+
+	/** Whether {@code box} ends inside the voxel on every axis. */
+	private static boolean endsInside(AABB box) {
+		return box.maxX <= 1 + EPSILON && box.maxY <= 1 + EPSILON && box.maxZ <= 1 + EPSILON;
 	}
 
 	/** The volume of the part of the box inside the unit cube. */

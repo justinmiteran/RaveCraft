@@ -50,32 +50,56 @@ public final class RaveCraftOptions {
 	private RaveCraftOptions() {
 	}
 
-	/** RaveCraft volume, 0 to 1, on top of the master and "Jukebox/Note Blocks" volumes. */
+	/**
+	 * RaveCraft volume, 0 to 1, on top of the master and "Jukebox/Note Blocks" volumes.
+	 *
+	 * @return the volume option
+	 */
 	public static OptionInstance<Double> volume() {
 		return VOLUME;
 	}
 
-	/** How many speakers this player hears at once (2 to 32). */
+	/**
+	 * How many speakers this player hears at once (2 to 32).
+	 *
+	 * @return the option of how many speakers are heard
+	 */
 	public static OptionInstance<Integer> maxSources() {
 		return MAX_SOURCES;
 	}
 
-	/** Whether the EFX filter is used: air absorption and treble muffled through blocks. */
+	/**
+	 * Whether the EFX filter is used: air absorption and treble muffled through blocks.
+	 *
+	 * @return the acoustic effects option
+	 */
 	public static OptionInstance<Boolean> acousticEffects() {
 		return ACOUSTIC_EFFECTS;
 	}
 
-	/** How much tracing is spent per tick finding how sound gets through and around blocks. */
+	/**
+	 * How much tracing is spent per tick finding how sound gets through and around blocks.
+	 *
+	 * @return the occlusion quality option
+	 */
 	public static OptionInstance<OcclusionQuality> occlusionQuality() {
 		return OCCLUSION_QUALITY;
 	}
 
-	/** Which RaveCraft toasts show: all, errors only, or none. */
+	/**
+	 * Which RaveCraft toasts show: all, errors only, or none.
+	 *
+	 * @return the notifications option
+	 */
 	public static OptionInstance<NotificationLevel> notifications() {
 		return NOTIFICATIONS;
 	}
 
-	/** Loads or saves the options, from the {@code Options.processOptions} mixin. */
+	/**
+	 * Loads or saves the options, from the {@code Options.processOptions} mixin.
+	 *
+	 * @param access reads or writes each option
+	 */
 	public static void process(Options.FieldAccess access) {
 		access.process("ravecraft_volume", VOLUME);
 		access.process("ravecraft_maxSources", MAX_SOURCES);

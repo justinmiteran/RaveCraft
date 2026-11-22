@@ -11,6 +11,12 @@ public final class Chorus {
 	private static final double BASE_DELAY_MS = 8;
 	private static final double MAX_DEPTH_MS = 10;
 	private static final double GLIDE_MS = 200;
+	private static final double MS_PER_SECOND = 1000;
+	/** Spare samples at the end of the delay line, beyond the deepest tap. */
+	private static final int LINE_SLACK = 64;
+	private static final double MIN_RATE_HZ = 0.05;
+	private static final double MAX_RATE_HZ = 5;
+	private static final double TWO_PI = 2 * Math.PI;
 
 	private final double sampleRate;
 	private final float[] line;
@@ -21,59 +27,93 @@ public final class Chorus {
 	private double rateHz = 0.4;
 	private double depthMs = 1.5;
 
+	/**
+	 * Creates a silent chorus.
+	 *
+	 * @param sampleRate the stream's sample rate in hertz
+	 */
 	public Chorus(double sampleRate) {
 		this.sampleRate = sampleRate;
-		this.line = new float[(int) Math.ceil((BASE_DELAY_MS + MAX_DEPTH_MS) * sampleRate / 1000) + 64];
-		this.mixStep = 1000 / (GLIDE_MS * sampleRate);
+		this.line = new float[(int) Math.ceil((BASE_DELAY_MS + MAX_DEPTH_MS) * sampleRate / MS_PER_SECOND)
+				+ LINE_SLACK];
+		this.mixStep = MS_PER_SECOND / (GLIDE_MS * sampleRate);
 	}
 
-	/** Processes {@code count} samples in place; active when {@code fluid} is non-null and has its chorus on. */
+	/**
+	 * Processes {@code count} samples in place; active when {@code fluid} is non-null and has its chorus on.
+	 *
+	 * @param samples the samples to process
+	 * @param count how many samples to process
+	 * @param fluid the fluid's reverb, or null
+	 */
 	public void process(float[] samples, int count, @Nullable FluidReverb fluid) {
 		boolean active = fluid != null && fluid.chorus();
 		if (active) {
-			double rate = fluid.chorusRateHz();
-			double depth = fluid.chorusDepthMs();
-			rateHz = Double.isFinite(rate) ? Math.clamp(rate, 0.05, 5) : 0.05;
-			// The tap may never reach the write head, so the depth stops one sample short of the base delay.
-			double maxDepth = Math.min(MAX_DEPTH_MS, BASE_DELAY_MS - 1000 / sampleRate);
-			depthMs = Double.isFinite(depth) ? Math.clamp(depth, 0, maxDepth) : 0;
+			configure(fluid);
 		}
 		if (!active && mix <= 0) {
-			// Idle: only keep the line current.
-			for (int i = 0; i < count; i++) {
-				line[write] = samples[i];
-				write = write + 1 == line.length ? 0 : write + 1;
-			}
+			idle(samples, count);
 			return;
 		}
 		double target = active ? 1 : 0;
-		double phaseStep = 2 * Math.PI * rateHz / sampleRate;
-		double base = BASE_DELAY_MS * sampleRate / 1000;
-		double depth = depthMs * sampleRate / 1000;
-		int n = line.length;
+		double phaseStep = TWO_PI * rateHz / sampleRate;
+		double base = BASE_DELAY_MS * sampleRate / MS_PER_SECOND;
+		double depth = depthMs * sampleRate / MS_PER_SECOND;
 		for (int i = 0; i < count; i++) {
 			float dry = samples[i];
 			line[write] = dry;
-			double delay = Math.clamp(base + depth * Math.sin(phase), 1, n - 2);
-			double pos = write - delay;
-			if (pos < 0) {
-				pos += n;
-			}
-			int i0 = (int) pos;
-			double frac = pos - i0;
-			int i1 = i0 + 1 == n ? 0 : i0 + 1;
-			float wet = (float) (line[i0] * (1 - frac) + line[i1] * frac);
+			float wet = tap(Math.clamp(base + depth * Math.sin(phase), 1, line.length - 2));
 			samples[i] = (float) (dry * (1 - mix) + wet * mix);
-			write = write + 1 == n ? 0 : write + 1;
+			write = next(write);
 			phase += phaseStep;
-			if (phase > 2 * Math.PI) {
-				phase -= 2 * Math.PI;
+			if (phase > TWO_PI) {
+				phase -= TWO_PI;
 			}
-			if (mix < target) {
-				mix = Math.min(target, mix + mixStep);
-			} else if (mix > target) {
-				mix = Math.max(target, mix - mixStep);
-			}
+			glide(target);
 		}
+	}
+
+	/** Takes the rate and depth of {@code fluid}, bounded. */
+	private void configure(FluidReverb fluid) {
+		double rate = fluid.chorusRateHz();
+		double depth = fluid.chorusDepthMs();
+		rateHz = Double.isFinite(rate) ? Math.clamp(rate, MIN_RATE_HZ, MAX_RATE_HZ) : MIN_RATE_HZ;
+		// The tap may never reach the write head, so the depth stops one sample short of the base delay.
+		double maxDepth = Math.min(MAX_DEPTH_MS, BASE_DELAY_MS - MS_PER_SECOND / sampleRate);
+		depthMs = Double.isFinite(depth) ? Math.clamp(depth, 0, maxDepth) : 0;
+	}
+
+	/** Only keeps the line current. */
+	private void idle(float[] samples, int count) {
+		for (int i = 0; i < count; i++) {
+			line[write] = samples[i];
+			write = next(write);
+		}
+	}
+
+	/** The line read {@code delay} samples behind the write head, interpolated. */
+	private float tap(double delay) {
+		int n = line.length;
+		double pos = write - delay;
+		if (pos < 0) {
+			pos += n;
+		}
+		int i0 = (int) pos;
+		double frac = pos - i0;
+		int i1 = next(i0);
+		return (float) (line[i0] * (1 - frac) + line[i1] * frac);
+	}
+
+	/** Moves the mix one step toward {@code target}. */
+	private void glide(double target) {
+		if (mix < target) {
+			mix = Math.min(target, mix + mixStep);
+		} else if (mix > target) {
+			mix = Math.max(target, mix - mixStep);
+		}
+	}
+
+	private int next(int index) {
+		return index + 1 == line.length ? 0 : index + 1;
 	}
 }

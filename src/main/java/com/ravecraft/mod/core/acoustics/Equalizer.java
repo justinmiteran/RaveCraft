@@ -16,9 +16,16 @@ public final class Equalizer {
 	private double z1;
 	private double z2;
 
+	/**
+	 * Creates the filter; a gain of 0 dB bypasses it.
+	 *
+	 * @param sampleRate the stream's sample rate in hertz
+	 * @param shelfHz the shelf's corner frequency in hertz
+	 * @param gainDb the bass gain in decibels, negative to cut
+	 */
 	public Equalizer(double sampleRate, double shelfHz, double gainDb) {
 		this.bypass = gainDb == 0;
-		double a = Math.pow(10, gainDb / 40);
+		double a = Decibels.toAmplitude(gainDb / 2);
 		double w0 = 2 * Math.PI * shelfHz / sampleRate;
 		double c = Math.cos(w0);
 		double alpha = Math.sin(w0) / (2 * Q);
@@ -27,11 +34,16 @@ public final class Equalizer {
 		this.b0 = a * ((a + 1) - (a - 1) * c + k) / a0;
 		this.b1 = 2 * a * ((a - 1) - (a + 1) * c) / a0;
 		this.b2 = a * ((a + 1) - (a - 1) * c - k) / a0;
-		this.a1 = -2 * ((a - 1) + (a + 1) * c) / a0;
+		this.a1 = -(2 * ((a - 1) + (a + 1) * c)) / a0;
 		this.a2 = ((a + 1) + (a - 1) * c - k) / a0;
 	}
 
-	/** Filters the first {@code count} samples in place; the output stays within [−1, 1]. */
+	/**
+	 * Filters the first {@code count} samples in place; the output stays within [−1, 1].
+	 *
+	 * @param samples the samples to filter
+	 * @param count how many samples to filter
+	 */
 	public void process(float[] samples, int count) {
 		if (bypass) {
 			return;

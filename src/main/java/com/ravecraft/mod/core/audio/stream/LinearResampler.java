@@ -14,6 +14,11 @@ public final class LinearResampler {
 	private short last;
 	private boolean started;
 
+	/**
+	 * Creates a resampler.
+	 *
+	 * @param fromRate the input sample rate, positive
+	 */
 	public LinearResampler(int fromRate) {
 		if (fromRate <= 0) {
 			throw new IllegalArgumentException("Invalid sample rate " + fromRate);
@@ -22,6 +27,13 @@ public final class LinearResampler {
 		this.identity = fromRate == StreamFormat.SAMPLE_RATE;
 	}
 
+	/**
+	 * Resamples the next block.
+	 *
+	 * @param in the input samples
+	 * @param length the samples of {@code in} to read
+	 * @return the output samples; their count varies from block to block
+	 */
 	public short[] process(short[] in, int length) {
 		if (identity) {
 			return Arrays.copyOf(in, length);

@@ -23,6 +23,12 @@ import java.util.Optional;
 public final class LibraryIndex {
 	/** The chosen folders and the excluded ones an index was built for. */
 	public record Scope(List<Path> roots, List<Path> excluded) {
+		/**
+		 * Copies the lists, so the scope never changes.
+		 *
+		 * @param excluded the excluded folders
+		 * @param roots the chosen folders
+		 */
 		public Scope {
 			roots = List.copyOf(roots);
 			excluded = List.copyOf(excluded);
@@ -36,6 +42,8 @@ public final class LibraryIndex {
 
 	/** The most entries kept; a walk stops there and the index is then {@link #truncated()}. */
 	public static final int LIMIT = 50_000;
+	/** Each entry line starts with a one-letter kind and a space. */
+	private static final int ENTRY_PREFIX = 2;
 
 	private static final String HEADER = "ravecraft-library-index 1";
 	private static final Comparator<SourceNode> BY_NAME =
@@ -50,19 +58,39 @@ public final class LibraryIndex {
 	private boolean truncated;
 	private int version;
 
+	/**
+	 * An empty index for {@code scope}.
+	 *
+	 * @param scope the folders to index
+	 */
 	public LibraryIndex(Scope scope) {
 		this.scope = scope;
 	}
 
+	/**
+	 * An empty index for these chosen and excluded folders.
+	 *
+	 * @param roots the chosen folders
+	 * @param excluded the excluded folders
+	 */
 	public LibraryIndex(List<Path> roots, List<Path> excluded) {
 		this(new Scope(roots, excluded));
 	}
 
+	/**
+	 * The folders the index was built for.
+	 *
+	 * @return the scope
+	 */
 	public Scope scope() {
 		return scope;
 	}
 
-	/** Adds a batch found by the walk. */
+	/**
+	 * Adds a batch found by the walk.
+	 *
+	 * @param batch the entries found
+	 */
 	public void add(List<SourceNode> batch) {
 		for (SourceNode node : batch) {
 			entries.add(node);
@@ -74,32 +102,58 @@ public final class LibraryIndex {
 		version++;
 	}
 
-	/** Marks the walk over; {@code truncated} when it stopped at {@link #LIMIT}. */
+	/**
+	 * Marks the walk over; {@code truncated} when it stopped at {@link #LIMIT}.
+	 *
+	 * @param truncated true when the walk stopped at the limit
+	 */
 	public void finish(boolean truncated) {
 		complete = true;
 		this.truncated = truncated;
 		version++;
 	}
 
-	/** True once a walk of the whole scope ended; until then the counts are partial. */
+	/**
+	 * True once a walk of the whole scope ended; until then the counts are partial.
+	 *
+	 * @return true once the walk is complete
+	 */
 	public boolean complete() {
 		return complete;
 	}
 
+	/**
+	 * Whether the walk stopped at {@link #LIMIT} entries.
+	 *
+	 * @return true when the walk was truncated
+	 */
 	public boolean truncated() {
 		return truncated;
 	}
 
-	/** Changes on every change, so a view knows when to rebuild. */
+	/**
+	 * Changes on every change, so a view knows when to rebuild.
+	 *
+	 * @return the version
+	 */
 	public int version() {
 		return version;
 	}
 
+	/**
+	 * The entries indexed so far.
+	 *
+	 * @return the number of entries
+	 */
 	public int size() {
 		return entries.size();
 	}
 
-	/** The tracks and playlists sorted by name; the same list is returned until something is added. */
+	/**
+	 * The tracks and playlists sorted by name; the same list is returned until something is added.
+	 *
+	 * @return the entries sorted by name
+	 */
 	public List<SourceNode> entries() {
 		if (!sorted) {
 			entries.sort(BY_NAME);
@@ -111,7 +165,12 @@ public final class LibraryIndex {
 		return view;
 	}
 
-	/** The tracks under the folder {@code id} (its path), subfolders included. */
+	/**
+	 * The tracks under the folder {@code id} (its path), subfolders included.
+	 *
+	 * @param id the folder's path
+	 * @return the number of tracks
+	 */
 	public int countUnder(String id) {
 		return counts.getOrDefault(key(id), 0);
 	}
@@ -119,6 +178,10 @@ public final class LibraryIndex {
 	/**
 	 * Up to {@code max} tracks under the folder {@code id}, subfolders included: a folder's own tracks by name, then
 	 * each subfolder's in name order, depth first.
+	 *
+	 * @param id the folder's path
+	 * @param max the most tracks to return
+	 * @return the tracks
 	 */
 	public List<Path> tracksUnder(String id, int max) {
 		Optional<Path> folder = path(id);
@@ -126,6 +189,7 @@ public final class LibraryIndex {
 			return List.of();
 		}
 		List<String> base = parts(folder.get());
+		/** A track found under the folder, with its path parts below it. */
 		record Found(Path path, List<String> parts) {
 		}
 		List<Found> found = new ArrayList<>();
@@ -177,6 +241,9 @@ public final class LibraryIndex {
 	/**
 	 * A copy holding only what {@code newScope} still covers. It stays complete only for the same scope: a folder
 	 * added since was never walked.
+	 *
+	 * @param newScope the folders still indexed
+	 * @return the restricted copy
 	 */
 	public LibraryIndex restrictTo(Scope newScope) {
 		LibraryIndex copy = new LibraryIndex(newScope);
@@ -194,7 +261,11 @@ public final class LibraryIndex {
 		return copy;
 	}
 
-	/** Saves the index as text: a header, the scope, then one line per entry. */
+	/**
+	 * Saves the index as text: a header, the scope, then one line per entry.
+	 *
+	 * @param out where the text goes
+	 */
 	public void write(Writer out) throws IOException {
 		out.write(HEADER + "\n");
 		out.write((complete ? "complete" : "partial") + " " + truncated + "\n");
@@ -209,7 +280,12 @@ public final class LibraryIndex {
 		}
 	}
 
-	/** Reads an index written by {@link #write}; empty when the text is not one. */
+	/**
+	 * Reads an index written by {@link #write}; empty when the text is not one.
+	 *
+	 * @param in the saved text
+	 * @return the index, or empty
+	 */
 	public static Optional<LibraryIndex> read(Reader in) throws IOException {
 		BufferedReader reader = new BufferedReader(in);
 		if (!HEADER.equals(reader.readLine())) {
@@ -223,27 +299,10 @@ public final class LibraryIndex {
 		List<Path> excluded = new ArrayList<>();
 		List<SourceNode> nodes = new ArrayList<>();
 		for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-			if (line.length() < 3 || line.charAt(1) != ' ') {
-				continue;
-			}
-			Optional<Path> path = path(line.substring(2));
-			if (path.isEmpty()) {
-				continue;
-			}
-			Path p = path.get();
-			switch (line.charAt(0)) {
-				case 'R' -> roots.add(p);
-				case 'X' -> excluded.add(p);
-				case 'T' -> nodes.add(new SourceNode(p.toString(), SourceNode.Kind.TRACK, AudioFiles.baseName(p),
-						false));
-				case 'P' -> {
-					Path name = p.getFileName();
-					if (name != null) {
-						nodes.add(new SourceNode(p.toString(), SourceNode.Kind.PLAYLIST, name.toString(), false));
-					}
-				}
-				default -> {
-				}
+			Optional<Path> path = line.length() <= ENTRY_PREFIX || line.charAt(ENTRY_PREFIX - 1) != ' '
+					? Optional.empty() : path(line.substring(ENTRY_PREFIX));
+			if (path.isPresent()) {
+				readEntry(line.charAt(0), path.get(), roots, excluded, nodes);
 			}
 		}
 		LibraryIndex index = new LibraryIndex(roots, excluded);
@@ -252,6 +311,23 @@ public final class LibraryIndex {
 			index.finish(Boolean.parseBoolean(state[1]));
 		}
 		return Optional.of(index);
+	}
+
+	/** Files the entry {@code p} of kind {@code kind} into its list; an unknown kind is skipped. */
+	private static void readEntry(char kind, Path p, List<Path> roots, List<Path> excluded, List<SourceNode> nodes) {
+		switch (kind) {
+			case 'R' -> roots.add(p);
+			case 'X' -> excluded.add(p);
+			case 'T' -> nodes.add(new SourceNode(p.toString(), SourceNode.Kind.TRACK, AudioFiles.baseName(p), false));
+			case 'P' -> {
+				Path name = p.getFileName();
+				if (name != null) {
+					nodes.add(new SourceNode(p.toString(), SourceNode.Kind.PLAYLIST, name.toString(), false));
+				}
+			}
+			default -> {
+			}
+		}
 	}
 
 	private void count(String id) {

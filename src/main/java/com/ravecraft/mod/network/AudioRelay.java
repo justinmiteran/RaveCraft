@@ -41,6 +41,7 @@ public final class AudioRelay {
 	private AudioRelay() {
 	}
 
+	/** Registers the audio and stream-close receivers and the cleanup of their rate limits. */
 	public static void init() {
 		ServerPlayNetworking.registerGlobalReceiver(StreamClosePayload.TYPE,
 				(payload, context) -> SpeakerPlayback.onStreamClose(context.player(), payload.sessionId(), payload.finished()));
@@ -52,6 +53,7 @@ public final class AudioRelay {
 		ServerLifecycleEvents.SERVER_STOPPING.register(server -> BUCKETS.clear());
 	}
 
+	/** Forwards a well-formed chunk from its session's owner, within the sender's rate limit. */
 	private static void relay(ServerPlayer sender, AudioChunkPayload chunk) {
 		Optional<Session<SpeakerKey>> found = StreamSessions.table().byId(chunk.sessionId());
 		if (!chunk.isWellFormed() || found.isEmpty() || !found.get().owner().equals(sender.getUUID())) {
@@ -81,6 +83,10 @@ public final class AudioRelay {
 	/**
 	 * How far the speaker at {@code pos} is relayed: its profile range at its current volume, plus a margin. 0 when
 	 * there is no powered speaker there.
+	 *
+	 * @param level the speaker's level
+	 * @param pos where the speaker stands
+	 * @return the radius, in blocks
 	 */
 	public static double relayRadius(ServerLevel level, BlockPos pos) {
 		if (!(level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) || !speaker.data().settings().powered()) {
@@ -90,7 +96,16 @@ public final class AudioRelay {
 		return Propagation.relayRadius(AcousticConfig.get(), AcousticConfig.get().portable(), volume);
 	}
 
-	/** The candidates in {@code level} within {@code radius} of the speaker, owner excluded. */
+	/**
+	 * The candidates in {@code level} within {@code radius} of the speaker, owner excluded.
+	 *
+	 * @param level the speaker's level
+	 * @param pos where the speaker stands
+	 * @param owner the player streaming
+	 * @param candidates the players to filter
+	 * @param radius the relay radius, in blocks
+	 * @return the players to relay to
+	 */
 	public static List<ServerPlayer> listeners(ServerLevel level, BlockPos pos, UUID owner, Collection<ServerPlayer> candidates,
 			double radius) {
 		if (radius <= 0) {

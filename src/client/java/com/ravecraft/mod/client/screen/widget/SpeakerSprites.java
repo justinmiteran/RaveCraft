@@ -76,14 +76,26 @@ public final class SpeakerSprites {
 	}
 
 	/**
-	 * The copper bar at {@code (x, y)}, {@code w} wide: the rail, the fill up to the knob when {@code filled}, and the
-	 * knob at {@code fraction} (0 to 1) of the way, centred on the rail; a {@code knobAlpha} of 0 leaves it out.
+	 * How a copper bar looks: the knob at {@code fraction} (0 to 1) of the way, the rail filled up to it when
+	 * {@code filled}; a {@code knobAlpha} of 0 leaves the knob out.
 	 */
-	public static void copperBar(GuiGraphicsExtractor graphics, int x, int y, int w, float fraction, boolean filled,
-			float knobAlpha) {
+	public record Bar(float fraction, boolean filled, float knobAlpha) {
+	}
+
+	/**
+	 * The copper bar at {@code (x, y)}, {@code w} wide: the rail, the fill and the knob, centred on the rail.
+	 *
+	 * @param graphics where to draw
+	 * @param x the bar's left edge
+	 * @param y the bar's top
+	 * @param w the bar's width
+	 * @param bar the bar's fill and knob
+	 */
+	public static void copperBar(GuiGraphicsExtractor graphics, int x, int y, int w, Bar bar) {
+		float knobAlpha = bar.knobAlpha();
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_TRACK, x, y, w, BAR_H);
-		int knobX = x + Math.round((w - KNOB_W) * fraction);
-		if (filled && knobX > x + 1) {
+		int knobX = x + Math.round((w - KNOB_W) * bar.fraction());
+		if (bar.filled() && knobX > x + 1) {
 			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_FILL, x + 1, y + 1, knobX - x - 1 + KNOB_W / 2,
 					BAR_H - 2);
 		}
@@ -93,7 +105,14 @@ public final class SpeakerSprites {
 		}
 	}
 
-	/** The 5 px arrow of a folder row in a tree: pointing right when folded, down when open. */
+	/**
+	 * The 5 px arrow of a folder row in a tree: pointing right when folded, down when open.
+	 *
+	 * @param graphics where to draw
+	 * @param x the arrow's left edge
+	 * @param y the arrow's top
+	 * @param expanded true when the folder is open
+	 */
 	public static void drawArrow(GuiGraphicsExtractor graphics, int x, int y, boolean expanded) {
 		for (int i = 0; i < 3; i++) {
 			if (expanded) {
@@ -107,6 +126,12 @@ public final class SpeakerSprites {
 	/**
 	 * The hover of a small button inside a list row (add, remove): brighter than the row's own hover, with a light
 	 * outline, so it stands out over a hovered row.
+	 *
+	 * @param graphics where to draw
+	 * @param x the cell's left edge
+	 * @param y the cell's top
+	 * @param right the cell's right edge
+	 * @param bottom the cell's bottom edge
 	 */
 	public static void cellHover(GuiGraphicsExtractor graphics, int x, int y, int right, int bottom) {
 		graphics.fill(x, y, right, bottom, 0x50FFFFFF);
@@ -116,7 +141,14 @@ public final class SpeakerSprites {
 		graphics.fill(right - 1, y + 1, right, bottom - 1, 0x90FFFFFF);
 	}
 
-	/** {@code text} cut to {@code maxWidth} pixels, ending with an ellipsis when it had to be cut. */
+	/**
+	 * {@code text} cut to {@code maxWidth} pixels, ending with an ellipsis when it had to be cut.
+	 *
+	 * @param font the font measuring the text
+	 * @param text the text to fit
+	 * @param maxWidth the width available, in pixels
+	 * @return the text, cut when needed
+	 */
 	public static String fit(Font font, String text, int maxWidth) {
 		if (font.width(text) <= maxWidth) {
 			return text;

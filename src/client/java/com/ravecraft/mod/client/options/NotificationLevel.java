@@ -25,16 +25,29 @@ public enum NotificationLevel implements StringRepresentable {
 		this.caption = Component.translatable("options.ravecraft.notifications." + serializedName);
 	}
 
-	/** Whether the "Now playing" toast shows. */
+	/**
+	 * Whether the "Now playing" toast shows.
+	 *
+	 * @return true when the toast shows
+	 */
 	public boolean nowPlaying() {
 		return nowPlaying;
 	}
 
-	/** Whether error toasts show. */
+	/**
+	 * Whether error toasts show.
+	 *
+	 * @return true when error toasts show
+	 */
 	public boolean errors() {
 		return errors;
 	}
 
+	/**
+	 * The level's name in the options.
+	 *
+	 * @return the level's caption
+	 */
 	public Component caption() {
 		return caption;
 	}

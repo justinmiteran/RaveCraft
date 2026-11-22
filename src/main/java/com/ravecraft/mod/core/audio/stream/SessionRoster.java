@@ -21,11 +21,22 @@ public final class SessionRoster<T> {
 	private final Map<Integer, T> streams = new HashMap<>();
 	private final SequencedSet<Integer> ended = new LinkedHashSet<>();
 
+	/**
+	 * Creates an empty roster.
+	 *
+	 * @param rememberedEnds how many ended sessions are remembered
+	 */
 	public SessionRoster(int rememberedEnds) {
 		this.rememberedEnds = rememberedEnds;
 	}
 
-	/** The stream of {@code id}, created with {@code create} if new; empty when the session was ended. */
+	/**
+	 * The stream of {@code id}, created with {@code create} if new; empty when the session was ended.
+	 *
+	 * @param id the session id
+	 * @param create makes the stream when new
+	 * @return the stream, or empty
+	 */
 	public Optional<T> admit(int id, Supplier<T> create) {
 		T stream = streams.get(id);
 		if (stream == null) {
@@ -38,13 +49,23 @@ public final class SessionRoster<T> {
 		return Optional.of(stream);
 	}
 
-	/** Ends session {@code id} for good and returns its stream, if one was playing. */
+	/**
+	 * Ends session {@code id} for good and returns its stream, if one was playing.
+	 *
+	 * @param id the session id
+	 * @return the stream, or empty
+	 */
 	public Optional<T> end(int id) {
 		remember(id);
 		return Optional.ofNullable(streams.remove(id));
 	}
 
-	/** Removes the streams matching {@code expired} without ending their sessions: a later chunk restarts them. */
+	/**
+	 * Removes the streams matching {@code expired} without ending their sessions: a later chunk restarts them.
+	 *
+	 * @param expired true for a stream to remove
+	 * @return the streams removed
+	 */
 	public List<T> expireIf(Predicate<T> expired) {
 		List<T> removed = new ArrayList<>();
 		Iterator<Map.Entry<Integer, T>> it = streams.entrySet().iterator();
@@ -58,7 +79,11 @@ public final class SessionRoster<T> {
 		return removed;
 	}
 
-	/** Forgets everything and returns the streams that were playing. */
+	/**
+	 * Forgets everything and returns the streams that were playing.
+	 *
+	 * @return the streams that were playing
+	 */
 	public List<T> clear() {
 		List<T> all = new ArrayList<>(streams.values());
 		streams.clear();

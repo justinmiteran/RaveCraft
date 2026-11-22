@@ -33,6 +33,14 @@ public final class TrackInfoCache {
 	};
 	private final Set<String> inFlight = new HashSet<>();
 
+	/**
+	 * The cached info of {@code path}, and whether the caller should (re)load it now; a load asked for is in
+	 * flight until the caller reports back.
+	 *
+	 * @param path the track's path
+	 * @param nowMs the current time
+	 * @return the cached info, whether to load, and the modification date the cache knows
+	 */
 	public Lookup lookup(String path, long nowMs) {
 		Cached entry = entries.get(path);
 		boolean busy = inFlight.contains(path);
@@ -50,17 +58,36 @@ public final class TrackInfoCache {
 		return new Lookup(Optional.ofNullable(entry.info()), due, entry.modified());
 	}
 
-	/** The cached info, without scheduling anything. */
+	/**
+	 * The cached info, without scheduling anything.
+	 *
+	 * @param path the file's path
+	 * @return the cached info, or empty
+	 */
 	public Optional<TrackInfo> peek(String path) {
 		Cached entry = entries.get(path);
 		return entry == null ? Optional.empty() : Optional.ofNullable(entry.info());
 	}
 
+	/**
+	 * A load finished: caches {@code info} for a file last modified at {@code modified}.
+	 *
+	 * @param path the file's path
+	 * @param modified the file's last modification time
+	 * @param info the info read
+	 * @param nowMs the current time, in milliseconds
+	 */
 	public void loaded(String path, long modified, TrackInfo info, long nowMs) {
 		inFlight.remove(path);
 		entries.put(path, new Cached(info, modified, nowMs));
 	}
 
+	/**
+	 * A re-check found the file unchanged: keeps the cached info and restarts the re-check delay.
+	 *
+	 * @param path the file's path
+	 * @param nowMs the current time, in milliseconds
+	 */
 	public void unchanged(String path, long nowMs) {
 		inFlight.remove(path);
 		Cached entry = entries.get(path);
@@ -72,6 +99,9 @@ public final class TrackInfoCache {
 	/**
 	 * A load or re-check failed. The path is not retried before {@link #RECHECK_MS} has passed; any cached info is
 	 * kept, and a path with none is remembered as having no info.
+	 *
+	 * @param path the file's path
+	 * @param nowMs the current time, in milliseconds
 	 */
 	public void failed(String path, long nowMs) {
 		inFlight.remove(path);

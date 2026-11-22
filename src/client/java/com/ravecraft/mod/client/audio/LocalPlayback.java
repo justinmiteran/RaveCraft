@@ -50,6 +50,7 @@ public final class LocalPlayback {
 	private LocalPlayback() {
 	}
 
+	/** Sends the queued additions each tick and stops every local stream on leaving. */
 	public static void register() {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> stopAll());
 		ClientTickEvents.END_CLIENT_TICK.register(client -> sendPending());
@@ -58,6 +59,9 @@ public final class LocalPlayback {
 	/**
 	 * Appends {@code tracks} (at most a full queue) to the queue of the speaker at {@code pos}. The tags are read off
 	 * the client thread; calls are enqueued in the order they were made even when their reads finish out of order.
+	 *
+	 * @param pos where the speaker stands
+	 * @param tracks the files to queue, in order
 	 */
 	public static void add(BlockPos pos, List<Path> tracks) {
 		if (tracks.isEmpty() || !ClientPlayNetworking.canSend(QueueAddPayload.TYPE)) {
@@ -96,6 +100,7 @@ public final class LocalPlayback {
 		}
 	}
 
+	/** Registers {@code tracks} under fresh entry ids and asks the server to queue them on the speaker at {@code pos}. */
 	private static void enqueue(BlockPos pos, List<Path> tracks, List<String> titles) {
 		Map<UUID, Path> registered = new LinkedHashMap<>();
 		List<QueueAddPayload.NewEntry> batch = new ArrayList<>();
@@ -152,7 +157,11 @@ public final class LocalPlayback {
 		cooldown = 0;
 	}
 
-	/** The server orders this player to stream one of its queued tracks (start), or to stop it. */
+	/**
+	 * The server orders this player to stream one of its queued tracks (start), or to stop it.
+	 *
+	 * @param order the server's order
+	 */
 	public static void onOrder(StreamOrderPayload order) {
 		int id = order.sessionId();
 		if (!order.start()) {
@@ -174,7 +183,8 @@ public final class LocalPlayback {
 			previous.cancel();
 		}
 		StreamEmitter emitter = new StreamEmitter(id, order.dimension(), order.pos(), track.get(), order.positionMs(),
-				durationMs -> ClientPlayNetworking.send(new StreamStartedPayload(id, durationMs)), () -> finished(id), e -> failed(id));
+				new StreamEmitter.Callbacks(durationMs -> ClientPlayNetworking.send(new StreamStartedPayload(id, durationMs)),
+						() -> finished(id), e -> failed(id)));
 		EMITTERS.put(id, emitter);
 		emitter.start();
 	}

@@ -38,6 +38,12 @@ public final class ControlRow {
 	/**
 	 * Creates the controls with the row's top at {@code (left + 7, top)}, power ending 7 px before
 	 * {@code left + width}, and hands each one to {@code add}.
+	 *
+	 * @param left the row's left edge
+	 * @param top the row's top
+	 * @param width the row's width
+	 * @param pos where the speaker stands
+	 * @param add receives each control
 	 */
 	public ControlRow(int left, int top, int width, BlockPos pos, Consumer<AbstractWidget> add) {
 		this.pos = pos;
@@ -60,37 +66,56 @@ public final class ControlRow {
 		return Component.translatable(KEY + key);
 	}
 
-	/** Refreshes icons, labels and which controls are usable from the latest state and the block's power. */
+	/**
+	 * Refreshes icons, labels and which controls are usable from the latest state and the block's power.
+	 *
+	 * @param state the speaker's latest state, or null
+	 * @param powered true when the block is powered
+	 */
 	public void update(@Nullable SpeakerStatePayload state, boolean powered) {
 		this.state = state;
 		this.powered = powered;
 		boolean known = state != null;
 		// Off, only the volume and the power button work; play says the speaker is off.
 		boolean on = known && powered;
-		boolean queued = known && !state.entries().isEmpty();
-		boolean playing = known && state.playing();
-
 		boolean shuffled = known && state.shuffle();
 		shuffle.show(shuffled ? SpeakerSprites.SHUFFLE_ON : SpeakerSprites.SHUFFLE, label(shuffled ? "shuffle.on" : "shuffle.off"));
 		shuffle.active = on;
-		previous.active = on && queued;
-		play.show(playing ? SpeakerSprites.PAUSE : SpeakerSprites.PLAY,
-				known && !powered ? label("off") : label(playing ? "pause" : "play"));
-		play.active = on && queued;
-		next.active = on && state.current().isPresent();
-		RepeatMode mode = known ? state.repeat() : RepeatMode.OFF;
-		repeat.show(switch (mode) {
-			case OFF -> SpeakerSprites.REPEAT_OFF;
-			case ALL -> SpeakerSprites.REPEAT_ALL;
-			case ONE -> SpeakerSprites.REPEAT_ONE;
-		}, label("repeat." + mode.name().toLowerCase(Locale.ROOT)));
-		repeat.active = on;
+		updateTransport(state, on);
+		updateRepeat(known ? state.repeat() : RepeatMode.OFF, on);
 		volume.active = known;
 		if (known) {
 			volume.sync(state.volume());
 		}
 		power.show(powered ? SpeakerSprites.POWER_ON : SpeakerSprites.POWER_OFF, label(powered ? "power.off" : "power.on"));
 		power.active = known;
+	}
+
+	/** Previous, play and next, from the queue of {@code state}. */
+	private void updateTransport(@Nullable SpeakerStatePayload state, boolean on) {
+		boolean known = state != null;
+		boolean queued = known && !state.entries().isEmpty();
+		boolean playing = known && state.playing();
+		previous.active = on && queued;
+		play.show(playing ? SpeakerSprites.PAUSE : SpeakerSprites.PLAY, playLabel(known, playing));
+		play.active = on && queued;
+		next.active = on && state.current().isPresent();
+	}
+
+	private Component playLabel(boolean known, boolean playing) {
+		if (known && !powered) {
+			return label("off");
+		}
+		return label(playing ? "pause" : "play");
+	}
+
+	private void updateRepeat(RepeatMode mode, boolean on) {
+		repeat.show(switch (mode) {
+			case OFF -> SpeakerSprites.REPEAT_OFF;
+			case ALL -> SpeakerSprites.REPEAT_ALL;
+			case ONE -> SpeakerSprites.REPEAT_ONE;
+		}, label("repeat." + mode.name().toLowerCase(Locale.ROOT)));
+		repeat.active = on;
 	}
 
 	/** The next repeat mode on a click: ALL → ONE → OFF → ALL. */

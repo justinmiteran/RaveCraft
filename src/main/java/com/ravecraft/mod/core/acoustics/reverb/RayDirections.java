@@ -7,11 +7,16 @@ public final class RayDirections {
 	private RayDirections() {
 	}
 
-	/** {@code n} unit vectors on a Fibonacci spiral, always the same for the same {@code n}. */
+	/**
+	 * {@code n} unit vectors on a Fibonacci spiral, always the same for the same {@code n}.
+	 *
+	 * @param n how many directions
+	 * @return the unit vectors, as {x, y, z} triples
+	 */
 	public static double[][] sphere(int n) {
 		double[][] out = new double[Math.max(0, n)][];
 		for (int i = 0; i < out.length; i++) {
-			double y = 1 - 2 * (i + 0.5) / n;
+			double y = 1 - (2.0 * i + 1) / n;
 			double r = Math.sqrt(Math.max(0, 1 - y * y));
 			double angle = GOLDEN_ANGLE * i;
 			out[i] = new double[] {Math.cos(angle) * r, y, Math.sin(angle) * r};

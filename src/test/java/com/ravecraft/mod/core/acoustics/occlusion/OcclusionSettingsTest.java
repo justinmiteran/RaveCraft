@@ -186,7 +186,7 @@ class OcclusionSettingsTest {
 	@Test
 	void listenerPerceptionIsBounded() {
 		List<String> warnings = new ArrayList<>();
-		OcclusionSettings s = with(List.of(D.medium("air"), new AcousticMedium("goo", 1000, 0, 0, 99, -3, 1.5)),
+		OcclusionSettings s = with(List.of(D.medium("air"), new AcousticMedium("goo", 1000, 0, 0, 99, -3, 1.5, 0.05)),
 				Map.of(), D.materials()).clamped(warnings::add);
 		AcousticMedium goo = s.medium("goo");
 		assertEquals(60, goo.listenerLossDb());

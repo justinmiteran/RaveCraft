@@ -1,5 +1,6 @@
 package com.ravecraft.mod.core.acoustics.reverb;
 
+import com.ravecraft.mod.core.acoustics.Bound;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -22,8 +23,21 @@ public record ReverbSettings(boolean enabled, double rayLength, double maxDecayS
 	public static final ReverbSettings DEFAULT = new ReverbSettings(true, 64, 6, 0.32, 6, EchoSettings.DEFAULT,
 			List.of(FluidReverb.WATER, FluidReverb.LAVA));
 
+	private static final Bound ECHO_DISTANCE = new Bound(10, 35);
+	private static final Bound ECHO_MIN_RAYS = new Bound(1, 16);
+	private static final Bound ECHO_FEEDBACK = new Bound(0, 0.5);
+	private static final Bound ECHO_DAMPING = new Bound(0, 0.99);
+	private static final Bound DECAY_SECONDS = new Bound(0.1, 20);
+	private static final Bound DECAY_HF_RATIO = new Bound(0.1, 2);
+	private static final Bound CHORUS_RATE_HZ = new Bound(0.05, 5);
+	private static final Bound CHORUS_DEPTH_MS = new Bound(0, 10);
+	private static final Bound RAY_LENGTH = new Bound(16, 128);
+	private static final Bound MAX_DECAY_SECONDS = new Bound(0.5, 20);
+	private static final Bound SAME_SPACE_LOSS_DB = new Bound(0, 60);
+
 	private static final Pattern NAME = Pattern.compile("[a-z0-9_]{1," + OcclusionSettings.MAX_NAME + "}");
 
+	/** Copies {@code media}, so the settings never change. */
 	public ReverbSettings {
 		media = List.copyOf(media);
 	}
@@ -40,15 +54,29 @@ public record ReverbSettings(boolean enabled, double rayLength, double maxDecayS
 
 	/** The same settings with every value brought into its bounds; {@code warn} hears about each change. */
 	public ReverbSettings clamped(Consumer<String> warn) {
-		double minDistance = bound("reverb.echo.minDistance", echo.minDistance(), 10, 35, warn);
-		EchoSettings e = new EchoSettings(minDistance,
-				bound("reverb.echo.maxDistance", echo.maxDistance(), minDistance, 35, warn),
-				(int) bound("reverb.echo.minRays", echo.minRays(), 1, 16, warn),
-				bound("reverb.echo.maxAbsorption", echo.maxAbsorption(), 0, 1, warn),
-				bound("reverb.echo.gain", echo.gain(), 0, 1, warn),
-				bound("reverb.echo.feedback", echo.feedback(), 0, 0.5, warn),
-				bound("reverb.echo.damping", echo.damping(), 0, 0.99, warn));
+		EchoSettings e = clampedEcho(warn);
+		List<FluidReverb> kept = clampedMedia(warn);
+		return new ReverbSettings(enabled,
+				RAY_LENGTH.apply("reverb.rayLength", rayLength, warn),
+				MAX_DECAY_SECONDS.apply("reverb.maxDecaySeconds", maxDecaySeconds, warn),
+				Bound.UNIT.apply("reverb.maxWetGain", maxWetGain, warn),
+				SAME_SPACE_LOSS_DB.apply("reverb.sameSpaceLossDb", sameSpaceLossDb, warn),
+				e, kept);
+	}
 
+	private EchoSettings clampedEcho(Consumer<String> warn) {
+		double minDistance = ECHO_DISTANCE.apply("reverb.echo.minDistance", echo.minDistance(), warn);
+		return new EchoSettings(minDistance,
+				new Bound(minDistance, ECHO_DISTANCE.max()).apply("reverb.echo.maxDistance", echo.maxDistance(), warn),
+				(int) ECHO_MIN_RAYS.apply("reverb.echo.minRays", echo.minRays(), warn),
+				Bound.UNIT.apply("reverb.echo.maxAbsorption", echo.maxAbsorption(), warn),
+				Bound.UNIT.apply("reverb.echo.gain", echo.gain(), warn),
+				ECHO_FEEDBACK.apply("reverb.echo.feedback", echo.feedback(), warn),
+				ECHO_DAMPING.apply("reverb.echo.damping", echo.damping(), warn));
+	}
+
+	/** The fluids with valid, distinct names, their values in bounds, up to {@link #MAX_MEDIA}. */
+	private List<FluidReverb> clampedMedia(Consumer<String> warn) {
 		List<FluidReverb> kept = new ArrayList<>();
 		Set<String> seen = new HashSet<>();
 		for (FluidReverb f : media) {
@@ -64,33 +92,19 @@ public record ReverbSettings(boolean enabled, double rayLength, double maxDecayS
 			}
 			String p = "reverb.media." + name + ".";
 			kept.add(new FluidReverb(name,
-					bound(p + "decaySeconds", f.decaySeconds(), 0.1, 20, warn),
-					bound(p + "density", f.density(), 0, 1, warn),
-					bound(p + "diffusion", f.diffusion(), 0, 1, warn),
-					bound(p + "gain", f.gain(), 0, 1, warn),
-					bound(p + "decayHfRatio", f.decayHfRatio(), 0.1, 2, warn),
+					DECAY_SECONDS.apply(p + "decaySeconds", f.decaySeconds(), warn),
+					Bound.UNIT.apply(p + "density", f.density(), warn),
+					Bound.UNIT.apply(p + "diffusion", f.diffusion(), warn),
+					Bound.UNIT.apply(p + "gain", f.gain(), warn),
+					DECAY_HF_RATIO.apply(p + "decayHfRatio", f.decayHfRatio(), warn),
 					f.chorus(),
-					bound(p + "chorusRateHz", f.chorusRateHz(), 0.05, 5, warn),
-					bound(p + "chorusDepthMs", f.chorusDepthMs(), 0, 10, warn)));
+					CHORUS_RATE_HZ.apply(p + "chorusRateHz", f.chorusRateHz(), warn),
+					CHORUS_DEPTH_MS.apply(p + "chorusDepthMs", f.chorusDepthMs(), warn)));
 		}
 		if (kept.size() > MAX_MEDIA) {
 			warn.accept("reverb.media has " + kept.size() + " entries, keeping the first " + MAX_MEDIA);
 			kept = new ArrayList<>(kept.subList(0, MAX_MEDIA));
 		}
-
-		return new ReverbSettings(enabled,
-				bound("reverb.rayLength", rayLength, 16, 128, warn),
-				bound("reverb.maxDecaySeconds", maxDecaySeconds, 0.5, 20, warn),
-				bound("reverb.maxWetGain", maxWetGain, 0, 1, warn),
-				bound("reverb.sameSpaceLossDb", sameSpaceLossDb, 0, 60, warn),
-				e, kept);
-	}
-
-	private static double bound(String name, double value, double min, double max, Consumer<String> warn) {
-		double bounded = Double.isNaN(value) ? min : Math.clamp(value, min, max);
-		if (bounded != value) {
-			warn.accept(name + " = " + value + " is outside [" + min + ", " + max + "], using " + bounded);
-		}
-		return bounded;
+		return kept;
 	}
 }

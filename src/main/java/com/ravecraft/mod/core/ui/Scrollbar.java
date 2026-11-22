@@ -14,21 +14,53 @@ public final class Scrollbar {
 	/** Distance from the thumb's top to the point grabbed, or -1 when not dragging. */
 	private int grab = -1;
 
+	/**
+	 * The thumb's height for {@code content} pixels shown in a {@code track} pixels high; never below the minimum.
+	 *
+	 * @param track the track's height
+	 * @param content the content's height
+	 * @return the thumb's height
+	 */
 	public static int thumbHeight(int track, int content) {
 		return Math.max(MIN_THUMB, track * track / content);
 	}
 
+	/**
+	 * The thumb's top for a scroll of {@code scroll} pixels.
+	 *
+	 * @param trackTop the track's top
+	 * @param track the track's height
+	 * @param content the content's height
+	 * @param scroll the scroll, in pixels
+	 * @return the thumb's top
+	 */
 	public static int thumbTop(int trackTop, int track, int content, int scroll) {
 		int max = content - track;
 		return max <= 0 ? trackTop : trackTop + (track - thumbHeight(track, content)) * scroll / max;
 	}
 
-	/** True when {@code mouseX} is on the bar at {@code barX} or in the margins around it, up to {@code right}. */
+	/**
+	 * True when {@code mouseX} is on the bar at {@code barX} or in the margins around it, up to {@code right}.
+	 *
+	 * @param mouseX the mouse's x
+	 * @param barX the bar's left edge
+	 * @param right the right edge of the margin
+	 * @return true when the mouse is on the bar
+	 */
 	public static boolean hits(double mouseX, int barX, int right) {
 		return mouseX >= barX - REACH && mouseX < right;
 	}
 
-	/** Starts dragging from a press at {@code mouseY}; returns the new scroll. */
+	/**
+	 * Starts dragging from a press at {@code mouseY}; returns the new scroll.
+	 *
+	 * @param mouseY the mouse's y
+	 * @param trackTop the track's top
+	 * @param track the track's height
+	 * @param content the content's height
+	 * @param scroll the scroll now
+	 * @return the new scroll
+	 */
 	public int press(double mouseY, int trackTop, int track, int content, int scroll) {
 		int thumb = thumbHeight(track, content);
 		int top = thumbTop(trackTop, track, content, scroll);
@@ -36,7 +68,15 @@ public final class Scrollbar {
 		return drag(mouseY, trackTop, track, content);
 	}
 
-	/** The scroll for the mouse now at {@code mouseY}, while dragging. */
+	/**
+	 * The scroll for the mouse now at {@code mouseY}, while dragging.
+	 *
+	 * @param mouseY the mouse's y
+	 * @param trackTop the track's top
+	 * @param track the track's height
+	 * @param content the content's height
+	 * @return the new scroll
+	 */
 	public int drag(double mouseY, int trackTop, int track, int content) {
 		int max = content - track;
 		int room = track - thumbHeight(track, content);
@@ -47,10 +87,16 @@ public final class Scrollbar {
 		return Math.clamp((long) top * max / room, 0, max);
 	}
 
+	/**
+	 * Whether the thumb is being dragged.
+	 *
+	 * @return true while dragging
+	 */
 	public boolean dragging() {
 		return grab >= 0;
 	}
 
+	/** Ends a drag. */
 	public void release() {
 		grab = -1;
 	}

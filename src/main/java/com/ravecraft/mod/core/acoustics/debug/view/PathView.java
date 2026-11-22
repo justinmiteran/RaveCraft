@@ -1,5 +1,7 @@
 package com.ravecraft.mod.core.acoustics.debug.view;
 
+import com.ravecraft.mod.core.acoustics.Vec;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +17,7 @@ import com.ravecraft.mod.core.acoustics.occlusion.PathLoss;
  */
 public record PathView(int sessionId, Vec source, Vec listener, double lossDb, double highLossDb, boolean mute,
 		boolean directMute, List<Crossing> crossings, int truncated, List<Detour> detours) {
+	/** Copies the lists, so the view never changes. */
 	public PathView {
 		crossings = List.copyOf(crossings);
 		detours = List.copyOf(detours);

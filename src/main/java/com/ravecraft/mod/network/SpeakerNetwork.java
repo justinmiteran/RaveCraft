@@ -8,6 +8,7 @@ import com.ravecraft.mod.network.payload.SpeakerWatchPayload;
 import com.ravecraft.mod.network.payload.StreamResultPayload;
 import com.ravecraft.mod.network.payload.StreamStartedPayload;
 import com.ravecraft.mod.world.audio.NowPlaying;
+import com.ravecraft.mod.world.audio.SpeakerCommands;
 import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import com.ravecraft.mod.world.audio.SpeakerWatchers;
 import java.util.HashMap;
@@ -40,16 +41,17 @@ public final class SpeakerNetwork {
 	private SpeakerNetwork() {
 	}
 
+	/** Registers the receivers of the speaker screen's requests and the per-player cleanup. */
 	public static void init() {
 		ServerPlayNetworking.registerGlobalReceiver(QueueAddPayload.TYPE, (payload, context) -> {
 			if (allowAdd(context.player())) {
-				SpeakerPlayback.add(context.player(), payload.pos(), payload.entries());
+				SpeakerCommands.add(context.player(), payload.pos(), payload.entries());
 			}
 		});
 		ServerPlayNetworking.registerGlobalReceiver(SpeakerCommandPayload.TYPE, (payload, context) -> {
 			boolean allowed = payload.command() == Command.VOLUME ? allowVolume(context.player()) : allowCommand(context.player());
 			if (allowed) {
-				SpeakerPlayback.command(context.player(), payload.pos(), payload.command(), payload.entryId(), payload.value());
+				SpeakerCommands.command(context.player(), payload.pos(), payload.command(), payload.entryId(), payload.value());
 			}
 		});
 		ServerPlayNetworking.registerGlobalReceiver(StreamStartedPayload.TYPE, (payload, context) -> {
@@ -86,12 +88,22 @@ public final class SpeakerNetwork {
 		});
 	}
 
-	/** Consumes one command token of {@code player}; false when over {@link #COMMANDS_PER_SECOND}. */
+	/**
+	 * Consumes one command token of {@code player}; false when over {@link #COMMANDS_PER_SECOND}.
+	 *
+	 * @param player the player
+	 * @return true when the command is allowed
+	 */
 	public static boolean allowCommand(ServerPlayer player) {
 		return consume(COMMAND_BUCKETS, player, COMMANDS_PER_SECOND);
 	}
 
-	/** Consumes one VOLUME token of {@code player}; false when over {@link #VOLUMES_PER_SECOND}. */
+	/**
+	 * Consumes one VOLUME token of {@code player}; false when over {@link #VOLUMES_PER_SECOND}.
+	 *
+	 * @param player the player
+	 * @return true when the change is allowed
+	 */
 	public static boolean allowVolume(ServerPlayer player) {
 		return consume(VOLUME_BUCKETS, player, VOLUMES_PER_SECOND);
 	}

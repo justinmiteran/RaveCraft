@@ -14,6 +14,12 @@ import net.minecraft.world.level.block.Block;
 
 /** Blocks with {@code requiresCorrectToolForDrops} need a tool tag, or they drop nothing. */
 public class RaveCraftBlockTagProvider extends FabricTagsProvider.BlockTagsProvider {
+	/**
+	 * A provider writing to {@code output}.
+	 *
+	 * @param output the pack the files go to
+	 * @param registries the registries, once loaded
+	 */
 	public RaveCraftBlockTagProvider(FabricPackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
 		super(output, registries);
 	}

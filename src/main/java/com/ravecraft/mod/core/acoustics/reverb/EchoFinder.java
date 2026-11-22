@@ -22,6 +22,10 @@ public final class EchoFinder {
 	 * wins, ties going to the one whose centre c is nearest. The echo comes from that group's median distance d:
 	 * {@code delay = 2 d / 343} and {@code gain = clamp(gain * (1 - mean absorption) * (size / hits) * (17 / d), 0, 1)}.
 	 * Fewer than {@code minRays} members, or no candidate, gives {@link Echo#NONE}.
+	 *
+	 * @param hits the probe's ray hits
+	 * @param settings the echo settings
+	 * @return the echo, or {@link Echo#NONE}
 	 */
 	public static Echo find(List<RayHit> hits, EchoSettings settings) {
 		List<Integer> group = group(hits, settings);
@@ -48,18 +52,38 @@ public final class EchoFinder {
 	/**
 	 * The indices into {@code hits}, ascending, of the group {@link #find} makes its echo from; empty when it finds
 	 * {@link Echo#NONE}.
+	 *
+	 * @param hits the probe's ray hits
+	 * @param settings the echo settings
+	 * @return the indices of the group
 	 */
 	public static List<Integer> group(List<RayHit> hits, EchoSettings settings) {
+		List<Integer> best = largestGroup(hits, candidates(hits, settings));
+		if (best.isEmpty() || best.size() < settings.minRays()) {
+			return List.of();
+		}
+		List<Integer> sorted = new ArrayList<>(best);
+		sorted.sort(null);
+		return List.copyOf(sorted);
+	}
+
+	/** The indices of the hits on a hard enough wall within the echo distances, nearest first. */
+	private static List<Integer> candidates(List<RayHit> hits, EchoSettings settings) {
 		List<Integer> candidates = new ArrayList<>();
 		for (int i = 0; i < hits.size(); i++) {
 			RayHit hit = hits.get(i);
-			if (!hit.open() && hit.absorption() <= settings.maxAbsorption()
-					&& hit.wallDistance() >= settings.minDistance() && hit.wallDistance() <= settings.maxDistance()) {
+			boolean inRange = hit.wallDistance() >= settings.minDistance()
+					&& hit.wallDistance() <= settings.maxDistance();
+			if (!hit.open() && hit.absorption() <= settings.maxAbsorption() && inRange) {
 				candidates.add(i);
 			}
 		}
 		candidates.sort(Comparator.comparingDouble(i -> hits.get(i).wallDistance()));
+		return candidates;
+	}
 
+	/** The largest set of candidates within {@link #TOLERANCE} of one of them, in candidate order. */
+	private static List<Integer> largestGroup(List<RayHit> hits, List<Integer> candidates) {
 		List<Integer> best = List.of();
 		for (int center : candidates) {
 			double distance = hits.get(center).wallDistance();
@@ -75,12 +99,7 @@ public final class EchoFinder {
 				best = group;
 			}
 		}
-		if (best.isEmpty() || best.size() < settings.minRays()) {
-			return List.of();
-		}
-		List<Integer> sorted = new ArrayList<>(best);
-		sorted.sort(null);
-		return List.copyOf(sorted);
+		return best;
 	}
 
 	/** The median wall distance of a group already sorted by it. */

@@ -1,5 +1,7 @@
 package com.ravecraft.mod.core.acoustics.debug;
 
+import com.ravecraft.mod.core.acoustics.Decibels;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -12,7 +14,14 @@ public final class AcousticDebug {
 	private AcousticDebug() {
 	}
 
-	/** The {@code shown} loudest audible speakers, after a summary line. */
+	/**
+	 * The {@code shown} loudest audible speakers, after a summary line.
+	 *
+	 * @param rows the audible speakers
+	 * @param maxSources how many speakers the player hears at once
+	 * @param shown how many speakers to list
+	 * @return the debug lines
+	 */
 	public static List<String> speakers(List<SpeakerRow> rows, int maxSources, int shown) {
 		if (rows.isEmpty()) {
 			return List.of("RaveCraft speakers: none audible");
@@ -22,13 +31,19 @@ public final class AcousticDebug {
 		lines.add(format("RaveCraft speakers: %d audible, %d sounding / %d", rows.size(), sounding, maxSources));
 		rows.stream().sorted(Comparator.comparingDouble(SpeakerRow::heardGain).reversed()).limit(shown)
 				.forEach(r -> lines.add(format("  #%d %.1f m | %s | %s | reverb %s | %s", r.session(), r.distance(),
-						r.heardGain() <= 0 ? "silent" : format("%.1f dB", 20 * Math.log10(r.heardGain())),
+						r.heardGain() <= 0 ? "silent" : format("%.1f dB", Decibels.fromAmplitude(r.heardGain())),
 						r.occlusionKnown() ? format("occlusion %.1f dB, treble +%.1f dB", r.lossDb(), r.highLossDb())
 								: "occlusion tracing...",
 						SLOTS[Math.clamp(r.reverbSlot(), 0, SLOTS.length - 1)], r.sounding() ? "on" : "culled")));
 		return lines;
 	}
 
+	/**
+	 * The listener's medium and losses, then which effects run.
+	 *
+	 * @param r the listener's state
+	 * @return the debug lines
+	 */
 	public static List<String> listener(ListenerRow r) {
 		String head = "RaveCraft listener: head in " + r.medium();
 		if (r.lossDb() > 0 || r.highLossDb() > 0 || r.blur() > 0) {
@@ -43,6 +58,12 @@ public final class AcousticDebug {
 		return List.of(head, state);
 	}
 
+	/**
+	 * A summary line, then one line per received stream.
+	 *
+	 * @param rows the received streams
+	 * @return the debug lines
+	 */
 	public static List<String> streams(List<StreamRow> rows) {
 		List<String> lines = new ArrayList<>();
 		lines.add("RaveCraft streams: " + (rows.isEmpty() ? "none" : String.valueOf(rows.size())));
@@ -57,6 +78,12 @@ public final class AcousticDebug {
 		return lines;
 	}
 
+	/**
+	 * The tracing budgets used this tick, then the audio thread's step time.
+	 *
+	 * @param r the tick's costs
+	 * @return the debug lines
+	 */
 	public static List<String> perf(PerfRow r) {
 		String budgets = format("RaveCraft perf: occlusion %d/%d voxels | reverb %d/%d voxels, %d probes running",
 				r.occlusionVoxels(), r.occlusionBudget(), r.reverbVoxels(), r.reverbBudget(), r.probesRunning());

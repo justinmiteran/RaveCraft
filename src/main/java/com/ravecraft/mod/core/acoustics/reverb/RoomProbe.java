@@ -35,11 +35,24 @@ public final class RoomProbe {
 	private boolean walking;
 	private @Nullable AcousticMedium startMedium;
 
+	/**
+	 * Creates an idle probe over {@code grid}.
+	 *
+	 * @param grid the blocks around the listener
+	 */
 	public RoomProbe(AcousticGrid grid) {
 		this.grid = grid;
 	}
 
-	/** Begins a measure from (x, y, z) with {@code rays} rays of {@code rayLength} blocks, dropping any previous one. */
+	/**
+	 * Begins a measure from (x, y, z) with {@code rays} rays of {@code rayLength} blocks, dropping any previous one.
+	 *
+	 * @param x the start's x
+	 * @param y the start's y
+	 * @param z the start's z
+	 * @param rays how many rays to cast
+	 * @param rayLength each ray's length, in blocks
+	 */
 	public void start(double x, double y, double z, int rays, double rayLength) {
 		this.ox = x;
 		this.oy = y;
@@ -52,35 +65,23 @@ public final class RoomProbe {
 		this.hits.clear();
 	}
 
-	/** Continues the measure; true once every ray is done. */
+	/**
+	 * Continues the measure; true once every ray is done.
+	 *
+	 * @param budget the voxels left this tick
+	 * @return true once every ray is done
+	 */
 	public boolean run(TraceBudget budget) {
 		while (ray < directions.length) {
-			double[] d = directions[ray];
-			direction = d;
+			direction = directions[ray];
 			if (!walking) {
+				double[] d = direction;
 				walk.start(ox, oy, oz, ox + d[0] * rayLength, oy + d[1] * rayLength, oz + d[2] * rayLength);
 				walking = true;
 				startMedium = null;
 			}
-			while (true) {
-				if (!budget.take()) {
-					return false;
-				}
-				grid.sample(walk.x(), walk.y(), walk.z(), sample);
-				RayHit hit = walk.first() ? null : hit();
-				if (walk.first()) {
-					AcousticMedium own = sample.medium;
-					startMedium = own != null ? own : grid.defaultMedium();
-				}
-				if (hit != null) {
-					hits.add(hit);
-					break;
-				}
-				if (walk.last()) {
-					hits.add(new RayHit(true, rayLength, 1));
-					break;
-				}
-				walk.step();
+			if (!walkRay(budget)) {
+				return false;
 			}
 			walking = false;
 			ray++;
@@ -88,7 +89,40 @@ public final class RoomProbe {
 		return true;
 	}
 
-	/** The hits, one per ray in order; complete once {@link #run} returned true. */
+	/** Walks the current ray until it ends, recording its hit; false when the budget ran out first. */
+	private boolean walkRay(TraceBudget budget) {
+		while (budget.take()) {
+			RayHit hit = visit();
+			if (hit != null) {
+				hits.add(hit);
+				return true;
+			}
+			walk.step();
+		}
+		return false;
+	}
+
+	/** Samples the current voxel; the ray's hit when it ends here, else null. */
+	private @Nullable RayHit visit() {
+		grid.sample(walk.x(), walk.y(), walk.z(), sample);
+		RayHit hit = null;
+		if (walk.first()) {
+			AcousticMedium own = sample.medium;
+			startMedium = own != null ? own : grid.defaultMedium();
+		} else {
+			hit = hit();
+		}
+		if (hit == null && walk.last()) {
+			hit = new RayHit(true, rayLength, 1);
+		}
+		return hit;
+	}
+
+	/**
+	 * The hits, one per ray in order; complete once {@link #run} returned true.
+	 *
+	 * @return the hits, one per ray
+	 */
 	public List<RayHit> hits() {
 		return hits;
 	}

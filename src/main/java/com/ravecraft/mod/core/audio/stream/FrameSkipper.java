@@ -7,12 +7,21 @@ package com.ravecraft.mod.core.audio.stream;
 public final class FrameSkipper {
 	private long remaining;
 
+	/**
+	 * Creates a skipper.
+	 *
+	 * @param startMs the position playback resumes from
+	 */
 	public FrameSkipper(long startMs) {
 		long frameMs = StreamFormat.FRAME_MS;
 		this.remaining = startMs <= 0 ? 0 : (startMs + frameMs - 1) / frameMs;
 	}
 
-	/** True while the next frame is still before the start position and must be dropped. */
+	/**
+	 * True while the next frame is still before the start position and must be dropped.
+	 *
+	 * @return true when the next frame must be dropped
+	 */
 	public boolean skip() {
 		if (remaining == 0) {
 			return false;

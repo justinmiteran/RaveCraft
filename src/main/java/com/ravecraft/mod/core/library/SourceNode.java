@@ -2,6 +2,7 @@ package com.ravecraft.mod.core.library;
 
 /** One line of a music source tree. {@code id} is opaque to the screen (the absolute path for the local source). */
 public record SourceNode(String id, Kind kind, String name, boolean missing) {
+	/** What the node is. */
 	public enum Kind {
 		FOLDER, PLAYLIST, TRACK
 	}

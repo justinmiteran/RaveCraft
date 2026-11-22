@@ -10,7 +10,7 @@ import com.ravecraft.mod.core.acoustics.debug.view.PathView;
 import com.ravecraft.mod.core.acoustics.debug.view.Ray;
 import com.ravecraft.mod.core.acoustics.debug.view.RoomView;
 import com.ravecraft.mod.core.acoustics.debug.view.SoundViewMode;
-import com.ravecraft.mod.core.acoustics.debug.view.Vec;
+import com.ravecraft.mod.core.acoustics.Vec;
 import com.ravecraft.mod.core.acoustics.debug.view.Waypoint;
 import com.ravecraft.mod.core.acoustics.reverb.Echo;
 import com.ravecraft.mod.core.acoustics.reverb.RoomShape;
@@ -56,13 +56,14 @@ public final class SoundViewRenderer {
 	private static final int HUD_TOP = 4;
 	private static final int HUD_PADDING = 2;
 	private static final int HUD_BACKGROUND = 0x90000000;
-	private static final Identifier HUD_ID = Identifier.fromNamespaceAndPath(RaveCraft.MOD_ID, "sound_view");
+	private static final Identifier HUD_ID = RaveCraft.id("sound_view");
 	private static final long FAILURE_LOG_MS = 60_000;
 	private static long lastFailureLog = Long.MIN_VALUE;
 
 	private SoundViewRenderer() {
 	}
 
+	/** Registers the drawing of the sound view in the world and its HUD lines. */
 	public static void register() {
 		LevelExtractionEvents.END_EXTRACTION.register(context -> emit());
 		HudElementRegistry.addLast(HUD_ID, (graphics, delta) -> hud(graphics));
@@ -77,28 +78,38 @@ public final class SoundViewRenderer {
 		try {
 			Vec camera = camera();
 			if (mode.paths()) {
-				int drawn = 0;
-				for (PathView path : SoundViewSnapshots.paths()) {
-					if (drawn++ >= MAX_PATHS) {
-						break;
-					}
-					path(path, camera);
-				}
+				paths(camera);
 			}
 			if (mode.rooms()) {
-				RoomView listener = SoundViewSnapshots.listenerRoom();
-				if (listener != null && listener.fluid() == null) {
-					rays(listener, 1f, true, false, camera);
-				}
-				for (int slot = 0; slot < 2; slot++) {
-					RoomView room = SoundViewSnapshots.slotRoom(slot);
-					if (room != null) {
-						slotRoom(slot, room, camera);
-					}
-				}
+				rooms(camera);
 			}
 		} catch (RuntimeException e) {
 			logFailure(e);
+		}
+	}
+
+	/** The paths of the first {@link #MAX_PATHS} sources. */
+	private static void paths(Vec camera) {
+		int drawn = 0;
+		for (PathView path : SoundViewSnapshots.paths()) {
+			if (drawn++ >= MAX_PATHS) {
+				break;
+			}
+			path(path, camera);
+		}
+	}
+
+	/** The listener's room, out of fluids, and the rooms of the reverb slots. */
+	private static void rooms(Vec camera) {
+		RoomView listener = SoundViewSnapshots.listenerRoom();
+		if (listener != null && listener.fluid() == null) {
+			rays(listener, 1f, true, false, camera);
+		}
+		for (int slot = 0; slot < 2; slot++) {
+			RoomView room = SoundViewSnapshots.slotRoom(slot);
+			if (room != null) {
+				slotRoom(slot, room, camera);
+			}
 		}
 	}
 
@@ -106,9 +117,24 @@ public final class SoundViewRenderer {
 		return vec(Minecraft.getInstance().gameRenderer.mainCamera().position());
 	}
 
+	/** Draws {@code path}, each piece coloured by the loss so far, and the blocks it loses in. */
 	private static void path(PathView path, Vec camera) {
 		Vec3 source = vec3(path.source());
-		Vec3 listener = vec3(EyeAnchor.of(path.listener(), camera));
+		direct(path, source, vec3(EyeAnchor.of(path.listener(), camera)));
+		detours(path, camera);
+		waypoints(path);
+
+		String label = path.mute() ? I18n.get("debug.ravecraft.sound_view.source_mute", path.sessionId())
+				: I18n.get("debug.ravecraft.sound_view.source", path.sessionId(), oneDecimal(path.lossDb()),
+						oneDecimal(path.highLossDb()));
+		if (path.truncated() > 0) {
+			label += " +" + path.truncated();
+		}
+		text(label, source.add(0, SOURCE_LABEL_HEIGHT, 0), WHITE).setAlwaysOnTop();
+	}
+
+	/** The direct path from {@code source} to {@code listener} and the blocks it loses in. */
+	private static void direct(PathView path, Vec3 source, Vec3 listener) {
 		// The direct path, cut where it enters each block it loses in, each piece the colour of the loss so far.
 		Vec3 from = source;
 		double cumulative = 0;
@@ -124,7 +150,10 @@ public final class SoundViewRenderer {
 		}
 		double last = path.directMute() ? Double.POSITIVE_INFINITY : cumulative;
 		line(from, listener, LossColors.forLoss(last), DIRECT_WIDTH, true);
+	}
 
+	/** Each detour, dashed, the last piece ending at the eye. */
+	private static void detours(PathView path, Vec camera) {
 		for (Detour detour : path.detours()) {
 			int colour = LossColors.forLoss(detour.lossDb());
 			List<Vec> points = detour.points();
@@ -134,6 +163,10 @@ public final class SoundViewRenderer {
 				dashed(vec3(points.get(i)), to, colour, LINE_WIDTH, true, MAX_DASHES);
 			}
 		}
+	}
+
+	/** The waypoints of the detours, each labelled with the losses through it. */
+	private static void waypoints(PathView path) {
 		// The points the detours bend at (by a door, round a corner), each once, with the loss of every detour
 		// through it: detours often share the waypoint by a door.
 		for (Waypoint waypoint : Waypoint.of(path.detours())) {
@@ -147,14 +180,6 @@ public final class SoundViewRenderer {
 			}
 			text(label.append(" dB").toString(), at.add(0, 0.35, 0), LossColors.OPENING).setAlwaysOnTop();
 		}
-
-		String label = path.mute() ? I18n.get("debug.ravecraft.sound_view.source_mute", path.sessionId())
-				: I18n.get("debug.ravecraft.sound_view.source", path.sessionId(), oneDecimal(path.lossDb()),
-						oneDecimal(path.highLossDb()));
-		if (path.truncated() > 0) {
-			label += " +" + path.truncated();
-		}
-		text(label, source.add(0, SOURCE_LABEL_HEIGHT, 0), WHITE).setAlwaysOnTop();
 	}
 
 	/**
@@ -200,6 +225,7 @@ public final class SoundViewRenderer {
 		}
 	}
 
+	/** The HUD lines about the listener's room. */
 	private static List<String> hudLines() {
 		List<String> lines = new ArrayList<>(3);
 		RoomView room = SoundViewSnapshots.listenerRoom();

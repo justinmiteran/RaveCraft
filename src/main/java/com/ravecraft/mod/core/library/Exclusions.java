@@ -9,13 +9,23 @@ import java.util.Set;
 public final class Exclusions {
 	private final Set<Path> hidden = new HashSet<>();
 
+	/**
+	 * Hides {@code excluded} and everything under them.
+	 *
+	 * @param excluded the excluded folders
+	 */
 	public Exclusions(List<Path> excluded) {
 		for (Path folder : excluded) {
 			hidden.add(normalize(folder));
 		}
 	}
 
-	/** True when {@code folder} itself was excluded (not merely something under it). */
+	/**
+	 * True when {@code folder} itself was excluded (not merely something under it).
+	 *
+	 * @param folder the folder
+	 * @return true when the folder is excluded
+	 */
 	public boolean hides(Path folder) {
 		return hidden.contains(normalize(folder));
 	}

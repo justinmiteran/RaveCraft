@@ -18,6 +18,11 @@ public final class SingleFlight<T> {
 	/**
 	 * Starts {@code task} through {@code launcher} (for example on a new thread), or returns the pending future
 	 * when a task is still running. A task or launcher that throws completes the future with {@code onError}.
+	 *
+	 * @param task the work to run
+	 * @param onError turns a failure into a result
+	 * @param launcher starts the work
+	 * @return the future result
 	 */
 	public synchronized CompletableFuture<T> run(Supplier<T> task, Function<Throwable, T> onError,
 			Consumer<Runnable> launcher) {
@@ -27,17 +32,7 @@ public final class SingleFlight<T> {
 		CompletableFuture<T> future = new CompletableFuture<>();
 		pending = future;
 		try {
-			launcher.accept(() -> {
-				T result;
-				try {
-					result = task.get();
-				} catch (Throwable t) {
-					result = onError.apply(t);
-				} finally {
-					busy.set(false);
-				}
-				future.complete(result);
-			});
+			launcher.accept(() -> complete(future, task, onError));
 		} catch (Throwable t) {
 			busy.set(false);
 			future.complete(onError.apply(t));
@@ -45,7 +40,24 @@ public final class SingleFlight<T> {
 		return future;
 	}
 
-	/** True while a task runs. */
+	/** Runs {@code task}, frees the slot, then completes {@code future} with its result or {@code onError}'s. */
+	private void complete(CompletableFuture<T> future, Supplier<T> task, Function<Throwable, T> onError) {
+		T result;
+		try {
+			result = task.get();
+		} catch (Throwable t) {
+			result = onError.apply(t);
+		} finally {
+			busy.set(false);
+		}
+		future.complete(result);
+	}
+
+	/**
+	 * True while a task runs.
+	 *
+	 * @return true while a task runs
+	 */
 	public boolean busy() {
 		return busy.get();
 	}

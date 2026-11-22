@@ -46,11 +46,11 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 	private static final int DIM = 0xA0000000;
 	private static final int WARNING = 0xFF8A2A10;
 
+	/** What the popup shows: its actions, a wait for the dialog, or the folder browser. */
 	private enum Mode {
 		ACTIONS, WAITING, BROWSER
 	}
 
-	private final SpeakerScreen parent;
 	private final Runnable onChanged;
 	private final FolderTree tree;
 	private final FolderBrowser browser;
@@ -68,8 +68,13 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 	private int pickRequest;
 	private boolean closed;
 
+	/**
+	 * A popup over {@code parent}; {@code onChanged} runs when the folders change.
+	 *
+	 * @param parent the screen the popup opens over
+	 * @param onChanged runs when the folders change
+	 */
 	public FoldersPopup(SpeakerScreen parent, Runnable onChanged) {
-		this.parent = parent;
 		this.onChanged = onChanged;
 		FolderPicker.warmUp();
 		tree = new FolderTree(INNER_W, LIST_H, new FolderTree.Actions() {
@@ -101,7 +106,12 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 		return Component.translatable(SpeakerSprites.KEY + "folders." + key, args);
 	}
 
-	/** Centres the popup on the screen and places its widgets (on opening and on every resize). */
+	/**
+	 * Centres the popup on the screen and places its widgets (on opening and on every resize).
+	 *
+	 * @param screenWidth the screen's width
+	 * @param screenHeight the screen's height
+	 */
 	public void layout(int screenWidth, int screenHeight) {
 		this.screenWidth = screenWidth;
 		this.screenHeight = screenHeight;
@@ -162,6 +172,7 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 				.thenAccept(result -> Minecraft.getInstance().execute(() -> picked(request, result)));
 	}
 
+	/** The dialog of request {@code request} closed with {@code result}. */
 	private void picked(int request, PickResult result) {
 		if (closed || request != pickRequest || mode != Mode.WAITING) {
 			return;
@@ -192,6 +203,7 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 		browser.open();
 	}
 
+	/** Adds {@code folder} to the chosen folders and says how it went. */
 	private void add(Path folder) {
 		LibraryFolders.Added added = LibraryFoldersStore.get().add(folder);
 		switch (added.result()) {
@@ -212,6 +224,7 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 		}
 	}
 
+	/** Excludes {@code folder} from the library and says how it went. */
 	private void exclude(Path folder) {
 		LibraryFolders.Added added = LibraryFoldersStore.get().exclude(folder);
 		switch (added.result()) {
@@ -259,7 +272,14 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 
 	// --- Drawing ----------------------------------------------------------------------------------------------
 
-	/** Draws the popup above everything the screen drew, with the screen darkened behind it. */
+	/**
+	 * Draws the popup above everything the screen drew, with the screen darkened behind it.
+	 *
+	 * @param graphics where to draw
+	 * @param mouseX the mouse's x
+	 * @param mouseY the mouse's y
+	 * @param a the partial tick
+	 */
 	public void extract(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 		Font font = Minecraft.getInstance().font;
 		graphics.nextStratum();

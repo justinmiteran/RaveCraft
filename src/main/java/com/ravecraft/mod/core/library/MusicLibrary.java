@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Browses the player's own files: drives, folders, playlists and tracks. Never recursive; callers run it off the
  * render thread because a folder on a slow drive can take a while to list.
@@ -24,7 +26,11 @@ public final class MusicLibrary {
 	private MusicLibrary() {
 	}
 
-	/** Drives (or the filesystem root), then the user's home folder and its Music folder when they exist. */
+	/**
+	 * Drives (or the filesystem root), then the user's home folder and its Music folder when they exist.
+	 *
+	 * @return the root entries
+	 */
 	public static List<LibraryEntry> roots() {
 		List<LibraryEntry> roots = new ArrayList<>();
 		for (File root : File.listRoots()) {
@@ -39,7 +45,12 @@ public final class MusicLibrary {
 		return roots;
 	}
 
-	/** Folders first, then playlists and tracks, each sorted by name; hidden and unrelated files are skipped. */
+	/**
+	 * Folders first, then playlists and tracks, each sorted by name; hidden and unrelated files are skipped.
+	 *
+	 * @param folder the folder to list
+	 * @return the entries, sorted
+	 */
 	public static List<LibraryEntry> list(Path folder) throws IOException {
 		List<LibraryEntry> folders = new ArrayList<>();
 		List<LibraryEntry> files = new ArrayList<>();
@@ -61,17 +72,31 @@ public final class MusicLibrary {
 		return entries;
 	}
 
-	/** The drives and home folders of {@link #roots()} as folder nodes, for a folder tree. */
+	/**
+	 * The drives and home folders of {@link #roots()} as folder nodes, for a folder tree.
+	 *
+	 * @return the root nodes
+	 */
 	public static List<SourceNode> rootNodes() {
 		return roots().stream().map(SourceNode::of).toList();
 	}
 
-	/** The subfolders of {@code folder} as folder nodes sorted by name, for a folder tree. */
+	/**
+	 * The subfolders of {@code folder} as folder nodes sorted by name, for a folder tree.
+	 *
+	 * @param folder the folder to list
+	 * @return the subfolder nodes, sorted
+	 */
 	public static List<SourceNode> folderNodes(Path folder) throws IOException {
 		return list(folder).stream().filter(LibraryEntry::isBrowsable).map(SourceNode::of).toList();
 	}
 
-	/** The tracks an entry stands for: a track itself, a folder's direct tracks, or a playlist's existing tracks. */
+	/**
+	 * The tracks an entry stands for: a track itself, a folder's direct tracks, or a playlist's existing tracks.
+	 *
+	 * @param entry the library entry
+	 * @return the tracks
+	 */
 	public static List<Path> tracksOf(LibraryEntry entry) throws IOException {
 		return switch (entry.kind()) {
 			case TRACK -> List.of(entry.path());
@@ -85,22 +110,28 @@ public final class MusicLibrary {
 		};
 	}
 
+	/** The browser line of {@code path}; null for hidden files and files that are neither audio nor playlists. */
 	private static LibraryEntry toEntry(Path path) {
 		Path fileName = path.getFileName();
 		if (fileName == null || isHidden(path)) {
 			return null;
 		}
-		String name = fileName.toString();
+		Kind kind = kindOf(path);
+		if (kind == null) {
+			return null;
+		}
+		return new LibraryEntry(path, kind, kind == Kind.TRACK ? AudioFiles.baseName(path) : fileName.toString());
+	}
+
+	/** What {@code path} is in the browser; null for a file that is neither audio nor a playlist. */
+	private static @Nullable Kind kindOf(Path path) {
 		if (Files.isDirectory(path)) {
-			return new LibraryEntry(path, Kind.FOLDER, name);
+			return Kind.FOLDER;
 		}
 		if (AudioFiles.isPlaylist(path)) {
-			return new LibraryEntry(path, Kind.PLAYLIST, name);
+			return Kind.PLAYLIST;
 		}
-		if (AudioFiles.isAudio(path)) {
-			return new LibraryEntry(path, Kind.TRACK, AudioFiles.baseName(path));
-		}
-		return null;
+		return AudioFiles.isAudio(path) ? Kind.TRACK : null;
 	}
 
 	private static boolean isHidden(Path path) {

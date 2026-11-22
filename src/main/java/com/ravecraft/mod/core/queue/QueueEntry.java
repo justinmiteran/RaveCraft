@@ -9,6 +9,7 @@ public record QueueEntry(UUID entryId, UUID owner, String ownerName, String titl
 	public static final int MAX_OWNER_NAME = 16;
 	public static final int MAX_TITLE = 128;
 
+	/** Cuts the texts to their maximum; a negative duration becomes unknown. */
 	public QueueEntry {
 		Objects.requireNonNull(entryId);
 		Objects.requireNonNull(owner);
@@ -17,6 +18,7 @@ public record QueueEntry(UUID entryId, UUID owner, String ownerName, String titl
 		durationMs = durationMs < 0 ? UNKNOWN_DURATION : durationMs;
 	}
 
+	/** An entry whose duration is unknown. */
 	public QueueEntry(UUID entryId, UUID owner, String ownerName, String title) {
 		this(entryId, owner, ownerName, title, UNKNOWN_DURATION);
 	}

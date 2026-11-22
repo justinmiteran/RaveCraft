@@ -6,6 +6,8 @@ package com.ravecraft.mod.core.acoustics.occlusion;
  * crossed to get in. Reusable ({@link #start} resets it) and not thread-safe.
  */
 public final class VoxelWalk {
+	private static final int AXES = 3;
+
 	private final int[] cell = new int[3];
 	private final int[] end = new int[3];
 	private final int[] step = new int[3];
@@ -19,7 +21,16 @@ public final class VoxelWalk {
 	private boolean first;
 	private boolean last;
 
-	/** Starts a walk from (x0, y0, z0) to (x1, y1, z1), positioned on the voxel holding the start. */
+	/**
+	 * Starts a walk from (x0, y0, z0) to (x1, y1, z1), positioned on the voxel holding the start.
+	 *
+	 * @param x0 the start's x
+	 * @param y0 the start's y
+	 * @param z0 the start's z
+	 * @param x1 the end's x
+	 * @param y1 the end's y
+	 * @param z1 the end's z
+	 */
 	public void start(double x0, double y0, double z0, double x1, double y1, double z1) {
 		double[] from = {x0, y0, z0};
 		double[] delta = {x1 - x0, y1 - y0, z1 - z0};
@@ -31,7 +42,7 @@ public final class VoxelWalk {
 		end[1] = (int) Math.floor(y1);
 		end[2] = (int) Math.floor(z1);
 		entryAxis = 0;
-		for (int a = 0; a < 3; a++) {
+		for (int a = 0; a < AXES; a++) {
 			double d = delta[a];
 			if (d > 0) {
 				step[a] = 1;
@@ -75,7 +86,7 @@ public final class VoxelWalk {
 		exitT = 1;
 		if (!last) {
 			// Lowest axis first on ties; an axis already at its end coordinate never steps again.
-			for (int a = 0; a < 3; a++) {
+			for (int a = 0; a < AXES; a++) {
 				if (cell[a] != end[a] && (next < 0 || tMax[a] < tMax[next])) {
 					next = a;
 				}
@@ -84,42 +95,83 @@ public final class VoxelWalk {
 		}
 	}
 
+	/**
+	 * The current voxel's x.
+	 *
+	 * @return the voxel's x
+	 */
 	public int x() {
 		return cell[0];
 	}
 
+	/**
+	 * The current voxel's y.
+	 *
+	 * @return the voxel's y
+	 */
 	public int y() {
 		return cell[1];
 	}
 
+	/**
+	 * The current voxel's z.
+	 *
+	 * @return the voxel's z
+	 */
 	public int z() {
 		return cell[2];
 	}
 
-	/** The segment's length in blocks. */
+	/**
+	 * The segment's length in blocks.
+	 *
+	 * @return the length, in blocks
+	 */
 	public double length() {
 		return length;
 	}
 
-	/** The fraction of the segment where it enters the current voxel. */
+	/**
+	 * The fraction of the segment where it enters the current voxel.
+	 *
+	 * @return the entry fraction, 0 to 1
+	 */
 	public double enterT() {
 		return enterT;
 	}
 
-	/** The fraction of the segment where it leaves the current voxel (1 for the last one). */
+	/**
+	 * The fraction of the segment where it leaves the current voxel (1 for the last one).
+	 *
+	 * @return the exit fraction, 0 to 1
+	 */
 	public double exitT() {
 		return exitT;
 	}
 
-	/** The axis crossed to enter the current voxel ({@link VoxelSample#X}, {@code Y} or {@code Z}); the dominant axis for the first. */
+	/**
+	 * The axis crossed to enter the current voxel ({@link VoxelSample#X}, {@code Y} or {@code Z}); the dominant axis for the first.
+	 *
+	 * @return the entry axis
+	 */
 	public int entryAxis() {
 		return entryAxis;
 	}
 
+	/**
+	 * Whether the current voxel holds the segment's start.
+	 *
+	 * @return true for the first voxel
+	 */
 	public boolean first() {
 		return first;
 	}
 
+	/**
+	 * Whether the current voxel holds the segment's end.
+	 *
+	 * @return true for the last voxel
+	 */
 	public boolean last() {
 		return last;
 	}

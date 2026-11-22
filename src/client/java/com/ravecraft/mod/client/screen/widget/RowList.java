@@ -44,11 +44,13 @@ public abstract class RowList extends AbstractWidget {
 	private boolean pressDoubleClick;
 	private long lastAutoScroll;
 
+	/** An empty list of rows {@code rowH} high. */
 	protected RowList(int x, int y, int width, int height, int rowH, Component label) {
 		super(x, y, width, height, label);
 		this.rowH = rowH;
 	}
 
+	/** How many rows the list holds. */
 	protected abstract int rowCount();
 
 	/** Row {@code index}, from 0 to {@link #rowCount()} - 1. */
@@ -76,10 +78,12 @@ public abstract class RowList extends AbstractWidget {
 		dragging = false;
 	}
 
+	/** Scrolls back to the top. */
 	protected final void resetScroll() {
 		scroll = 0;
 	}
 
+	/** The top of the first row, scroll aside. */
 	protected final int innerTop() {
 		return getY() + PAD;
 	}
@@ -121,15 +125,21 @@ public abstract class RowList extends AbstractWidget {
 			return true;
 		}
 		int index = rowAt(event.x(), event.y());
+		return index >= 0 && pressRow(index, event, doubleClick);
+	}
+
+	/** A press on row {@code index}: starts a drag on a draggable row away from its items, else clicks the row. */
+	private boolean pressRow(int index, MouseButtonEvent event, boolean doubleClick) {
 		Font font = Minecraft.getInstance().font;
-		if (index >= 0 && dropRange() != null && row(index).draggable() && !row(index).onItem(font, event.x(), rowRight())) {
+		ListRow row = row(index);
+		if (dropRange() != null && row.draggable() && !row.onItem(font, event.x(), rowRight())) {
 			dragFrom = index;
 			pressY = event.y();
 			dragging = false;
 			pressDoubleClick = doubleClick;
 			return true;
 		}
-		if (index >= 0 && row(index).clickAt(font, event.x(), rowRight(), doubleClick)) {
+		if (row.clickAt(font, event.x(), rowRight(), doubleClick)) {
 			playDownSound(Minecraft.getInstance().getSoundManager());
 			return true;
 		}
@@ -158,27 +168,33 @@ public abstract class RowList extends AbstractWidget {
 	@Override
 	public boolean mouseReleased(MouseButtonEvent event) {
 		bar.release();
-		if (dragFrom >= 0) {
-			int from = dragFrom;
-			boolean moved = dragging;
-			cancelDrag();
-			if (from >= rowCount() || !row(from).draggable()) {
-				return true;
-			}
-			int[] range = dropRange();
-			if (moved) {
-				if (range != null && inside(event.x(), event.y())) {
-					int gap = gapAt(event.y(), range);
-					if (gap != from && gap != from + 1) {
-						onMove(from, gap);
-					}
-				}
-			} else if (row(from).click(pressDoubleClick)) {
-				playDownSound(Minecraft.getInstance().getSoundManager());
-			}
+		if (dragFrom < 0) {
+			return super.mouseReleased(event);
+		}
+		int from = dragFrom;
+		boolean moved = dragging;
+		cancelDrag();
+		if (from >= rowCount() || !row(from).draggable()) {
 			return true;
 		}
-		return super.mouseReleased(event);
+		if (moved) {
+			drop(from, event);
+		} else if (row(from).click(pressDoubleClick)) {
+			playDownSound(Minecraft.getInstance().getSoundManager());
+		}
+		return true;
+	}
+
+	/** Row {@code from} released after a drag: moved to the gap under the mouse, unless that leaves it in place. */
+	private void drop(int from, MouseButtonEvent event) {
+		int[] range = dropRange();
+		if (range == null || !inside(event.x(), event.y())) {
+			return;
+		}
+		int gap = gapAt(event.y(), range);
+		if (gap != from && gap != from + 1) {
+			onMove(from, gap);
+		}
 	}
 
 	@Override
@@ -202,48 +218,76 @@ public abstract class RowList extends AbstractWidget {
 		}
 		int max = maxScroll();
 		scroll = Mth.clamp(scroll, 0, max);
-		int left = getX() + PAD;
-		int right = rowRight();
 		int[] range = dropRange();
-		if (dragFrom >= 0 && (range == null || dragFrom >= count || !row(dragFrom).draggable())) {
-			cancelDrag();
-		}
+		forgetStaleDrag(range, count);
 		if (dragging) {
 			autoScroll(mouseY, max);
 		}
-		int hovered = isHovered() && !dragging ? rowAt(mouseX, mouseY) : -1;
+		Frame frame = new Frame(graphics, font, getX() + PAD, rowRight(), mouseX, mouseY);
 		graphics.enableScissor(getX() + 1, innerTop(), getX() + width - 1, innerTop() + innerHeight());
-		for (int i = scroll / rowH; i < count; i++) {
-			int rowY = innerTop() + i * rowH - scroll;
-			if (rowY >= innerTop() + innerHeight()) {
-				break;
-			}
-			ListRow row = row(i);
-			boolean over = i == hovered;
-			if (over && row.highlights()) {
-				graphics.fill(left, rowY, right, rowY + rowH, HOVER);
-			}
-			row.render(graphics, font, left, right, rowY, rowH, over, mouseX);
-			if (dragging && i == dragFrom) {
-				graphics.fill(left, rowY, right, rowY + rowH, DIMMED);
-			}
-			if (over) {
-				List<Component> tooltip = row.tooltipAt(font, mouseX, right);
-				if (!tooltip.isEmpty()) {
-					graphics.setTooltipForNextFrame(font, tooltip, Optional.empty(), mouseX, mouseY);
-				}
-			}
-		}
+		drawRows(frame, count, isHovered() && !dragging ? rowAt(mouseX, mouseY) : -1);
 		if (dragging) {
-			int lineY = innerTop() + gapAt(mouseY, range) * rowH - scroll;
-			lineY = Mth.clamp(lineY, innerTop(), innerTop() + innerHeight() - 1);
-			graphics.fill(left, lineY, right, lineY + 1, DROP_LINE);
+			drawDropLine(frame, range);
 		}
 		graphics.disableScissor();
 		if (max > 0) {
-			ScrollbarView.draw(graphics, getX() + width - PAD - SCROLLBAR_W, innerTop(), innerHeight(), count * rowH,
-					scroll, bar.dragging() || isHovered() && onBar(mouseX, mouseY));
+			ScrollbarView.draw(graphics, new ScrollbarView.Track(getX() + width - PAD - SCROLLBAR_W, innerTop(),
+					innerHeight()), count * rowH, scroll, bar.dragging() || isHovered() && onBar(mouseX, mouseY));
 		}
+	}
+
+	/** What drawing the rows of one frame needs: where they run, and where the mouse is. */
+	private record Frame(GuiGraphicsExtractor graphics, Font font, int left, int right, int mouseX, int mouseY) {
+	}
+
+	/** Drops a drag whose row is gone or no longer draggable, or in a list that stopped reordering. */
+	private void forgetStaleDrag(int @Nullable [] range, int count) {
+		if (dragFrom >= 0 && (range == null || dragFrom >= count || !row(dragFrom).draggable())) {
+			cancelDrag();
+		}
+	}
+
+	/** Draws the visible rows; {@code hovered} is the row under the mouse, or -1. */
+	private void drawRows(Frame frame, int count, int hovered) {
+		int bottom = innerTop() + innerHeight();
+		for (int i = scroll / rowH; i < count; i++) {
+			int rowY = innerTop() + i * rowH - scroll;
+			if (rowY >= bottom) {
+				break;
+			}
+			drawRow(frame, i, rowY, i == hovered);
+		}
+	}
+
+	/** Draws row {@code i} at {@code rowY}: its highlight, the row, the dimming of a dragged row and its tooltip. */
+	private void drawRow(Frame frame, int i, int rowY, boolean over) {
+		GuiGraphicsExtractor graphics = frame.graphics();
+		ListRow row = row(i);
+		if (over && row.highlights()) {
+			graphics.fill(frame.left(), rowY, frame.right(), rowY + rowH, HOVER);
+		}
+		row.render(graphics, frame.font(), new ListRow.Box(frame.left(), frame.right(), rowY, rowH), over, frame.mouseX());
+		if (dragging && i == dragFrom) {
+			graphics.fill(frame.left(), rowY, frame.right(), rowY + rowH, DIMMED);
+		}
+		if (over) {
+			showTooltip(frame, row);
+		}
+	}
+
+	private void showTooltip(Frame frame, ListRow row) {
+		List<Component> tooltip = row.tooltipAt(frame.font(), frame.mouseX(), frame.right());
+		if (!tooltip.isEmpty()) {
+			frame.graphics().setTooltipForNextFrame(frame.font(), tooltip, Optional.empty(), frame.mouseX(),
+					frame.mouseY());
+		}
+	}
+
+	/** The insertion line at the gap under the mouse. */
+	private void drawDropLine(Frame frame, int[] range) {
+		int lineY = innerTop() + gapAt(frame.mouseY(), range) * rowH - scroll;
+		lineY = Mth.clamp(lineY, innerTop(), innerTop() + innerHeight() - 1);
+		frame.graphics().fill(frame.left(), lineY, frame.right(), lineY + 1, DROP_LINE);
 	}
 
 	/** The gap nearest to {@code mouseY}, within {@code range}. */

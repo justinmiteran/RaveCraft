@@ -20,6 +20,7 @@ public final class LibraryFolders {
 	private static final Gson GSON = new Gson();
 	private static final LibraryFolders EMPTY = new LibraryFolders(List.of(), List.of());
 
+	/** The outcome of adding a folder. */
 	public enum Result {
 		ADDED, DUPLICATE, INSIDE_EXISTING, REPLACED_CHILDREN, FULL,
 		/** An exclusion that is not strictly inside a chosen folder. */
@@ -38,10 +39,21 @@ public final class LibraryFolders {
 		this.excluded = List.copyOf(excluded);
 	}
 
+	/**
+	 * No folder chosen.
+	 *
+	 * @return the empty folders
+	 */
 	public static LibraryFolders empty() {
 		return EMPTY;
 	}
 
+	/**
+	 * The given folders made absolute, without duplicates and up to the maximum.
+	 *
+	 * @param paths the folders chosen
+	 * @return the folders
+	 */
 	public static LibraryFolders of(List<Path> paths) {
 		List<Path> list = new ArrayList<>();
 		for (Path path : paths) {
@@ -53,15 +65,30 @@ public final class LibraryFolders {
 		return new LibraryFolders(list, List.of());
 	}
 
+	/**
+	 * The chosen folders, absolute and normalized.
+	 *
+	 * @return the chosen folders
+	 */
 	public List<Path> paths() {
 		return paths;
 	}
 
-	/** The excluded folders, each strictly inside a chosen folder. */
+	/**
+	 * The excluded folders, each strictly inside a chosen folder.
+	 *
+	 * @return the excluded folders
+	 */
 	public List<Path> excluded() {
 		return excluded;
 	}
 
+	/**
+	 * Adds {@code path}, replacing chosen folders inside it; the result says what happened.
+	 *
+	 * @param path the folder to add
+	 * @return what the addition did
+	 */
 	public Added add(Path path) {
 		List<Path> added = addTo(paths, path.toAbsolutePath().normalize());
 		return added == null ? new Added(refusal(paths, path), this)
@@ -69,7 +96,12 @@ public final class LibraryFolders {
 						new LibraryFolders(added, excluded));
 	}
 
-	/** Hides a subfolder of a chosen folder, and everything under it, from the library. */
+	/**
+	 * Hides a subfolder of a chosen folder, and everything under it, from the library.
+	 *
+	 * @param path the folder to hide
+	 * @return what the exclusion did
+	 */
 	public Added exclude(Path path) {
 		Path folder = path.toAbsolutePath().normalize();
 		if (!insideChosen(paths, folder)) {
@@ -81,7 +113,12 @@ public final class LibraryFolders {
 						new LibraryFolders(paths, added));
 	}
 
-	/** True when {@code folder} is a chosen folder or lies inside one, so adding it would change nothing. */
+	/**
+	 * True when {@code folder} is a chosen folder or lies inside one, so adding it would change nothing.
+	 *
+	 * @param folder the folder
+	 * @return true when the folder is already covered
+	 */
 	public boolean covers(Path folder) {
 		Path at = folder.toAbsolutePath().normalize();
 		for (Path chosen : paths) {
@@ -92,11 +129,22 @@ public final class LibraryFolders {
 		return false;
 	}
 
+	/**
+	 * Whether {@code folder} itself is excluded.
+	 *
+	 * @param folder the folder
+	 * @return true when the folder is excluded
+	 */
 	public boolean isExcluded(Path folder) {
 		return excluded.contains(folder.toAbsolutePath().normalize());
 	}
 
-	/** True when an excluded folder lies strictly inside {@code folder}. */
+	/**
+	 * True when an excluded folder lies strictly inside {@code folder}.
+	 *
+	 * @param folder the folder
+	 * @return true when it holds an exclusion
+	 */
 	public boolean holdsExclusion(Path folder) {
 		Path at = folder.toAbsolutePath().normalize();
 		for (Path hidden : excluded) {
@@ -110,6 +158,9 @@ public final class LibraryFolders {
 	/**
 	 * The folders to expand, top down, so every exclusion inside {@code folder} shows: {@code folder} itself and
 	 * each folder between it and an excluded one.
+	 *
+	 * @param folder the folder
+	 * @return the folders to expand, top down
 	 */
 	public List<Path> foldersToReveal(Path folder) {
 		Path at = folder.toAbsolutePath().normalize();
@@ -128,7 +179,12 @@ public final class LibraryFolders {
 		return open;
 	}
 
-	/** Shows an excluded folder again. */
+	/**
+	 * Shows an excluded folder again.
+	 *
+	 * @param path the excluded folder
+	 * @return the folders without that exclusion
+	 */
 	public LibraryFolders include(Path path) {
 		Path folder = path.toAbsolutePath().normalize();
 		if (!excluded.contains(folder)) {
@@ -139,7 +195,12 @@ public final class LibraryFolders {
 		return new LibraryFolders(paths, kept);
 	}
 
-	/** Drops a chosen folder and the exclusions inside it. */
+	/**
+	 * Drops a chosen folder and the exclusions inside it.
+	 *
+	 * @param path the chosen folder
+	 * @return the folders without it
+	 */
 	public LibraryFolders remove(Path path) {
 		Path folder = path.toAbsolutePath().normalize();
 		if (!paths.contains(folder)) {
@@ -205,6 +266,9 @@ public final class LibraryFolders {
 	/**
 	 * Malformed or unexpected JSON gives empty lists; bad entries are skipped, each list is capped at MAX, and
 	 * exclusions outside the chosen folders are dropped.
+	 *
+	 * @param json the saved text
+	 * @return the folders read
 	 */
 	public static LibraryFolders fromJson(String json) {
 		try {
@@ -235,29 +299,36 @@ public final class LibraryFolders {
 			if (list.size() >= MAX) {
 				break;
 			}
-			if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
-				continue;
-			}
-			try {
-				String text = element.getAsString();
-				if (text.isBlank()) {
-					continue;
-				}
-				Path raw = Path.of(text);
-				if (!raw.isAbsolute()) {
-					continue;
-				}
-				Path path = raw.normalize();
-				if (!list.contains(path)) {
-					list.add(path);
-				}
-			} catch (RuntimeException e) {
-				// invalid path: skipped
+			Path path = absolute(element);
+			if (path != null && !list.contains(path)) {
+				list.add(path);
 			}
 		}
 		return list;
 	}
 
+	/** The normalized absolute path a JSON string holds; null for anything else, a blank or an invalid path. */
+	private static @Nullable Path absolute(JsonElement element) {
+		if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
+			return null;
+		}
+		String text = element.getAsString();
+		if (text.isBlank()) {
+			return null;
+		}
+		try {
+			Path raw = Path.of(text);
+			return raw.isAbsolute() ? raw.normalize() : null;
+		} catch (RuntimeException e) {
+			return null;
+		}
+	}
+
+	/**
+	 * The chosen and excluded folders as the JSON {@link #fromJson} reads.
+	 *
+	 * @return the JSON text
+	 */
 	public String toJson() {
 		JsonObject root = new JsonObject();
 		root.add("folders", array(paths));
@@ -273,7 +344,12 @@ public final class LibraryFolders {
 		return array;
 	}
 
-	/** The user's Music folder when it exists, otherwise nothing. */
+	/**
+	 * The user's Music folder when it exists, otherwise nothing.
+	 *
+	 * @param home the user's home folder
+	 * @return the folders of a first run
+	 */
 	public static LibraryFolders firstRun(Path home) {
 		Path music = home.resolve("Music");
 		return Files.isDirectory(music) ? of(List.of(music)) : EMPTY;

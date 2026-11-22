@@ -14,6 +14,8 @@ public final class Decoders {
 	 * Opens a decoder for {@code file}. OGG returns an empty optional: the client decodes it with Minecraft's own
 	 * Vorbis stream.
 	 *
+	 * @param file the audio file
+	 * @return the decoder, or empty for OGG
 	 * @throws IOException if the file cannot be read or its extension is not an audio format
 	 */
 	public static Optional<PcmDecoder> open(Path file) throws IOException {

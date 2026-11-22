@@ -30,7 +30,14 @@ public final class WorldAcousticGrid implements AcousticGrid {
 	private final AcousticMedium dimension;
 	private final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
-	/** {@code blocks} and {@code media} must be built from {@code settings}, the tracer's own instance. */
+	/**
+	 * {@code blocks} and {@code media} must be built from {@code settings}, the tracer's own instance.
+	 *
+	 * @param level the level to read
+	 * @param blocks the acoustics of each block
+	 * @param media the medium of each fluid and dimension
+	 * @param settings the tracer's settings
+	 */
 	public WorldAcousticGrid(ClientLevel level, BlockAcoustics blocks, MediumResolver media,
 			OcclusionSettings settings) {
 		this.level = level;
@@ -40,6 +47,11 @@ public final class WorldAcousticGrid implements AcousticGrid {
 		this.dimension = media.dimensionMedium(level.dimension().identifier().toString());
 	}
 
+	/**
+	 * The level the grid reads.
+	 *
+	 * @return the client level
+	 */
 	public ClientLevel level() {
 		return level;
 	}
@@ -52,6 +64,9 @@ public final class WorldAcousticGrid implements AcousticGrid {
 	/**
 	 * How a listener whose eye is at {@code eye} hears: the perception of the fluid's medium when the eye is under
 	 * its surface, else of the dimension's medium. Nothing in an unloaded chunk.
+	 *
+	 * @param eye the listener's eye position
+	 * @return the perception of the medium around the eye
 	 */
 	public ListenerPerception perceptionAt(Vec3 eye) {
 		if (!loaded(eye)) {
@@ -64,6 +79,9 @@ public final class WorldAcousticGrid implements AcousticGrid {
 	/**
 	 * The medium of the fluid whose surface is above the eye at {@code eye}, or null when the head is not in a fluid
 	 * (or its chunk is not loaded).
+	 *
+	 * @param eye the listener's eye position
+	 * @return the fluid's medium, or null
 	 */
 	public @Nullable AcousticMedium headMedium(Vec3 eye) {
 		if (!loaded(eye)) {

@@ -87,28 +87,31 @@ class ChorusTest {
 		Chorus chorus = new Chorus(RATE);
 		double w = 2 * Math.PI * 200 / RATE;
 		double inputStep = Math.sin(w) ;
-		long n = 0;
-		float prev = 0;
-		boolean first = true;
-		double maxStep = 0;
 		FluidReverb[] states = {null, ON, null, ON};
+		float[] out = new float[states.length * 10 * 4_800];
+		int at = 0;
 		for (FluidReverb state : states) {
 			for (int b = 0; b < 10; b++) {
-				float[] block = new float[4_800];
-				for (int i = 0; i < block.length; i++) {
-					block[i] = (float) Math.sin(w * n++);
-				}
+				float[] block = sine(w, at, 4_800);
 				chorus.process(block, block.length, state);
-				for (float s : block) {
-					if (!first) {
-						maxStep = Math.max(maxStep, Math.abs(s - prev));
-					}
-					first = false;
-					prev = s;
-				}
+				System.arraycopy(block, 0, out, at, block.length);
+				at += block.length;
 			}
 		}
+		double maxStep = 0;
+		for (int i = 1; i < out.length; i++) {
+			maxStep = Math.max(maxStep, Math.abs(out[i] - out[i - 1]));
+		}
 		assertTrue(maxStep <= 1.5 * inputStep, "max step " + maxStep + " vs input " + inputStep);
+	}
+
+	/** {@code length} samples of the sine of angular step {@code w}, from sample {@code from}. */
+	private static float[] sine(double w, long from, int length) {
+		float[] block = new float[length];
+		for (int i = 0; i < length; i++) {
+			block[i] = (float) Math.sin(w * (from + i));
+		}
+		return block;
 	}
 
 	@Test

@@ -8,6 +8,7 @@ import io.github.jaredmdobson.concentus.OpusException;
 public final class OpusMonoDecoder {
 	private final OpusDecoder decoder;
 
+	/** Creates a mono 48 kHz decoder. */
 	public OpusMonoDecoder() {
 		try {
 			decoder = new OpusDecoder(StreamFormat.SAMPLE_RATE, 1);
@@ -16,7 +17,12 @@ public final class OpusMonoDecoder {
 		}
 	}
 
-	/** Decodes {@code frame}, or conceals a lost frame when it is null. Corrupt data gives silence. */
+	/**
+	 * Decodes {@code frame}, or conceals a lost frame when it is null. Corrupt data gives silence.
+	 *
+	 * @param frame the Opus frame, or null when lost
+	 * @return the decoded samples
+	 */
 	public short[] decode(byte[] frame) {
 		short[] pcm = new short[StreamFormat.FRAME_SAMPLES];
 		try {

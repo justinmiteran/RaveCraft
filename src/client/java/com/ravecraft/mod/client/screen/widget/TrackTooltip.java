@@ -22,6 +22,8 @@ final class TrackTooltip {
 	}
 
 	/**
+	 * The tooltip of {@code track}: its path and tags with {@code shift}, else its title and duration.
+	 *
 	 * @param info the track's tags, empty while they are being read
 	 * @param folder the folder to show under the title, or null outside the flat view
 	 */
@@ -49,10 +51,23 @@ final class TrackTooltip {
 		return lines;
 	}
 
+	/** Adds the tags of {@code info} that are set. */
 	private static void details(List<Component> lines, TrackInfo info) {
 		text(lines, "track.album", info.album());
 		text(lines, "track.year", info.year());
 		text(lines, "track.genre", info.genre());
+		List<Component> tech = technical(info);
+		if (!tech.isEmpty()) {
+			MutableComponent line = Component.empty();
+			for (int i = 0; i < tech.size(); i++) {
+				line.append(i == 0 ? tech.get(i) : Component.literal(" · ").append(tech.get(i)));
+			}
+			lines.add(line.withStyle(ChatFormatting.GRAY));
+		}
+	}
+
+	/** The format, bitrate, sample rate and channels of {@code info} that are known. */
+	private static List<Component> technical(TrackInfo info) {
 		NumberFormat numbers = NumberFormat.getInstance(
 				Locale.forLanguageTag(Minecraft.getInstance().getLanguageManager().getSelected().replace('_', '-')));
 		List<Component> tech = new ArrayList<>();
@@ -74,13 +89,7 @@ final class TrackTooltip {
 				default -> Component.translatable(SpeakerSprites.KEY + "track.channels.many", info.channels());
 			});
 		}
-		if (!tech.isEmpty()) {
-			MutableComponent line = Component.empty();
-			for (int i = 0; i < tech.size(); i++) {
-				line.append(i == 0 ? tech.get(i) : Component.literal(" · ").append(tech.get(i)));
-			}
-			lines.add(line.withStyle(ChatFormatting.GRAY));
-		}
+		return tech;
 	}
 
 	private static void text(List<Component> lines, String key, String value) {

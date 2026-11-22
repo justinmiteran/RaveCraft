@@ -13,6 +13,10 @@ import java.util.Set;
 public record RoomShape(double openness, double meanFreePath, double absorption, double hitAbsorption,
 		double irregularity) {
 	private static final double MIN_RT60 = 0.1;
+	/** Sabine's constant in seconds per metre: 24·ln(10) / c. */
+	private static final double SABINE = 0.161;
+	/** The mean free path is this many times the volume over the surface. */
+	private static final double FREE_PATH_RATIO = 4;
 	/** The faces of a closed box: the number of distinct faces the smoothest enclosure shows. */
 	private static final int BOX_FACES = 6;
 	/** Faces beyond the six of a box at which a space counts as fully rugged. */
@@ -23,6 +27,12 @@ public record RoomShape(double openness, double meanFreePath, double absorption,
 	/** How fast the reverberant tail shrinks as rays escape: half open gives an eighth of the Eyring time. */
 	private static final int OPENNESS_EXPONENT = 3;
 
+	/**
+	 * Sums up the rays of one probe.
+	 *
+	 * @param hits the rays, in any order
+	 * @param rayLength the length of an escaped ray
+	 */
 	public static RoomShape of(List<RayHit> hits, double rayLength) {
 		if (hits.isEmpty()) {
 			return new RoomShape(1, rayLength, 1, 1, UNKNOWN_IRREGULARITY);
@@ -57,7 +67,7 @@ public record RoomShape(double openness, double meanFreePath, double absorption,
 		for (RayHit hit : hits) {
 			if (!hit.open() && hit.faceAxis() != RayHit.NO_FACE) {
 				faced++;
-				faces.add(((long) hit.faceAxis() << 32) | (hit.facePlane() & 0xFFFF_FFFFL));
+				faces.add(((long) hit.faceAxis() << Integer.SIZE) | Integer.toUnsignedLong(hit.facePlane()));
 			}
 		}
 		if (faced <= BOX_FACES) {
@@ -78,7 +88,7 @@ public record RoomShape(double openness, double meanFreePath, double absorption,
 			return maxDecaySeconds;
 		}
 		double enclosed = Math.pow(1 - Math.clamp(openness, 0, 1), OPENNESS_EXPONENT);
-		double seconds = 0.161 * meanFreePath / (-4 * Math.log(1 - a)) * enclosed;
+		double seconds = SABINE * meanFreePath / (-FREE_PATH_RATIO * Math.log(1 - a)) * enclosed;
 		return Math.clamp(seconds, MIN_RT60, Math.max(MIN_RT60, maxDecaySeconds));
 	}
 }

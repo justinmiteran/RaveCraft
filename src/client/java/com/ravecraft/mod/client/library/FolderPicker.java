@@ -20,10 +20,13 @@ public final class FolderPicker {
 
 	/** Outcome of a folder pick. */
 	public sealed interface PickResult {
+		/** The player chose {@code folder}. */
 		record Chosen(Path folder) implements PickResult {}
 
+		/** The player closed the dialog. */
 		record Cancelled() implements PickResult {}
 
+		/** No dialog could open, for {@code reason}. */
 		record Unavailable(String reason) implements PickResult {}
 	}
 
@@ -47,7 +50,13 @@ public final class FolderPicker {
 	 */
 	private static final String FORCED = System.getProperty("ravecraft.folderDialog", "");
 
-	/** Opens the dialog on {@code start}, or on the user's home folder when it is null. */
+	/**
+	 * Opens the dialog on {@code start}, or on the user's home folder when it is null.
+	 *
+	 * @param title the dialog's title
+	 * @param start the folder to open on, or null
+	 * @return the folder chosen, completed off the client thread
+	 */
 	public static CompletableFuture<PickResult> pick(String title, @Nullable Path start) {
 		if (FORCED.equals("builtin")) {
 			return CompletableFuture.completedFuture(new PickResult.Unavailable("forced by -Dravecraft.folderDialog"));

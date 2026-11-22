@@ -32,13 +32,26 @@ public final class VolumeSlider extends AbstractWidget {
 	private long lastSendMs;
 	private long localUntilMs;
 
+	/**
+	 * The volume slider of the speaker at {@code pos}.
+	 *
+	 * @param x the slider's left edge
+	 * @param y the slider's top
+	 * @param width the slider's width
+	 * @param height the slider's height
+	 * @param pos where the speaker stands
+	 */
 	public VolumeSlider(int x, int y, int width, int height, BlockPos pos) {
 		super(x, y, width, height, Component.empty());
 		this.pos = pos;
 		updateLabel();
 	}
 
-	/** The volume the server reports, shown unless the player has just moved the slider. */
+	/**
+	 * The volume the server reports, shown unless the player has just moved the slider.
+	 *
+	 * @param serverVolume the volume the server reports
+	 */
 	public void sync(int serverVolume) {
 		if (!dragging && Util.getMillis() >= localUntilMs && serverVolume != volume) {
 			volume = serverVolume;
@@ -110,7 +123,7 @@ public final class VolumeSlider extends AbstractWidget {
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.VOLUME, getX(),
 				getY() + (height - SpeakerSprites.ICON) / 2, SpeakerSprites.ICON, SpeakerSprites.ICON, active ? 1.0F : 0.4F);
 		SpeakerSprites.copperBar(graphics, trackX(), getY() + (height - SpeakerSprites.BAR_H) / 2, trackWidth(),
-				volume / (float) SpeakerSettings.MAX_VOLUME, true, 1.0F);
+				new SpeakerSprites.Bar(volume / (float) SpeakerSettings.MAX_VOLUME, true, 1.0F));
 	}
 
 	private int trackX() {

@@ -14,12 +14,27 @@ public final class OffThread {
 	private OffThread() {
 	}
 
-	/** Runs {@code task} on the IO pool, then {@code apply} (or {@code failed}, after logging) on the client thread. */
+	/**
+	 * Runs {@code task} on the IO pool, then {@code apply} (or {@code failed}, after logging) on the client thread.
+	 *
+	 * @param <T> the task's result type
+	 * @param task the work to run off thread
+	 * @param apply receives the result on the client thread
+	 * @param failed runs on the client thread when the task fails
+	 */
 	public static <T> void run(Callable<T> task, Consumer<T> apply, Runnable failed) {
 		run(Util.ioPool(), task, apply, failed);
 	}
 
-	/** Same, on {@code executor}. */
+	/**
+	 * Same, on {@code executor}.
+	 *
+	 * @param <T> the task's result type
+	 * @param executor where the task runs
+	 * @param task the work to run off thread
+	 * @param apply receives the result on the client thread
+	 * @param failed runs on the client thread when the task fails
+	 */
 	public static <T> void run(Executor executor, Callable<T> task, Consumer<T> apply, Runnable failed) {
 		CompletableFuture.supplyAsync(() -> {
 			try {

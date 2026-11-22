@@ -15,8 +15,35 @@ public final class SpaceSlots {
 	 * Returns a new array of length {@link #SLOTS} holding the loudest session ids with gain above
 	 * zero. An id present in {@code previous} and still selected keeps its index; the others fill the
 	 * free indexes in loudness order. Ties are broken by the smaller session id.
+	 *
+	 * @param outsideGains the gain of each session outside the listener's space
+	 * @param previous the last assignment
+	 * @return the session id of each slot, or null
 	 */
 	public static Integer[] assign(Map<Integer, Double> outsideGains, Integer[] previous) {
+		List<Integer> ranked = ranked(outsideGains);
+		Integer[] result = new Integer[SLOTS];
+		List<Integer> unplaced = new ArrayList<>(ranked);
+		if (previous != null) {
+			for (int i = 0; i < Math.min(SLOTS, previous.length); i++) {
+				Integer p = previous[i];
+				if (p != null && unplaced.remove(p)) {
+					result[i] = p;
+				}
+			}
+		}
+		int free = 0;
+		for (Integer id : unplaced) {
+			while (result[free] != null) {
+				free++;
+			}
+			result[free] = id;
+		}
+		return result;
+	}
+
+	/** The ids with a gain above zero, loudest first and the smaller id first on a tie, at most {@link #SLOTS}. */
+	private static List<Integer> ranked(Map<Integer, Double> outsideGains) {
 		List<Map.Entry<Integer, Double>> ranked = new ArrayList<>();
 		for (Map.Entry<Integer, Double> e : outsideGains.entrySet()) {
 			Double g = e.getValue();
@@ -28,38 +55,21 @@ public final class SpaceSlots {
 			int c = Double.compare(b.getValue(), a.getValue());
 			return c != 0 ? c : Integer.compare(a.getKey(), b.getKey());
 		});
-		int n = Math.min(SLOTS, ranked.size());
-		Integer[] result = new Integer[SLOTS];
-		boolean[] placed = new boolean[n];
-		if (previous != null) {
-			for (int i = 0; i < Math.min(SLOTS, previous.length); i++) {
-				Integer p = previous[i];
-				if (p == null) {
-					continue;
-				}
-				for (int j = 0; j < n; j++) {
-					if (!placed[j] && ranked.get(j).getKey().equals(p)) {
-						result[i] = p;
-						placed[j] = true;
-						break;
-					}
-				}
-			}
+		List<Integer> ids = new ArrayList<>();
+		for (int j = 0; j < Math.min(SLOTS, ranked.size()); j++) {
+			ids.add(ranked.get(j).getKey());
 		}
-		int free = 0;
-		for (int j = 0; j < n; j++) {
-			if (placed[j]) {
-				continue;
-			}
-			while (result[free] != null) {
-				free++;
-			}
-			result[free] = ranked.get(j).getKey();
-		}
-		return result;
+		return ids;
 	}
 
-	/** True when the occlusion is unknown or its loss is below the same-space threshold. */
+	/**
+	 * True when the occlusion is unknown or its loss is below the same-space threshold.
+	 *
+	 * @param occlusionKnown true once the speaker has been traced
+	 * @param occlusionLossDb the occlusion loss, in decibels
+	 * @param sameSpaceLossDb the threshold, in decibels
+	 * @return true when the speaker shares the listener's space
+	 */
 	public static boolean sameSpace(boolean occlusionKnown, double occlusionLossDb, double sameSpaceLossDb) {
 		return !occlusionKnown || occlusionLossDb < sameSpaceLossDb;
 	}
@@ -67,6 +77,12 @@ public final class SpaceSlots {
 	/**
 	 * Same-space test with a 1 dB hysteresis: a speaker already in the listener's space stays there until its loss
 	 * reaches {@code threshold + 1}, and joins only below {@code threshold - 1}. Unknown occlusion counts as same.
+	 *
+	 * @param occlusionKnown true once the speaker has been traced
+	 * @param occlusionLossDb the occlusion loss, in decibels
+	 * @param sameSpaceLossDb the threshold, in decibels
+	 * @param wasSame true when the speaker was in the listener's space
+	 * @return true when the speaker shares the listener's space
 	 */
 	public static boolean sameSpace(boolean occlusionKnown, double occlusionLossDb, double sameSpaceLossDb,
 			boolean wasSame) {

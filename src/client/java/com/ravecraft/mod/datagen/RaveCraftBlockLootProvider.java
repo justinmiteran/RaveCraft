@@ -14,7 +14,14 @@ import net.minecraft.world.level.storage.loot.functions.CopyComponentsFunction;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.level.storage.loot.providers.number.ints.ContextIntProviders;
 
+/** Block loot tables: each block drops itself. */
 public class RaveCraftBlockLootProvider extends FabricBlockLootSubProvider {
+	/**
+	 * A provider writing to {@code output}.
+	 *
+	 * @param output the pack the files go to
+	 * @param registries the registries, once loaded
+	 */
 	public RaveCraftBlockLootProvider(FabricPackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
 		super(output, registries);
 	}

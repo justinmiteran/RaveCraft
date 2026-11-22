@@ -51,6 +51,11 @@ public class PortableSpeakerBlock extends BaseEntityBlock implements SimpleWater
 	private static final VoxelShape SHAPE_NORTH_SOUTH = Shapes.or(Block.box(1, 0, 3.5, 15, 9, 12.5), Block.box(4, 9, 7, 12, 12.5, 9));
 	private static final VoxelShape SHAPE_EAST_WEST = Shapes.or(Block.box(3.5, 0, 1, 12.5, 9, 15), Block.box(7, 9, 4, 9, 12.5, 12));
 
+	/**
+	 * A portable speaker, unpowered and facing north by default.
+	 *
+	 * @param properties the block's properties
+	 */
 	public PortableSpeakerBlock(BlockBehaviour.Properties properties) {
 		super(properties);
 		registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(POWERED, false).setValue(WATERLOGGED, false));

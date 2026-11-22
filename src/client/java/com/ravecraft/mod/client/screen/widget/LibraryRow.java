@@ -27,34 +27,60 @@ public abstract sealed class LibraryRow implements ListRow permits FolderRow, Fi
 	private final List<RowItem> items = new ArrayList<>();
 	private Supplier<List<Component>> tooltip = List::of;
 
+	/** The row of {@code node}, at {@code depth}, labelled with its name. */
 	protected LibraryRow(SourceNode node, int depth) {
 		this.depth = depth;
 		this.label = node.name();
 	}
 
+	/**
+	 * Shows {@code label} instead of the name.
+	 *
+	 * @param label the text to show
+	 * @return this row
+	 */
 	public LibraryRow label(String label) {
 		this.label = label;
 		return this;
 	}
 
+	/**
+	 * Dims the row when {@code greyed}.
+	 *
+	 * @param greyed true to dim the row
+	 * @return this row
+	 */
 	public LibraryRow greyed(boolean greyed) {
 		this.greyed = greyed;
 		return this;
 	}
 
-	/** Leaves out the arrow column, for a list without folders. */
+	/**
+	 * Leaves out the arrow column, for a list without folders.
+	 *
+	 * @return this row
+	 */
 	public LibraryRow noArrowColumn() {
 		this.arrowColumn = false;
 		return this;
 	}
 
-	/** A row that reacts to nothing: no highlight under the mouse. */
+	/**
+	 * A row that reacts to nothing: no highlight under the mouse.
+	 *
+	 * @return this row
+	 */
 	public LibraryRow inert() {
 		this.highlights = false;
 		return this;
 	}
 
-	/** Adds an item left of the ones already added; null adds nothing. */
+	/**
+	 * Adds an item left of the ones already added; null adds nothing.
+	 *
+	 * @param item the item to add, or null
+	 * @return this row
+	 */
 	public LibraryRow item(@Nullable RowItem item) {
 		if (item != null) {
 			items.add(item);
@@ -62,16 +88,28 @@ public abstract sealed class LibraryRow implements ListRow permits FolderRow, Fi
 		return this;
 	}
 
+	/**
+	 * Shows {@code tooltip} when the row is hovered.
+	 *
+	 * @param tooltip the tooltip lines
+	 * @return this row
+	 */
 	public LibraryRow tooltip(List<Component> tooltip) {
 		return tooltip(() -> tooltip);
 	}
 
-	/** A tooltip built only when the row is hovered. */
+	/**
+	 * A tooltip built only when the row is hovered.
+	 *
+	 * @param tooltip builds the tooltip lines
+	 * @return this row
+	 */
 	public LibraryRow tooltip(Supplier<List<Component>> tooltip) {
 		this.tooltip = tooltip;
 		return this;
 	}
 
+	/** Whether the row is dimmed. */
 	protected final boolean greyed() {
 		return greyed;
 	}
@@ -114,7 +152,12 @@ public abstract sealed class LibraryRow implements ListRow permits FolderRow, Fi
 		return left + 1 + depth * INDENT;
 	}
 
-	/** The {@code Loading…} line shown under a folder while its children are listed. */
+	/**
+	 * The {@code Loading…} line shown under a folder while its children are listed.
+	 *
+	 * @param depth the indentation level
+	 * @return the loading row
+	 */
 	public static ListRow loading(int depth) {
 		return (graphics, font, left, end, y) -> {
 			int x = indent(left, depth) + ARROW_W;

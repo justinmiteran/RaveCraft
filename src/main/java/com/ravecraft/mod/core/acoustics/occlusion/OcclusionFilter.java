@@ -1,5 +1,7 @@
 package com.ravecraft.mod.core.acoustics.occlusion;
 
+import com.ravecraft.mod.core.acoustics.Decibels;
+
 /**
  * The treble side of occlusion: a first-order low-pass (bilinear, 6 dB per octave, like the mass law) applied to a
  * stream's mono PCM. Its cutoff is set so the filter loses exactly {@code highLossDb} at {@link #REFERENCE_HZ}; with
@@ -20,12 +22,23 @@ public final class OcclusionFilter {
 	private double x1;
 	private double y1;
 
+	/**
+	 * Creates a filter with no loss.
+	 *
+	 * @param sampleRate the stream's sample rate in hertz
+	 */
 	public OcclusionFilter(double sampleRate) {
 		this.referenceTan = Math.tan(Math.PI * REFERENCE_HZ / sampleRate);
 		this.minK = Math.tan(Math.PI * MIN_CUTOFF_HZ / sampleRate);
 	}
 
-	/** Filters the first {@code count} samples in place, gliding from the previous loss to {@code highLossDb}. */
+	/**
+	 * Filters the first {@code count} samples in place, gliding from the previous loss to {@code highLossDb}.
+	 *
+	 * @param samples the samples to filter
+	 * @param count how many samples to filter
+	 * @param highLossDb the treble loss to reach, in decibels
+	 */
 	public void process(float[] samples, int count, double highLossDb) {
 		double from = lossDb;
 		double to = Math.max(0, highLossDb);
@@ -41,7 +54,7 @@ public final class OcclusionFilter {
 				continue;
 			}
 			// |H| at the reference is K / sqrt(K² + tan²), so this K loses exactly `loss` there.
-			double k = Math.max(minK, referenceTan / Math.sqrt(Math.pow(10, loss / 10) - 1));
+			double k = Math.max(minK, referenceTan / Math.sqrt(Decibels.toPower(loss) - 1));
 			double b = k / (1 + k);
 			double a = (k - 1) / (k + 1);
 			for (int i = start; i < end; i++) {

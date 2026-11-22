@@ -12,6 +12,8 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Walks the chosen folders breadth first for the library index, up to a limit, handing the tracks and playlists it
  * finds to a sink in batches so the list fills in while the walk goes on. Each folder is walked once (nested roots
@@ -40,9 +42,16 @@ public final class FlatScan {
 	private final Exclusions hidden;
 	private final int limit;
 	private final Lister lister;
+	private final List<SourceNode> batch = new ArrayList<>();
 	private int found;
+	private long lastFlush;
 	private volatile boolean cancelled;
 
+	/**
+	 * A walk of {@code roots}, excluding nothing, up to {@link LibraryIndex#LIMIT}.
+	 *
+	 * @param roots the folders to walk
+	 */
 	public FlatScan(List<Path> roots) {
 		this(roots, List.of(), LibraryIndex.LIMIT);
 	}
@@ -50,6 +59,10 @@ public final class FlatScan {
 	/**
 	 * {@code excluded}: folders not entered when met on the way, so nothing under them is walked either;
 	 * {@code limit}: the walk stops once it found this many tracks and playlists, however many folders that takes.
+	 *
+	 * @param roots the folders to walk
+	 * @param excluded the folders to skip
+	 * @param limit the most tracks to find
 	 */
 	public FlatScan(List<Path> roots, List<Path> excluded, int limit) {
 		this(roots, excluded, limit, MusicLibrary::list);
@@ -66,61 +79,84 @@ public final class FlatScan {
 	 * Walks until the limit is reached, nothing is left or the scan is cancelled. A batch goes to {@code sink} every
 	 * {@code batchSize} entries, after a folder when the last batch is 100 ms old, and at the end. Returns true when
 	 * it stopped at the limit with folders left to walk.
+	 *
+	 * @param sink receives each batch
+	 * @param batchSize the entries per batch
+	 * @return true when the walk reached the limit
 	 */
 	public boolean run(Consumer<List<SourceNode>> sink, int batchSize) {
-		List<SourceNode> batch = new ArrayList<>();
-		long lastFlush = System.nanoTime();
+		batch.clear();
+		lastFlush = System.nanoTime();
 		while (!cancelled && !pending.isEmpty() && found < limit) {
-			Path folder = pending.poll();
-			Path real = realPath(folder);
-			if (!Files.isDirectory(folder) || seen.contains(real)) {
+			List<LibraryEntry> entries = open(pending.poll());
+			if (entries == null) {
 				continue;
 			}
-			List<LibraryEntry> entries;
-			try {
-				entries = lister.list(folder);
-			} catch (IOException | SecurityException e) {
-				// Not marked as seen: a link that cannot be listed must not hide the folder it points to.
-				continue;
-			}
-			seen.add(real);
-			for (LibraryEntry entry : entries) {
-				if (cancelled) {
-					break;
-				}
-				switch (entry.kind()) {
-					case ROOT, FOLDER -> {
-						if (!excluded(entry.path()) && !hidden.hides(entry.path())) {
-							pending.add(entry.path());
-						}
-					}
-					case PLAYLIST, TRACK -> {
-						batch.add(SourceNode.of(entry));
-						found++;
-						if (batch.size() >= batchSize) {
-							lastFlush = flush(sink, batch);
-						}
-					}
-				}
-			}
+			takeAll(entries, sink, batchSize);
 			if (!batch.isEmpty() && System.nanoTime() - lastFlush >= FLUSH_NANOS) {
-				lastFlush = flush(sink, batch);
+				flush(sink);
 			}
 		}
 		if (!batch.isEmpty() && !cancelled) {
-			flush(sink, batch);
+			flush(sink);
 		}
 		return !cancelled && !pending.isEmpty();
 	}
 
+	/** The entries of {@code folder}, marking it seen; null for a folder seen already, gone or unreadable. */
+	private @Nullable List<LibraryEntry> open(Path folder) {
+		Path real = realPath(folder);
+		if (!Files.isDirectory(folder) || seen.contains(real)) {
+			return null;
+		}
+		List<LibraryEntry> entries;
+		try {
+			entries = lister.list(folder);
+		} catch (IOException | SecurityException e) {
+			// Not marked as seen: a link that cannot be listed must not hide the folder it points to.
+			return null;
+		}
+		seen.add(real);
+		return entries;
+	}
+
+	/** Takes the entries of one folder in order, until the scan is cancelled. */
+	private void takeAll(List<LibraryEntry> entries, Consumer<List<SourceNode>> sink, int batchSize) {
+		for (LibraryEntry entry : entries) {
+			if (cancelled) {
+				return;
+			}
+			take(entry, sink, batchSize);
+		}
+	}
+
+	/** Queues a folder to walk, or adds a track or playlist to the batch, flushing a full batch. */
+	private void take(LibraryEntry entry, Consumer<List<SourceNode>> sink, int batchSize) {
+		switch (entry.kind()) {
+			case ROOT, FOLDER -> {
+				if (!excluded(entry.path()) && !hidden.hides(entry.path())) {
+					pending.add(entry.path());
+				}
+			}
+			case PLAYLIST, TRACK -> {
+				batch.add(SourceNode.of(entry));
+				found++;
+				if (batch.size() >= batchSize) {
+					flush(sink);
+				}
+			}
+		}
+	}
+
+	/** Stops the walk at its next step; safe from any thread. */
 	public void cancel() {
 		cancelled = true;
 	}
 
-	private static long flush(Consumer<List<SourceNode>> sink, List<SourceNode> batch) {
+	private void flush(Consumer<List<SourceNode>> sink) {
 		sink.accept(List.copyOf(batch));
 		batch.clear();
-		return System.nanoTime();
+		lastFlush = System.nanoTime();
 	}
 
 	private static boolean excluded(Path folder) {

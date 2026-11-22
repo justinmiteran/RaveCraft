@@ -9,12 +9,14 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.DeviceProfile;
+import com.ravecraft.mod.core.acoustics.DeviceProfiles;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
 import com.ravecraft.mod.core.acoustics.reverb.EchoSettings;
 import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
 import com.ravecraft.mod.core.acoustics.reverb.ReverbSettings;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -87,15 +89,14 @@ public final class AcousticSettingsJson {
 			}
 			JsonObject o = root.getAsJsonObject();
 			Reading r = new Reading();
-			JsonObject p = r.object(r.object(o, "profiles"), "portable");
-			DeviceProfile dp = d.portable();
+			JsonObject profiles = r.object(o, "profiles");
 			AcousticSettings read = new AcousticSettings(
 					r.number(o, "rolloff", d.rolloff()),
 					r.number(o, "fadeFraction", d.fadeFraction()),
 					r.number(o, "audibilityThresholdDb", d.audibilityThresholdDb()),
 					r.number(o, "maxRange", d.maxRange()),
-					new DeviceProfile(r.number(p, "powerWatts", dp.powerWatts()), r.number(p, "sensitivityDb", dp.sensitivityDb()),
-							r.number(p, "bassCutDb", dp.bassCutDb()), r.number(p, "bassCutHz", dp.bassCutHz()), dp.directivity()),
+					new DeviceProfiles(readProfile(r, r.object(profiles, SpeakerKind.PORTABLE.id()), d.profiles().portable()),
+							readProfile(r, r.object(profiles, SpeakerKind.PARTY.id()), d.profiles().party())),
 					readOcclusion(r, o, d.occlusion(), warn),
 					readReverb(r, o, d.reverb()));
 			if (o.has(OLD_AIR_KEY)) {
@@ -107,6 +108,12 @@ public final class AcousticSettingsJson {
 			warn.accept("unreadable (" + e.getMessage() + "), using the defaults until the file is fixed");
 			return new Result(d, true);
 		}
+	}
+
+	/** Reads one speaker profile, each missing key taking its value in {@code d}. */
+	private static DeviceProfile readProfile(Reading r, JsonObject p, DeviceProfile d) {
+		return new DeviceProfile(r.number(p, "powerWatts", d.powerWatts()), r.number(p, "sensitivityDb", d.sensitivityDb()),
+				r.number(p, "bassCutDb", d.bassCutDb()), r.number(p, "bassCutHz", d.bassCutHz()), d.directivity());
 	}
 
 	/** Reads the {@code occlusion} section, each missing key taking its value in {@code d}. */

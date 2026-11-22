@@ -13,7 +13,8 @@
 			"com.ravecraft.mod.gametest.SpeakerPlayerGameTest",
 			"com.ravecraft.mod.gametest.BlockAcousticsGameTest",
 			"com.ravecraft.mod.gametest.RoomProbeGameTest",
-			"com.ravecraft.mod.gametest.CarriedSpeakerGameTest"
+			"com.ravecraft.mod.gametest.CarriedSpeakerGameTest",
+			"com.ravecraft.mod.gametest.PartySpeakerGameTest"
 		]
 	},
 	"depends": {

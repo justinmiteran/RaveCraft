@@ -42,6 +42,19 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 						.save(output);
 				// Dyeable like leather armour: the speaker plus any dyes, colours mixed, other components kept.
 				dyedItem(ModBlocks.PORTABLE_SPEAKER.asItem(), "portable_speaker_dye");
+				// PROVISIONAL as well. The portable speaker is consumed with its queue (no component transfer).
+				shaped(RecipeCategory.REDSTONE, ModBlocks.PARTY_SPEAKER)
+						.define('I', Items.IRON_INGOT)
+						.define('N', Items.NOTE_BLOCK)
+						.define('C', Items.COPPER_INGOT)
+						.define('P', ModBlocks.PORTABLE_SPEAKER)
+						.define('R', Items.REDSTONE_BLOCK)
+						.pattern("INI")
+						.pattern("CPC")
+						.pattern("IRI")
+						.unlockedBy("has_portable_speaker", has(ModBlocks.PORTABLE_SPEAKER))
+						.save(output);
+				dyedItem(ModBlocks.PARTY_SPEAKER.asItem(), "party_speaker_dye");
 			}
 		};
 	}

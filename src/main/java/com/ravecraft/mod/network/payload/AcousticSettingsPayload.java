@@ -3,6 +3,7 @@ package com.ravecraft.mod.network.payload;
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.DeviceProfile;
+import com.ravecraft.mod.core.acoustics.DeviceProfiles;
 import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
@@ -30,7 +31,14 @@ public record AcousticSettingsPayload(AcousticSettings settings) implements Cust
 			ByteBufCodecs.DOUBLE, DeviceProfile::sensitivityDb,
 			ByteBufCodecs.DOUBLE, DeviceProfile::bassCutDb,
 			ByteBufCodecs.DOUBLE, DeviceProfile::bassCutHz,
-			(power, sensitivity, bassDb, bassHz) -> new DeviceProfile(power, sensitivity, bassDb, bassHz, Directivity.OMNI));
+			ByteBufCodecs.DOUBLE, p -> p.directivity().halfAngleDeg(),
+			ByteBufCodecs.DOUBLE, p -> p.directivity().rearGainDb(),
+			(power, sensitivity, bassDb, bassHz, halfAngle, rearGain) -> new DeviceProfile(power, sensitivity, bassDb,
+					bassHz, new Directivity(halfAngle, rearGain)));
+	private static final StreamCodec<ByteBuf, DeviceProfiles> PROFILES = StreamCodec.composite(
+			PROFILE, DeviceProfiles::portable,
+			PROFILE, DeviceProfiles::party,
+			DeviceProfiles::new);
 	private static final StreamCodec<ByteBuf, AcousticMaterial> MATERIAL = StreamCodec.composite(
 			ByteBufCodecs.stringUtf8(OcclusionSettings.MAX_NAME), AcousticMaterial::name,
 			ByteBufCodecs.DOUBLE, AcousticMaterial::lossDb,
@@ -104,11 +112,11 @@ public record AcousticSettingsPayload(AcousticSettings settings) implements Cust
 			ByteBufCodecs.DOUBLE, p -> p.settings().fadeFraction(),
 			ByteBufCodecs.DOUBLE, p -> p.settings().audibilityThresholdDb(),
 			ByteBufCodecs.DOUBLE, p -> p.settings().maxRange(),
-			PROFILE, p -> p.settings().portable(),
+			PROFILES, p -> p.settings().profiles(),
 			OCCLUSION, p -> p.settings().occlusion(),
 			REVERB, p -> p.settings().reverb(),
-			(rolloff, fade, threshold, maxRange, portable, occlusion, reverb) -> new AcousticSettingsPayload(
-					new AcousticSettings(rolloff, fade, threshold, maxRange, portable, occlusion, reverb)
+			(rolloff, fade, threshold, maxRange, profiles, occlusion, reverb) -> new AcousticSettingsPayload(
+					new AcousticSettings(rolloff, fade, threshold, maxRange, profiles, occlusion, reverb)
 							.clamped(RaveCraft.LOGGER::warn)));
 
 	@Override

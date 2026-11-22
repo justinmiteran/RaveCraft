@@ -1,5 +1,6 @@
 package com.ravecraft.mod.client.audio;
 
+import com.ravecraft.mod.core.speaker.CarryPlace;
 import com.ravecraft.mod.network.payload.SpeakerHostPayload;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -21,7 +22,7 @@ import org.jspecify.annotations.Nullable;
 public final class ClientSpeakerHosts {
 	/** Hosts kept at most; the oldest told is forgotten first (a speaker still playing is told again on change). */
 	private static final int MAX_HOSTS = 256;
-	/** Height of the chest of a player carrying a speaker outside its hands, as a fraction of its height. */
+	/** Height of the chest of a player carrying a speaker in its inventory or on its back, as a fraction of its height. */
 	private static final double CHEST_HEIGHT = 0.6;
 	private static final Map<UUID, SpeakerHostPayload> HOSTS = new LinkedHashMap<>();
 
@@ -81,7 +82,7 @@ public final class ClientSpeakerHosts {
 	/** Where a speaker held by {@code entity} sounds from: a carrier's eyes or chest, an item entity itself. */
 	private static @Nullable Vec3 entityPosition(SpeakerHostPayload host, @Nullable Entity entity) {
 		if (entity instanceof Player player) {
-			return host.inHand()
+			return host.place().orElse(null) == CarryPlace.HAND
 					? player.getEyePosition()
 					: new Vec3(player.getX(), player.getY() + player.getBbHeight() * CHEST_HEIGHT, player.getZ());
 		}

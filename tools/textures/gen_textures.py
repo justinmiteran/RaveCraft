@@ -222,18 +222,136 @@ def portable_speaker_overlay_on():
     return speaker_icon_layer(False, on=True)
 
 
+# Party speaker (upright box, models/block/party_speaker.json, look v3). Only the woven grille is tinted
+# (tintindex 0): a period-2 checker of light and dark threads with random variation, a lit top-left edge and a
+# shaded right edge, as on the v3 proposal. The front face maps u 2..14, v 0..16, and the plinth below it has
+# its own strip (columns 0-1, turned 90°) that carries the weave on and ends in a shaded bottom edge. Body sides, top and
+# bottom use the portable's rubber. The panel texture is a cutout overlay atlas, never tinted: equaliser logo at
+# (0,0)-(8,5) for the front, the side control panel at (0,8)-(10,13) (volume -, play, volume +, LED), and an opaque
+# 3x3 corner bumper tile at (13,0)-(16,3).
+PANEL_SLOT = (0x18, 0x19, 0x1E)  # side panel strip and its key colours, from the v3 proposal
+PANEL_KEY = (0x4E, 0x53, 0x5F)
+PANEL_LEDGE = (0x2C, 0x2F, 0x37)
+GRILLE_LIGHT = (229, 202)  # threads on even (x + y), mostly the first
+GRILLE_DARK = (179, 152, 126)  # threads on odd (x + y), mostly the first, rarely the last
+GRILLE_EDGE = (240, 152)  # top-left and right borders of the face
+
+
+def party_grille_thread(rnd, x, y):
+    if (x + y) % 2 == 0:
+        return GRILLE_LIGHT[0] if rnd.random() < 0.7 else GRILLE_LIGHT[1]
+    roll = rnd.random()
+    return GRILLE_DARK[0] if roll < 0.6 else GRILLE_DARK[1] if roll < 0.97 else GRILLE_DARK[2]
+
+
+def party_speaker_grille():
+    rnd = random.Random(23)
+    img = new()
+    for y in range(S):
+        for x in range(S):
+            v = party_grille_thread(rnd, x, y)
+            if x == 2 or y == 0:
+                v = GRILLE_EDGE[0]
+            elif x == 13:
+                v = GRILLE_EDGE[1]
+            px(img, x, y, (v, v, v))
+    # Plinth strip (body_lower's front, uv 0..2 x 2..14, turned 90°: column 0 is its top row, column 1 its bottom
+    # row, and v 2..14 runs right to left): one row of weave, in step with the face's checker above it, over a plain
+    # shaded bottom edge.
+    for i in range(2, 14):
+        px(img, 0, i, (party_grille_thread(rnd, 1, i),) * 3)
+        px(img, 1, i, (GRILLE_EDGE[1],) * 3)
+    return img
+
+
+def party_speaker_rubber():
+    return portable_speaker_rubber()
+
+
+def party_panel(on):
+    img = new()
+    for y, row in enumerate(EQ_LOGO):
+        for x, ch in enumerate(row):
+            if ch == "#":
+                px(img, x, y, COPPER_L if y == 0 or EQ_LOGO[y - 1][x] != "#" else COPPER)
+    # Corner bumper: lighter rubber, lit from the top-left.
+    rect(img, 13, 0, 15, 2, RUBBER[2])
+    for i in range(3):
+        px(img, 13 + i, 0, RUBBER[3]); px(img, 13, i, RUBBER[3]); px(img, 15, i, RUBBER[1])
+    px(img, 15, 0, RUBBER[2]); px(img, 14, 2, RUBBER[1])
+    # Side control panel, as on the v3 proposal: a recessed dark strip holding volume -, play, volume + and the
+    # power LED, over a lighter ledge. Rows 8 and 12 stay clear so the body rubber shows around the panel.
+    rect(img, 1, 9, 8, 10, PANEL_SLOT)
+    rect(img, 1, 11, 8, 11, PANEL_LEDGE)
+    px(img, 2, 10, PANEL_KEY); px(img, 6, 10, PANEL_KEY)                   # volume down, volume up
+    px(img, 4, 9, COPPER_L); px(img, 4, 10, COPPER)                        # play
+    px(img, 8, 10, LED_ON if on else LED_OFF)                               # power LED
+    return img
+
+
+def party_speaker_panel():
+    return party_panel(False)
+
+
+def party_speaker_panel_on():
+    return party_panel(True)
+
+
+def party_icon_layer(grille, on=False):
+    """Inventory icon, front view: grille layer (tinted) or overlay (outline, corners, logo, LED)."""
+    img = new()
+    for y in range(1, 15):
+        for x in range(3, 13):
+            edge = x in (3, 12) or y in (1, 14)
+            if grille and not edge:
+                v = 175 if (x + y) % 2 == 0 else 135
+                v = 200 if y == 2 or x == 4 else 105 if y == 13 or x == 11 else v
+                px(img, x, y, (v, v, v))
+            elif not grille and edge:
+                px(img, x, y, (14, 14, 18))
+    if grille:
+        return img
+    for cx, cy in ((2, 0), (11, 0), (2, 13), (11, 13)):
+        rect(img, cx, cy, cx + 2, cy + 2, RUBBER[2])
+        px(img, cx, cy, RUBBER[3]); px(img, cx + 2, cy + 2, RUBBER[1])
+    for x, top in ((5, 5), (7, 3), (9, 4)):  # equaliser logo, top-left of the grille
+        for y in range(top, 7):
+            px(img, x, y, COPPER_L if y == top else COPPER)
+    px(img, 9, 14, LED_ON if on else LED_OFF)
+    return img
+
+
+def party_speaker():
+    return party_icon_layer(True)
+
+
+def party_speaker_overlay():
+    return party_icon_layer(False)
+
+
+def party_speaker_overlay_on():
+    return party_icon_layer(False, on=True)
+
+
 BLOCKS = {
     "portable_speaker_radiator": portable_speaker_radiator,
     "portable_speaker_fabric": portable_speaker_fabric,
     "portable_speaker_rubber": portable_speaker_rubber,
     "portable_speaker_details": portable_speaker_details,
     "portable_speaker_details_on": portable_speaker_details_on,
+    "party_speaker_grille": party_speaker_grille,
+    "party_speaker_rubber": party_speaker_rubber,
+    "party_speaker_panel": party_speaker_panel,
+    "party_speaker_panel_on": party_speaker_panel_on,
 }
 ANIMATED = {}  # name -> (frames fn, frametime ticks)
 ITEMS = {  # name -> fn (flat item textures)
     "portable_speaker": portable_speaker,
     "portable_speaker_overlay": portable_speaker_overlay,
     "portable_speaker_overlay_on": portable_speaker_overlay_on,
+    "party_speaker": party_speaker,
+    "party_speaker_overlay": party_speaker_overlay,
+    "party_speaker_overlay_on": party_speaker_overlay_on,
 }
 
 

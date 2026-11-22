@@ -1,5 +1,6 @@
 package com.ravecraft.mod;
 
+import com.ravecraft.mod.compat.trinkets.TrinketsCompat;
 import com.ravecraft.mod.config.AcousticConfig;
 import com.ravecraft.mod.network.AudioRelay;
 import com.ravecraft.mod.network.SpeakerNetwork;
@@ -10,6 +11,7 @@ import com.ravecraft.mod.registry.ModCreativeTabs;
 import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.registry.ModItems;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +33,19 @@ public class RaveCraft implements ModInitializer {
 		AcousticConfig.init();
 		AudioRelay.init();
 		SpeakerNetwork.init();
+		if (FabricLoader.getInstance().isModLoaded("trinkets")) {
+			initTrinkets();
+		}
 		LOGGER.info("RaveCraft initialized");
+	}
+
+	/** Accepts the party speaker in the Trinkets back slot; on failure, the vanilla chest slot keeps working. */
+	private static void initTrinkets() {
+		try {
+			TrinketsCompat.init();
+		} catch (LinkageError | RuntimeException e) {
+			LOGGER.warn("Trinkets integration disabled, the chest slot still holds a back speaker", e);
+		}
 	}
 
 	/**

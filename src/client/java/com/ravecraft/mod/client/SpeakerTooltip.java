@@ -7,8 +7,9 @@ import com.ravecraft.mod.core.acoustics.DeviceProfile;
 import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.acoustics.Propagation;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
-import com.ravecraft.mod.registry.ModBlocks;
+import com.ravecraft.mod.item.SpeakerItem;
 import com.ravecraft.mod.registry.ModDataComponents;
 import java.util.List;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
@@ -25,22 +26,21 @@ public final class SpeakerTooltip {
 	/** Adds the speaker lines to the tooltips of speaker items. */
 	public static void register() {
 		ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> {
-			if (stack.is(ModBlocks.PORTABLE_SPEAKER.asItem())) {
-				addLines(stack, lines);
+			if (stack.getItem() instanceof SpeakerItem item) {
+				addLines(stack, item.kind(), lines);
 			}
 		});
 	}
 
 	/** Adds the lines of the speaker item {@code stack}: its specs, with {@code Shift} its volume and track too. */
-	private static void addLines(ItemStack stack, List<Component> lines) {
+	private static void addLines(ItemStack stack, SpeakerKind kind, List<Component> lines) {
 		AcousticSettings settings = AcousticSettingsClient.get();
-		DeviceProfile profile = settings.portable();
+		DeviceProfile profile = settings.profile(kind);
 		SpeakerData data = stack.get(ModDataComponents.SPEAKER);
 		int volume = data != null ? data.settings().volume() : SpeakerSettings.DEFAULT_VOLUME;
 		long range = Math.round(Propagation.range(settings, profile, volume / (double) SpeakerSettings.MAX_VOLUME));
 		SpeakerQueue queue = data != null ? data.queue() : SpeakerQueue.EMPTY;
-		Component directivity = Component.translatable(profile.directivity().equals(Directivity.OMNI)
-				? "tooltip.ravecraft.speaker.directivity.omni" : "tooltip.ravecraft.speaker.directivity.directional");
+		Component directivity = directivityText(profile.directivity());
 		boolean shift = Minecraft.getInstance().hasShiftDown();
 		if (shift) {
 			lines.add(gray("tooltip.ravecraft.speaker.base_short", number(profile.powerWatts()), directivity));
@@ -58,6 +58,15 @@ public final class SpeakerTooltip {
 		if (!shift) {
 			lines.add(Component.translatable("tooltip.ravecraft.speaker.shift_hint").withStyle(ChatFormatting.DARK_GRAY));
 		}
+	}
+
+	/** The directivity of a speaker: omnidirectional, or the cone it covers and how much quieter it is behind. */
+	private static Component directivityText(Directivity directivity) {
+		if (directivity.equals(Directivity.OMNI)) {
+			return Component.translatable("tooltip.ravecraft.speaker.directivity.omni");
+		}
+		return Component.translatable("tooltip.ravecraft.speaker.directivity.cone",
+				number(directivity.halfAngleDeg()), number(directivity.rearGainDb()));
 	}
 
 	/** Adds the key that opens the speaker from the inventory, unless it is unbound. */

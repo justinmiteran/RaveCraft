@@ -15,7 +15,10 @@ public final class ModCreativeTabs {
 			FabricCreativeModeTab.builder()
 					.title(Component.translatable("itemGroup.ravecraft.main"))
 					.icon(() -> new ItemStack(ModBlocks.PORTABLE_SPEAKER))
-					.displayItems((parameters, output) -> output.accept(ModBlocks.PORTABLE_SPEAKER))
+					.displayItems((parameters, output) -> {
+						output.accept(ModBlocks.PORTABLE_SPEAKER);
+						output.accept(ModBlocks.PARTY_SPEAKER);
+					})
 					.build());
 
 	private ModCreativeTabs() {

@@ -1,5 +1,6 @@
 {
   "block.ravecraft.portable_speaker": "Portable Speaker",
+  "block.ravecraft.party_speaker": "Party Speaker",
   "itemGroup.ravecraft.main": "RaveCraft",
   "screen.ravecraft.speaker.library": "Library",
   "screen.ravecraft.speaker.queue": "Queue",
@@ -73,7 +74,7 @@
   "tooltip.ravecraft.speaker.queue.one": "1 track queued",
   "tooltip.ravecraft.speaker.shift_hint": "Shift: more info",
   "tooltip.ravecraft.speaker.directivity.omni": "omnidirectional",
-  "tooltip.ravecraft.speaker.directivity.directional": "directional",
+  "tooltip.ravecraft.speaker.directivity.cone": "%s° cone, %s dB behind",
   "screen.ravecraft.speaker.folders.title": "Music folders",
   "screen.ravecraft.speaker.folders.add": "Add a folder…",
   "screen.ravecraft.speaker.folders.browser": "Built-in browser",

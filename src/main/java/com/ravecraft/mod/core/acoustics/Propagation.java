@@ -84,12 +84,29 @@ public final class Propagation {
 	 */
 	public static double gain(AcousticSettings settings, DeviceProfile profile, double volume, double distance,
 			double cosAngle) {
+		return gain(settings, profile, profile.directivity(), volume, distance, cosAngle);
+	}
+
+	/**
+	 * Linear gain at the listener with {@code directivity} in place of the profile's own (a speaker on the ground
+	 * radiates in every direction, whatever its kind).
+	 *
+	 * @param settings the acoustic settings
+	 * @param profile the device
+	 * @param directivity how the sound spreads around the device
+	 * @param volume the volume, 0 to 1
+	 * @param distance the distance, in blocks
+	 * @param cosAngle the cosine of the angle off the device's axis
+	 * @return the linear gain
+	 */
+	public static double gain(AcousticSettings settings, DeviceProfile profile, Directivity directivity, double volume,
+			double distance, double cosAngle) {
 		if (volume <= 0) {
 			return 0;
 		}
 		return volume * distanceGain(settings.rolloff(), distance)
 				* fade(distance, range(settings, profile, volume), settings.fadeFraction())
-				* profile.directivity().gain(cosAngle);
+				* directivity.gain(cosAngle);
 	}
 
 	/**

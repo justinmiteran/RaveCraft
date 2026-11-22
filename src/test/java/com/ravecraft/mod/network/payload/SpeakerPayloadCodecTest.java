@@ -3,6 +3,8 @@ package com.ravecraft.mod.network.payload;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.ravecraft.mod.core.queue.RepeatMode;
+import com.ravecraft.mod.core.speaker.CarryPlace;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload.StateEntry;
 import io.netty.buffer.ByteBuf;
@@ -88,9 +90,10 @@ class SpeakerPayloadCodecTest {
 	void hostRoundTripsBlockAndEntity() {
 		var nether = ResourceKey.create(Registries.DIMENSION, Identifier.withDefaultNamespace("the_nether"));
 		SpeakerHostPayload block = new SpeakerHostPayload(SPEAKER, nether, Optional.of(POS),
-				SpeakerHostPayload.NO_ENTITY, false, 70, true);
+				SpeakerHostPayload.NO_ENTITY, SpeakerKind.PORTABLE, Optional.empty(), 70, true);
 		assertEquals(block, roundTrip(SpeakerHostPayload.CODEC, block));
-		SpeakerHostPayload carried = new SpeakerHostPayload(SPEAKER, nether, Optional.empty(), 4242, true, 0, false);
+		SpeakerHostPayload carried = new SpeakerHostPayload(SPEAKER, nether, Optional.empty(), 4242,
+				SpeakerKind.PORTABLE, Optional.of(CarryPlace.HAND), 0, false);
 		assertEquals(carried, roundTrip(SpeakerHostPayload.CODEC, carried));
 	}
 }

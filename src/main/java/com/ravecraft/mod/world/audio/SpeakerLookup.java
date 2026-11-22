@@ -1,6 +1,6 @@
 package com.ravecraft.mod.world.audio;
 
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.blockentity.SpeakerBlockEntity;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.registry.ModDataComponents;
 import java.util.Optional;
@@ -31,7 +31,7 @@ final class SpeakerLookup {
 	private static Optional<SpeakerHandle> blockHandle(MinecraftServer server, SpeakerHost.Block block, UUID id) {
 		ServerLevel level = server.getLevel(block.dimension());
 		if (level == null || !level.isLoaded(block.pos())
-				|| !(level.getBlockEntity(block.pos()) instanceof PortableSpeakerBlockEntity speaker)
+				|| !(level.getBlockEntity(block.pos()) instanceof SpeakerBlockEntity speaker)
 				|| !speaker.data().id().equals(id)) {
 			return Optional.empty();
 		}
@@ -43,10 +43,13 @@ final class SpeakerLookup {
 		ServerPlayer player = server.getPlayerList().getPlayer(carrier.player());
 		return player == null
 				? Optional.empty()
-				: findCarried(player, id).map(stack -> new CarrierHandle(player, stack, carrier.inHand()));
+				: findCarried(player, id).map(stack -> new CarrierHandle(player, stack, carrier.place()));
 	}
 
-	/** The stack of {@code id} the player carries, in its inventory or where nothing ticks it. */
+	/**
+	 * The stack of {@code id} the player carries: in its inventory, in an accessory back slot (Trinkets), or where
+	 * nothing ticks it.
+	 */
 	static Optional<ItemStack> findCarried(ServerPlayer player, UUID id) {
 		Inventory inventory = player.getInventory();
 		for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
@@ -54,7 +57,7 @@ final class SpeakerLookup {
 				return Optional.of(inventory.getItem(slot));
 			}
 		}
-		return findUnticked(player, id);
+		return SpeakerBackSlots.find(player, stack -> hasId(stack, id)).or(() -> findUnticked(player, id));
 	}
 
 	/**

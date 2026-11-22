@@ -8,4 +8,6 @@ public record DeviceProfile(double powerWatts, double sensitivityDb, double bass
 		Directivity directivity) {
 	/** The portable speaker: 20 W at 85 dB (about 32 blocks), weak bass, omnidirectional. */
 	public static final DeviceProfile PORTABLE = new DeviceProfile(20, 85, -6, 150, Directivity.OMNI);
+	/** The party speaker: 120 W at 87 dB (about 97 blocks on axis), 60 degrees of full gain, 10 dB less behind. */
+	public static final DeviceProfile PARTY = new DeviceProfile(120, 87, -2, 80, new Directivity(60, -10));
 }

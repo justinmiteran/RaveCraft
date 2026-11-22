@@ -323,7 +323,7 @@ public final class OcclusionScheduler {
 	}
 
 	private static double range(AcousticSettings settings, RenderStream stream) {
-		return Propagation.range(settings, settings.portable(), stream.volume);
+		return Propagation.range(settings, stream.profile, stream.volume);
 	}
 
 	/** The straight-line occlusion alone, without a voxel budget (a segment visits a bounded number of voxels). */

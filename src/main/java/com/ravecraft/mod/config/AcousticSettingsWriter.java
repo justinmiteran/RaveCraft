@@ -2,7 +2,6 @@ package com.ravecraft.mod.config;
 
 import com.google.gson.JsonPrimitive;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
-import com.ravecraft.mod.core.acoustics.DeviceProfile;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
@@ -29,7 +28,6 @@ final class AcousticSettingsWriter {
 	 * @param out where the file goes
 	 */
 	static void write(AcousticSettings s, Writer out) {
-		DeviceProfile p = s.portable();
 		String text = """
 				// RaveCraft server acoustics. Read when the server starts; restart it after editing.
 				// Every player receives these settings when joining, so everyone hears speakers the same way.
@@ -52,31 +50,9 @@ final class AcousticSettingsWriter {
 				  // still receive the stream, so a high value costs bandwidth. Bounds: 16 to 512.
 				  "maxRange": %s,
 
-				  // Each device is described by its data sheet; its range is computed from it:
-				  //   level at 1 m = sensitivityDb + 10 x log10(powerWatts)
-				  //   range = distance where that level, falling with "rolloff", reaches "audibilityThresholdDb"
-				  // Four times the power doubles the range (with rolloff 1). The speaker's volume scales it down.
-				  "profiles": {
-				    "portable": {
-				      // Amplifier power, in watts. Bounds: 0.1 to 100000.
-				      "powerWatts": %s,
-
-				      // Sound level 1 m in front of the speaker for 1 W (dB SPL). Bounds: 70 to 115.
-				      "sensitivityDb": %s,
-
-				      // Bass shelf: gain applied below "bassCutHz", in dB. Negative = less bass (small drivers).
-				      // 0 keeps the bass intact. Bounds: -24 to 0.
-				      "bassCutDb": %s,
-
-				      // Frequency under which the bass shelf applies, in Hz. Bounds: 40 to 500.
-				      "bassCutHz": %s
-				    }
-				  },
-
-				%s%s}
+				%s%s%s}
 				""".formatted(n(s.rolloff()), n(s.fadeFraction()), n(s.audibilityThresholdDb()), n(s.maxRange()),
-				n(p.powerWatts()), n(p.sensitivityDb()), n(p.bassCutDb()), n(p.bassCutHz()), occlusionText(s.occlusion()),
-				reverbText(s.reverb()));
+				ProfilesText.section(s.profiles()), occlusionText(s.occlusion()), reverbText(s.reverb()));
 		try {
 			out.write(text);
 			out.flush();
@@ -275,7 +251,7 @@ final class AcousticSettingsWriter {
 	}
 
 	/** A number as JSON writes it: no trailing ".0" on whole values, never a locale decimal comma. */
-	private static String n(double value) {
+	static String n(double value) {
 		return value == Math.rint(value) && Math.abs(value) < 1e15 ? Long.toString((long) value) : Double.toString(value);
 	}
 }

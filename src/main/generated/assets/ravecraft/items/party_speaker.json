@@ -1,0 +1,59 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "cases": [
+      {
+        "model": {
+          "type": "minecraft:condition",
+          "on_false": {
+            "type": "minecraft:model",
+            "model": "ravecraft:item/party_speaker",
+            "tints": [
+              {
+                "type": "minecraft:dye",
+                "default": -12829628
+              }
+            ]
+          },
+          "on_true": {
+            "type": "minecraft:model",
+            "model": "ravecraft:item/party_speaker_on",
+            "tints": [
+              {
+                "type": "minecraft:dye",
+                "default": -12829628
+              }
+            ]
+          },
+          "property": "ravecraft:speaker/powered"
+        },
+        "when": "gui"
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:condition",
+      "on_false": {
+        "type": "minecraft:model",
+        "model": "ravecraft:block/party_speaker",
+        "tints": [
+          {
+            "type": "minecraft:dye",
+            "default": -12829628
+          }
+        ]
+      },
+      "on_true": {
+        "type": "minecraft:model",
+        "model": "ravecraft:block/party_speaker_on",
+        "tints": [
+          {
+            "type": "minecraft:dye",
+            "default": -12829628
+          }
+        ]
+      },
+      "property": "ravecraft:speaker/powered"
+    },
+    "property": "minecraft:display_context"
+  }
+}

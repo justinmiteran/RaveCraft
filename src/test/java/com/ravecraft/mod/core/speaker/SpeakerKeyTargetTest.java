@@ -39,12 +39,22 @@ class SpeakerKeyTargetTest {
 	}
 
 	@Test
-	void armorSlotsIgnored() {
-		assertTrue(choose(2, 38).isEmpty());
+	void backComesFirst() {
+		assertEquals(SpeakerKeyTarget.BACK, choose(3, 3, 38).getAsInt());
 	}
 
 	@Test
-	void noSpeaker() {
+	void backBeforeOffhand() {
+		assertEquals(38, choose(2, 40, 38).getAsInt());
+	}
+
+	@Test
+	void otherArmorSlotsIgnored() {
+		assertTrue(choose(2, 36, 37, 39).isEmpty());
+	}
+
+	@Test
+	void noSpeakerIsEmpty() {
 		assertTrue(choose(2).isEmpty());
 	}
 }

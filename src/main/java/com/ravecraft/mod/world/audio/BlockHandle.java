@@ -1,7 +1,8 @@
 package com.ravecraft.mod.world.audio;
 
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.blockentity.SpeakerBlockEntity;
 import com.ravecraft.mod.component.SpeakerData;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import java.util.Collection;
 import java.util.UUID;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
@@ -11,10 +12,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 
 /** A speaker placed as a block. */
-record BlockHandle(ServerLevel level, BlockPos pos, PortableSpeakerBlockEntity speaker) implements SpeakerHandle {
+record BlockHandle(ServerLevel level, BlockPos pos, SpeakerBlockEntity speaker) implements SpeakerHandle {
 	@Override
 	public UUID id() {
 		return speaker.data().id();
+	}
+
+	@Override
+	public SpeakerKind kind() {
+		return speaker.kind();
 	}
 
 	@Override

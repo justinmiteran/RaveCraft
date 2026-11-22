@@ -1,8 +1,9 @@
 package com.ravecraft.mod.world.audio;
 
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.blockentity.SpeakerBlockEntity;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
+import com.ravecraft.mod.core.speaker.CarryPlace;
 import com.ravecraft.mod.core.speaker.HostTracker;
 import com.ravecraft.mod.registry.ModDataComponents;
 import java.util.ArrayList;
@@ -70,7 +71,7 @@ public final class SpeakerHosts {
 	/** Follows speaker blocks and item entities as they load and unload. */
 	public static void init() {
 		ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.register((blockEntity, level) -> {
-			if (blockEntity instanceof PortableSpeakerBlockEntity speaker) {
+			if (blockEntity instanceof SpeakerBlockEntity speaker) {
 				placed(speaker);
 			}
 		});
@@ -102,7 +103,7 @@ public final class SpeakerHosts {
 	 *
 	 * @param speaker the speaker
 	 */
-	public static void placed(PortableSpeakerBlockEntity speaker) {
+	public static void placed(SpeakerBlockEntity speaker) {
 		if (!(speaker.getLevel() instanceof ServerLevel level)) {
 			return;
 		}
@@ -129,7 +130,7 @@ public final class SpeakerHosts {
 	 *
 	 * @param speaker the speaker
 	 */
-	public static void removed(PortableSpeakerBlockEntity speaker) {
+	public static void removed(SpeakerBlockEntity speaker) {
 		if (!(speaker.getLevel() instanceof ServerLevel level)) {
 			return;
 		}
@@ -139,14 +140,14 @@ public final class SpeakerHosts {
 	}
 
 	/**
-	 * {@code player} carries {@code stack} this tick, in a hand ({@code inHand}) or elsewhere in its inventory.
+	 * {@code player} carries {@code stack} this tick, at {@code place}: in a hand, in its inventory or on its back.
 	 * Called every tick for each carried speaker; a fresh stack gets its identity here, a copy a new one.
 	 *
 	 * @param player the player
 	 * @param stack the speaker item
-	 * @param inHand true when held in a hand
+	 * @param place where it is carried: in a hand, in the inventory or on the back
 	 */
-	public static void carried(ServerPlayer player, ItemStack stack, boolean inHand) {
+	public static void carried(ServerPlayer player, ItemStack stack, CarryPlace place) {
 		ServerLevel level = player.level();
 		long tick = level.getServer().getTickCount();
 		SpeakerData data = stack.get(ModDataComponents.SPEAKER);
@@ -154,9 +155,9 @@ public final class SpeakerHosts {
 			data = SpeakerData.create();
 			stack.set(ModDataComponents.SPEAKER, data);
 		}
-		SpeakerHost.Carrier host = new SpeakerHost.Carrier(player.getUUID(), level.dimension(), inHand);
+		SpeakerHost.Carrier host = new SpeakerHost.Carrier(player.getUUID(), level.dimension(), place);
 		UUID id = data.id();
-		// The same player moving it between hand and pocket, or through a portal, is a move: unless the id already
+		// The same player moving it between hand, pocket and back, or through a portal, is a move: unless the id already
 		// reported this tick, which means two of its stacks share the id.
 		if (TRACKER.host(id).orElse(null) instanceof SpeakerHost.Carrier current && current.player().equals(host.player())
 				&& !current.equals(host) && !Long.valueOf(tick).equals(CARRIED_AT.get(id))) {
@@ -170,7 +171,7 @@ public final class SpeakerHosts {
 			verdict = TRACKER.report(id, host, tick);
 		}
 		CARRIED_AT.put(id, tick);
-		arrived(level.getServer(), new CarrierHandle(player, stack, inHand), verdict);
+		arrived(level.getServer(), new CarrierHandle(player, stack, place), verdict);
 	}
 
 	/**
@@ -257,7 +258,7 @@ public final class SpeakerHosts {
 				SpeakerQueue last = LAST_QUEUE.get(id);
 				// Searches the leaving player itself, which may already be out of the player list.
 				SpeakerLookup.findCarried(player, id).ifPresentOrElse(
-						stack -> SpeakerPlayback.pauseRemoved(new CarrierHandle(player, stack, carrier.inHand())),
+						stack -> SpeakerPlayback.pauseRemoved(new CarrierHandle(player, stack, carrier.place())),
 						() -> SpeakerPlayback.detach(server, id, last));
 				forgetId(id);
 				SpeakerWatchers.markDirty(id);
@@ -373,7 +374,7 @@ public final class SpeakerHosts {
 	private static boolean reportUnticked(MinecraftServer server, SpeakerHost.Carrier carrier, UUID id) {
 		ServerPlayer player = server.getPlayerList().getPlayer(carrier.player());
 		Optional<ItemStack> stack = player == null ? Optional.empty() : SpeakerLookup.findUnticked(player, id);
-		stack.ifPresent(found -> carried(player, found, false));
+		stack.ifPresent(found -> carried(player, found, CarryPlace.INVENTORY));
 		return stack.isPresent();
 	}
 

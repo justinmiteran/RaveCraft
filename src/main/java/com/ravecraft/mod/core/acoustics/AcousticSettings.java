@@ -2,18 +2,19 @@ package com.ravecraft.mod.core.acoustics;
 
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
 import com.ravecraft.mod.core.acoustics.reverb.ReverbSettings;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import java.util.function.Consumer;
 
 /**
  * The server's acoustic model, shared by every player so they all hear by the same rules: distance law exponent,
  * share of the range used to fade out, air absorption of the highs, the level below which a device is no longer
- * heard, the longest range allowed, the portable speaker profile, the occlusion model (which also holds the air
+ * heard, the longest range allowed, the profile of each kind of speaker, the occlusion model (which also holds the air
  * absorption of the highs), and the reverb model.
  */
 public record AcousticSettings(double rolloff, double fadeFraction, double audibilityThresholdDb, double maxRange,
-		DeviceProfile portable, OcclusionSettings occlusion, ReverbSettings reverb) {
+		DeviceProfiles profiles, OcclusionSettings occlusion, ReverbSettings reverb) {
 	public static final AcousticSettings DEFAULT =
-			new AcousticSettings(1.0, 0.2, 68, 256, DeviceProfile.PORTABLE, OcclusionSettings.DEFAULT,
+			new AcousticSettings(1.0, 0.2, 68, 256, DeviceProfiles.DEFAULT, OcclusionSettings.DEFAULT,
 					ReverbSettings.DEFAULT);
 
 	private static final Bound ROLLOFF = new Bound(0.25, 3);
@@ -30,21 +31,32 @@ public record AcousticSettings(double rolloff, double fadeFraction, double audib
 		return occlusion.air().highLossDbPerBlock();
 	}
 
+	/** The profile of the given speaker kind. */
+	public DeviceProfile profile(SpeakerKind kind) {
+		return profiles.of(kind);
+	}
+
 	/** The same settings with every value brought into its bounds; {@code warn} hears about each change. */
 	public AcousticSettings clamped(Consumer<String> warn) {
-		DeviceProfile p = portable;
 		return new AcousticSettings(
 				ROLLOFF.apply("rolloff", rolloff, warn),
 				FADE_FRACTION.apply("fadeFraction", fadeFraction, warn),
 				AUDIBILITY_DB.apply("audibilityThresholdDb", audibilityThresholdDb, warn),
 				MAX_RANGE.apply("maxRange", maxRange, warn),
-				new DeviceProfile(
-						POWER_WATTS.apply("profiles.portable.powerWatts", p.powerWatts(), warn),
-						SENSITIVITY_DB.apply("profiles.portable.sensitivityDb", p.sensitivityDb(), warn),
-						BASS_CUT_DB.apply("profiles.portable.bassCutDb", p.bassCutDb(), warn),
-						BASS_CUT_HZ.apply("profiles.portable.bassCutHz", p.bassCutHz(), warn),
-						p.directivity()),
+				new DeviceProfiles(clampedProfile(SpeakerKind.PORTABLE, warn), clampedProfile(SpeakerKind.PARTY, warn)),
 				occlusion.clamped(warn),
 				reverb.clamped(warn));
+	}
+
+	/** The profile of {@code kind} with every value brought into its bounds. */
+	private DeviceProfile clampedProfile(SpeakerKind kind, Consumer<String> warn) {
+		DeviceProfile p = profile(kind);
+		String prefix = "profiles." + kind.id() + ".";
+		return new DeviceProfile(
+				POWER_WATTS.apply(prefix + "powerWatts", p.powerWatts(), warn),
+				SENSITIVITY_DB.apply(prefix + "sensitivityDb", p.sensitivityDb(), warn),
+				BASS_CUT_DB.apply(prefix + "bassCutDb", p.bassCutDb(), warn),
+				BASS_CUT_HZ.apply(prefix + "bassCutHz", p.bassCutHz(), warn),
+				p.directivity());
 	}
 }

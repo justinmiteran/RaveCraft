@@ -1,6 +1,7 @@
 package com.ravecraft.mod.world.audio;
 
 import com.ravecraft.mod.component.SpeakerData;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import java.util.Collection;
 import java.util.UUID;
 import net.minecraft.server.level.ServerLevel;
@@ -43,6 +44,13 @@ public interface SpeakerHandle {
 	 * @param data the new data
 	 */
 	void setData(SpeakerData data);
+
+	/**
+	 * Which kind of speaker it is, which picks its acoustic profile: from its block, or from its item.
+	 *
+	 * @return the speaker kind
+	 */
+	SpeakerKind kind();
 
 	/**
 	 * Whether it is switched on.

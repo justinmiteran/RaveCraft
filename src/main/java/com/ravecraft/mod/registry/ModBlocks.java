@@ -1,15 +1,20 @@
 package com.ravecraft.mod.registry;
 
 import com.ravecraft.mod.RaveCraft;
+import com.ravecraft.mod.block.PartySpeakerBlock;
 import com.ravecraft.mod.block.PortableSpeakerBlock;
-import com.ravecraft.mod.item.PortableSpeakerItem;
+import com.ravecraft.mod.item.SpeakerItem;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -23,9 +28,27 @@ public final class ModBlocks {
 					.sound(SoundType.METAL)
 					.strength(1.0F)
 					.noOcclusion(),
-			PortableSpeakerItem::new, new Item.Properties().stacksTo(1));
+			SpeakerItem::new, new Item.Properties().stacksTo(1));
+	public static final Block PARTY_SPEAKER = register("party_speaker", PartySpeakerBlock::new,
+			BlockBehaviour.Properties.of()
+					.mapColor(MapColor.COLOR_GRAY)
+					.sound(SoundType.METAL)
+					.strength(1.0F)
+					.noOcclusion(),
+			SpeakerItem::new, new Item.Properties().stacksTo(1)
+					// Worn on the back in the chest slot; no asset id, so no armor model: BackSpeakerRenderer draws it.
+					.component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.CHEST).build()));
 
 	private ModBlocks() {
+	}
+
+	/**
+	 * Every speaker block, whatever its kind: the blocks the speaker block entity type covers.
+	 *
+	 * @return the speaker blocks
+	 */
+	public static Set<Block> speakers() {
+		return Set.of(PORTABLE_SPEAKER, PARTY_SPEAKER);
 	}
 
 	/** Registers a block and the item {@code itemFactory} makes for it, both under the same id. */

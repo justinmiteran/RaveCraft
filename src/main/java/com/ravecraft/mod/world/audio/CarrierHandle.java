@@ -1,6 +1,9 @@
 package com.ravecraft.mod.world.audio;
 
 import com.ravecraft.mod.component.SpeakerData;
+import com.ravecraft.mod.core.speaker.CarryPlace;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
+import com.ravecraft.mod.item.SpeakerItem;
 import com.ravecraft.mod.registry.ModDataComponents;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,8 +17,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 
 /** A speaker item in a player's inventory: {@code stack} is the stack itself, found by its id. */
-record CarrierHandle(ServerPlayer player, ItemStack stack, boolean inHand) implements SpeakerHandle {
-	/** Height fraction of the carrier where a speaker that is not in hand sounds from (chest). */
+record CarrierHandle(ServerPlayer player, ItemStack stack, CarryPlace place) implements SpeakerHandle {
+	/** Height fraction of the carrier where a speaker in the inventory or on the back sounds from (chest). */
 	static final double CHEST_HEIGHT = 0.6;
 
 	@Override
@@ -29,8 +32,13 @@ record CarrierHandle(ServerPlayer player, ItemStack stack, boolean inHand) imple
 	}
 
 	@Override
+	public SpeakerKind kind() {
+		return SpeakerItem.kindOf(stack);
+	}
+
+	@Override
 	public SpeakerHost host() {
-		return new SpeakerHost.Carrier(player.getUUID(), player.level().dimension(), inHand);
+		return new SpeakerHost.Carrier(player.getUUID(), player.level().dimension(), place);
 	}
 
 	@Override
@@ -47,7 +55,7 @@ record CarrierHandle(ServerPlayer player, ItemStack stack, boolean inHand) imple
 
 	@Override
 	public Vec3 position() {
-		return inHand ? player.getEyePosition() : player.position().add(0, CHEST_HEIGHT * player.getBbHeight(), 0);
+		return place == CarryPlace.HAND ? player.getEyePosition() : player.position().add(0, CHEST_HEIGHT * player.getBbHeight(), 0);
 	}
 
 	/** Its carrier always can, wherever it stands; others must be within reach of the carrier. */

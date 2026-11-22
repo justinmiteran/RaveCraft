@@ -5,10 +5,11 @@ import static com.ravecraft.mod.gametest.SharedQueueGameTest.newEntries;
 import static com.ravecraft.mod.gametest.SharedQueueGameTest.online;
 import static com.ravecraft.mod.gametest.SharedQueueGameTest.poweredSpeaker;
 
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.blockentity.SpeakerBlockEntity;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.core.queue.QueueEntry;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
+import com.ravecraft.mod.core.speaker.CarryPlace;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
 import com.ravecraft.mod.registry.ModBlocks;
@@ -39,6 +40,8 @@ import net.minecraft.world.phys.Vec3;
 public class CarriedSpeakerGameTest {
 	private static final BlockPos SPEAKER = new BlockPos(1, 1, 1);
 	private static final long DURATION_MS = 180_000;
+	/** A main inventory slot outside the hotbar. */
+	private static final int INVENTORY_SLOT = 20;
 
 	private static MinecraftServer server(GameTestHelper h) {
 		return h.getLevel().getServer();
@@ -56,7 +59,7 @@ public class CarriedSpeakerGameTest {
 	}
 
 	/** Queues one track of {@code owner} on speaker {@code id}, plays it and opens its stream. */
-	private static void play(GameTestHelper h, ServerPlayer owner, UUID id) {
+	static void play(GameTestHelper h, ServerPlayer owner, UUID id) {
 		SpeakerCommands.add(owner, id, newEntries(1));
 		SpeakerCommands.command(owner, id, Command.PLAY, Optional.empty());
 		int session = StreamSessions.table().byKey(id).orElseThrow().id();
@@ -68,7 +71,7 @@ public class CarriedSpeakerGameTest {
 	private static ItemStack carriedPlaying(GameTestHelper h, ServerPlayer owner) {
 		ItemStack stack = speakerStack();
 		owner.getInventory().setItem(owner.getInventory().getSelectedSlot(), stack);
-		SpeakerHosts.carried(owner, stack, true);
+		SpeakerHosts.carried(owner, stack, CarryPlace.HAND);
 		play(h, owner, idOf(stack));
 		return stack;
 	}
@@ -85,7 +88,7 @@ public class CarriedSpeakerGameTest {
 	}
 
 	/** Ends the speakers' sessions, removes their drops and the players. */
-	private static void cleanUp(GameTestHelper h, List<UUID> ids, ServerPlayer... players) {
+	static void cleanUp(GameTestHelper h, List<UUID> ids, ServerPlayer... players) {
 		for (UUID id : ids) {
 			SpeakerHosts.destroyed(server(h), id);
 		}
@@ -121,7 +124,7 @@ public class CarriedSpeakerGameTest {
 		BlockPos above = hopperPos.above();
 		h.setBlock(hopperPos, Blocks.HOPPER);
 		h.setBlock(above, ModBlocks.PORTABLE_SPEAKER);
-		h.getBlockEntity(above, PortableSpeakerBlockEntity.class).togglePower();
+		h.getBlockEntity(above, SpeakerBlockEntity.class).togglePower();
 		ServerPlayer owner = online(h, 2);
 		UUID id = Speakers.idAt(h, h.absolutePos(above));
 		play(h, owner, id);
@@ -141,9 +144,9 @@ public class CarriedSpeakerGameTest {
 						throw h.assertionException(Component.literal("The hopper holds no speaker with id " + id));
 					}
 					owner.getInventory().setItem(5, taken[0]);
-					SpeakerHosts.carried(owner, taken[0], false);
+					SpeakerHosts.carried(owner, taken[0], CarryPlace.INVENTORY);
 				})
-				.thenExecuteAfter(1, () -> SpeakerHosts.carried(owner, taken[0], false))
+				.thenExecuteAfter(1, () -> SpeakerHosts.carried(owner, taken[0], CarryPlace.INVENTORY))
 				.thenExecute(() -> {
 					h.assertTrue(SpeakerPlayback.isPlaying(id), "resumed once carried");
 					cleanUp(h, List.of(id), owner);
@@ -158,10 +161,10 @@ public class CarriedSpeakerGameTest {
 		UUID id = idOf(stack);
 		h.startSequence()
 				.thenIdle(1) // a second report in the setup tick would be a copy
-				.thenExecuteFor(5, () -> SpeakerHosts.carried(owner, stack, true))
+				.thenExecuteFor(5, () -> SpeakerHosts.carried(owner, stack, CarryPlace.HAND))
 				// Ticks run faster than real time here: keep carrying until the wall-clock position has moved.
 				.thenWaitUntil(() -> {
-					SpeakerHosts.carried(owner, stack, true);
+					SpeakerHosts.carried(owner, stack, CarryPlace.HAND);
 					SpeakerQueue stored = stack.get(ModDataComponents.SPEAKER).queue();
 					h.assertTrue(SpeakerPlayback.liveQueue(id, stored).positionMs() > 0, "track still at its start");
 				})
@@ -170,7 +173,7 @@ public class CarriedSpeakerGameTest {
 					h.assertFalse(SpeakerPlayback.isPlaying(id), "paused when no longer carried");
 					SpeakerQueue parked = SpeakerHosts.parkedQueue(id).orElseThrow();
 					h.assertTrue(parked.positionMs() > 0, "position kept, got " + parked.positionMs());
-					SpeakerHosts.carried(owner, stack, true);
+					SpeakerHosts.carried(owner, stack, CarryPlace.HAND);
 					h.assertTrue(SpeakerPlayback.isPlaying(id), "resumed when carried again");
 					cleanUp(h, List.of(id), owner);
 				})
@@ -214,7 +217,7 @@ public class CarriedSpeakerGameTest {
 					h.assertFalse(SpeakerPlayback.isPlaying(id), "paused when no longer carried");
 					h.assertTrue(SpeakerHosts.parkedQueue(id).isPresent(), "parked");
 					SpeakerHosts.disconnected(owner);
-					SpeakerHosts.carried(owner, stack, true);
+					SpeakerHosts.carried(owner, stack, CarryPlace.HAND);
 					h.assertFalse(SpeakerPlayback.isPlaying(id), "not resumed after a disconnect");
 					cleanUp(h, List.of(id), owner);
 				})
@@ -279,17 +282,36 @@ public class CarriedSpeakerGameTest {
 		UUID id = idOf(stack);
 		h.startSequence()
 				.thenIdle(1) // a second report in the setup tick would be a copy
-				.thenExecute(() -> SpeakerHosts.carried(owner, stack, true))
-				.thenExecuteAfter(1, () -> SpeakerHosts.carried(owner, stack, false))
-				.thenExecuteAfter(1, () -> SpeakerHosts.carried(owner, stack, true))
+				.thenExecute(() -> SpeakerHosts.carried(owner, stack, CarryPlace.HAND))
+				.thenExecuteAfter(1, () -> SpeakerHosts.carried(owner, stack, CarryPlace.INVENTORY))
+				.thenExecuteAfter(1, () -> SpeakerHosts.carried(owner, stack, CarryPlace.HAND))
 				.thenExecute(() -> {
 					h.assertValueEqual(idOf(stack), id, "same id");
 					h.assertTrue(SpeakerPlayback.isPlaying(id), "still playing");
 					SpeakerHost host = SpeakerHosts.handle(server(h), id).orElseThrow().host();
-					h.assertValueEqual(host, new SpeakerHost.Carrier(owner.getUUID(), h.getLevel().dimension(), true), "back in hand");
+					h.assertTrue(host instanceof SpeakerHost.Carrier carrier && carrier.place() == CarryPlace.HAND, "back in hand");
 					cleanUp(h, List.of(id), owner);
 				})
 				.thenSucceed();
+	}
+
+	/**
+	 * A speaker in a plain inventory slot, ticked by the inventory itself, is carried in the inventory.
+	 *
+	 * @param h the test helper
+	 */
+	@GameTest
+	public void inventoryIsInventoryPlace(GameTestHelper h) {
+		ServerPlayer owner = online(h, 2);
+		ItemStack stack = speakerStack();
+		owner.getInventory().setItem(INVENTORY_SLOT, stack);
+		owner.getInventory().tick();
+		UUID id = idOf(stack);
+		SpeakerHost host = SpeakerHosts.handle(server(h), id).orElseThrow().host();
+		h.assertTrue(host instanceof SpeakerHost.Carrier carrier && carrier.place() == CarryPlace.INVENTORY,
+				"carried in the inventory");
+		cleanUp(h, List.of(id), owner);
+		h.succeed();
 	}
 
 	@GameTest
@@ -303,8 +325,8 @@ public class CarriedSpeakerGameTest {
 		second.set(ModDataComponents.SPEAKER, data);
 		owner.getInventory().setItem(0, first);
 		owner.getInventory().setItem(1, second);
-		SpeakerHosts.carried(owner, first, true);
-		SpeakerHosts.carried(owner, second, false);
+		SpeakerHosts.carried(owner, first, CarryPlace.HAND);
+		SpeakerHosts.carried(owner, second, CarryPlace.INVENTORY);
 		UUID a = idOf(first);
 		UUID b = idOf(second);
 		h.assertTrue(a.equals(data.id()) != b.equals(data.id()), "exactly one keeps the id");
@@ -362,10 +384,10 @@ public class CarriedSpeakerGameTest {
 		UUID id = idOf(stack);
 		h.startSequence()
 				.thenIdle(1) // a second report in the setup tick would be a copy
-				.thenExecuteFor(40, () -> SpeakerHosts.carried(owner, stack, true))
+				.thenExecuteFor(40, () -> SpeakerHosts.carried(owner, stack, CarryPlace.HAND))
 				// Ticks run faster than real time here: wait until the wall-clock position has moved.
 				.thenWaitUntil(() -> {
-					SpeakerHosts.carried(owner, stack, true);
+					SpeakerHosts.carried(owner, stack, CarryPlace.HAND);
 					SpeakerQueue stored = stack.get(ModDataComponents.SPEAKER).queue();
 					h.assertTrue(SpeakerPlayback.liveQueue(id, stored).positionMs() > 0, "track still at its start");
 				})

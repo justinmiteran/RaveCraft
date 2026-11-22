@@ -1,9 +1,13 @@
 package com.ravecraft.mod.item;
 
+import com.ravecraft.mod.block.SpeakerBlock;
 import com.ravecraft.mod.block.SpeakerScreenOpener;
 import com.ravecraft.mod.component.SpeakerData;
+import com.ravecraft.mod.core.speaker.CarryPlace;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.world.audio.SpeakerHosts;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -18,21 +22,47 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import org.jspecify.annotations.Nullable;
 
-/** The portable speaker as an item: places the block and keeps its data. */
-public class PortableSpeakerItem extends BlockItem {
+/** A speaker as an item, of the kind of the block it places: places the block and keeps its data. */
+public class SpeakerItem extends BlockItem {
 	/**
 	 * The item that places {@code block}.
 	 *
 	 * @param block the block placed
-	 * @param properties the item's properties
+	 * @param properties the block's properties
 	 */
-	public PortableSpeakerItem(Block block, Properties properties) {
+	public SpeakerItem(Block block, Properties properties) {
 		super(block, properties);
 	}
 
+	/**
+	 * The kind of speaker this item places, read from its block.
+	 *
+	 * @return the speaker kind
+	 */
+	public SpeakerKind kind() {
+		return getBlock() instanceof SpeakerBlock block ? block.kind() : SpeakerKind.PORTABLE;
+	}
+
+	/**
+	 * The kind of the speaker in {@code stack}; a portable one if the stack is somehow not a speaker.
+	 *
+	 * @param stack the speaker item
+	 * @return the speaker kind
+	 */
+	public static SpeakerKind kindOf(ItemStack stack) {
+		return stack.getItem() instanceof SpeakerItem item ? item.kind() : SpeakerKind.PORTABLE;
+	}
+
+	/**
+	 * Using the speaker in the air opens its screen; sneaking, a wearable one (the party speaker) goes on the back
+	 * instead, swapped with the chest slot as vanilla does for armor.
+	 */
 	@Override
 	public InteractionResult use(Level level, Player player, InteractionHand hand) {
 		ItemStack stack = player.getItemInHand(hand);
+		if (player.isShiftKeyDown() && stack.has(DataComponents.EQUIPPABLE)) {
+			return super.use(level, player, hand);
+		}
 		SpeakerData data = stack.get(ModDataComponents.SPEAKER);
 		if (!level.isClientSide()) {
 			if (data == null) {
@@ -49,8 +79,16 @@ public class PortableSpeakerItem extends BlockItem {
 	public void inventoryTick(ItemStack stack, ServerLevel level, Entity owner, @Nullable EquipmentSlot slot) {
 		super.inventoryTick(stack, level, owner, slot);
 		if (owner instanceof ServerPlayer player) {
-			SpeakerHosts.carried(player, stack, slot == EquipmentSlot.MAINHAND || slot == EquipmentSlot.OFFHAND);
+			SpeakerHosts.carried(player, stack, placeOf(slot));
 		}
+	}
+
+	/** Where a stack ticked in {@code slot} is carried: a hand, the back (chest slot), or the inventory. */
+	static CarryPlace placeOf(@Nullable EquipmentSlot slot) {
+		if (slot == EquipmentSlot.MAINHAND || slot == EquipmentSlot.OFFHAND) {
+			return CarryPlace.HAND;
+		}
+		return slot == EquipmentSlot.CHEST ? CarryPlace.BACK : CarryPlace.INVENTORY;
 	}
 
 	/** Burnt, blown up or otherwise destroyed on the ground: its session ends for good. */

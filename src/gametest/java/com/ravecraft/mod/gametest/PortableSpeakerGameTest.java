@@ -1,7 +1,7 @@
 package com.ravecraft.mod.gametest;
 
-import com.ravecraft.mod.block.PortableSpeakerBlock;
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.block.SpeakerBlock;
+import com.ravecraft.mod.blockentity.SpeakerBlockEntity;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.core.queue.QueueEntry;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
@@ -70,8 +70,8 @@ public class PortableSpeakerGameTest {
 		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
 		BlockPos other = new BlockPos(3, 1, 1);
 		h.setBlock(other, ModBlocks.PORTABLE_SPEAKER);
-		SpeakerData data = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class).data();
-		SpeakerData otherData = h.getBlockEntity(other, PortableSpeakerBlockEntity.class).data();
+		SpeakerData data = h.getBlockEntity(pos, SpeakerBlockEntity.class).data();
+		SpeakerData otherData = h.getBlockEntity(other, SpeakerBlockEntity.class).data();
 		h.assertTrue(!data.id().equals(otherData.id()), "two speakers get different ids");
 		h.assertValueEqual(data.settings(), SpeakerSettings.DEFAULT, "settings");
 		h.succeed();
@@ -82,8 +82,8 @@ public class PortableSpeakerGameTest {
 		BlockPos pos = new BlockPos(1, 1, 1);
 		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
 		powerOn(h, pos);
-		h.assertBlockProperty(pos, PortableSpeakerBlock.POWERED, true);
-		h.assertTrue(h.getBlockEntity(pos, PortableSpeakerBlockEntity.class).data().settings().powered(), "data powered");
+		h.assertBlockProperty(pos, SpeakerBlock.POWERED, true);
+		h.assertTrue(h.getBlockEntity(pos, SpeakerBlockEntity.class).data().settings().powered(), "data powered");
 		h.succeed();
 	}
 
@@ -92,7 +92,7 @@ public class PortableSpeakerGameTest {
 		BlockPos pos = new BlockPos(1, 1, 1);
 		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
 		h.useBlock(pos, h.makeMockPlayer(GameType.SURVIVAL));
-		h.assertBlockProperty(pos, PortableSpeakerBlock.POWERED, false);
+		h.assertBlockProperty(pos, SpeakerBlock.POWERED, false);
 		h.succeed();
 	}
 
@@ -101,7 +101,7 @@ public class PortableSpeakerGameTest {
 		BlockPos pos = new BlockPos(1, 1, 1);
 		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
 		powerOn(h, pos);
-		SpeakerData before = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class).data();
+		SpeakerData before = h.getBlockEntity(pos, SpeakerBlockEntity.class).data();
 		h.getLevel().destroyBlock(h.absolutePos(pos), true);   // drops, unlike helper.destroyBlock
 		var drops = h.getEntities(EntityTypes.ITEM, pos, 2);
 		h.assertTrue(!drops.isEmpty(), "speaker dropped");
@@ -121,9 +121,9 @@ public class PortableSpeakerGameTest {
 		player.setItemInHand(InteractionHand.MAIN_HAND, stack); // UseOnContext reads the stack from the hand
 		h.setBlock(pos.below(), Blocks.STONE); // the speaker needs a floor
 		h.placeAt(player, stack, pos.below(), Direction.UP);
-		h.assertValueEqual(h.getBlockEntity(pos, PortableSpeakerBlockEntity.class).data(), data, "restored data");
-		h.assertBlockProperty(pos, PortableSpeakerBlock.FACING, player.getDirection().getOpposite());
-		h.assertBlockProperty(pos, PortableSpeakerBlock.POWERED, true);
+		h.assertValueEqual(h.getBlockEntity(pos, SpeakerBlockEntity.class).data(), data, "restored data");
+		h.assertBlockProperty(pos, SpeakerBlock.FACING, player.getDirection().getOpposite());
+		h.assertBlockProperty(pos, SpeakerBlock.POWERED, true);
 		h.succeed();
 	}
 
@@ -135,15 +135,15 @@ public class PortableSpeakerGameTest {
 		player.setItemInHand(InteractionHand.MAIN_HAND, stack); // UseOnContext reads the stack from the hand
 		h.setBlock(pos.below(), Blocks.STONE); // the speaker needs a floor
 		h.placeAt(player, stack, pos.below(), Direction.UP);
-		h.assertBlockProperty(pos, PortableSpeakerBlock.POWERED, false);
+		h.assertBlockProperty(pos, SpeakerBlock.POWERED, false);
 		// A second placement of an identical stack must get its own identity.
 		BlockPos other = new BlockPos(3, 1, 1);
 		ItemStack second = new ItemStack(ModBlocks.PORTABLE_SPEAKER);
 		player.setItemInHand(InteractionHand.MAIN_HAND, second);
 		h.setBlock(other.below(), Blocks.STONE); // the speaker needs a floor
 		h.placeAt(player, second, other.below(), Direction.UP);
-		SpeakerData first = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class).data();
-		SpeakerData secondData = h.getBlockEntity(other, PortableSpeakerBlockEntity.class).data();
+		SpeakerData first = h.getBlockEntity(pos, SpeakerBlockEntity.class).data();
+		SpeakerData secondData = h.getBlockEntity(other, SpeakerBlockEntity.class).data();
 		h.assertTrue(!first.id().equals(secondData.id()), "distinct ids");
 		h.succeed();
 	}
@@ -162,8 +162,8 @@ public class PortableSpeakerGameTest {
 		h.placeAt(player, stack, a.below(), Direction.UP);
 		h.setBlock(b.below(), Blocks.STONE); // the speaker needs a floor
 		h.placeAt(player, stack, b.below(), Direction.UP); // creative does not consume the stack
-		SpeakerData first = h.getBlockEntity(a, PortableSpeakerBlockEntity.class).data();
-		SpeakerData second = h.getBlockEntity(b, PortableSpeakerBlockEntity.class).data();
+		SpeakerData first = h.getBlockEntity(a, SpeakerBlockEntity.class).data();
+		SpeakerData second = h.getBlockEntity(b, SpeakerBlockEntity.class).data();
 		h.assertTrue(!first.id().equals(stackId), "first id differs from stack id");
 		h.assertTrue(!second.id().equals(stackId), "second id differs from stack id");
 		h.assertTrue(!first.id().equals(second.id()), "placed speakers have distinct ids");
@@ -177,12 +177,12 @@ public class PortableSpeakerGameTest {
 		BlockPos pos = new BlockPos(1, 1, 1);
 		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
 		powerOn(h, pos); // powered on, so the data is not the default
-		PortableSpeakerBlockEntity original = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class);
+		SpeakerBlockEntity original = h.getBlockEntity(pos, SpeakerBlockEntity.class);
 		var access = h.getLevel().registryAccess();
 		CompoundTag tag = original.saveWithFullMetadata(access);
 		BlockEntity loaded = BlockEntity.loadStatic(h.absolutePos(pos), original.getBlockState(), tag, access);
-		h.assertTrue(loaded instanceof PortableSpeakerBlockEntity, "loaded a speaker block entity");
-		h.assertValueEqual(((PortableSpeakerBlockEntity) loaded).data(), original.data(), "loaded data");
+		h.assertTrue(loaded instanceof SpeakerBlockEntity, "loaded a speaker block entity");
+		h.assertValueEqual(((SpeakerBlockEntity) loaded).data(), original.data(), "loaded data");
 		h.succeed();
 	}
 
@@ -235,9 +235,9 @@ public class PortableSpeakerGameTest {
 	public void undyedSpeakerUsesDefaultColour(GameTestHelper h) {
 		BlockPos pos = new BlockPos(1, 1, 1);
 		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
-		PortableSpeakerBlockEntity speaker = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class);
+		SpeakerBlockEntity speaker = h.getBlockEntity(pos, SpeakerBlockEntity.class);
 		h.assertTrue(speaker.dyedColor() == null, "not dyed");
-		h.assertValueEqual(speaker.fabricColor(), PortableSpeakerBlock.DEFAULT_COLOR, "default fabric colour");
+		h.assertValueEqual(speaker.fabricColor(), SpeakerBlock.DEFAULT_COLOR, "default fabric colour");
 		h.succeed();
 	}
 
@@ -251,13 +251,13 @@ public class PortableSpeakerGameTest {
 		player.setItemInHand(InteractionHand.MAIN_HAND, stack);
 		h.setBlock(pos.below(), Blocks.STONE); // the speaker needs a floor
 		h.placeAt(player, stack, pos.below(), Direction.UP);
-		PortableSpeakerBlockEntity speaker = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class);
+		SpeakerBlockEntity speaker = h.getBlockEntity(pos, SpeakerBlockEntity.class);
 		h.assertValueEqual(speaker.dyedColor(), blue, "placed colour");
 		h.assertValueEqual(speaker.fabricColor(), 0x3AB3DA, "fabric colour");
 
 		var access = h.getLevel().registryAccess();
 		BlockEntity loaded = BlockEntity.loadStatic(h.absolutePos(pos), speaker.getBlockState(), speaker.saveWithFullMetadata(access), access);
-		h.assertValueEqual(((PortableSpeakerBlockEntity) loaded).dyedColor(), blue, "saved colour");
+		h.assertValueEqual(((SpeakerBlockEntity) loaded).dyedColor(), blue, "saved colour");
 
 		h.getLevel().destroyBlock(h.absolutePos(pos), true);
 		var drops = h.getEntities(EntityTypes.ITEM, pos, 2);
@@ -276,12 +276,12 @@ public class PortableSpeakerGameTest {
 		player.setItemInHand(InteractionHand.MAIN_HAND, stack);
 		h.setBlock(pos.below(), Blocks.STONE);
 		h.placeAt(player, stack, pos.below(), Direction.UP);
-		PortableSpeakerBlockEntity speaker = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class);
+		SpeakerBlockEntity speaker = h.getBlockEntity(pos, SpeakerBlockEntity.class);
 		h.assertValueEqual(speaker.customName(), name, "placed name");
 
 		var access = h.getLevel().registryAccess();
 		BlockEntity loaded = BlockEntity.loadStatic(h.absolutePos(pos), speaker.getBlockState(), speaker.saveWithFullMetadata(access), access);
-		h.assertValueEqual(((PortableSpeakerBlockEntity) loaded).customName(), name, "saved name");
+		h.assertValueEqual(((SpeakerBlockEntity) loaded).customName(), name, "saved name");
 
 		h.getLevel().destroyBlock(h.absolutePos(pos), true);
 		var drops = h.getEntities(EntityTypes.ITEM, pos, 2);
@@ -296,7 +296,7 @@ public class PortableSpeakerGameTest {
 		BlockPos pos = new BlockPos(1, 2, 1);
 		h.setBlock(pos.below(), Blocks.STONE);
 		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
-		h.getBlockEntity(pos, PortableSpeakerBlockEntity.class).setDyedColor(lime);
+		h.getBlockEntity(pos, SpeakerBlockEntity.class).setDyedColor(lime);
 		ItemStack picked = h.getBlockState(pos).getCloneItemStack(h.getLevel(), h.absolutePos(pos), false);
 		h.assertValueEqual(picked.get(DataComponents.DYED_COLOR), lime, "picked colour");
 		h.assertTrue(!picked.has(ModDataComponents.SPEAKER), "plain pick does not copy the speaker identity");
@@ -313,7 +313,7 @@ public class PortableSpeakerGameTest {
 		h.setBlock(support, Blocks.STONE);
 		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
 		powerOn(h, pos);
-		SpeakerData before = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class).data();
+		SpeakerData before = h.getBlockEntity(pos, SpeakerBlockEntity.class).data();
 		h.getLevel().destroyBlock(h.absolutePos(support), false);
 		h.assertBlockNotPresent(ModBlocks.PORTABLE_SPEAKER, pos);
 		var drops = h.getEntities(EntityTypes.ITEM, pos, 2);
@@ -370,7 +370,7 @@ public class PortableSpeakerGameTest {
 	public void placedSpeakerHasBlockHost(GameTestHelper h) {
 		BlockPos pos = new BlockPos(1, 1, 1);
 		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
-		PortableSpeakerBlockEntity be = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class);
+		SpeakerBlockEntity be = h.getBlockEntity(pos, SpeakerBlockEntity.class);
 		SpeakerHosts.placed(be);
 		SpeakerHandle handle = SpeakerHosts.handle(h.getLevel().getServer(), be.data().id()).orElse(null);
 		h.assertTrue(handle != null, "handle present");
@@ -385,8 +385,8 @@ public class PortableSpeakerGameTest {
 		BlockPos b = new BlockPos(3, 1, 1);
 		h.setBlock(a, ModBlocks.PORTABLE_SPEAKER);
 		h.setBlock(b, ModBlocks.PORTABLE_SPEAKER);
-		PortableSpeakerBlockEntity first = h.getBlockEntity(a, PortableSpeakerBlockEntity.class);
-		PortableSpeakerBlockEntity second = h.getBlockEntity(b, PortableSpeakerBlockEntity.class);
+		SpeakerBlockEntity first = h.getBlockEntity(a, SpeakerBlockEntity.class);
+		SpeakerBlockEntity second = h.getBlockEntity(b, SpeakerBlockEntity.class);
 		QueueEntry entry = new QueueEntry(UUID.randomUUID(), UUID.randomUUID(), "Track", "track");
 		first.setData(first.data().withQueue(SpeakerQueue.EMPTY.add(List.of(entry))));
 		SpeakerHosts.placed(first);
@@ -403,7 +403,7 @@ public class PortableSpeakerGameTest {
 	public void brokenBlockHostExpires(GameTestHelper h) {
 		BlockPos pos = new BlockPos(1, 1, 1);
 		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
-		PortableSpeakerBlockEntity be = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class);
+		SpeakerBlockEntity be = h.getBlockEntity(pos, SpeakerBlockEntity.class);
 		SpeakerHosts.placed(be);
 		UUID id = be.data().id();
 		SpeakerHosts.removed(be);
@@ -417,7 +417,7 @@ public class PortableSpeakerGameTest {
 	public void replacedConstructionIdIsForgotten(GameTestHelper h) {
 		BlockPos pos = new BlockPos(1, 1, 1);
 		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER); // BLOCK_ENTITY_LOAD registers the construction id
-		PortableSpeakerBlockEntity be = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class);
+		SpeakerBlockEntity be = h.getBlockEntity(pos, SpeakerBlockEntity.class);
 		UUID constructionId = be.data().id();
 		h.assertTrue(SpeakerHosts.isTracked(constructionId), "construction id registered on load");
 		UUID newId = UUID.randomUUID();

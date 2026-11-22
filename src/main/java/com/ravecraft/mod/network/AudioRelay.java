@@ -83,7 +83,7 @@ public final class AudioRelay {
 	}
 
 	/**
-	 * How far {@code speaker} is relayed: its profile range at its current volume, plus a margin. 0 when it is
+	 * How far {@code speaker} is relayed: its kind's profile range at its current volume, plus a margin. 0 when it is
 	 * unpowered.
 	 *
 	 * @param speaker the speaker
@@ -94,7 +94,7 @@ public final class AudioRelay {
 			return 0;
 		}
 		double volume = speaker.data().settings().volume() / (double) SpeakerSettings.MAX_VOLUME;
-		return Propagation.relayRadius(AcousticConfig.get(), AcousticConfig.get().portable(), volume);
+		return Propagation.relayRadius(AcousticConfig.get(), AcousticConfig.get().profile(speaker.kind()), volume);
 	}
 
 	/**

@@ -1,9 +1,10 @@
 package com.ravecraft.mod.gametest;
 
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.blockentity.SpeakerBlockEntity;
 import com.ravecraft.mod.config.AcousticConfig;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.DeviceProfile;
+import com.ravecraft.mod.core.acoustics.DeviceProfiles;
 import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.audio.stream.SessionTable.Session;
 import com.ravecraft.mod.network.AudioRelay;
@@ -30,7 +31,7 @@ public class AudioRelayGameTest {
 
 	private static BlockPos poweredSpeaker(GameTestHelper h) {
 		h.setBlock(SPEAKER, ModBlocks.PORTABLE_SPEAKER);
-		h.getBlockEntity(SPEAKER, PortableSpeakerBlockEntity.class).togglePower();
+		h.getBlockEntity(SPEAKER, SpeakerBlockEntity.class).togglePower();
 		return h.absolutePos(SPEAKER);
 	}
 
@@ -130,14 +131,14 @@ public class AudioRelayGameTest {
 	public void poweringOffEndsSession(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);
 		StreamSessions.open(handle(h, pos), playerAt(h, 2), UUID.randomUUID()).orElseThrow();
-		h.getBlockEntity(SPEAKER, PortableSpeakerBlockEntity.class).togglePower();
+		h.getBlockEntity(SPEAKER, SpeakerBlockEntity.class).togglePower();
 		h.assertTrue(sessionAt(Speakers.idAt(h, pos)).isEmpty(), "session ended");
 		h.succeed();
 	}
 
 	/** Sets the speaker's volume (0 to 100). */
 	private static void volume(GameTestHelper h, int volume) {
-		PortableSpeakerBlockEntity speaker = h.getBlockEntity(SPEAKER, PortableSpeakerBlockEntity.class);
+		SpeakerBlockEntity speaker = h.getBlockEntity(SPEAKER, SpeakerBlockEntity.class);
 		speaker.setData(speaker.data().withSettings(speaker.data().settings().withVolume(volume)));
 	}
 
@@ -196,7 +197,8 @@ public class AudioRelayGameTest {
 			// Four times the power doubles the range: about 32 blocks at half volume.
 			AcousticConfig.set(new AcousticSettings(defaults.rolloff(), defaults.fadeFraction(),
 					defaults.audibilityThresholdDb(), defaults.maxRange(),
-					new DeviceProfile(80, 85, -6, 150, Directivity.OMNI), defaults.occlusion(),
+					new DeviceProfiles(new DeviceProfile(80, 85, -6, 150, Directivity.OMNI), DeviceProfile.PARTY),
+					defaults.occlusion(),
 					defaults.reverb()));
 			h.assertTrue(hears(h, pos, playerAt(h, 1), playerAt(h, 30)), "heard with 80 W at half volume");
 		} finally {

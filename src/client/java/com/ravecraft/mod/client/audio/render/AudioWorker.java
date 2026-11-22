@@ -164,13 +164,13 @@ final class AudioWorker extends Thread {
 		}
 	}
 
-	/** Configures the new streams, and every stream when the settings changed. */
+	/** Configures the new streams, every stream when the settings changed, and a stream whose profile changed. */
 	private void configure(AcousticSettings settings) {
 		boolean reconfigure = settings != configured;
 		configured = settings;
 		for (RenderStream stream : streams) {
-			if (reconfigure || stream.eq == null) {
-				stream.configure(settings);
+			if (reconfigure || stream.eq == null || stream.eqProfile != stream.profile) {
+				stream.configure();
 			}
 		}
 	}
@@ -225,7 +225,7 @@ final class AudioWorker extends Thread {
 		double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 		double cos = distance < 1e-6 ? 1 : (stream.facingX * dx + stream.facingZ * dz) / distance;
 		stream.distance = distance;
-		stream.gain = stream.powered ? Propagation.gain(settings, settings.portable(),
+		stream.gain = stream.powered ? Propagation.gain(settings, stream.profile, stream.directivity,
 				stream.volume, distance, cos) : 0;
 		boolean known = occlude(stream, dt);
 		// Before the selection: the sources go to the speakers that are loudest once muffled. A stream not

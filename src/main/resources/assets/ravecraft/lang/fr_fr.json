@@ -1,5 +1,6 @@
 {
   "block.ravecraft.portable_speaker": "Enceinte portable",
+  "block.ravecraft.party_speaker": "Enceinte de soirée",
   "itemGroup.ravecraft.main": "RaveCraft",
   "screen.ravecraft.speaker.library": "Bibliothèque",
   "screen.ravecraft.speaker.queue": "File",
@@ -73,7 +74,7 @@
   "tooltip.ravecraft.speaker.queue.one": "1 morceau en file",
   "tooltip.ravecraft.speaker.shift_hint": "Maj : plus d'infos",
   "tooltip.ravecraft.speaker.directivity.omni": "omnidirectionnelle",
-  "tooltip.ravecraft.speaker.directivity.directional": "directionnelle",
+  "tooltip.ravecraft.speaker.directivity.cone": "cône de %s°, %s dB à l'arrière",
   "screen.ravecraft.speaker.folders.title": "Dossiers de musique",
   "screen.ravecraft.speaker.folders.add": "Ajouter un dossier…",
   "screen.ravecraft.speaker.folders.browser": "Navigateur intégré",

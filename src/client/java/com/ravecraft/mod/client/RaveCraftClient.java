@@ -12,7 +12,9 @@ import com.ravecraft.mod.client.debug.AcousticDebugEntry;
 import com.ravecraft.mod.client.debug.SoundViewEntries;
 import com.ravecraft.mod.client.debug.SoundViewRenderer;
 import com.ravecraft.mod.client.item.SpeakerPowered;
+import com.ravecraft.mod.client.render.BackSpeakerRenderer;
 import com.ravecraft.mod.client.screen.SpeakerScreen;
+import com.ravecraft.mod.compat.trinkets.TrinketsClientCompat;
 import com.ravecraft.mod.network.payload.SpeakerClosedPayload;
 import com.ravecraft.mod.registry.ModBlocks;
 import java.util.List;
@@ -48,6 +50,19 @@ public class RaveCraftClient implements ClientModInitializer {
 				screen.onClose();
 			}
 		});
-		BlockColorRegistry.register(List.of(new SpeakerFabricTint()), ModBlocks.PORTABLE_SPEAKER);
+		BlockColorRegistry.register(List.of(new SpeakerFabricTint()), ModBlocks.PORTABLE_SPEAKER, ModBlocks.PARTY_SPEAKER);
+		BackSpeakerRenderer.register();
+		if (FabricLoader.getInstance().isModLoaded("trinkets")) {
+			initTrinkets();
+		}
+	}
+
+	/** Draws the party speaker in the Trinkets back slot; on failure, only the chest slot one is drawn. */
+	private static void initTrinkets() {
+		try {
+			TrinketsClientCompat.init();
+		} catch (LinkageError | RuntimeException e) {
+			RaveCraft.LOGGER.warn("Trinkets back render disabled, the chest slot one still draws", e);
+		}
 	}
 }

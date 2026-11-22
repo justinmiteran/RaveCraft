@@ -2,11 +2,18 @@ package com.ravecraft.mod.core.acoustics;
 
 import static com.ravecraft.mod.core.acoustics.DeviceProfile.PORTABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
 class PropagationTest {
 	private static final double EPS = 1e-9;
+
+	@Test
+	void partyReachesAboutNinetySixBlocks() {
+		double range = Propagation.range(AcousticSettings.DEFAULT, DeviceProfile.PARTY, 1.0);
+		assertTrue(range >= 90 && range <= 100, "range " + range);
+	}
 
 	@Test
 	void inverseDistanceLaw() {
@@ -31,7 +38,7 @@ class PropagationTest {
 	private static final AcousticSettings S = AcousticSettings.DEFAULT;
 
 	private static AcousticSettings with(double rolloff, double thresholdDb, double maxRange) {
-		return new AcousticSettings(rolloff, S.fadeFraction(), thresholdDb, maxRange, S.portable(), S.occlusion(), S.reverb());
+		return new AcousticSettings(rolloff, S.fadeFraction(), thresholdDb, maxRange, S.profiles(), S.occlusion(), S.reverb());
 	}
 
 	@Test
@@ -106,5 +113,14 @@ class PropagationTest {
 	@Test
 	void relayRadiusIsZeroAtVolumeZero() {
 		assertEquals(0, Propagation.relayRadius(S, PORTABLE, 0), EPS);
+	}
+
+	@Test
+	void gainUsesTheGivenDirectivity() {
+		double behind = -1;
+		double omni = Propagation.gain(S, DeviceProfile.PARTY, Directivity.OMNI, 1, 4, behind);
+		double directed = Propagation.gain(S, DeviceProfile.PARTY, DeviceProfile.PARTY.directivity(), 1, 4, behind);
+		assertEquals(Propagation.gain(S, DeviceProfile.PARTY, 1, 4, 1), omni, EPS);
+		assertEquals(omni * Decibels.toAmplitude(-10), directed, EPS);
 	}
 }

@@ -1,6 +1,6 @@
 package com.ravecraft.mod.gametest;
 
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.blockentity.SpeakerBlockEntity;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.core.audio.stream.SessionTable.Session;
 import com.ravecraft.mod.core.queue.QueueEntry;
@@ -37,8 +37,8 @@ public class SharedQueueGameTest {
 		return h.absolutePos(SPEAKER);
 	}
 
-	static PortableSpeakerBlockEntity be(GameTestHelper h) {
-		return h.getBlockEntity(SPEAKER, PortableSpeakerBlockEntity.class);
+	static SpeakerBlockEntity be(GameTestHelper h) {
+		return h.getBlockEntity(SPEAKER, SpeakerBlockEntity.class);
 	}
 
 	static SpeakerQueue queue(GameTestHelper h) {
@@ -400,7 +400,7 @@ public class SharedQueueGameTest {
 		h.runAfterDelay(10, () -> {
 			// A chunk is saved before its block entities are removed: the save itself must carry the position.
 			CompoundTag tag = be(h).saveWithoutMetadata(h.getLevel().registryAccess());
-			SpeakerData saved = SpeakerData.CODEC.parse(NbtOps.INSTANCE, tag.get(PortableSpeakerBlockEntity.KEY)).getOrThrow();
+			SpeakerData saved = SpeakerData.CODEC.parse(NbtOps.INSTANCE, tag.get(SpeakerBlockEntity.KEY)).getOrThrow();
 			h.assertTrue(saved.queue().positionMs() > 0, "live position saved");
 			finish(h, pos, owner);
 		});

@@ -1,6 +1,6 @@
 package com.ravecraft.mod.datagen;
 
-import com.ravecraft.mod.block.PortableSpeakerBlock;
+import com.ravecraft.mod.block.SpeakerBlock;
 import com.ravecraft.mod.client.item.SpeakerPowered;
 import com.ravecraft.mod.registry.ModBlocks;
 import net.fabricmc.fabric.api.client.datagen.v1.provider.FabricModelProvider;
@@ -19,6 +19,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.level.block.Block;
 
 /**
  * Blockstates, block models, item models and {@code assets/<modid>/items/*.json}. Custom geometry: design it in
@@ -36,22 +37,29 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 
 	@Override
 	public void generateBlockStateModels(BlockModelGenerators generators) {
-		// Hand-written Blockbench models (models/block/portable_speaker[_on].json): only the blockstate and the
-		// item model definition are generated here.
-		Identifier off = ModelLocationUtils.getModelLocation(ModBlocks.PORTABLE_SPEAKER);
-		Identifier on = ModelLocationUtils.getModelLocation(ModBlocks.PORTABLE_SPEAKER, "_on");
-		generators.blockStateOutput.accept(MultiVariantGenerator.dispatch(ModBlocks.PORTABLE_SPEAKER)
-				.with(BlockModelGenerators.createBooleanModelDispatch(PortableSpeakerBlock.POWERED,
+		speaker(ModBlocks.PORTABLE_SPEAKER, generators);
+		speaker(ModBlocks.PARTY_SPEAKER, generators);
+	}
+
+	/**
+	 * The blockstate and item model definition of a speaker. Its block models are hand-written Blockbench exports
+	 * ({@code models/block/<id>[_on].json}). The item shows a flat 2D icon in the inventory and the 3D block model
+	 * everywhere else (hand, ground, item frame), like the trident. Both tint layer / tintindex 0 (the fabric or
+	 * grille) with the item's dye colour, like leather armour, and light the power LED when the item carries
+	 * powered settings.
+	 */
+	private static void speaker(Block block, BlockModelGenerators generators) {
+		Identifier off = ModelLocationUtils.getModelLocation(block);
+		Identifier on = ModelLocationUtils.getModelLocation(block, "_on");
+		generators.blockStateOutput.accept(MultiVariantGenerator.dispatch(block)
+				.with(BlockModelGenerators.createBooleanModelDispatch(SpeakerBlock.POWERED,
 						BlockModelGenerators.plainVariant(on), BlockModelGenerators.plainVariant(off)))
 				.with(BlockModelGenerators.ROTATION_HORIZONTAL_FACING));
-		// Flat 2D icon in the inventory, the 3D block model everywhere else (hand, ground, item frame), like the
-		// trident. Both tint their fabric (layer / tintindex 0) with the item's dye colour, like leather armour,
-		// and light their power LED when the item carries powered settings.
-		Item speaker = ModBlocks.PORTABLE_SPEAKER.asItem();
+		Item speaker = block.asItem();
 		Identifier icon = flatIcon(speaker, "", "_overlay", generators);
 		Identifier iconOn = flatIcon(speaker, "_on", "_overlay_on", generators);
 		// Item tints are ARGB: without an opaque alpha the undyed fabric would be invisible.
-		Dye fabricTint = new Dye(ARGB.opaque(PortableSpeakerBlock.DEFAULT_COLOR));
+		Dye fabricTint = new Dye(ARGB.opaque(SpeakerBlock.DEFAULT_COLOR));
 		generators.itemModelOutput.accept(speaker, ItemModelUtils.select(new DisplayContext(),
 				powered(ItemModelUtils.tintedModel(on, fabricTint), ItemModelUtils.tintedModel(off, fabricTint)),
 				ItemModelUtils.when(ItemDisplayContext.GUI,

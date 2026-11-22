@@ -1,6 +1,7 @@
 package com.ravecraft.mod.client.audio.render;
 
 import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.client.audio.ClientSpeakerHosts;
 import com.ravecraft.mod.client.audio.occlusion.WorldAcousticGrid;
 import com.ravecraft.mod.client.options.RaveCraftOptions;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
@@ -15,6 +16,7 @@ import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
 import com.ravecraft.mod.core.audio.stream.PlayoutStats;
 import com.ravecraft.mod.core.queue.QueueEntry;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
+import com.ravecraft.mod.network.payload.SpeakerHostPayload;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -23,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
 import net.minecraft.util.Util;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
@@ -53,7 +56,7 @@ public final class AcousticDebugInfo {
 			if (!OcclusionScheduler.isAudible(settings, stream, ear)) {
 				continue;
 			}
-			double distance = ear.distanceTo(Vec3.atCenterOf(stream.pos));
+			double distance = ear.distanceTo(new Vec3(stream.x, stream.y, stream.z));
 			rows.add(new SpeakerRow(stream.sessionId, distance, stream.heardGain, stream.sounding,
 					stream.occlusionKnown, stream.occlusionLossDb, stream.occlusionHighLossDb, stream.reverbSlot));
 		}
@@ -124,9 +127,11 @@ public final class AcousticDebugInfo {
 				AcousticRenderer.stepAverageMs(), AcousticRenderer.stepMaxMs(), AcousticRenderer.audioRunning()));
 	}
 
-	/** The track the speaker of {@code stream} is playing, when its block entity knows it. */
+	/** The track the speaker of {@code stream} is playing, when it is a block whose block entity knows it. */
 	private static Optional<QueueEntry> current(@Nullable ClientLevel level, RenderStream stream) {
-		if (level != null && level.getBlockEntity(stream.pos) instanceof PortableSpeakerBlockEntity speaker) {
+		Optional<BlockPos> block = ClientSpeakerHosts.get(stream.speakerId).flatMap(SpeakerHostPayload::block);
+		if (level != null && block.isPresent() && level.getBlockEntity(block.get()) instanceof PortableSpeakerBlockEntity speaker
+				&& speaker.data().id().equals(stream.speakerId)) {
 			SpeakerQueue queue = speaker.data().queue();
 			return queue.current().flatMap(queue::entry);
 		}

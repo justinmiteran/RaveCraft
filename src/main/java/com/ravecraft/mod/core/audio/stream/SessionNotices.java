@@ -14,6 +14,8 @@ import java.util.UUID;
 public final class SessionNotices<T> {
 	private final Map<Integer, T> notices = new HashMap<>();
 	private final Map<Integer, Set<UUID>> told = new HashMap<>();
+	/** Everyone told about each session since it first opened, across later notices: who to tell it ended. */
+	private final Map<Integer, Set<UUID>> reached = new HashMap<>();
 
 	/**
 	 * Sets the notice of {@code sessionId}, forgetting who was told about a previous one.
@@ -38,6 +40,7 @@ public final class SessionNotices<T> {
 		if (notice == null || !told.get(sessionId).add(player)) {
 			return Optional.empty();
 		}
+		reached.computeIfAbsent(sessionId, id -> new HashSet<>()).add(player);
 		return Optional.of(notice);
 	}
 
@@ -52,12 +55,25 @@ public final class SessionNotices<T> {
 	}
 
 	/**
+	 * The players told about {@code sessionId} by any of its notices since it opened; a copy.
+	 *
+	 * @param sessionId the session
+	 * @return the players told
+	 */
+	public Set<UUID> reached(int sessionId) {
+		return Set.copyOf(reached.getOrDefault(sessionId, Set.of()));
+	}
+
+	/**
 	 * Forgets that {@code player} was told about any session, so a rejoining player is told again.
 	 *
 	 * @param player the player
 	 */
 	public void forget(UUID player) {
 		for (Set<UUID> players : told.values()) {
+			players.remove(player);
+		}
+		for (Set<UUID> players : reached.values()) {
 			players.remove(player);
 		}
 	}
@@ -70,11 +86,13 @@ public final class SessionNotices<T> {
 	public void end(int sessionId) {
 		notices.remove(sessionId);
 		told.remove(sessionId);
+		reached.remove(sessionId);
 	}
 
 	/** Forgets every session. */
 	public void clear() {
 		notices.clear();
 		told.clear();
+		reached.clear();
 	}
 }

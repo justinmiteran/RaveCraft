@@ -1,6 +1,5 @@
 package com.ravecraft.mod.client.screen.widget;
 
-import com.ravecraft.mod.client.SpeakerFabricTint;
 import com.ravecraft.mod.client.screen.SpeakerStates;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload;
@@ -8,21 +7,19 @@ import com.ravecraft.mod.network.payload.SpeakerStatePayload.StateEntry;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.IntSupplier;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.sounds.SoundManager;
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Util;
-import org.jspecify.annotations.Nullable;
 
 /**
  * The band at the top of the speaker screen, on the speaker's fabric tinted with its colour: the copper equaliser
@@ -32,7 +29,6 @@ import org.jspecify.annotations.Nullable;
  */
 public final class PlayerBand extends AbstractWidget {
 	public static final int HEIGHT = 44;
-	private static final SpeakerFabricTint TINT = new SpeakerFabricTint();
 	/** The fabric is darkened so white text stays readable on any dye. */
 	private static final float FABRIC_SHADE = 0.6F;
 	private static final int TEXT_X = 42;
@@ -43,21 +39,25 @@ public final class PlayerBand extends AbstractWidget {
 	/** Heights of the four bars when still, as a fraction of {@link #BAR_MAX}. */
 	private static final float[] BARS = {0.35F, 0.75F, 1.0F, 0.5F};
 
-	private final BlockPos pos;
+	private final UUID speakerId;
+	/** The speaker's fabric colour (opaque RGB), read each frame so a new dye shows at once. */
+	private final IntSupplier fabricColour;
 	private boolean seeking;
 	private long seekMs;
 
 	/**
-	 * The band of the speaker at {@code pos}.
+	 * The band of speaker {@code speakerId}.
 	 *
-	 * @param x the band's left edge
-	 * @param y the band's top
-	 * @param width the band's width
-	 * @param pos where the speaker stands
+	 * @param x the left edge
+	 * @param y the top
+	 * @param width the width
+	 * @param speakerId the speaker
+	 * @param fabricColour gives the fabric's RGB colour
 	 */
-	public PlayerBand(int x, int y, int width, BlockPos pos) {
+	public PlayerBand(int x, int y, int width, UUID speakerId, IntSupplier fabricColour) {
 		super(x, y, width, HEIGHT, Component.empty());
-		this.pos = pos;
+		this.speakerId = speakerId;
+		this.fabricColour = fabricColour;
 	}
 
 	// --- Layout -----------------------------------------------------------------------------------------------
@@ -82,7 +82,7 @@ public final class PlayerBand extends AbstractWidget {
 	// --- State ------------------------------------------------------------------------------------------------
 
 	private Optional<SpeakerStatePayload> state() {
-		return SpeakerStates.get(pos);
+		return SpeakerStates.get(speakerId);
 	}
 
 	private static Optional<StateEntry> current(SpeakerStatePayload state) {
@@ -133,7 +133,7 @@ public final class PlayerBand extends AbstractWidget {
 		if (seeking) {
 			seeking = false;
 			if (seekable()) {
-				SpeakerStates.send(pos, Command.SEEK, msAt(event.x()));
+				SpeakerStates.send(speakerId, Command.SEEK, msAt(event.x()));
 			}
 		}
 	}
@@ -150,7 +150,7 @@ public final class PlayerBand extends AbstractWidget {
 		Font font = minecraft.font;
 		int x = getX();
 		int y = getY();
-		drawFabric(graphics, minecraft.level);
+		drawFabric(graphics);
 
 		Optional<SpeakerStatePayload> state = state();
 		boolean powered = state.map(SpeakerStatePayload::powered).orElse(false);
@@ -191,8 +191,8 @@ public final class PlayerBand extends AbstractWidget {
 		}
 	}
 
-	private void drawFabric(GuiGraphicsExtractor graphics, @Nullable ClientLevel level) {
-		int colour = level == null ? 0xFFFFFFFF : TINT.colorInWorld(level.getBlockState(pos), level, pos);
+	private void drawFabric(GuiGraphicsExtractor graphics) {
+		int colour = fabricColour.getAsInt();
 		int x = getX();
 		int y = getY();
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SpeakerSprites.FABRIC, x, y, width, height,
@@ -228,7 +228,7 @@ public final class PlayerBand extends AbstractWidget {
 	/** Draws the progress bar and the times, the bar filled while {@code hasCurrent}. */
 	private void drawProgress(GuiGraphicsExtractor graphics, Font font, boolean hasCurrent) {
 		long duration = duration();
-		long position = seeking ? seekMs : SpeakerStates.positionMs(pos);
+		long position = seeking ? seekMs : SpeakerStates.positionMs(speakerId);
 		int textY = trackY() - 2;
 		if (hasCurrent) {
 			graphics.text(font, time(position), getX() + TEXT_X, textY, SpeakerSprites.COPPER_LIGHT);

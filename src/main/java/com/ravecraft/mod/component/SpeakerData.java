@@ -42,6 +42,11 @@ public record SpeakerData(UUID id, SpeakerSettings settings, SpeakerQueue queue)
 	}
 
 	/** The same speaker with {@code settings}. */
+	public SpeakerData withId(UUID id) {
+		return new SpeakerData(id, settings, queue);
+	}
+
+	/** The same speaker with {@code settings}. */
 	public SpeakerData withSettings(SpeakerSettings settings) {
 		return new SpeakerData(id, settings, queue);
 	}

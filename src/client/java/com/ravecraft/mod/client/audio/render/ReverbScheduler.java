@@ -323,9 +323,9 @@ public final class ReverbScheduler {
 		if (entered || !SLOT_RUNNING[i] && tick - SLOT_START_TICK[i] >= SPEAKER_PERIOD) {
 			RenderStream stream = Objects.requireNonNull(BY_ID.get(session));
 			double[] origin = SLOT_ORIGINS[i];
-			origin[0] = stream.pos.getX() + 0.5;
-			origin[1] = stream.pos.getY() + 0.5;
-			origin[2] = stream.pos.getZ() + 0.5;
+			origin[0] = stream.x;
+			origin[1] = stream.y;
+			origin[2] = stream.z;
 			SLOT_PROBES[i].start(origin[0], origin[1], origin[2], pass.rays(), pass.rayLength());
 			SLOT_START_TICK[i] = tick;
 			SLOT_RUNNING[i] = true;

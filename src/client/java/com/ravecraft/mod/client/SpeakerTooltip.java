@@ -6,12 +6,12 @@ import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.DeviceProfile;
 import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.acoustics.Propagation;
+import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModDataComponents;
 import java.util.List;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
-import com.ravecraft.mod.core.queue.SpeakerQueue;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -53,9 +53,17 @@ public final class SpeakerTooltip {
 		} else {
 			lines.add(gray("tooltip.ravecraft.speaker.base", number(profile.powerWatts()), range, directivity));
 		}
+		addKeyLine(lines);
 		addQueueLine(lines, queue);
 		if (!shift) {
 			lines.add(Component.translatable("tooltip.ravecraft.speaker.shift_hint").withStyle(ChatFormatting.DARK_GRAY));
+		}
+	}
+
+	/** Adds the key that opens the speaker from the inventory, unless it is unbound. */
+	private static void addKeyLine(List<Component> lines) {
+		if (!OpenSpeakerKey.key().isUnbound()) {
+			lines.add(gray("tooltip.ravecraft.speaker.open_key", OpenSpeakerKey.key().getTranslatedKeyMessage()));
 		}
 	}
 

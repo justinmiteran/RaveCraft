@@ -6,6 +6,7 @@ import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.registry.ModBlockEntities;
 import com.ravecraft.mod.registry.ModDataComponents;
+import com.ravecraft.mod.world.audio.SpeakerHosts;
 import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import com.ravecraft.mod.world.audio.SpeakerWatchers;
 import java.util.Objects;
@@ -131,19 +132,24 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 		setChanged();
 		if (level instanceof ServerLevel serverLevel) {
 			if (!data.settings().powered()) {
-				SpeakerPlayback.pauseAt(this);
+				SpeakerPlayback.pauseAt(serverLevel.getServer(), data.id());
 			}
 			// Open screens show the power state, whoever toggled it (the POWER command or a sneak-click).
-			SpeakerWatchers.markDirty(serverLevel, worldPosition);
+			SpeakerWatchers.markDirty(data.id());
 		}
 	}
 
-	/** Called when the block is broken or its chunk unloads: the speaker pauses, keeping its queue. */
+	/**
+	 * Called when the block is broken or its chunk unloads. The session carries on for a grace: a broken block's
+	 * drop takes it over; otherwise {@link SpeakerHosts#tick} pauses it once the id is lost for good.
+	 */
 	@Override
 	public void setRemoved() {
 		super.setRemoved();
 		if (level instanceof ServerLevel) {
-			SpeakerPlayback.pauseAt(this);
+			SpeakerHosts.removed(this);
+			// Open screens close: the next flush finds the speaker gone.
+			SpeakerWatchers.markDirty(data.id());
 		}
 	}
 
@@ -151,7 +157,7 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 	protected void saveAdditional(ValueOutput output) {
 		super.saveAdditional(output);
 		// A chunk is saved before its block entities are removed: while playing, save where the track is now.
-		output.store(KEY, SpeakerData.CODEC, level instanceof ServerLevel ? data.withQueue(SpeakerPlayback.liveQueue(this)) : data);
+		output.store(KEY, SpeakerData.CODEC, level instanceof ServerLevel ? data.withQueue(SpeakerPlayback.liveQueue(data.id(), data.queue())) : data);
 		output.storeNullable(COLOR_KEY, DyedItemColor.CODEC, color);
 		output.storeNullable(NAME_KEY, ComponentSerialization.CODEC, customName);
 	}
@@ -189,7 +195,7 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 	protected void collectImplicitComponents(DataComponentMap.Builder components) {
 		super.collectImplicitComponents(components);
 		// While playing, the stored position is stale: the item gets where the track is now.
-		components.set(ModDataComponents.SPEAKER, level instanceof ServerLevel ? data.withQueue(SpeakerPlayback.liveQueue(this)) : data);
+		components.set(ModDataComponents.SPEAKER, level instanceof ServerLevel ? data.withQueue(SpeakerPlayback.liveQueue(data.id(), data.queue())) : data);
 		if (color != null) {
 			components.set(DataComponents.DYED_COLOR, color);
 		}

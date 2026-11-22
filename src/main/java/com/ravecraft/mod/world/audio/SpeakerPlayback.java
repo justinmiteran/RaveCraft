@@ -1,7 +1,5 @@
 package com.ravecraft.mod.world.audio;
 
-import com.ravecraft.mod.block.PortableSpeakerBlock;
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
 import com.ravecraft.mod.core.audio.stream.SessionTable.Session;
 import com.ravecraft.mod.core.queue.PlayHistory;
 import com.ravecraft.mod.core.queue.PlaybackClock;
@@ -18,17 +16,15 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.function.Predicate;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Util;
 
 /**
- * Plays the shared queues ({@link SpeakerCommands} applies players' commands): picks the next playable entry (its owner online), opens a
+ * Plays the shared queues: applies players' commands, picks the next playable entry (its owner online), opens a
  * session and orders that owner to stream it, and moves on when it ends, fails or its owner leaves. The queue lives
- * in the speaker's block entity; what plays lives here, in memory, so a loaded speaker is always paused.
- * Server thread only.
+ * with the speaker, read and written through its {@link SpeakerHandle}; what plays lives here, in memory, keyed by
+ * the speaker id, so a loaded speaker is always paused. Server thread only.
  */
 public final class SpeakerPlayback {
 	/**
@@ -43,12 +39,12 @@ public final class SpeakerPlayback {
 	private static final long SKIPPED_MS_PER_TICK = 2_500;
 	/** Live position above which PREVIOUS restarts the current entry instead of going back. */
 	private static final long PREVIOUS_RESTART_MS = 3_000;
-	private static final Map<SpeakerKey, Playing> PLAYING = new HashMap<>();
+	private static final Map<UUID, Playing> PLAYING = new HashMap<>();
 	/** What each speaker played before, for PREVIOUS. Memory only, like {@link #PLAYING}. */
-	private static final Map<SpeakerKey, PlayHistory> HISTORY = new HashMap<>();
+	private static final Map<UUID, PlayHistory> HISTORY = new HashMap<>();
 	static final Random RNG = new Random();
 
-	/** The track a speaker streams: its session, its entry, its clock and when it started. */
+	/** The session a speaker plays, the entry it plays and where it is in it. */
 	private static final class Playing {
 		final int sessionId;
 		final UUID entryId;
@@ -76,7 +72,7 @@ public final class SpeakerPlayback {
 	 * @param durationMs the track's length, in milliseconds
 	 */
 	public static void onStreamStarted(ServerPlayer player, int sessionId, long durationMs) {
-		Optional<SpeakerKey> key = keyOf(sessionId);
+		Optional<UUID> key = keyOf(sessionId);
 		if (durationMs < 0 || key.isEmpty()) {
 			return;
 		}
@@ -85,8 +81,8 @@ public final class SpeakerPlayback {
 			return;
 		}
 		UUID entryId = PLAYING.get(key.get()).entryId;
-		blockEntity(player.level().getServer(), key.get())
-				.ifPresent(be -> update(be, queueOf(be).withDuration(entryId, durationMs)));
+		SpeakerHosts.handle(player.level().getServer(), key.get())
+				.ifPresent(speaker -> update(speaker, queueOf(speaker).withDuration(entryId, durationMs)));
 	}
 
 	// --- Session outcomes --------------------------------------------------------------------------------------
@@ -103,7 +99,7 @@ public final class SpeakerPlayback {
 			onStreamResult(player, sessionId);
 			return;
 		}
-		Optional<SpeakerKey> key = keyOf(sessionId);
+		Optional<UUID> key = keyOf(sessionId);
 		if (key.isEmpty()) {
 			StreamSessions.close(sessionId, player, true);
 			return;
@@ -112,7 +108,7 @@ public final class SpeakerPlayback {
 			return;
 		}
 		PLAYING.remove(key.get());
-		blockEntity(player.level().getServer(), key.get()).ifPresent(be -> advance(be, true));
+		SpeakerHosts.handle(player.level().getServer(), key.get()).ifPresent(speaker -> advance(speaker, true));
 	}
 
 	/**
@@ -122,7 +118,7 @@ public final class SpeakerPlayback {
 	 * @param sessionId the session
 	 */
 	public static void onStreamResult(ServerPlayer player, int sessionId) {
-		Optional<SpeakerKey> key = keyOf(sessionId);
+		Optional<UUID> key = keyOf(sessionId);
 		if (key.isEmpty() || StreamSessions.close(sessionId, player, false).isEmpty()) {
 			return;
 		}
@@ -150,18 +146,18 @@ public final class SpeakerPlayback {
 	 */
 	public static void tick(MinecraftServer server) {
 		int now = server.getTickCount();
-		List<SpeakerKey> silent = new ArrayList<>();
+		List<UUID> silent = new ArrayList<>();
 		PLAYING.forEach((key, playing) -> {
 			long timeout = START_TIMEOUT_TICKS + playing.clock.startPositionMs() / SKIPPED_MS_PER_TICK;
 			if (!playing.heard && now - playing.startTick > timeout) {
 				silent.add(key);
 			}
 		});
-		for (SpeakerKey key : silent) {
+		for (UUID key : silent) {
 			Playing playing = PLAYING.get(key);
-			Optional<Session<SpeakerKey>> session = StreamSessions.table().byId(playing.sessionId);
+			Optional<Session<UUID>> session = StreamSessions.table().byId(playing.sessionId);
 			ServerPlayer owner = session.map(s -> server.getPlayerList().getPlayer(s.owner())).orElse(null);
-			blockEntity(server, key).ifPresent(be -> StreamSessions.endAt((ServerLevel) be.getLevel(), be.getBlockPos()));
+			StreamSessions.endAt(server, key);
 			dropUnreadable(server, key, owner);
 		}
 	}
@@ -184,26 +180,78 @@ public final class SpeakerPlayback {
 	 * @param player the player who left
 	 */
 	public static void onDisconnect(MinecraftServer server, UUID player) {
-		for (Session<SpeakerKey> session : StreamSessions.endByOwner(server, player)) {
+		for (Session<UUID> session : StreamSessions.endByOwner(server, player)) {
 			Playing playing = PLAYING.get(session.key());
 			if (playing != null && playing.sessionId == session.id()) {
 				PLAYING.remove(session.key());
-				blockEntity(server, session.key()).ifPresent(be -> start(be, onlinePlayers(be, player)));
+				SpeakerHosts.handle(server, session.key()).ifPresent(speaker -> start(speaker, onlinePlayers(speaker, player)));
 			}
 		}
 		SpeakerWatchers.markAllDirty();
 	}
 
 	/**
-	 * The speaker is switched off, broken or unloaded: stop, remembering where the track was. Safe to call on a
-	 * speaker that is not playing.
+	 * Speaker {@code speakerId} is switched off: stop, remembering where the track was. Safe to call on a speaker that
+	 * is not playing, or that is not loaded (then only its session ends).
 	 *
-	 * @param be the speaker
+	 * @param server the server
+	 * @param speakerId the speaker
 	 */
-	public static void pauseAt(PortableSpeakerBlockEntity be) {
-		pause(be);
-		if (be.isRemoved()) {
-			HISTORY.remove(keyOf(be));
+	public static void pauseAt(MinecraftServer server, UUID speakerId) {
+		SpeakerHosts.handle(server, speakerId).ifPresentOrElse(SpeakerPlayback::pause, () -> {
+			PLAYING.remove(speakerId);
+			StreamSessions.endAt(server, speakerId);
+		});
+	}
+
+	/**
+	 * The speaker leaves the world with its holder (its carrier disconnects): stop, writing where the track was
+	 * where it lives, and forget what it played before. Takes a handle built directly: the registry may no longer
+	 * resolve a host that is leaving.
+	 *
+	 * @param speaker the speaker
+	 */
+	public static void pauseRemoved(SpeakerHandle speaker) {
+		pause(speaker);
+		HISTORY.remove(speaker.id());
+	}
+
+	/**
+	 * Speaker {@code speakerId} is gone for good (destroyed, despawned): end its session and forget its history.
+	 *
+	 * @param server the server
+	 * @param speakerId the speaker
+	 */
+	public static void stopAt(MinecraftServer server, UUID speakerId) {
+		PLAYING.remove(speakerId);
+		HISTORY.remove(speakerId);
+		StreamSessions.endAt(server, speakerId);
+	}
+
+	/**
+	 * The host of speaker {@code speakerId} is out of reach (a chest, an unloaded chunk): end its session and return
+	 * {@code lastStored}, its last known queue, at the position the track is at now, for when it shows up again.
+	 *
+	 * @param server the server
+	 * @param speakerId the speaker
+	 * @param lastStored its last known queue
+	 * @return the queue at the position reached
+	 */
+	public static SpeakerQueue detach(MinecraftServer server, UUID speakerId, SpeakerQueue lastStored) {
+		SpeakerQueue live = liveQueue(speakerId, lastStored);
+		PLAYING.remove(speakerId);
+		StreamSessions.endAt(server, speakerId);
+		return live;
+	}
+
+	/**
+	 * A speaker paused by losing its host is back: play from the stored position, when powered.
+	 *
+	 * @param speaker the speaker
+	 */
+	public static void resume(SpeakerHandle speaker) {
+		if (speaker.powered() && !isPlaying(speaker.id())) {
+			start(speaker, onlinePlayers(speaker, null));
 		}
 	}
 
@@ -213,8 +261,8 @@ public final class SpeakerPlayback {
 	 * @param server the server
 	 */
 	public static void pauseAll(MinecraftServer server) {
-		for (SpeakerKey key : List.copyOf(PLAYING.keySet())) {
-			blockEntity(server, key).ifPresentOrElse(SpeakerPlayback::pause,() -> PLAYING.remove(key));
+		for (UUID key : List.copyOf(PLAYING.keySet())) {
+			SpeakerHosts.handle(server, key).ifPresentOrElse(SpeakerPlayback::pause, () -> PLAYING.remove(key));
 		}
 		PLAYING.clear();
 		HISTORY.clear();
@@ -224,29 +272,29 @@ public final class SpeakerPlayback {
 	// --- Reading -----------------------------------------------------------------------------------------------
 
 	/**
-	 * Whether the speaker at {@code pos} streams a track.
+	 * Whether speaker {@code speakerId} plays a session now.
 	 *
-	 * @param level the speaker's level
-	 * @param pos where the speaker stands
-	 * @return true while it streams
+	 * @param speakerId the speaker
+	 * @return true while it plays
 	 */
-	public static boolean isPlaying(ServerLevel level, BlockPos pos) {
-		return PLAYING.containsKey(new SpeakerKey(level.dimension(), pos));
+	public static boolean isPlaying(UUID speakerId) {
+		return PLAYING.containsKey(speakerId);
 	}
 
 	/**
-	 * The queue with the position estimated now while it plays, as it should be copied into a dropped item.
+	 * The {@code stored} queue of speaker {@code speakerId}, with the position estimated now while it plays: what
+	 * should be copied into a dropped item or a save.
 	 *
-	 * @param be the speaker
+	 * @param speakerId the speaker
+	 * @param stored the queue stored with the speaker
 	 * @return the queue
 	 */
-	public static SpeakerQueue liveQueue(PortableSpeakerBlockEntity be) {
-		SpeakerQueue queue = queueOf(be);
-		Playing playing = be.getLevel() instanceof ServerLevel ? PLAYING.get(keyOf(be)) : null;
-		if (playing == null || !queue.current().equals(Optional.of(playing.entryId))) {
-			return queue;
+	public static SpeakerQueue liveQueue(UUID speakerId, SpeakerQueue stored) {
+		Playing playing = PLAYING.get(speakerId);
+		if (playing == null || !stored.current().equals(Optional.of(playing.entryId))) {
+			return stored;
 		}
-		return queue.withPosition(playing.clock.positionAt(Util.getMillis()));
+		return stored.withPosition(playing.clock.positionAt(Util.getMillis()));
 	}
 
 	// --- Internals ---------------------------------------------------------------------------------------------
@@ -255,18 +303,17 @@ public final class SpeakerPlayback {
 	 * Plays the current entry if playable, else the next playable one after it. Pauses when nothing is playable or
 	 * the speaker is off.
 	 */
-	private static void start(PortableSpeakerBlockEntity be, Predicate<UUID> online) {
-		ServerLevel level = (ServerLevel) be.getLevel();
-		BlockPos pos = be.getBlockPos();
-		SpeakerQueue queue = queueOf(be);
-		Optional<QueueEntry> pick = powered(be) ? queue.nextPlayable(online, RNG) : Optional.empty();
-		ServerPlayer owner = pick.map(e -> level.getServer().getPlayerList().getPlayer(e.owner())).orElse(null);
-		Optional<Session<SpeakerKey>> session = owner == null
+	private static void start(SpeakerHandle speaker, Predicate<UUID> online) {
+		MinecraftServer server = speaker.level().getServer();
+		SpeakerQueue queue = queueOf(speaker);
+		Optional<QueueEntry> pick = speaker.powered() ? queue.nextPlayable(online, RNG) : Optional.empty();
+		ServerPlayer owner = pick.map(e -> server.getPlayerList().getPlayer(e.owner())).orElse(null);
+		Optional<Session<UUID>> session = owner == null
 				? Optional.empty()
-				: StreamSessions.open(level, pos, owner, pick.get().entryId());
+				: StreamSessions.open(speaker, owner, pick.get().entryId());
 		if (session.isEmpty()) {
-			stop(be);
-			SpeakerWatchers.markDirty(level, pos);
+			stop(speaker);
+			markDirty(speaker);
 			return;
 		}
 		QueueEntry entry = pick.get();
@@ -274,37 +321,39 @@ public final class SpeakerPlayback {
 			queue = queue.afterAdvance(entry.entryId(), RNG);
 		}
 		long startMs = queue.positionMs();
-		PLAYING.put(keyOf(be), new Playing(session.get().id(), entry.entryId(), new PlaybackClock(startMs, Util.getMillis()),
-				level.getServer().getTickCount()));
-		update(be, queue);
-		Net.send(owner, new StreamOrderPayload(session.get().id(), level.dimension(), pos, true, entry.entryId(), startMs));
-		NowPlaying.start(owner, session.get().id(), pos, entry);
+		PLAYING.put(speaker.id(), new Playing(session.get().id(), entry.entryId(), new PlaybackClock(startMs, Util.getMillis()),
+				server.getTickCount()));
+		update(speaker, queue);
+		// Hosts first: the owner must know where its own stream plays from before its first chunk.
+		SpeakerHostNotices.notice(server, speaker.id());
+		Net.send(owner, new StreamOrderPayload(session.get().id(), speaker.id(), true, entry.entryId(), startMs));
+		NowPlaying.start(owner, session.get().id(), speaker.id(), entry);
 	}
 
-	/** Plays the current entry if playable, else the next playable one, with every online owner. */
-	static void play(PortableSpeakerBlockEntity be) {
-		start(be, onlinePlayers(be, null));
+	/** Starts the current entry, or the next playable one. */
+	static void play(SpeakerHandle speaker) {
+		start(speaker, onlinePlayers(speaker, null));
 	}
 
 	/** Stops, forgets the history and empties the queue. */
-	static void clear(PortableSpeakerBlockEntity be) {
-		stop(be);
-		HISTORY.remove(keyOf(be));
-		update(be, queueOf(be).clear());
+	static void clear(SpeakerHandle speaker) {
+		stop(speaker);
+		HISTORY.remove(speaker.id());
+		update(speaker, queueOf(speaker).clear());
 	}
 
 	/** Stops playing, storing the estimated position of the current entry. */
-	static void pause(PortableSpeakerBlockEntity be) {
-		SpeakerQueue live = liveQueue(be);
-		if (stop(be)) {
-			update(be, live);
+	static void pause(SpeakerHandle speaker) {
+		SpeakerQueue live = liveQueue(speaker);
+		if (stop(speaker)) {
+			update(speaker, live);
 		}
 	}
 
 	/** Ends the session and forgets that the speaker plays. Returns whether it was playing. */
-	static boolean stop(PortableSpeakerBlockEntity be) {
-		boolean was = PLAYING.remove(keyOf(be)) != null;
-		StreamSessions.endAt((ServerLevel) be.getLevel(), be.getBlockPos());
+	static boolean stop(SpeakerHandle speaker) {
+		boolean was = PLAYING.remove(speaker.id()) != null;
+		StreamSessions.endAt(speaker.level().getServer(), speaker.id());
 		return was;
 	}
 
@@ -313,19 +362,19 @@ public final class SpeakerPlayback {
 	 * left goes to the history. Nothing next: pauses on the current entry, from its start. Plays the next entry when
 	 * the speaker was playing, or at a natural end (whose session is already closed).
 	 */
-	static void advance(PortableSpeakerBlockEntity be, boolean natural) {
-		SpeakerQueue queue = queueOf(be);
-		Optional<QueueEntry> next = queue.next(onlinePlayers(be, null), natural, RNG);
-		boolean wasPlaying = stop(be);
+	static void advance(SpeakerHandle speaker, boolean natural) {
+		SpeakerQueue queue = queueOf(speaker);
+		Optional<QueueEntry> next = queue.next(onlinePlayers(speaker, null), natural, RNG);
+		boolean wasPlaying = stop(speaker);
 		if (next.isEmpty()) {
-			update(be, queue.withPosition(0));
+			update(speaker, queue.withPosition(0));
 			return;
 		}
 		UUID nextId = next.get().entryId();
-		queue.current().filter(current -> !current.equals(nextId)).ifPresent(current -> historyOf(be).push(current));
-		update(be, queue.afterAdvance(nextId, RNG));
+		queue.current().filter(current -> !current.equals(nextId)).ifPresent(current -> historyOf(speaker).push(current));
+		update(speaker, queue.afterAdvance(nextId, RNG));
 		if (natural || wasPlaying) {
-			play(be);
+			start(speaker, onlinePlayers(speaker, null));
 		}
 	}
 
@@ -333,12 +382,12 @@ public final class SpeakerPlayback {
 	 * Restarts the current entry when it has played for more than 3 s, else goes back to the latest entry of the
 	 * history still queued with its owner online (the current one if none). Keeps playing or paused.
 	 */
-	static void previous(PortableSpeakerBlockEntity be) {
-		SpeakerQueue queue = liveQueue(be);
+	static void previous(SpeakerHandle speaker) {
+		SpeakerQueue queue = liveQueue(speaker);
 		Optional<UUID> target = queue.current();
 		if (queue.positionMs() <= PREVIOUS_RESTART_MS) {
-			PlayHistory history = historyOf(be);
-			Predicate<UUID> online = onlinePlayers(be, null);
+			PlayHistory history = historyOf(speaker);
+			Predicate<UUID> online = onlinePlayers(speaker, null);
 			for (Optional<UUID> id = history.pop(); id.isPresent(); id = history.pop()) {
 				if (queue.entry(id.get()).filter(e -> online.test(e.owner())).isPresent()) {
 					target = id;
@@ -349,11 +398,11 @@ public final class SpeakerPlayback {
 		if (target.isEmpty()) {
 			return;
 		}
-		boolean wasPlaying = stop(be);
+		boolean wasPlaying = stop(speaker);
 		// Going back keeps the shuffle round: the target only leaves what is still to play.
-		update(be, queueOf(be).withCurrent(target.get(), 0));
+		update(speaker, queueOf(speaker).withCurrent(target.get(), 0));
 		if (wasPlaying) {
-			play(be);
+			start(speaker, onlinePlayers(speaker, null));
 		}
 	}
 
@@ -361,101 +410,78 @@ public final class SpeakerPlayback {
 	 * Removes an entry and purges it from the history. Removing the current one cuts it and makes the entry that
 	 * would have played next current, played if the speaker was playing or {@code play}.
 	 */
-	static void removeEntry(PortableSpeakerBlockEntity be, UUID entryId, boolean play) {
-		SpeakerQueue queue = queueOf(be);
-		PlayHistory history = HISTORY.get(keyOf(be));
+	static void removeEntry(SpeakerHandle speaker, UUID entryId, boolean play) {
+		SpeakerQueue queue = queueOf(speaker);
+		PlayHistory history = HISTORY.get(speaker.id());
 		if (history != null) {
 			history.remove(entryId);
 		}
 		if (!queue.current().equals(Optional.of(entryId))) {
-			update(be, queue.remove(entryId));
+			update(speaker, queue.remove(entryId));
 			return;
 		}
-		Optional<QueueEntry> next = queue.next(onlinePlayers(be, null), false, RNG)
+		Optional<QueueEntry> next = queue.next(onlinePlayers(speaker, null), false, RNG)
 				.filter(e -> !e.entryId().equals(entryId));
-		boolean wasPlaying = stop(be);
+		boolean wasPlaying = stop(speaker);
 		if (next.isEmpty()) {
-			update(be, queue.remove(entryId));
+			update(speaker, queue.remove(entryId));
 			return;
 		}
-		update(be, queue.afterAdvance(next.get().entryId(), RNG).remove(entryId));
+		update(speaker, queue.afterAdvance(next.get().entryId(), RNG).remove(entryId));
 		if (wasPlaying || play) {
-			play(be);
+			start(speaker, onlinePlayers(speaker, null));
 		}
 	}
 
-	/** The current track of {@code key} cannot be read: remove it, tell its owner, play the next. */
-	private static void dropUnreadable(MinecraftServer server, SpeakerKey key, ServerPlayer owner) {
+	/** The current track of speaker {@code key} cannot be read: remove it, tell its owner, play the next. */
+	private static void dropUnreadable(MinecraftServer server, UUID key, ServerPlayer owner) {
 		Playing playing = PLAYING.remove(key);
-		Optional<PortableSpeakerBlockEntity> found = blockEntity(server, key);
+		Optional<SpeakerHandle> found = SpeakerHosts.handle(server, key);
 		if (playing == null || found.isEmpty()) {
 			return;
 		}
-		PortableSpeakerBlockEntity be = found.get();
-		queueOf(be).entry(playing.entryId).ifPresent(entry -> {
+		SpeakerHandle speaker = found.get();
+		queueOf(speaker).entry(playing.entryId).ifPresent(entry -> {
 			if (owner != null) {
 				Net.send(owner, new TrackRemovedPayload(entry.title()));
 			}
 		});
-		removeEntry(be, playing.entryId, true);
+		removeEntry(speaker, playing.entryId, true);
 	}
 
-	private static PlayHistory historyOf(PortableSpeakerBlockEntity be) {
-		return HISTORY.computeIfAbsent(keyOf(be), key -> new PlayHistory());
+	private static PlayHistory historyOf(SpeakerHandle speaker) {
+		return HISTORY.computeIfAbsent(speaker.id(), key -> new PlayHistory());
 	}
 
-	/** Tells the speaker's watchers that it changed. */
-	static void markDirty(PortableSpeakerBlockEntity be) {
-		if (be.getLevel() instanceof ServerLevel level) {
-			SpeakerWatchers.markDirty(level, be.getBlockPos());
-		}
+	static void markDirty(SpeakerHandle speaker) {
+		SpeakerWatchers.markDirty(speaker.id());
 	}
 
-	/** Stores {@code queue} in the speaker and tells its watchers. */
-	static void update(PortableSpeakerBlockEntity be, SpeakerQueue queue) {
-		be.setData(be.data().withQueue(queue));
-		markDirty(be);
+	/** Writes the queue where the speaker lives; the handle marks its open screens dirty. */
+	static void update(SpeakerHandle speaker, SpeakerQueue queue) {
+		speaker.setData(speaker.data().withQueue(queue));
 	}
 
-	private static Predicate<UUID> onlinePlayers(PortableSpeakerBlockEntity be, UUID leaving) {
-		MinecraftServer server = be.getLevel().getServer();
+	private static Predicate<UUID> onlinePlayers(SpeakerHandle speaker, UUID leaving) {
+		MinecraftServer server = speaker.level().getServer();
 		return id -> !id.equals(leaving) && server.getPlayerList().getPlayer(id) != null;
 	}
 
-	/** The speaker's queue as stored. */
-	static SpeakerQueue queueOf(PortableSpeakerBlockEntity be) {
-		return be.data().queue();
+	static SpeakerQueue queueOf(SpeakerHandle speaker) {
+		return speaker.data().queue();
 	}
 
-	/** Whether the speaker streams a track. */
-	static boolean isPlaying(PortableSpeakerBlockEntity be) {
-		return PLAYING.containsKey(keyOf(be));
+	private static SpeakerQueue liveQueue(SpeakerHandle speaker) {
+		return liveQueue(speaker.id(), queueOf(speaker));
 	}
 
-	private static boolean powered(PortableSpeakerBlockEntity be) {
-		return be.getBlockState().getValue(PortableSpeakerBlock.POWERED);
-	}
-
-	private static SpeakerKey keyOf(PortableSpeakerBlockEntity be) {
-		return new SpeakerKey(be.getLevel().dimension(), be.getBlockPos());
-	}
-
-	private static Optional<SpeakerKey> keyOf(int sessionId) {
-		for (Map.Entry<SpeakerKey, Playing> entry : PLAYING.entrySet()) {
+	private static Optional<UUID> keyOf(int sessionId) {
+		for (Map.Entry<UUID, Playing> entry : PLAYING.entrySet()) {
 			if (entry.getValue().sessionId == sessionId) {
 				return Optional.of(entry.getKey());
 			}
 		}
 		return Optional.empty();
-	}
-
-	private static Optional<PortableSpeakerBlockEntity> blockEntity(MinecraftServer server, SpeakerKey key) {
-		ServerLevel level = server.getLevel(key.dimension());
-		if (level == null || !level.isLoaded(key.pos())
-				|| !(level.getBlockEntity(key.pos()) instanceof PortableSpeakerBlockEntity be)) {
-			return Optional.empty();
-		}
-		return Optional.of(be);
 	}
 
 }

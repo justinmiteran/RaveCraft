@@ -3,13 +3,13 @@ package com.ravecraft.mod.client.screen.widget;
 import com.ravecraft.mod.client.screen.SpeakerStates;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
+import java.util.UUID;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Util;
@@ -25,7 +25,7 @@ public final class VolumeSlider extends AbstractWidget {
 	/** The track starts after the speaker icon and a small gap. */
 	private static final int TRACK_X = SpeakerSprites.ICON + 5;
 
-	private final BlockPos pos;
+	private final UUID speakerId;
 	private int volume = SpeakerSettings.DEFAULT_VOLUME;
 	private int sentVolume = -1;
 	private boolean dragging;
@@ -33,17 +33,17 @@ public final class VolumeSlider extends AbstractWidget {
 	private long localUntilMs;
 
 	/**
-	 * The volume slider of the speaker at {@code pos}.
+	 * The volume slider of speaker {@code speakerId}.
 	 *
-	 * @param x the slider's left edge
-	 * @param y the slider's top
-	 * @param width the slider's width
-	 * @param height the slider's height
-	 * @param pos where the speaker stands
+	 * @param x the left edge
+	 * @param y the top
+	 * @param width the width
+	 * @param height the height
+	 * @param speakerId the speaker
 	 */
-	public VolumeSlider(int x, int y, int width, int height, BlockPos pos) {
+	public VolumeSlider(int x, int y, int width, int height, UUID speakerId) {
 		super(x, y, width, height, Component.empty());
-		this.pos = pos;
+		this.speakerId = speakerId;
 		updateLabel();
 	}
 
@@ -108,7 +108,7 @@ public final class VolumeSlider extends AbstractWidget {
 		if (volume != sentVolume) {
 			sentVolume = volume;
 			lastSendMs = Util.getMillis();
-			SpeakerStates.send(pos, Command.VOLUME, volume);
+			SpeakerStates.send(speakerId, Command.VOLUME, volume);
 		}
 	}
 

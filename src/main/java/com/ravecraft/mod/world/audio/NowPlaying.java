@@ -6,7 +6,6 @@ import com.ravecraft.mod.network.Net;
 import com.ravecraft.mod.network.payload.NowPlayingPayload;
 import java.util.Optional;
 import java.util.UUID;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -24,11 +23,11 @@ public final class NowPlaying {
 	 *
 	 * @param owner the player streaming
 	 * @param sessionId the session
-	 * @param pos where the speaker stands
+	 * @param speakerId the speaker
 	 * @param entry the entry played
 	 */
-	public static void start(ServerPlayer owner, int sessionId, BlockPos pos, QueueEntry entry) {
-		NOTICES.open(sessionId, NowPlayingPayload.of(sessionId, pos, entry));
+	public static void start(ServerPlayer owner, int sessionId, UUID speakerId, QueueEntry entry) {
+		NOTICES.open(sessionId, NowPlayingPayload.of(sessionId, speakerId, entry));
 		tell(owner, sessionId);
 	}
 

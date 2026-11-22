@@ -1,14 +1,15 @@
 package com.ravecraft.mod.block;
 
-import java.util.function.Consumer;
-import net.minecraft.core.BlockPos;
+import java.util.UUID;
+import java.util.function.BiConsumer;
+import net.minecraft.network.chat.Component;
 
 /**
  * Lets common block code open the speaker's music screen without importing client classes. The client installs the
  * opener at startup; on a dedicated server it stays a no-op.
  */
 public final class SpeakerScreenOpener {
-	private static volatile Consumer<BlockPos> opener = pos -> {
+	private static volatile BiConsumer<UUID, Component> opener = (speakerId, title) -> {
 	};
 
 	private SpeakerScreenOpener() {
@@ -17,18 +18,19 @@ public final class SpeakerScreenOpener {
 	/**
 	 * Sets what opens the speaker screen; the client calls it at startup.
 	 *
-	 * @param screenOpener opens the screen of the speaker at a position
+	 * @param screenOpener opens the screen of a speaker, with its title
 	 */
-	public static void set(Consumer<BlockPos> screenOpener) {
+	public static void set(BiConsumer<UUID, Component> screenOpener) {
 		opener = screenOpener;
 	}
 
 	/**
-	 * Opens the screen of the speaker at {@code pos}, when a client set an opener.
+	 * Opens the screen of speaker {@code speakerId}, titled {@code title}, when a client set an opener.
 	 *
-	 * @param pos where the speaker stands
+	 * @param speakerId the speaker
+	 * @param title the screen's title
 	 */
-	public static void open(BlockPos pos) {
-		opener.accept(pos);
+	public static void open(UUID speakerId, Component title) {
+		opener.accept(speakerId, title);
 	}
 }

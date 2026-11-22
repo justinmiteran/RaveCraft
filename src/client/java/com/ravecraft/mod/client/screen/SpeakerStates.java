@@ -9,7 +9,6 @@ import java.util.Optional;
 import java.util.UUID;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.core.BlockPos;
 import net.minecraft.util.Util;
 
 /**
@@ -21,7 +20,7 @@ public final class SpeakerStates {
 	private record Received(SpeakerStatePayload state, long atMs) {
 	}
 
-	private static final Map<BlockPos, Received> STATES = new HashMap<>();
+	private static final Map<UUID, Received> STATES = new HashMap<>();
 
 	private SpeakerStates() {
 	}
@@ -37,27 +36,27 @@ public final class SpeakerStates {
 	 * @param state the speaker's new state
 	 */
 	public static void put(SpeakerStatePayload state) {
-		STATES.put(state.pos().immutable(), new Received(state, Util.getMillis()));
+		STATES.put(state.speakerId(), new Received(state, Util.getMillis()));
 	}
 
 	/**
-	 * The latest state of the speaker at {@code pos}, if any.
+	 * The latest state of speaker {@code speakerId}, if any.
 	 *
-	 * @param pos where the speaker stands
+	 * @param speakerId the speaker
 	 * @return the latest state, or empty
 	 */
-	public static Optional<SpeakerStatePayload> get(BlockPos pos) {
-		return Optional.ofNullable(STATES.get(pos)).map(Received::state);
+	public static Optional<SpeakerStatePayload> get(UUID speakerId) {
+		return Optional.ofNullable(STATES.get(speakerId)).map(Received::state);
 	}
 
 	/**
 	 * Where the current track is now, estimated from the last state: the server only sends changes.
 	 *
-	 * @param pos where the speaker stands
+	 * @param speakerId the speaker
 	 * @return the estimated position in the track, in milliseconds
 	 */
-	public static long positionMs(BlockPos pos) {
-		Received received = STATES.get(pos);
+	public static long positionMs(UUID speakerId) {
+		Received received = STATES.get(speakerId);
 		if (received == null) {
 			return 0;
 		}
@@ -77,45 +76,45 @@ public final class SpeakerStates {
 	/**
 	 * Sends a command with a numeric value (seek position, volume...) when the server accepts speaker commands.
 	 *
-	 * @param pos where the speaker stands
+	 * @param speakerId the speaker
 	 * @param command the command
 	 * @param value the command's value
 	 */
-	public static void send(BlockPos pos, Command command, long value) {
-		send(pos, command, Optional.empty(), value);
+	public static void send(UUID speakerId, Command command, long value) {
+		send(speakerId, command, Optional.empty(), value);
 	}
 
 	/**
 	 * Sends a command about one entry (or none) when the server accepts speaker commands.
 	 *
-	 * @param pos where the speaker stands
+	 * @param speakerId the speaker
 	 * @param command the command
 	 * @param entryId the entry it is about, or empty
 	 */
-	public static void send(BlockPos pos, Command command, Optional<UUID> entryId) {
-		send(pos, command, entryId, 0);
+	public static void send(UUID speakerId, Command command, Optional<UUID> entryId) {
+		send(speakerId, command, entryId, 0);
 	}
 
 	/**
 	 * Sends a command about one entry with a numeric value (MOVE's index) when the server accepts speaker commands.
 	 *
-	 * @param pos where the speaker stands
+	 * @param speakerId the speaker
 	 * @param command the command
 	 * @param entryId the entry it is about, or empty
 	 * @param value the command's value
 	 */
-	public static void send(BlockPos pos, Command command, Optional<UUID> entryId, long value) {
+	public static void send(UUID speakerId, Command command, Optional<UUID> entryId, long value) {
 		if (ClientPlayNetworking.canSend(SpeakerCommandPayload.TYPE)) {
-			ClientPlayNetworking.send(new SpeakerCommandPayload(pos, command, entryId, value));
+			ClientPlayNetworking.send(new SpeakerCommandPayload(speakerId, command, entryId, value));
 		}
 	}
 
 	/**
-	 * Forgets the state of the speaker at {@code pos}.
+	 * Forgets the state of speaker {@code speakerId}.
 	 *
-	 * @param pos where the speaker stands
+	 * @param speakerId the speaker
 	 */
-	public static void forget(BlockPos pos) {
-		STATES.remove(pos);
+	public static void forget(UUID speakerId) {
+		STATES.remove(speakerId);
 	}
 }

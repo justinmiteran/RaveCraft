@@ -9,11 +9,11 @@ import com.ravecraft.mod.core.acoustics.reverb.ReverbParams;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Util;
 import net.minecraft.world.phys.Vec3;
@@ -62,16 +62,16 @@ public final class AcousticRenderer {
 	 * restarts with a new playout replaces the old one.
 	 *
 	 * @param sessionId the stream's session
-	 * @param pos where the speaker stands
+	 * @param speakerId the speaker
 	 * @param playout the decoded audio to play
 	 * @param alive false once the stream must stop
 	 */
-	public static void attach(int sessionId, BlockPos pos, StreamPlayout playout, BooleanSupplier alive) {
+	public static void attach(int sessionId, UUID speakerId, StreamPlayout playout, BooleanSupplier alive) {
 		STREAMS.compute(sessionId, (id, old) -> {
 			if (old != null && old.playout == playout) {
 				return old;
 			}
-			RenderStream stream = new RenderStream(id, pos, playout, alive, Util.getMillis());
+			RenderStream stream = new RenderStream(id, speakerId, playout, alive, Util.getMillis());
 			stream.refresh(Minecraft.getInstance().level);
 			return stream;
 		});

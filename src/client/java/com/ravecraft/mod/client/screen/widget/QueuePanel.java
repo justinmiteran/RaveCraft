@@ -11,7 +11,6 @@ import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
@@ -29,21 +28,21 @@ public final class QueuePanel extends RowList {
 	private record Row(@Nullable StateEntry entry, boolean current) {
 	}
 
-	private final BlockPos pos;
+	private final UUID speakerId;
 	private List<Row> rows = List.of();
 
 	/**
-	 * The queue of the speaker at {@code pos}.
+	 * The queue of speaker {@code speakerId}.
 	 *
-	 * @param x the panel's left edge
-	 * @param y the panel's top
-	 * @param width the panel's width
-	 * @param height the panel's height
-	 * @param pos where the speaker stands
+	 * @param x the left edge
+	 * @param y the top
+	 * @param width the width
+	 * @param height the height
+	 * @param speakerId the speaker
 	 */
-	public QueuePanel(int x, int y, int width, int height, BlockPos pos) {
+	public QueuePanel(int x, int y, int width, int height, UUID speakerId) {
 		super(x, y, width, height, ROW_H, Component.translatable(SpeakerSprites.KEY + "queue"));
-		this.pos = pos;
+		this.speakerId = speakerId;
 	}
 
 	/**
@@ -99,7 +98,7 @@ public final class QueuePanel extends RowList {
 		StateEntry entry = rows.get(fromRow).entry();
 		int index = RowDrag.moveIndex(fromRow, gap, firstGap());
 		if (entry != null && index >= 0) {
-			SpeakerStates.send(pos, Command.MOVE, Optional.of(entry.entryId()), index);
+			SpeakerStates.send(speakerId, Command.MOVE, Optional.of(entry.entryId()), index);
 		}
 	}
 
@@ -133,7 +132,7 @@ public final class QueuePanel extends RowList {
 			};
 		}
 		RowItem remove = RowItem.button(SpeakerSprites.REMOVE, Component.translatable(SpeakerSprites.KEY + "remove"),
-				() -> SpeakerStates.send(pos, Command.REMOVE, Optional.of(entry.entryId())));
+				() -> SpeakerStates.send(speakerId, Command.REMOVE, Optional.of(entry.entryId())));
 		return new ListRow() {
 			@Override
 			public List<RowItem> items() {

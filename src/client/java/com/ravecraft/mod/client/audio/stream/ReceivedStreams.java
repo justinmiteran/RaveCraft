@@ -5,9 +5,9 @@ import com.ravecraft.mod.core.audio.stream.SessionRoster;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.core.BlockPos;
 import net.minecraft.util.Util;
 
 /**
@@ -25,25 +25,25 @@ public final class ReceivedStreams {
 	private ReceivedStreams() {
 	}
 
-	/** Registers the idle check and the cleanup on leaving. */
+	/** Ticks the streams each client tick and ends them all on disconnect. */
 	public static void register() {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> tick());
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> endAll());
 	}
 
 	/**
-	 * Adds chunk {@code seq} of session {@code sessionId}, starting its stream when new.
+	 * A chunk of session {@code sessionId}, played by speaker {@code speakerId} (placed from its host).
 	 *
-	 * @param sessionId the stream's session
-	 * @param pos where the speaker stands
+	 * @param sessionId the session
+	 * @param speakerId the speaker
 	 * @param seq the chunk's sequence number
 	 * @param frames the chunk's encoded frames
 	 */
-	public static void offer(int sessionId, BlockPos pos, int seq, List<byte[]> frames) {
+	public static void offer(int sessionId, UUID speakerId, int seq, List<byte[]> frames) {
 		long now = Util.getMillis();
-		STREAMS.admit(sessionId, () -> new Stream(pos.immutable(), new StreamPlayout(now))).ifPresent(stream -> {
+		STREAMS.admit(sessionId, () -> new Stream(speakerId, new StreamPlayout(now))).ifPresent(stream -> {
 			stream.playout.offer(seq, frames, now);
-			AcousticRenderer.attach(sessionId, stream.pos, stream.playout, stream::alive);
+			AcousticRenderer.attach(sessionId, stream.speakerId, stream.playout, stream::alive);
 		});
 	}
 
@@ -64,7 +64,7 @@ public final class ReceivedStreams {
 		});
 	}
 
-	/** Ends every stream at once. */
+	/** Stops every stream, playing or draining, and detaches them from the renderer. */
 	public static void endAll() {
 		STREAMS.clear().forEach(stream -> stream.stopped = true);
 		DRAINING.forEach(stream -> stream.stopped = true);
@@ -79,14 +79,14 @@ public final class ReceivedStreams {
 		DRAINING.removeIf(stream -> !stream.alive());
 	}
 
-	/** A received stream: its speaker, its playout and whether it was stopped. */
+	/** A received session: the speaker that plays it and its playout. */
 	private static final class Stream {
-		final BlockPos pos;
+		final UUID speakerId;
 		final StreamPlayout playout;
 		volatile boolean stopped;
 
-		Stream(BlockPos pos, StreamPlayout playout) {
-			this.pos = pos;
+		Stream(UUID speakerId, StreamPlayout playout) {
+			this.speakerId = speakerId;
 			this.playout = playout;
 		}
 

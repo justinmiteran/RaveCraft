@@ -2,6 +2,8 @@ package com.ravecraft.mod.client.screen;
 
 import com.ravecraft.mod.block.PortableSpeakerBlock;
 import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
+import com.ravecraft.mod.component.SpeakerData;
+import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.client.library.LibraryFoldersStore;
 import com.ravecraft.mod.client.screen.widget.ControlRow;
 import com.ravecraft.mod.client.screen.widget.LibraryTree;
@@ -18,9 +20,9 @@ import com.ravecraft.mod.core.speaker.SpeakerLayout.Rect;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload;
 import com.ravecraft.mod.network.payload.SpeakerWatchPayload;
-import com.ravecraft.mod.registry.ModBlocks;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -31,19 +33,23 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.util.ARGB;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.DyedItemColor;
 import org.jspecify.annotations.Nullable;
 
 /**
  * The speaker's screen, a vanilla-style window: the player band on the speaker's fabric, the controls, the library
  * on the left (source tabs, search and tree) and the shared queue on the right. Its size follows the screen's (see
- * {@link SpeakerLayout}). It watches the speaker's state while open and closes when the speaker is gone.
+ * {@link SpeakerLayout}). It watches the speaker's state while open and closes when the server says it is gone or out of reach.
  */
 public final class SpeakerScreen extends Screen {
 	private static final int BAND_Y = 17;
@@ -52,7 +58,14 @@ public final class SpeakerScreen extends Screen {
 	private static final int SEARCH_H = 15;
 	private static final int CHOOSE_H = 14;
 
-	private final BlockPos pos;
+	/** How far around the player the speaker's block is looked for, to tint the band with its fabric. */
+	private static final int BLOCK_SEARCH_RADIUS = 8;
+
+	private final UUID speakerId;
+	/** The speaker's block, found once by its id when the screen opens; null when not found. */
+	private final @Nullable BlockPos block;
+	/** The fabric colour of the carried stack of this speaker when there is no block, else null. */
+	private final @Nullable Integer carriedColour;
 	private SpeakerLayout layout = SpeakerLayout.of(0, 0);
 	private int left;
 	private int top;
@@ -72,34 +85,82 @@ public final class SpeakerScreen extends Screen {
 	private @Nullable FoldersPopup folders;
 
 	/**
-	 * The screen of the speaker at {@code pos}.
+	 * The screen of speaker {@code speakerId}, titled {@code title}.
 	 *
-	 * @param pos where the speaker stands
+	 * @param speakerId the speaker
+	 * @param title the screen's title
 	 */
-	public SpeakerScreen(BlockPos pos) {
-		super(titleOf(pos));
-		this.pos = pos.immutable();
+	public SpeakerScreen(UUID speakerId, Component title) {
+		super(title);
+		this.speakerId = speakerId;
+		this.block = findBlock(speakerId);
+		this.carriedColour = block == null ? findCarriedColour(speakerId) : null;
 		// A state kept from an earlier opening may be stale: wait for the one the server sends on watching.
-		SpeakerStates.forget(this.pos);
+		SpeakerStates.forget(speakerId);
 	}
 
 	/**
 	 * The speaker this screen controls.
 	 *
-	 * @return the speaker's position
+	 * @return the speaker's id
 	 */
-	public BlockPos pos() {
-		return pos;
+	public UUID speakerId() {
+		return speakerId;
 	}
 
-	/** The item's custom name when the speaker has one, otherwise the block's name. */
-	private static Component titleOf(BlockPos pos) {
-		ClientLevel level = Minecraft.getInstance().level;
-		if (level != null && level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker
-				&& speaker.customName() != null) {
-			return speaker.customName();
+	/** The block of speaker {@code id} near the player, or null. Scans once, when the screen opens. */
+	private static @Nullable BlockPos findBlock(UUID id) {
+		Minecraft client = Minecraft.getInstance();
+		Player player = client.player;
+		if (client.level == null || player == null) {
+			return null;
 		}
-		return ModBlocks.PORTABLE_SPEAKER.getName();
+		BlockPos centre = player.blockPosition();
+		for (BlockPos pos : BlockPos.withinClippedManhattan(centre, BLOCK_SEARCH_RADIUS, BLOCK_SEARCH_RADIUS, BLOCK_SEARCH_RADIUS)) {
+			if (client.level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker && speaker.data().id().equals(id)) {
+				return pos.immutable();
+			}
+		}
+		return null;
+	}
+
+	/** The fabric colour of the speaker in the local player's inventory, or null when it is not carried. */
+	private static @Nullable Integer findCarriedColour(UUID id) {
+		Player player = Minecraft.getInstance().player;
+		if (player == null) {
+			return null;
+		}
+		Inventory inventory = player.getInventory();
+		for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+			ItemStack stack = inventory.getItem(slot);
+			SpeakerData data = stack.get(ModDataComponents.SPEAKER);
+			if (data != null && data.id().equals(id)) {
+				DyedItemColor dye = stack.get(DataComponents.DYED_COLOR);
+				return ARGB.opaque(dye != null ? dye.rgb() : PortableSpeakerBlock.DEFAULT_COLOR);
+			}
+		}
+		return null;
+	}
+
+	/** The speaker's block entity, when it is placed, loaded here and still holds the id. */
+	private @Nullable PortableSpeakerBlockEntity placedSpeaker() {
+		if (block == null || minecraft == null || minecraft.level == null) {
+			return null;
+		}
+		return minecraft.level.getBlockEntity(block) instanceof PortableSpeakerBlockEntity speaker
+				&& speaker.data().id().equals(speakerId) ? speaker : null;
+	}
+
+	/** The fabric colour of the speaker's block, or the undyed colour when it is not found. */
+	private int fabricColour() {
+		PortableSpeakerBlockEntity speaker = placedSpeaker();
+		if (speaker != null) {
+			return ARGB.opaque(speaker.fabricColor());
+		}
+		if (carriedColour != null) {
+			return carriedColour;
+		}
+		return ARGB.opaque(PortableSpeakerBlock.DEFAULT_COLOR);
 	}
 
 	@Override
@@ -107,14 +168,14 @@ public final class SpeakerScreen extends Screen {
 		layout = SpeakerLayout.of(width, height);
 		left = (width - layout.width()) / 2;
 		top = (height - layout.height()) / 2;
-		addRenderableWidget(new PlayerBand(left + 7, top + BAND_Y, layout.bandWidth(), pos));
-		controls = new ControlRow(left, top + CONTROLS_Y, layout.controlsWidth(), pos, this::addRenderableWidget);
+		addRenderableWidget(new PlayerBand(left + 7, top + BAND_Y, layout.bandWidth(), speakerId, this::fabricColour));
+		controls = new ControlRow(left, top + CONTROLS_Y, layout.controlsWidth(), speakerId, this::addRenderableWidget);
 		initLibrary();
 		Rect q = layout.queue();
-		queue = addRenderableWidget(new QueuePanel(left + q.x(), top + q.y(), q.w(), q.h(), pos));
+		queue = addRenderableWidget(new QueuePanel(left + q.x(), top + q.y(), q.w(), q.h(), speakerId));
 		int buttonW = (q.w() - 4) / 2;
 		clearButton = addRenderableWidget(Button.builder(Component.translatable(SpeakerSprites.KEY + "clear"),
-						b -> SpeakerStates.send(pos, Command.CLEAR, Optional.empty()))
+						b -> SpeakerStates.send(speakerId, Command.CLEAR, Optional.empty()))
 				.bounds(left + q.x(), top + layout.buttonsY(), buttonW, layout.buttonsHeight()).build());
 		addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
 				.bounds(left + q.x() + q.w() - buttonW, top + layout.buttonsY(), buttonW, layout.buttonsHeight()).build());
@@ -123,7 +184,7 @@ public final class SpeakerScreen extends Screen {
 			folders.layout(width, height);
 		}
 		if (ClientPlayNetworking.canSend(SpeakerWatchPayload.TYPE)) {
-			ClientPlayNetworking.send(new SpeakerWatchPayload(pos, true));
+			ClientPlayNetworking.send(new SpeakerWatchPayload(speakerId, true));
 		}
 		tick();
 	}
@@ -149,7 +210,7 @@ public final class SpeakerScreen extends Screen {
 			library.close(); // the screen is being rebuilt (resize)
 		}
 		library = addRenderableWidget(new LibraryTree(libX, treeY, lib.w(), lib.h() - (treeY - libY), sources.get(0),
-				pos));
+				speakerId));
 		library.setFilter(filter);
 		library.setFlat(flatView);
 		addRenderableWidget(new IconButton(libX + lib.w() - 2 * SEARCH_H - 2, libY, SEARCH_H,
@@ -221,22 +282,18 @@ public final class SpeakerScreen extends Screen {
 		closeFolders();
 		library.close();
 		if (ClientPlayNetworking.canSend(SpeakerWatchPayload.TYPE)) {
-			ClientPlayNetworking.send(new SpeakerWatchPayload(pos, false));
+			ClientPlayNetworking.send(new SpeakerWatchPayload(speakerId, false));
 		}
 	}
 
 	@Override
 	public void tick() {
-		if (!speakerPresent()) {
-			onClose();
-			return;
-		}
-		SpeakerStatePayload state = SpeakerStates.get(pos).orElse(null);
+		SpeakerStatePayload state = SpeakerStates.get(speakerId).orElse(null);
 		if (state != shownState) {
 			shownState = state;
 			queue.show(state);
 		}
-		controls.update(state, state != null ? state.powered() : blockPowered());
+		controls.update(state, state != null && state.powered());
 		clearButton.active = state != null && !state.entries().isEmpty();
 		chooseButton.visible = library.isEmptyLibrary();
 	}
@@ -341,17 +398,5 @@ public final class SpeakerScreen extends Screen {
 		if (folders != null) {
 			folders.extract(graphics, mouseX, mouseY, a);
 		}
-	}
-
-	private boolean speakerPresent() {
-		return minecraft.level != null && minecraft.level.getBlockState(pos).is(ModBlocks.PORTABLE_SPEAKER);
-	}
-
-	private boolean blockPowered() {
-		if (minecraft.level == null) {
-			return false;
-		}
-		BlockState state = minecraft.level.getBlockState(pos);
-		return state.is(ModBlocks.PORTABLE_SPEAKER) && state.getValue(PortableSpeakerBlock.POWERED);
 	}
 }

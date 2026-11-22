@@ -219,9 +219,9 @@ final class AudioWorker extends Thread {
 
 	/** The gain of {@code stream} at {@code ear}: its propagation, then its occlusion and the head's. */
 	private void weigh(RenderStream stream, AcousticSettings settings, Vec3 ear, double dt) {
-		double dx = ear.x - (stream.pos.getX() + 0.5);
-		double dy = ear.y - (stream.pos.getY() + 0.5);
-		double dz = ear.z - (stream.pos.getZ() + 0.5);
+		double dx = ear.x - stream.x;
+		double dy = ear.y - stream.y;
+		double dz = ear.z - stream.z;
 		double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 		double cos = distance < 1e-6 ? 1 : (stream.facingX * dx + stream.facingZ * dz) / distance;
 		stream.distance = distance;
@@ -293,7 +293,7 @@ final class AudioWorker extends Thread {
 			stream.nextBlock(scratch, pcm, highLossDb, mix.chorus());
 			source.queue(pcm);
 		}
-		source.place(stream.pos.getX() + 0.5, stream.pos.getY() + 0.5, stream.pos.getZ() + 0.5);
+		source.place(stream.x, stream.y, stream.z);
 		source.gain((float) (stream.gain * mix.volume()));
 		// The EFX shelf only cuts the top octaves: it carries the air's absorption, while occlusion's treble
 		// loss goes through the stream's own low-pass (nextBlock), which reaches down into the mids.

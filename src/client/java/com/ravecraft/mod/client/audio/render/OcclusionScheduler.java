@@ -262,9 +262,9 @@ public final class OcclusionScheduler {
 
 		@Override
 		public @Nullable Occlusion occlusion(RenderStream stream, TraceBudget budget) {
-			double sx = stream.pos.getX() + 0.5;
-			double sy = stream.pos.getY() + 0.5;
-			double sz = stream.pos.getZ() + 0.5;
+			double sx = stream.x;
+			double sy = stream.y;
+			double sz = stream.z;
 			Occlusion result = pathTracer.occlusion(new Vec(ear.x, ear.y, ear.z), new Vec(sx, sy, sz),
 					rolloff,
 					range(settings, stream), budget, capture);
@@ -278,8 +278,8 @@ public final class OcclusionScheduler {
 
 		@Override
 		public Occlusion direct(RenderStream stream) {
-			return OcclusionScheduler.direct(pathTracer, ear, stream.pos.getX() + 0.5,
-					stream.pos.getY() + 0.5, stream.pos.getZ() + 0.5);
+			return OcclusionScheduler.direct(pathTracer, ear, stream.x,
+					stream.y, stream.z);
 		}
 
 		@Override
@@ -296,7 +296,7 @@ public final class OcclusionScheduler {
 		public void failed(RenderStream stream, RuntimeException e) {
 			if (FAILED_SESSIONS.add(stream.sessionId)) {
 				RaveCraft.LOGGER.error("Occlusion trace failed for speaker session {} at {}; it keeps its"
-						+ " last value", stream.sessionId, stream.pos, e);
+						+ " last value", stream.sessionId, stream.speakerId, e);
 			}
 		}
 	}
@@ -316,9 +316,9 @@ public final class OcclusionScheduler {
 		if (!stream.powered || stream.volume <= 0) {
 			return false;
 		}
-		double dx = ear.x - (stream.pos.getX() + 0.5);
-		double dy = ear.y - (stream.pos.getY() + 0.5);
-		double dz = ear.z - (stream.pos.getZ() + 0.5);
+		double dx = ear.x - stream.x;
+		double dy = ear.y - stream.y;
+		double dz = ear.z - stream.z;
 		return Math.sqrt(dx * dx + dy * dy + dz * dz) < range(settings, stream);
 	}
 

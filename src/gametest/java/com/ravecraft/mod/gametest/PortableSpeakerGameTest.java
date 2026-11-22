@@ -3,9 +3,15 @@ package com.ravecraft.mod.gametest;
 import com.ravecraft.mod.block.PortableSpeakerBlock;
 import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
 import com.ravecraft.mod.component.SpeakerData;
+import com.ravecraft.mod.core.queue.QueueEntry;
+import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModDataComponents;
+import com.ravecraft.mod.world.audio.SpeakerHandle;
+import com.ravecraft.mod.world.audio.SpeakerHost;
+import com.ravecraft.mod.world.audio.SpeakerHosts;
+import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import java.util.List;
 import java.util.UUID;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
@@ -32,6 +38,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.phys.Vec3;
 
 public class PortableSpeakerGameTest {
 	/** The mock player only overrides gameMode(), so abilities must be set for hasInfiniteMaterials() to hold. */
@@ -186,7 +193,26 @@ public class PortableSpeakerGameTest {
 		player.setItemInHand(InteractionHand.MAIN_HAND, stack);
 		stack.use(h.getLevel(), player, InteractionHand.MAIN_HAND);
 		SpeakerData data = player.getMainHandItem().get(ModDataComponents.SPEAKER);
-		h.assertTrue(data != null && data.settings().powered(), "identity assigned and powered on");
+		h.assertTrue(data != null, "identity assigned");
+		h.assertTrue(!data.settings().powered(), "power left alone");
+		h.succeed();
+	}
+
+	/**
+	 * A plain use opens the screen (client side); it no longer toggles power.
+	 *
+	 * @param h the test helper
+	 */
+	@GameTest
+	public void useInAirNoLongerTogglesPower(GameTestHelper h) {
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		ItemStack stack = new ItemStack(ModBlocks.PORTABLE_SPEAKER);
+		stack.set(ModDataComponents.SPEAKER, new SpeakerData(UUID.randomUUID(), new SpeakerSettings(true, 40)));
+		player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+		stack.getItem().use(h.getLevel(), player, InteractionHand.MAIN_HAND);
+		SpeakerData data = player.getMainHandItem().get(ModDataComponents.SPEAKER);
+		h.assertTrue(data != null, "speaker component kept");
+		h.assertTrue(data.settings().powered(), "still powered");
 		h.succeed();
 	}
 
@@ -338,5 +364,71 @@ public class PortableSpeakerGameTest {
 		h.getLevel().destroyBlock(h.absolutePos(pos), true);
 		h.assertBlockPresent(Blocks.WATER, pos);
 		h.succeed();
+	}
+
+	@GameTest
+	public void placedSpeakerHasBlockHost(GameTestHelper h) {
+		BlockPos pos = new BlockPos(1, 1, 1);
+		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
+		PortableSpeakerBlockEntity be = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class);
+		SpeakerHosts.placed(be);
+		SpeakerHandle handle = SpeakerHosts.handle(h.getLevel().getServer(), be.data().id()).orElse(null);
+		h.assertTrue(handle != null, "handle present");
+		h.assertValueEqual(handle.host(), new SpeakerHost.Block(h.getLevel().dimension(), h.absolutePos(pos)), "block host");
+		h.assertValueEqual(handle.position(), Vec3.atCenterOf(h.absolutePos(pos)), "block centre");
+		h.succeed();
+	}
+
+	@GameTest
+	public void secondBlockWithSameIdGetsNewId(GameTestHelper h) {
+		BlockPos a = new BlockPos(1, 1, 1);
+		BlockPos b = new BlockPos(3, 1, 1);
+		h.setBlock(a, ModBlocks.PORTABLE_SPEAKER);
+		h.setBlock(b, ModBlocks.PORTABLE_SPEAKER);
+		PortableSpeakerBlockEntity first = h.getBlockEntity(a, PortableSpeakerBlockEntity.class);
+		PortableSpeakerBlockEntity second = h.getBlockEntity(b, PortableSpeakerBlockEntity.class);
+		QueueEntry entry = new QueueEntry(UUID.randomUUID(), UUID.randomUUID(), "Track", "track");
+		first.setData(first.data().withQueue(SpeakerQueue.EMPTY.add(List.of(entry))));
+		SpeakerHosts.placed(first);
+		second.setData(first.data());
+		SpeakerHosts.placed(second);
+		h.assertTrue(!second.data().id().equals(first.data().id()), "duplicate got a new id");
+		h.assertValueEqual(second.data().queue(), first.data().queue(), "queue kept");
+		h.assertFalse(SpeakerPlayback.isPlaying(Speakers.idAt(h, h.absolutePos(b))), "duplicate not playing");
+		h.assertTrue(SpeakerHosts.handle(h.getLevel().getServer(), second.data().id()).isPresent(), "new id hosted");
+		h.succeed();
+	}
+
+	@GameTest(maxTicks = 40)
+	public void brokenBlockHostExpires(GameTestHelper h) {
+		BlockPos pos = new BlockPos(1, 1, 1);
+		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER);
+		PortableSpeakerBlockEntity be = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class);
+		SpeakerHosts.placed(be);
+		UUID id = be.data().id();
+		SpeakerHosts.removed(be);
+		h.runAfterDelay(21, () -> {
+			h.assertTrue(SpeakerHosts.handle(h.getLevel().getServer(), id).isEmpty(), "host expired");
+			h.succeed();
+		});
+	}
+
+	@GameTest(maxTicks = 40)
+	public void replacedConstructionIdIsForgotten(GameTestHelper h) {
+		BlockPos pos = new BlockPos(1, 1, 1);
+		h.setBlock(pos, ModBlocks.PORTABLE_SPEAKER); // BLOCK_ENTITY_LOAD registers the construction id
+		PortableSpeakerBlockEntity be = h.getBlockEntity(pos, PortableSpeakerBlockEntity.class);
+		UUID constructionId = be.data().id();
+		h.assertTrue(SpeakerHosts.isTracked(constructionId), "construction id registered on load");
+		UUID newId = UUID.randomUUID();
+		be.setData(be.data().withId(newId));
+		SpeakerHosts.placed(be);
+		// Dropped at once, with no grace that would later expire with this block as its last host.
+		h.assertFalse(SpeakerHosts.isTracked(constructionId), "construction id forgotten");
+		h.runAfterDelay(21, () -> {
+			h.assertFalse(SpeakerHosts.isTracked(constructionId), "construction id still forgotten");
+			h.assertTrue(SpeakerHosts.handle(h.getLevel().getServer(), newId).isPresent(), "new id hosted");
+			h.succeed();
+		});
 	}
 }

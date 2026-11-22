@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -60,5 +61,20 @@ class SessionNoticesTest {
 		assertEquals(Optional.of("a"), notices.firstFor(1, p));
 		assertEquals(Optional.of("b"), notices.firstFor(2, p));
 		assertTrue(notices.firstFor(1, q).isEmpty());
+	}
+
+	@Test
+	void reachedKeepsPlayersToldBeforeReopen() {
+		SessionNotices<String> notices = new SessionNotices<>();
+		assertTrue(notices.reached(1).isEmpty());
+		notices.open(1, "a");
+		notices.firstFor(1, p);
+		notices.open(1, "b");
+		notices.firstFor(1, q);
+		assertEquals(Set.of(p, q), notices.reached(1));
+		notices.forget(q);
+		assertEquals(Set.of(p), notices.reached(1));
+		notices.end(1);
+		assertTrue(notices.reached(1).isEmpty());
 	}
 }

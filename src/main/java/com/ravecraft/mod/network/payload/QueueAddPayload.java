@@ -4,14 +4,13 @@ import com.ravecraft.mod.RaveCraft;
 import io.netty.buffer.ByteBuf;
 import java.util.List;
 import java.util.UUID;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-/** C→S: append tracks to the queue of the speaker at {@code pos}. Only ids and titles: never a file path. */
-public record QueueAddPayload(BlockPos pos, List<NewEntry> entries) implements CustomPacketPayload {
+/** C→S: append tracks to the queue of speaker {@code speakerId}. Only ids and titles: never a file path. */
+public record QueueAddPayload(UUID speakerId, List<NewEntry> entries) implements CustomPacketPayload {
 	public static final int MAX_ENTRIES = 50;
 	public static final int MAX_TITLE = 128;
 
@@ -25,7 +24,7 @@ public record QueueAddPayload(BlockPos pos, List<NewEntry> entries) implements C
 
 	public static final Type<QueueAddPayload> TYPE = new Type<>(RaveCraft.id("queue_add"));
 	public static final StreamCodec<ByteBuf, QueueAddPayload> CODEC = StreamCodec.composite(
-			BlockPos.STREAM_CODEC, QueueAddPayload::pos,
+			UUIDUtil.STREAM_CODEC, QueueAddPayload::speakerId,
 			NewEntry.CODEC.apply(ByteBufCodecs.list(MAX_ENTRIES)), QueueAddPayload::entries,
 			QueueAddPayload::new);
 

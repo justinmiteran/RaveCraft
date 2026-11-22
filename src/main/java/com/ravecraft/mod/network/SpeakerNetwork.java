@@ -9,6 +9,8 @@ import com.ravecraft.mod.network.payload.StreamResultPayload;
 import com.ravecraft.mod.network.payload.StreamStartedPayload;
 import com.ravecraft.mod.world.audio.NowPlaying;
 import com.ravecraft.mod.world.audio.SpeakerCommands;
+import com.ravecraft.mod.world.audio.SpeakerHostNotices;
+import com.ravecraft.mod.world.audio.SpeakerHosts;
 import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import com.ravecraft.mod.world.audio.SpeakerWatchers;
 import java.util.HashMap;
@@ -41,17 +43,17 @@ public final class SpeakerNetwork {
 	private SpeakerNetwork() {
 	}
 
-	/** Registers the receivers of the speaker screen's requests and the per-player cleanup. */
+	/** Registers the server handlers of the speaker screen's requests and the disconnect cleanup. */
 	public static void init() {
 		ServerPlayNetworking.registerGlobalReceiver(QueueAddPayload.TYPE, (payload, context) -> {
 			if (allowAdd(context.player())) {
-				SpeakerCommands.add(context.player(), payload.pos(), payload.entries());
+				SpeakerCommands.add(context.player(), payload.speakerId(), payload.entries());
 			}
 		});
 		ServerPlayNetworking.registerGlobalReceiver(SpeakerCommandPayload.TYPE, (payload, context) -> {
 			boolean allowed = payload.command() == Command.VOLUME ? allowVolume(context.player()) : allowCommand(context.player());
 			if (allowed) {
-				SpeakerCommands.command(context.player(), payload.pos(), payload.command(), payload.entryId(), payload.value());
+				SpeakerCommands.command(context.player(), payload.speakerId(), payload.command(), payload.entryId(), payload.value());
 			}
 		});
 		ServerPlayNetworking.registerGlobalReceiver(StreamStartedPayload.TYPE, (payload, context) -> {
@@ -60,7 +62,7 @@ public final class SpeakerNetwork {
 			}
 		});
 		ServerPlayNetworking.registerGlobalReceiver(SpeakerWatchPayload.TYPE, (payload, context) ->
-				SpeakerWatchers.watch(context.player(), payload.pos(), payload.open()));
+				SpeakerWatchers.watch(context.player(), payload.speakerId(), payload.open()));
 		ServerPlayNetworking.registerGlobalReceiver(StreamResultPayload.TYPE, (payload, context) ->
 				SpeakerPlayback.onStreamResult(context.player(), payload.sessionId()));
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> SpeakerPlayback.onJoin(handler.player));
@@ -72,14 +74,20 @@ public final class SpeakerNetwork {
 			START_BUCKETS.remove(id);
 			SpeakerWatchers.forget(id);
 			NowPlaying.forget(id);
+			SpeakerHostNotices.forget(id);
+			// Before its sessions end: the speakers it carries pause where they are, in its saved inventory.
+			SpeakerHosts.disconnected(handler.player);
 			SpeakerPlayback.onDisconnect(server, id);
 		});
+		SpeakerHosts.init();
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
+			SpeakerHosts.tick(server);
 			SpeakerPlayback.tick(server);
 			SpeakerWatchers.flush(server);
 		});
 		ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
 			SpeakerPlayback.pauseAll(server);
+			SpeakerHosts.clear();
 			SpeakerWatchers.clear();
 			ADD_BUCKETS.clear();
 			COMMAND_BUCKETS.clear();

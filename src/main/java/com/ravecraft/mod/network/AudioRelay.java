@@ -1,6 +1,5 @@
 package com.ravecraft.mod.network;
 
-import com.ravecraft.mod.blockentity.PortableSpeakerBlockEntity;
 import com.ravecraft.mod.config.AcousticConfig;
 import com.ravecraft.mod.core.acoustics.Propagation;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
@@ -11,7 +10,9 @@ import com.ravecraft.mod.network.payload.AudioChunkPayload;
 import com.ravecraft.mod.network.payload.RelayedChunkPayload;
 import com.ravecraft.mod.world.audio.NowPlaying;
 import com.ravecraft.mod.network.payload.StreamClosePayload;
-import com.ravecraft.mod.world.audio.SpeakerKey;
+import com.ravecraft.mod.world.audio.SpeakerHandle;
+import com.ravecraft.mod.world.audio.SpeakerHostNotices;
+import com.ravecraft.mod.world.audio.SpeakerHosts;
 import com.ravecraft.mod.world.audio.SpeakerPlayback;
 import com.ravecraft.mod.world.audio.StreamSessions;
 import java.util.ArrayList;
@@ -22,18 +23,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 
 /**
  * Server side of the audio relay: checks each chunk and forwards each chunk from the session
- * owner to the players near the speaker. Listeners come from vanilla chunk tracking, which is maintained on events,
- * so nothing is scanned per tick.
+ * owner to the players near the speaker. Listeners come from vanilla tracking of the speaker's host, which is
+ * maintained on events, so nothing is scanned per tick.
  */
 public final class AudioRelay {
 	private static final Map<UUID, TokenBucket> BUCKETS = new HashMap<>();
@@ -55,7 +54,7 @@ public final class AudioRelay {
 
 	/** Forwards a well-formed chunk from its session's owner, within the sender's rate limit. */
 	private static void relay(ServerPlayer sender, AudioChunkPayload chunk) {
-		Optional<Session<SpeakerKey>> found = StreamSessions.table().byId(chunk.sessionId());
+		Optional<Session<UUID>> found = StreamSessions.table().byId(chunk.sessionId());
 		if (!chunk.isWellFormed() || found.isEmpty() || !found.get().owner().equals(sender.getUUID())) {
 			return;
 		}
@@ -65,31 +64,33 @@ public final class AudioRelay {
 		if (!bucket.tryConsume(chunk.cost(), now)) {
 			return;
 		}
-		Session<SpeakerKey> session = found.get();
+		Session<UUID> session = found.get();
 		SpeakerPlayback.onChunk(chunk.sessionId());
-		ServerLevel level = sender.level().getServer().getLevel(session.key().dimension());
-		if (level == null) {
+		Optional<SpeakerHandle> host = SpeakerHosts.handle(sender.level().getServer(), session.key());
+		// A speaker whose host is lost (in its grace) plays nowhere: its chunks are dropped.
+		if (host.isEmpty()) {
 			return;
 		}
-		BlockPos pos = session.key().pos();
-		RelayedChunkPayload relayed = new RelayedChunkPayload(chunk.sessionId(), pos, chunk.seq(), chunk.frames());
-		double radius = relayRadius(level, pos);
-		for (ServerPlayer listener : listeners(level, pos, session.owner(), PlayerLookup.tracking(level, pos), radius)) {
+		SpeakerHandle speaker = host.get();
+		RelayedChunkPayload relayed = new RelayedChunkPayload(chunk.sessionId(), speaker.id(), chunk.seq(), chunk.frames());
+		for (ServerPlayer listener : listeners(speaker.level(), speaker.position(), session.owner(), speaker.trackers(),
+				relayRadius(speaker))) {
+			// Where it plays and what, before the first chunk: a listener walking into range mid-track learns both.
+			SpeakerHostNotices.tellHost(listener, chunk.sessionId());
 			NowPlaying.tell(listener, chunk.sessionId());
 			Net.send(listener, relayed);
 		}
 	}
 
 	/**
-	 * How far the speaker at {@code pos} is relayed: its profile range at its current volume, plus a margin. 0 when
-	 * there is no powered speaker there.
+	 * How far {@code speaker} is relayed: its profile range at its current volume, plus a margin. 0 when it is
+	 * unpowered.
 	 *
-	 * @param level the speaker's level
-	 * @param pos where the speaker stands
+	 * @param speaker the speaker
 	 * @return the radius, in blocks
 	 */
-	public static double relayRadius(ServerLevel level, BlockPos pos) {
-		if (!(level.getBlockEntity(pos) instanceof PortableSpeakerBlockEntity speaker) || !speaker.data().settings().powered()) {
+	public static double relayRadius(SpeakerHandle speaker) {
+		if (!speaker.powered()) {
 			return 0;
 		}
 		double volume = speaker.data().settings().volume() / (double) SpeakerSettings.MAX_VOLUME;
@@ -97,21 +98,20 @@ public final class AudioRelay {
 	}
 
 	/**
-	 * The candidates in {@code level} within {@code radius} of the speaker, owner excluded.
+	 * The candidates in {@code level} within {@code radius} of {@code centre} (the speaker), owner excluded.
 	 *
-	 * @param level the speaker's level
-	 * @param pos where the speaker stands
+	 * @param level the level
+	 * @param centre where the sound comes from
 	 * @param owner the player streaming
 	 * @param candidates the players to filter
 	 * @param radius the relay radius, in blocks
 	 * @return the players to relay to
 	 */
-	public static List<ServerPlayer> listeners(ServerLevel level, BlockPos pos, UUID owner, Collection<ServerPlayer> candidates,
+	public static List<ServerPlayer> listeners(ServerLevel level, Vec3 centre, UUID owner, Collection<ServerPlayer> candidates,
 			double radius) {
 		if (radius <= 0) {
 			return List.of();
 		}
-		Vec3 centre = Vec3.atCenterOf(pos);
 		double rangeSq = radius * radius;
 		List<ServerPlayer> listeners = new ArrayList<>();
 		for (ServerPlayer player : candidates) {

@@ -1,0 +1,39 @@
+package com.ravecraft.mod.core.speaker;
+
+import java.util.OptionalInt;
+import java.util.function.IntPredicate;
+
+/**
+ * Picks which inventory slot the "open speaker" key opens: main hand, then offhand, then the
+ * hotbar, then the main inventory. Armor slots are never considered.
+ */
+public final class SpeakerKeyTarget {
+	/** Vanilla offhand slot index (Inventory.SLOT_OFFHAND); core cannot import Minecraft. */
+	private static final int OFFHAND = 40;
+	private static final int INVENTORY_END = 36; // hotbar 0..8 then main inventory 9..35, scanned in order
+
+	private SpeakerKeyTarget() {}
+
+	/**
+	 * The slot of the speaker to open: the selected hotbar slot, the offhand, then the hotbar and the main inventory in
+	 * order; empty without a speaker.
+	 *
+	 * @param selectedHotbar the selected hotbar slot
+	 * @param isSpeaker true for a slot holding a speaker
+	 * @return the slot, or empty
+	 */
+	public static OptionalInt choose(int selectedHotbar, IntPredicate isSpeaker) {
+		if (isSpeaker.test(selectedHotbar)) {
+			return OptionalInt.of(selectedHotbar);
+		}
+		if (isSpeaker.test(OFFHAND)) {
+			return OptionalInt.of(OFFHAND);
+		}
+		for (int slot = 0; slot < INVENTORY_END; slot++) {
+			if (isSpeaker.test(slot)) {
+				return OptionalInt.of(slot);
+			}
+		}
+		return OptionalInt.empty();
+	}
+}

@@ -2,17 +2,23 @@ package com.ravecraft.mod.datagen;
 
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
 import com.ravecraft.mod.registry.ModBlocks;
+import com.ravecraft.mod.registry.ModTags;
 import com.ravecraft.mod.world.acoustics.AcousticTags;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagsProvider;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.data.tags.TagAppender;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.StairBlock;
+import net.minecraft.world.level.block.WallBlock;
 
-/** Blocks with {@code requiresCorrectToolForDrops} need a tool tag, or they drop nothing. */
+/** Block tags: tool requirements, shapes, convention ore tags and acoustic materials. */
 public class RaveCraftBlockTagProvider extends FabricTagsProvider.BlockTagsProvider {
 	/**
 	 * A provider writing to {@code output}.
@@ -26,15 +32,50 @@ public class RaveCraftBlockTagProvider extends FabricTagsProvider.BlockTagsProvi
 
 	@Override
 	protected void addTags(HolderLookup.Provider registries) {
-		builder(BlockTags.MINEABLE_WITH_PICKAXE).add(key(ModBlocks.PORTABLE_SPEAKER)).add(key(ModBlocks.PARTY_SPEAKER));
+		TagAppender<Block> pickaxe = builder(BlockTags.MINEABLE_WITH_PICKAXE)
+				.add(key(ModBlocks.PORTABLE_SPEAKER)).add(key(ModBlocks.PARTY_SPEAKER));
+		addAll(pickaxe, ModBlocks.ores());
+		addAll(pickaxe, ModBlocks.shaleFamily());
+		builder(BlockTags.NEEDS_STONE_TOOL).add(key(ModBlocks.OIL_SHALE));
+		builder(BlockTags.NEEDS_IRON_TOOL).add(key(ModBlocks.DEEPSLATE_NEODYMIUM_ORE));
+		addAll(builder(BlockTags.STAIRS), shapes(StairBlock.class));
+		addAll(builder(BlockTags.SLABS), shapes(SlabBlock.class));
+		addAll(builder(BlockTags.WALLS), shapes(WallBlock.class));
+		ores();
+		acoustics();
+	}
 
-		// Acoustic materials: looked at before the footstep sound, so datapacks can override them.
+	/** The convention ore tags; {@code c:ores} holds its per-ore sub-tags, as other mods expect. */
+	private void ores() {
+		builder(ModTags.Blocks.ORES_OIL_SHALE).add(key(ModBlocks.OIL_SHALE));
+		builder(ModTags.Blocks.ORES_NEODYMIUM).add(key(ModBlocks.DEEPSLATE_NEODYMIUM_ORE));
+		builder(ModTags.Blocks.ORES).addTag(ModTags.Blocks.ORES_OIL_SHALE).addTag(ModTags.Blocks.ORES_NEODYMIUM);
+		builder(ModTags.Blocks.ORES_IN_GROUND_STONE).add(key(ModBlocks.OIL_SHALE));
+		builder(ModTags.Blocks.ORES_IN_GROUND_DEEPSLATE).add(key(ModBlocks.DEEPSLATE_NEODYMIUM_ORE));
+	}
+
+	/** Acoustic materials: looked at before the footstep sound, so datapacks can override them. */
+	private void acoustics() {
 		for (String name : OcclusionSettings.BASE_MATERIALS) {
 			builder(AcousticTags.material(name));
 		}
 		builder(AcousticTags.material("foliage")).addOptionalTag(BlockTags.LEAVES);
 		builder(AcousticTags.material("wool")).addOptionalTag(BlockTags.WOOL).addOptionalTag(BlockTags.WOOL_CARPETS);
 		builder(AcousticTags.material("wood")).addOptionalTag(BlockTags.PLANKS).addOptionalTag(BlockTags.LOGS);
+	}
+
+	/**
+	 * The shale family blocks of one shape.
+	 *
+	 * @param shape the block class, such as {@link StairBlock}
+	 * @return the matching blocks
+	 */
+	static List<Block> shapes(Class<? extends Block> shape) {
+		return ModBlocks.shaleFamily().stream().filter(shape::isInstance).toList();
+	}
+
+	private static void addAll(TagAppender<Block> tag, List<Block> blocks) {
+		blocks.forEach(block -> tag.add(key(block)));
 	}
 
 	private static ResourceKey<Block> key(Block block) {

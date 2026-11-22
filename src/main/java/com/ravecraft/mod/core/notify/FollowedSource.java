@@ -26,6 +26,11 @@ public final class FollowedSource {
 	/**
 	 * Takes what is heard at {@code nowMs} and returns the entry to announce now, or empty. While the screen of
 	 * {@code openSpeaker} is open, its entry counts as announced without being returned.
+	 *
+	 * @param nowMs the current time, in milliseconds
+	 * @param heard what is heard now
+	 * @param openSpeaker the speaker whose screen is open, or empty
+	 * @return the entry to announce, or empty
 	 */
 	public Optional<Heard> update(long nowMs, List<Heard> heard, OptionalLong openSpeaker) {
 		track(nowMs, loudest(heard));

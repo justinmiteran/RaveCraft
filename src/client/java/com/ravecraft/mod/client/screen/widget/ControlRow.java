@@ -38,6 +38,12 @@ public final class ControlRow {
 	/**
 	 * Creates the controls with the row's top at {@code (left + 7, top)}, power ending 7 px before
 	 * {@code left + width}, and hands each one to {@code add}.
+	 *
+	 * @param left the row's left edge
+	 * @param top the row's top
+	 * @param width the row's width
+	 * @param pos where the speaker stands
+	 * @param add receives each control
 	 */
 	public ControlRow(int left, int top, int width, BlockPos pos, Consumer<AbstractWidget> add) {
 		this.pos = pos;
@@ -60,7 +66,12 @@ public final class ControlRow {
 		return Component.translatable(KEY + key);
 	}
 
-	/** Refreshes icons, labels and which controls are usable from the latest state and the block's power. */
+	/**
+	 * Refreshes icons, labels and which controls are usable from the latest state and the block's power.
+	 *
+	 * @param state the speaker's latest state, or null
+	 * @param powered true when the block is powered
+	 */
 	public void update(@Nullable SpeakerStatePayload state, boolean powered) {
 		this.state = state;
 		this.powered = powered;

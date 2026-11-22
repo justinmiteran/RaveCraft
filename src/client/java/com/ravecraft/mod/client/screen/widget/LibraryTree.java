@@ -41,7 +41,16 @@ public final class LibraryTree extends TreeList {
 	private @org.jspecify.annotations.Nullable LibraryIndex index;
 	private int indexVersion;
 
-	/** The library of {@code source}, adding to the queue of the speaker at {@code pos}. */
+	/**
+	 * The library of {@code source}, adding to the queue of the speaker at {@code pos}.
+	 *
+	 * @param x the tree's left edge
+	 * @param y the tree's top
+	 * @param width the tree's width
+	 * @param height the tree's height
+	 * @param source the music source shown
+	 * @param pos where the speaker stands
+	 */
 	public LibraryTree(int x, int y, int width, int height, MusicSource source, BlockPos pos) {
 		super(x, y, width, height, Component.translatable(SpeakerSprites.KEY + "library"));
 		this.source = source;
@@ -61,7 +70,11 @@ public final class LibraryTree extends TreeList {
 		syncIndex();
 	}
 
-	/** Switches between the folder tree and the flat list. */
+	/**
+	 * Switches between the folder tree and the flat list.
+	 *
+	 * @param flat true for the flat list
+	 */
 	public void setFlat(boolean flat) {
 		if (flat != model.flat()) {
 			model.setFlat(flat);
@@ -90,13 +103,21 @@ public final class LibraryTree extends TreeList {
 		return current;
 	}
 
-	/** Filters the loaded rows by name; never reads the disk. */
+	/**
+	 * Filters the loaded rows by name; never reads the disk.
+	 *
+	 * @param filter the text the names must contain
+	 */
 	public void setFilter(String filter) {
 		model.setFilter(filter);
 		resetScroll();
 	}
 
-	/** True once the roots are known and there are none: the screen then offers to choose a folder. */
+	/**
+	 * True once the roots are known and there are none: the screen then offers to choose a folder.
+	 *
+	 * @return true when the library has no folder
+	 */
 	public boolean isEmptyLibrary() {
 		return model.isEmpty();
 	}

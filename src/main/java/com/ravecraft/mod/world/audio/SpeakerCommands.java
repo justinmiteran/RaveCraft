@@ -34,7 +34,13 @@ public final class SpeakerCommands {
 	private SpeakerCommands() {
 	}
 
-	/** Appends tracks offered by {@code player}, who owns them. Ignored out of reach. */
+	/**
+	 * Appends tracks offered by {@code player}, who owns them. Ignored out of reach.
+	 *
+	 * @param player the player
+	 * @param pos where the speaker stands
+	 * @param added the tracks offered
+	 */
 	public static void add(ServerPlayer player, BlockPos pos, List<NewEntry> added) {
 		PortableSpeakerBlockEntity be = speakerInReach(player, pos);
 		if (be == null) {
@@ -48,7 +54,14 @@ public final class SpeakerCommands {
 		SpeakerPlayback.update(be, SpeakerPlayback.queueOf(be).add(entries, SpeakerPlayback.RNG));
 	}
 
-	/** A command without {@code value} (PLAY, PAUSE, NEXT, REMOVE, CLEAR, PREVIOUS). */
+	/**
+	 * A command without {@code value} (PLAY, PAUSE, NEXT, REMOVE, CLEAR, PREVIOUS).
+	 *
+	 * @param player the player
+	 * @param pos where the speaker stands
+	 * @param command the command
+	 * @param entryId the entry it is about, or empty
+	 */
 	public static void command(ServerPlayer player, BlockPos pos, Command command, Optional<UUID> entryId) {
 		command(player, pos, command, entryId, 0);
 	}
@@ -56,6 +69,12 @@ public final class SpeakerCommands {
 	/**
 	 * Applies a player's command; {@code value} is the argument of SEEK (ms), VOLUME, POWER, REPEAT (mode ordinal),
 	 * SHUFFLE and MOVE (index among what is still to play), validated here. Ignored out of reach.
+	 *
+	 * @param player the player
+	 * @param pos where the speaker stands
+	 * @param command the command
+	 * @param entryId the entry it is about, or empty
+	 * @param value the command's value
 	 */
 	public static void command(ServerPlayer player, BlockPos pos, Command command, Optional<UUID> entryId, long value) {
 		PortableSpeakerBlockEntity be = speakerInReach(player, pos);

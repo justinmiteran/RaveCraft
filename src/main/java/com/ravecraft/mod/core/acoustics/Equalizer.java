@@ -38,7 +38,12 @@ public final class Equalizer {
 		this.a2 = ((a + 1) + (a - 1) * c - k) / a0;
 	}
 
-	/** Filters the first {@code count} samples in place; the output stays within [−1, 1]. */
+	/**
+	 * Filters the first {@code count} samples in place; the output stays within [−1, 1].
+	 *
+	 * @param samples the samples to filter
+	 * @param count how many samples to filter
+	 */
 	public void process(float[] samples, int count) {
 		if (bypass) {
 			return;

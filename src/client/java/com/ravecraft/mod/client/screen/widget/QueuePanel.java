@@ -32,13 +32,25 @@ public final class QueuePanel extends RowList {
 	private final BlockPos pos;
 	private List<Row> rows = List.of();
 
-	/** The queue of the speaker at {@code pos}. */
+	/**
+	 * The queue of the speaker at {@code pos}.
+	 *
+	 * @param x the panel's left edge
+	 * @param y the panel's top
+	 * @param width the panel's width
+	 * @param height the panel's height
+	 * @param pos where the speaker stands
+	 */
 	public QueuePanel(int x, int y, int width, int height, BlockPos pos) {
 		super(x, y, width, height, ROW_H, Component.translatable(SpeakerSprites.KEY + "queue"));
 		this.pos = pos;
 	}
 
-	/** Rebuilds the rows from a new state; the scroll position is kept while it still fits. */
+	/**
+	 * Rebuilds the rows from a new state; the scroll position is kept while it still fits.
+	 *
+	 * @param state the speaker's new state, or null
+	 */
 	public void show(@Nullable SpeakerStatePayload state) {
 		List<Row> built = new ArrayList<>();
 		if (state != null) {

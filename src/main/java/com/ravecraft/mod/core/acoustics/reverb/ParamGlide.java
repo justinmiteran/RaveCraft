@@ -23,7 +23,13 @@ public final class ParamGlide {
 		current = initial;
 	}
 
-	/** The reverb at {@code nowMs} on the way to {@code target}; a target different from the last one restarts. */
+	/**
+	 * The reverb at {@code nowMs} on the way to {@code target}; a target different from the last one restarts.
+	 *
+	 * @param target the reverb to reach
+	 * @param nowMs the current time, in milliseconds
+	 * @return the reverb now
+	 */
 	public ReverbParams at(ReverbParams target, long nowMs) {
 		if (!target.equals(this.target)) {
 			start = current;
@@ -37,12 +43,20 @@ public final class ParamGlide {
 		return current;
 	}
 
-	/** Whether the reverb has reached its target. */
+	/**
+	 * Whether the reverb has reached its target.
+	 *
+	 * @return true once the target is reached
+	 */
 	public boolean settled() {
 		return current.equals(target);
 	}
 
-	/** Delays the glide by {@code ms}, e.g. the time the game was paused. */
+	/**
+	 * Delays the glide by {@code ms}, e.g. the time the game was paused.
+	 *
+	 * @param ms the delay, in milliseconds
+	 */
 	public void shift(long ms) {
 		startMs += ms;
 	}

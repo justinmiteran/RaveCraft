@@ -12,7 +12,12 @@ import net.minecraft.world.level.block.Block;
 
 /** The portable speaker as an item: places the block and keeps its data. */
 public class PortableSpeakerItem extends BlockItem {
-	/** The item that places {@code block}. */
+	/**
+	 * The item that places {@code block}.
+	 *
+	 * @param block the block placed
+	 * @param properties the item's properties
+	 */
 	public PortableSpeakerItem(Block block, Properties properties) {
 		super(block, properties);
 	}

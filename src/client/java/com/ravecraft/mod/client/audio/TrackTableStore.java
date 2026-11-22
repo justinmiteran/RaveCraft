@@ -30,14 +30,23 @@ public final class TrackTableStore {
 	private TrackTableStore() {
 	}
 
-	/** Remembers which file each new entry id plays, and saves the table. */
+	/**
+	 * Remembers which file each new entry id plays, and saves the table.
+	 *
+	 * @param added the file of each new entry id
+	 */
 	public static void register(Map<UUID, Path> added) {
 		TrackTable loaded = table();
 		added.forEach((id, path) -> loaded.put(id, path.toAbsolutePath().toString()));
 		save(loaded);
 	}
 
-	/** The file entry {@code entryId} plays, if this player queued it. */
+	/**
+	 * The file entry {@code entryId} plays, if this player queued it.
+	 *
+	 * @param entryId the queue entry
+	 * @return the entry's file, or empty when this player did not queue it
+	 */
 	public static Optional<Path> resolve(UUID entryId) {
 		return table().get(entryId).flatMap(TrackTableStore::toPath);
 	}

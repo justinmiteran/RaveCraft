@@ -21,13 +21,23 @@ public final class FolderBrowser extends TreeList {
 	private final Consumer<Path> onAdd;
 	private Predicate<Path> covered = path -> false;
 
-	/** A browser; {@code onAdd} receives the folder the player adds. */
+	/**
+	 * A browser; {@code onAdd} receives the folder the player adds.
+	 *
+	 * @param width the browser's width
+	 * @param height the browser's height
+	 * @param onAdd receives the folder added
+	 */
 	public FolderBrowser(int width, int height, Consumer<Path> onAdd) {
 		super(0, 0, width, height, Component.translatable(SpeakerSprites.KEY + "folders.browser"));
 		this.onAdd = onAdd;
 	}
 
-	/** Which folders already are in the library: their {@code +} is greyed out. */
+	/**
+	 * Which folders already are in the library: their {@code +} is greyed out.
+	 *
+	 * @param covered true for a folder already in the library
+	 */
 	public void setCovered(Predicate<Path> covered) {
 		this.covered = covered;
 	}

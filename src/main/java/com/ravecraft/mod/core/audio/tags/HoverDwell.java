@@ -13,7 +13,13 @@ public final class HoverDwell {
 	private long since;
 	private long lastSeen;
 
-	/** True once {@code key} has been requested continuously for {@link #DELAY_MS}. */
+	/**
+	 * True once {@code key} has been requested continuously for {@link #DELAY_MS}.
+	 *
+	 * @param key what is requested
+	 * @param nowMs the current time, in milliseconds
+	 * @return true once the delay has passed
+	 */
 	public boolean ready(String key, long nowMs) {
 		if (!key.equals(this.key) || nowMs - lastSeen > MAX_GAP_MS) {
 			this.key = key;

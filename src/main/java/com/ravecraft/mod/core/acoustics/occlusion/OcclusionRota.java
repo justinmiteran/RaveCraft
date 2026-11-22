@@ -23,6 +23,10 @@ public final class OcclusionRota {
 	/**
 	 * The ids due on {@code tick}, among {@code audibleByGain} (loudest first): the ids never picked before, then those
 	 * left unfinished, then those whose slot is {@code tick % PERIOD}, each in that list's order.
+	 *
+	 * @param audibleByGain the audible ids, loudest first
+	 * @param tick the current tick
+	 * @return the ids to trace this tick
 	 */
 	public List<Integer> pick(List<Integer> audibleByGain, long tick) {
 		Set<Integer> due = new LinkedHashSet<>();
@@ -49,12 +53,20 @@ public final class OcclusionRota {
 		return new ArrayList<>(due);
 	}
 
-	/** The trace of {@code id} did not finish this tick: it goes first on the next one. */
+	/**
+	 * The trace of {@code id} did not finish this tick: it goes first on the next one.
+	 *
+	 * @param id the stream's id
+	 */
 	public void unfinished(int id) {
 		unfinished.add(id);
 	}
 
-	/** Drops every id not in {@code alive}; one that comes back later counts as new. */
+	/**
+	 * Drops every id not in {@code alive}; one that comes back later counts as new.
+	 *
+	 * @param alive the ids still audible
+	 */
 	public void forget(Set<Integer> alive) {
 		slots.keySet().retainAll(alive);
 		unfinished.retainAll(alive);

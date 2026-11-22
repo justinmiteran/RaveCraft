@@ -31,17 +31,31 @@ public final class SpeakerStates {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> STATES.clear());
 	}
 
-	/** Keeps {@code state}, the latest of its speaker. */
+	/**
+	 * Keeps {@code state}, the latest of its speaker.
+	 *
+	 * @param state the speaker's new state
+	 */
 	public static void put(SpeakerStatePayload state) {
 		STATES.put(state.pos().immutable(), new Received(state, Util.getMillis()));
 	}
 
-	/** The latest state of the speaker at {@code pos}, if any. */
+	/**
+	 * The latest state of the speaker at {@code pos}, if any.
+	 *
+	 * @param pos where the speaker stands
+	 * @return the latest state, or empty
+	 */
 	public static Optional<SpeakerStatePayload> get(BlockPos pos) {
 		return Optional.ofNullable(STATES.get(pos)).map(Received::state);
 	}
 
-	/** Where the current track is now, estimated from the last state: the server only sends changes. */
+	/**
+	 * Where the current track is now, estimated from the last state: the server only sends changes.
+	 *
+	 * @param pos where the speaker stands
+	 * @return the estimated position in the track, in milliseconds
+	 */
 	public static long positionMs(BlockPos pos) {
 		Received received = STATES.get(pos);
 		if (received == null) {
@@ -60,24 +74,47 @@ public final class SpeakerStates {
 		return durationMs >= 0 ? Math.max(0, Math.min(position, durationMs)) : position;
 	}
 
-	/** Sends a command with a numeric value (seek position, volume...) when the server accepts speaker commands. */
+	/**
+	 * Sends a command with a numeric value (seek position, volume...) when the server accepts speaker commands.
+	 *
+	 * @param pos where the speaker stands
+	 * @param command the command
+	 * @param value the command's value
+	 */
 	public static void send(BlockPos pos, Command command, long value) {
 		send(pos, command, Optional.empty(), value);
 	}
 
-	/** Sends a command about one entry (or none) when the server accepts speaker commands. */
+	/**
+	 * Sends a command about one entry (or none) when the server accepts speaker commands.
+	 *
+	 * @param pos where the speaker stands
+	 * @param command the command
+	 * @param entryId the entry it is about, or empty
+	 */
 	public static void send(BlockPos pos, Command command, Optional<UUID> entryId) {
 		send(pos, command, entryId, 0);
 	}
 
-	/** Sends a command about one entry with a numeric value (MOVE's index) when the server accepts speaker commands. */
+	/**
+	 * Sends a command about one entry with a numeric value (MOVE's index) when the server accepts speaker commands.
+	 *
+	 * @param pos where the speaker stands
+	 * @param command the command
+	 * @param entryId the entry it is about, or empty
+	 * @param value the command's value
+	 */
 	public static void send(BlockPos pos, Command command, Optional<UUID> entryId, long value) {
 		if (ClientPlayNetworking.canSend(SpeakerCommandPayload.TYPE)) {
 			ClientPlayNetworking.send(new SpeakerCommandPayload(pos, command, entryId, value));
 		}
 	}
 
-	/** Forgets the state of the speaker at {@code pos}. */
+	/**
+	 * Forgets the state of the speaker at {@code pos}.
+	 *
+	 * @param pos where the speaker stands
+	 */
 	public static void forget(BlockPos pos) {
 		STATES.remove(pos);
 	}

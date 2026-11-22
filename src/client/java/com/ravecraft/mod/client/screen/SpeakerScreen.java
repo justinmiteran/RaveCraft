@@ -71,7 +71,11 @@ public final class SpeakerScreen extends Screen {
 	/** The {@code Folders…} popup while it is open; it then gets all the input. */
 	private @Nullable FoldersPopup folders;
 
-	/** The screen of the speaker at {@code pos}. */
+	/**
+	 * The screen of the speaker at {@code pos}.
+	 *
+	 * @param pos where the speaker stands
+	 */
 	public SpeakerScreen(BlockPos pos) {
 		super(titleOf(pos));
 		this.pos = pos.immutable();
@@ -79,7 +83,11 @@ public final class SpeakerScreen extends Screen {
 		SpeakerStates.forget(this.pos);
 	}
 
-	/** The speaker this screen controls. */
+	/**
+	 * The speaker this screen controls.
+	 *
+	 * @return the speaker's position
+	 */
 	public BlockPos pos() {
 		return pos;
 	}
@@ -197,7 +205,11 @@ public final class SpeakerScreen extends Screen {
 		library.reload();
 	}
 
-	/** The library column (search field and tree), in screen coordinates. */
+	/**
+	 * The library column (search field and tree), in screen coordinates.
+	 *
+	 * @return the library column's area
+	 */
 	public ScreenRectangle libraryArea() {
 		Rect lib = layout.library();
 		return new ScreenRectangle(left + lib.x(), top + lib.y(), lib.w(), lib.h());

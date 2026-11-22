@@ -22,7 +22,12 @@ public final class M3uParser {
 	private M3uParser() {
 	}
 
-	/** Reads the entries of {@code playlist}; relative ones resolve against its folder. */
+	/**
+	 * Reads the entries of {@code playlist}; relative ones resolve against its folder.
+	 *
+	 * @param playlist the playlist file
+	 * @return the entries
+	 */
 	public static List<Path> read(Path playlist) throws IOException {
 		byte[] bytes = Files.readAllBytes(playlist);
 		String text = decode(bytes, AudioFiles.extension(playlist).equals("m3u8"));
@@ -30,7 +35,13 @@ public final class M3uParser {
 		return parse(text.lines().toList(), base);
 	}
 
-	/** The entries of a playlist's lines, skipping comments and blank lines; relative ones resolve against {@code baseDir}. */
+	/**
+	 * The entries of a playlist's lines, skipping comments and blank lines; relative ones resolve against {@code baseDir}.
+	 *
+	 * @param lines the playlist's lines
+	 * @param baseDir the folder relative entries resolve against
+	 * @return the entries
+	 */
 	public static List<Path> parse(List<String> lines, Path baseDir) {
 		List<Path> paths = new ArrayList<>();
 		for (String raw : lines) {

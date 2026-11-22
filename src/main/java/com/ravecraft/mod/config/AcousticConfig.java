@@ -33,12 +33,20 @@ public final class AcousticConfig {
 				Net.send(handler.player, new AcousticSettingsPayload(settings)));
 	}
 
-	/** The settings in force on the server. */
+	/**
+	 * The settings in force on the server.
+	 *
+	 * @return the server's acoustic settings
+	 */
 	public static AcousticSettings get() {
 		return settings;
 	}
 
-	/** Replaces the settings in memory (tests); players already connected keep the old ones. */
+	/**
+	 * Replaces the settings in memory (tests); players already connected keep the old ones.
+	 *
+	 * @param value the new settings
+	 */
 	public static void set(AcousticSettings value) {
 		settings = value;
 	}

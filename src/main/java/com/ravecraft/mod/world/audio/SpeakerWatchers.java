@@ -33,7 +33,13 @@ public final class SpeakerWatchers {
 	private SpeakerWatchers() {
 	}
 
-	/** {@code player} opened ({@code open}) or closed the screen of the speaker at {@code pos}. */
+	/**
+	 * {@code player} opened ({@code open}) or closed the screen of the speaker at {@code pos}.
+	 *
+	 * @param player the player
+	 * @param pos where the speaker stands
+	 * @param open true when the screen opened
+	 */
 	public static void watch(ServerPlayer player, BlockPos pos, boolean open) {
 		if (!(player.level() instanceof ServerLevel level)) {
 			return;
@@ -50,7 +56,12 @@ public final class SpeakerWatchers {
 		}
 	}
 
-	/** The speaker at {@code pos} changed: its watchers get its state at the next flush. */
+	/**
+	 * The speaker at {@code pos} changed: its watchers get its state at the next flush.
+	 *
+	 * @param level the speaker's level
+	 * @param pos where the speaker stands
+	 */
 	public static void markDirty(ServerLevel level, BlockPos pos) {
 		SpeakerKey key = new SpeakerKey(level.dimension(), pos);
 		if (WATCHERS.containsKey(key)) {
@@ -58,7 +69,13 @@ public final class SpeakerWatchers {
 		}
 	}
 
-	/** Whether the speaker at {@code pos} has a state waiting to be sent to its watchers. */
+	/**
+	 * Whether the speaker at {@code pos} has a state waiting to be sent to its watchers.
+	 *
+	 * @param level the speaker's level
+	 * @param pos where the speaker stands
+	 * @return true when a state waits
+	 */
 	public static boolean isDirty(ServerLevel level, BlockPos pos) {
 		return DIRTY.contains(new SpeakerKey(level.dimension(), pos));
 	}
@@ -68,7 +85,11 @@ public final class SpeakerWatchers {
 		DIRTY.addAll(WATCHERS.keySet());
 	}
 
-	/** Sends each changed speaker's state to its watchers. Called once per server tick. */
+	/**
+	 * Sends each changed speaker's state to its watchers. Called once per server tick.
+	 *
+	 * @param server the server
+	 */
 	public static void flush(MinecraftServer server) {
 		if (DIRTY.isEmpty()) {
 			return;
@@ -101,7 +122,11 @@ public final class SpeakerWatchers {
 		}
 	}
 
-	/** {@code player} left: they watch nothing any more. */
+	/**
+	 * {@code player} left: they watch nothing any more.
+	 *
+	 * @param player the player who left
+	 */
 	public static void forget(UUID player) {
 		WATCHERS.values().forEach(set -> set.remove(player));
 		WATCHERS.values().removeIf(Set::isEmpty);

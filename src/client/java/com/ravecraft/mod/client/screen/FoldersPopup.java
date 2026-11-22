@@ -68,7 +68,12 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 	private int pickRequest;
 	private boolean closed;
 
-	/** A popup over {@code parent}; {@code onChanged} runs when the folders change. */
+	/**
+	 * A popup over {@code parent}; {@code onChanged} runs when the folders change.
+	 *
+	 * @param parent the screen the popup opens over
+	 * @param onChanged runs when the folders change
+	 */
 	public FoldersPopup(SpeakerScreen parent, Runnable onChanged) {
 		this.onChanged = onChanged;
 		FolderPicker.warmUp();
@@ -101,7 +106,12 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 		return Component.translatable(SpeakerSprites.KEY + "folders." + key, args);
 	}
 
-	/** Centres the popup on the screen and places its widgets (on opening and on every resize). */
+	/**
+	 * Centres the popup on the screen and places its widgets (on opening and on every resize).
+	 *
+	 * @param screenWidth the screen's width
+	 * @param screenHeight the screen's height
+	 */
 	public void layout(int screenWidth, int screenHeight) {
 		this.screenWidth = screenWidth;
 		this.screenHeight = screenHeight;
@@ -262,7 +272,14 @@ public final class FoldersPopup extends AbstractContainerEventHandler {
 
 	// --- Drawing ----------------------------------------------------------------------------------------------
 
-	/** Draws the popup above everything the screen drew, with the screen darkened behind it. */
+	/**
+	 * Draws the popup above everything the screen drew, with the screen darkened behind it.
+	 *
+	 * @param graphics where to draw
+	 * @param mouseX the mouse's x
+	 * @param mouseY the mouse's y
+	 * @param a the partial tick
+	 */
 	public void extract(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 		Font font = Minecraft.getInstance().font;
 		graphics.nextStratum();

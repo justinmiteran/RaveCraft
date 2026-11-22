@@ -10,7 +10,12 @@ public final class MonoFramer {
 	private short[] partial = new short[StreamFormat.FRAME_SAMPLES];
 	private int filled;
 
-	/** Adds the first {@code length} samples; each frame they complete becomes ready for {@link #poll()}. */
+	/**
+	 * Adds the first {@code length} samples; each frame they complete becomes ready for {@link #poll()}.
+	 *
+	 * @param samples the samples to add
+	 * @param length how many samples to add
+	 */
 	public void push(short[] samples, int length) {
 		int at = 0;
 		while (at < length) {
@@ -26,12 +31,20 @@ public final class MonoFramer {
 		}
 	}
 
-	/** The next complete frame, or null when none is ready. */
+	/**
+	 * The next complete frame, or null when none is ready.
+	 *
+	 * @return the frame, or null
+	 */
 	public short[] poll() {
 		return ready.poll();
 	}
 
-	/** The remaining samples padded with silence to a full frame, or null when nothing is left. */
+	/**
+	 * The remaining samples padded with silence to a full frame, or null when nothing is left.
+	 *
+	 * @return the last frame, or null
+	 */
 	public short[] flush() {
 		if (filled == 0) {
 			return null;

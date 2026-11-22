@@ -83,6 +83,11 @@ public final class OcclusionTracer {
 	/**
 	 * The loss from {@code from} to {@code to}, or null when {@code budget} ran out before the end voxel; one voxel of
 	 * budget is taken per voxel visited.
+	 *
+	 * @param from the start point
+	 * @param to the end point
+	 * @param budget the voxels left this tick
+	 * @return the loss, or null when the budget ran out
 	 */
 	public @Nullable PathLoss trace(Vec from, Vec to, TraceBudget budget) {
 		return segments.trace(point(from), point(to), budget, null);
@@ -95,6 +100,13 @@ public final class OcclusionTracer {
 	 * {@code bendHighLossDb} per 90°); detours longer than {@code maxPathLength}, running along the straight line or
 	 * losing at least as much as the direct path are ignored. Null when {@code budget} ran out; {@link Occlusion#NONE}
 	 * without visiting any voxel when occlusion is disabled.
+	 *
+	 * @param listener the listener's position
+	 * @param source the source's position
+	 * @param rolloff the distance law's exponent
+	 * @param maxPathLength the longest detour, in blocks
+	 * @param budget the voxels left this tick
+	 * @return the occlusion, or null when the budget ran out
 	 */
 	public @Nullable Occlusion occlusion(Vec listener, Vec source, double rolloff, double maxPathLength,
 			TraceBudget budget) {
@@ -105,6 +117,14 @@ public final class OcclusionTracer {
 	 * {@link #occlusion(Vec, Vec, double, double, TraceBudget)}, recording in {@code capture} (when not null) the
 	 * voxels of the direct path that lose something and the detours summed with it. The capture is reset first, even
 	 * when occlusion is disabled.
+	 *
+	 * @param listener the listener's position
+	 * @param source the source's position
+	 * @param rolloff the distance law's exponent
+	 * @param maxPathLength the longest detour, in blocks
+	 * @param budget the voxels left this tick
+	 * @param capture records the paths, or null
+	 * @return the occlusion, or null when the budget ran out
 	 */
 	public @Nullable Occlusion occlusion(Vec listener, Vec source, double rolloff, double maxPathLength,
 			TraceBudget budget, @Nullable PathCapture capture) {

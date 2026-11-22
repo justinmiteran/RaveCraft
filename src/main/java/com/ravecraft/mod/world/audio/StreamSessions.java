@@ -31,7 +31,11 @@ public final class StreamSessions {
 	private StreamSessions() {
 	}
 
-	/** Read access for the relay and the tests. */
+	/**
+	 * Read access for the relay and the tests.
+	 *
+	 * @return the session table
+	 */
 	public static SessionTable<SpeakerKey> table() {
 		return TABLE;
 	}
@@ -39,6 +43,12 @@ public final class StreamSessions {
 	/**
 	 * Opens a session for {@code owner} to stream {@code entryId} into the powered speaker at {@code pos} (absolute),
 	 * cutting any other stream there. Distance does not matter: the owner may be anywhere. Sends no order.
+	 *
+	 * @param level the speaker's level
+	 * @param pos where the speaker stands
+	 * @param owner the player streaming
+	 * @param entryId the entry to stream
+	 * @return the new session, or empty
 	 */
 	public static Optional<Session<SpeakerKey>> open(ServerLevel level, BlockPos pos, ServerPlayer owner, UUID entryId) {
 		if (!level.isLoaded(pos)) {
@@ -55,7 +65,13 @@ public final class StreamSessions {
 		return Optional.of(session);
 	}
 
-	/** Ends the session of the speaker at {@code pos} (absolute), if any, cutting it at once everywhere. */
+	/**
+	 * Ends the session of the speaker at {@code pos} (absolute), if any, cutting it at once everywhere.
+	 *
+	 * @param level the speaker's level
+	 * @param pos where the speaker stands
+	 * @return the ended session, or empty
+	 */
 	public static Optional<Session<SpeakerKey>> endAt(ServerLevel level, BlockPos pos) {
 		Optional<Session<SpeakerKey>> ended = TABLE.endByKey(new SpeakerKey(level.dimension(), pos));
 		ended.ifPresent(s -> notifyEnded(level.getServer(), s, true, false));
@@ -65,6 +81,11 @@ public final class StreamSessions {
 	/**
 	 * Ends session {@code id} at the request of its owner; requests from anyone else are ignored and return empty.
 	 * When the track {@code finished}, listeners play their buffered tail before stopping.
+	 *
+	 * @param id the session id
+	 * @param requester the player asking
+	 * @param finished true at the natural end
+	 * @return the ended session, or empty
 	 */
 	public static Optional<Session<SpeakerKey>> close(int id, ServerPlayer requester, boolean finished) {
 		Optional<Session<SpeakerKey>> session = TABLE.byId(id);
@@ -76,7 +97,13 @@ public final class StreamSessions {
 		return session;
 	}
 
-	/** Ends every session of a player who left, without telling them. */
+	/**
+	 * Ends every session of a player who left, without telling them.
+	 *
+	 * @param server the server
+	 * @param owner the player who left
+	 * @return the ended sessions
+	 */
 	public static List<Session<SpeakerKey>> endByOwner(MinecraftServer server, UUID owner) {
 		List<Session<SpeakerKey>> ended = TABLE.endByOwner(owner);
 		ended.forEach(s -> notifyEnded(server, s, false, false));

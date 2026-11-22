@@ -47,7 +47,14 @@ public final class PlayerBand extends AbstractWidget {
 	private boolean seeking;
 	private long seekMs;
 
-	/** The band of the speaker at {@code pos}. */
+	/**
+	 * The band of the speaker at {@code pos}.
+	 *
+	 * @param x the band's left edge
+	 * @param y the band's top
+	 * @param width the band's width
+	 * @param pos where the speaker stands
+	 */
 	public PlayerBand(int x, int y, int width, BlockPos pos) {
 		super(x, y, width, HEIGHT, Component.empty());
 		this.pos = pos;

@@ -54,7 +54,12 @@ public final class JitterBuffer {
 		this.capacity = maxAheadFrames + targetFrames;
 	}
 
-	/** Adds consecutive frames, the first having index {@code firstFrame}. */
+	/**
+	 * Adds consecutive frames, the first having index {@code firstFrame}.
+	 *
+	 * @param firstFrame the index of the chunk's first frame
+	 * @param chunk the encoded frames
+	 */
 	public void offer(long firstFrame, List<byte[]> chunk) {
 		for (int i = 0; i < chunk.size(); i++) {
 			long index = firstFrame + i;
@@ -117,17 +122,29 @@ public final class JitterBuffer {
 		draining = true;
 	}
 
-	/** Frames held, played or not yet. */
+	/**
+	 * Frames held, played or not yet.
+	 *
+	 * @return the number of frames held
+	 */
 	public int bufferedFrames() {
 		return frames.size();
 	}
 
-	/** Frames that were missing when their turn came, since the start. */
+	/**
+	 * Frames that were missing when their turn came, since the start.
+	 *
+	 * @return the number of frames lost
+	 */
 	public long lostFrames() {
 		return lostFrames;
 	}
 
-	/** Times the buffer ran empty while playing (each stall counts once), since the start. */
+	/**
+	 * Times the buffer ran empty while playing (each stall counts once), since the start.
+	 *
+	 * @return the number of stalls
+	 */
 	public long underruns() {
 		return underruns;
 	}

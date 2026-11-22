@@ -72,7 +72,13 @@
 		</module>
 		<!-- A Javadoc opens with a non-empty first sentence ending in a period. -->
 		<module name="SummaryJavadoc"/>
+		<!-- Public methods are the API other packages call: their Javadoc names every parameter (@param) and
+		     what they return (@return). Elsewhere one sentence citing the parameters with {@code} is enough. -->
 		<module name="JavadocMethod">
+			<property name="accessModifiers" value="public"/>
+		</module>
+		<module name="JavadocMethod">
+			<property name="accessModifiers" value="protected, package, private"/>
 			<property name="allowMissingParamTags" value="true"/>
 			<property name="allowMissingReturnTag" value="true"/>
 		</module>

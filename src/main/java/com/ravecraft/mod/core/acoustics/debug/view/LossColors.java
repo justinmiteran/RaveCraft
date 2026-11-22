@@ -25,7 +25,12 @@ public final class LossColors {
 	private LossColors() {
 	}
 
-	/** The colour of a loss of {@code lossDb}. */
+	/**
+	 * The colour of a loss of {@code lossDb}.
+	 *
+	 * @param lossDb the loss, in decibels
+	 * @return the ARGB colour
+	 */
 	public static int forLoss(double lossDb) {
 		if (Double.isNaN(lossDb) || lossDb >= HIGH_DB) {
 			return HIGH_LOSS;
@@ -39,12 +44,23 @@ public final class LossColors {
 		return lerp(MID_LOSS, HIGH_LOSS, (lossDb - MID_DB) / (HIGH_DB - MID_DB));
 	}
 
-	/** The colour of a surface absorbing {@code absorption} (0 reflects everything, 1 absorbs everything). */
+	/**
+	 * The colour of a surface absorbing {@code absorption} (0 reflects everything, 1 absorbs everything).
+	 *
+	 * @param absorption the surface's absorption, 0 to 1
+	 * @return the ARGB colour
+	 */
 	public static int forAbsorption(double absorption) {
 		return forLoss(Math.clamp(absorption, 0, 1) * HIGH_DB);
 	}
 
-	/** {@code argb} with its alpha replaced by {@code alpha} (0 to 1). */
+	/**
+	 * {@code argb} with its alpha replaced by {@code alpha} (0 to 1).
+	 *
+	 * @param argb the colour
+	 * @param alpha the new alpha, 0 to 1
+	 * @return the colour with the new alpha
+	 */
 	public static int withAlpha(int argb, float alpha) {
 		int a = Math.round(Math.clamp(alpha, 0f, 1f) * CHANNEL_MAX);
 		return (a << ALPHA_SHIFT) | (argb & RGB_MASK);

@@ -16,6 +16,13 @@ public final class ReverbDebug {
 	/**
 	 * The lines for the listener's space: {@code fluid} names the fluid around the head when its preset applies;
 	 * otherwise {@code shape} is the last measure (null while the first one runs).
+	 *
+	 * @param enabled true when the reverb runs
+	 * @param shape the last measure, or null
+	 * @param params the reverb applied
+	 * @param echo the echo applied
+	 * @param fluid the fluid around the head, or null
+	 * @return the debug lines
 	 */
 	public static List<String> lines(boolean enabled, @Nullable RoomShape shape, ReverbParams params, Echo echo,
 			@Nullable String fluid) {

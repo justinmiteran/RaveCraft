@@ -56,7 +56,16 @@ public final class StreamEmitter {
 	public record Callbacks(LongConsumer onStarted, Runnable onFinished, Consumer<Exception> onFailed) {
 	}
 
-	/** An emitter for {@code track} from {@code startMs}, not started yet. */
+	/**
+	 * An emitter for {@code track} from {@code startMs}, not started yet.
+	 *
+	 * @param sessionId the stream's session
+	 * @param dimension the speaker's dimension
+	 * @param pos where the speaker stands
+	 * @param track the file to stream
+	 * @param startMs where to start in the track, in milliseconds
+	 * @param callbacks told of the emitter's progress
+	 */
 	public StreamEmitter(int sessionId, ResourceKey<Level> dimension, BlockPos pos, Path track, long startMs,
 			Callbacks callbacks) {
 		this.sessionId = sessionId;

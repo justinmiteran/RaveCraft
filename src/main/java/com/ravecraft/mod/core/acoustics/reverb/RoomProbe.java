@@ -44,7 +44,15 @@ public final class RoomProbe {
 		this.grid = grid;
 	}
 
-	/** Begins a measure from (x, y, z) with {@code rays} rays of {@code rayLength} blocks, dropping any previous one. */
+	/**
+	 * Begins a measure from (x, y, z) with {@code rays} rays of {@code rayLength} blocks, dropping any previous one.
+	 *
+	 * @param x the start's x
+	 * @param y the start's y
+	 * @param z the start's z
+	 * @param rays how many rays to cast
+	 * @param rayLength each ray's length, in blocks
+	 */
 	public void start(double x, double y, double z, int rays, double rayLength) {
 		this.ox = x;
 		this.oy = y;
@@ -57,7 +65,12 @@ public final class RoomProbe {
 		this.hits.clear();
 	}
 
-	/** Continues the measure; true once every ray is done. */
+	/**
+	 * Continues the measure; true once every ray is done.
+	 *
+	 * @param budget the voxels left this tick
+	 * @return true once every ray is done
+	 */
 	public boolean run(TraceBudget budget) {
 		while (ray < directions.length) {
 			direction = directions[ray];
@@ -105,7 +118,11 @@ public final class RoomProbe {
 		return hit;
 	}
 
-	/** The hits, one per ray in order; complete once {@link #run} returned true. */
+	/**
+	 * The hits, one per ray in order; complete once {@link #run} returned true.
+	 *
+	 * @return the hits, one per ray
+	 */
 	public List<RayHit> hits() {
 		return hits;
 	}

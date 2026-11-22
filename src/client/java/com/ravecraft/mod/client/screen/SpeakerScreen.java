@@ -257,7 +257,11 @@ public final class SpeakerScreen extends Screen {
 		library.reload();
 	}
 
-	/** The library column (search field and tree), in screen coordinates. */
+	/**
+	 * The library column (search field and tree), in screen coordinates.
+	 *
+	 * @return the library column's area
+	 */
 	public ScreenRectangle libraryArea() {
 		Rect lib = layout.library();
 		return new ScreenRectangle(left + lib.x(), top + lib.y(), lib.w(), lib.h());

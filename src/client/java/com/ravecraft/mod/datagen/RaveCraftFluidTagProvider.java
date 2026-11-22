@@ -9,7 +9,12 @@ import net.minecraft.tags.FluidTags;
 
 /** The fluids that form each acoustic medium. */
 public class RaveCraftFluidTagProvider extends FabricTagsProvider.FluidTagsProvider {
-	/** A provider writing to {@code output}. */
+	/**
+	 * A provider writing to {@code output}.
+	 *
+	 * @param output the pack the files go to
+	 * @param registries the registries, once loaded
+	 */
 	public RaveCraftFluidTagProvider(FabricPackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
 		super(output, registries);
 	}

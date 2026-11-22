@@ -41,7 +41,14 @@ public final class SpeakerTrackToast implements Toast {
 		set(title, message);
 	}
 
-	/** Shows {@code title} / {@code message}, replacing the text of the toast already showing if there is one. */
+	/**
+	 * Shows {@code title} / {@code message}, replacing the text of the toast already showing if there is one.
+	 *
+	 * @param manager the game's toast manager
+	 * @param font the font measuring the text
+	 * @param title the toast's title
+	 * @param message the toast's message
+	 */
 	public static void show(ToastManager manager, Font font, Component title, Component message) {
 		SpeakerTrackToast toast = manager.getToast(SpeakerTrackToast.class, TOKEN);
 		if (toast == null) {

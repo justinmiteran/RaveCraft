@@ -26,7 +26,11 @@ public final class MusicLibrary {
 	private MusicLibrary() {
 	}
 
-	/** Drives (or the filesystem root), then the user's home folder and its Music folder when they exist. */
+	/**
+	 * Drives (or the filesystem root), then the user's home folder and its Music folder when they exist.
+	 *
+	 * @return the root entries
+	 */
 	public static List<LibraryEntry> roots() {
 		List<LibraryEntry> roots = new ArrayList<>();
 		for (File root : File.listRoots()) {
@@ -41,7 +45,12 @@ public final class MusicLibrary {
 		return roots;
 	}
 
-	/** Folders first, then playlists and tracks, each sorted by name; hidden and unrelated files are skipped. */
+	/**
+	 * Folders first, then playlists and tracks, each sorted by name; hidden and unrelated files are skipped.
+	 *
+	 * @param folder the folder to list
+	 * @return the entries, sorted
+	 */
 	public static List<LibraryEntry> list(Path folder) throws IOException {
 		List<LibraryEntry> folders = new ArrayList<>();
 		List<LibraryEntry> files = new ArrayList<>();
@@ -63,17 +72,31 @@ public final class MusicLibrary {
 		return entries;
 	}
 
-	/** The drives and home folders of {@link #roots()} as folder nodes, for a folder tree. */
+	/**
+	 * The drives and home folders of {@link #roots()} as folder nodes, for a folder tree.
+	 *
+	 * @return the root nodes
+	 */
 	public static List<SourceNode> rootNodes() {
 		return roots().stream().map(SourceNode::of).toList();
 	}
 
-	/** The subfolders of {@code folder} as folder nodes sorted by name, for a folder tree. */
+	/**
+	 * The subfolders of {@code folder} as folder nodes sorted by name, for a folder tree.
+	 *
+	 * @param folder the folder to list
+	 * @return the subfolder nodes, sorted
+	 */
 	public static List<SourceNode> folderNodes(Path folder) throws IOException {
 		return list(folder).stream().filter(LibraryEntry::isBrowsable).map(SourceNode::of).toList();
 	}
 
-	/** The tracks an entry stands for: a track itself, a folder's direct tracks, or a playlist's existing tracks. */
+	/**
+	 * The tracks an entry stands for: a track itself, a folder's direct tracks, or a playlist's existing tracks.
+	 *
+	 * @param entry the library entry
+	 * @return the tracks
+	 */
 	public static List<Path> tracksOf(LibraryEntry entry) throws IOException {
 		return switch (entry.kind()) {
 			case TRACK -> List.of(entry.path());

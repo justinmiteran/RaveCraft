@@ -30,7 +30,11 @@ public final class SpeakerStates {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> STATES.clear());
 	}
 
-	/** Keeps {@code state}, the latest of its speaker. */
+	/**
+	 * Keeps {@code state}, the latest of its speaker.
+	 *
+	 * @param state the speaker's new state
+	 */
 	public static void put(SpeakerStatePayload state) {
 		STATES.put(state.speakerId(), new Received(state, Util.getMillis()));
 	}

@@ -66,7 +66,11 @@ public final class SpeakerWatchers {
 		DIRTY.addAll(WATCHERS.keySet());
 	}
 
-	/** Sends each changed speaker's state to its watchers. Called once per server tick. */
+	/**
+	 * Sends each changed speaker's state to its watchers. Called once per server tick.
+	 *
+	 * @param server the server
+	 */
 	public static void flush(MinecraftServer server) {
 		if (DIRTY.isEmpty()) {
 			return;

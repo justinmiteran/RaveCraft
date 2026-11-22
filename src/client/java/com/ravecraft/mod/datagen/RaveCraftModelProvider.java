@@ -25,7 +25,11 @@ import net.minecraft.world.item.ItemDisplayContext;
  * Blockbench ({@code art/models}), export the JSON to {@code assets/<modid>/models/block/} and reference it here.
  */
 public class RaveCraftModelProvider extends FabricModelProvider {
-	/** A provider writing to {@code output}. */
+	/**
+	 * A provider writing to {@code output}.
+	 *
+	 * @param output the pack the files go to
+	 */
 	public RaveCraftModelProvider(FabricPackOutput output) {
 		super(output);
 	}

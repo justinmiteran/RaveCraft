@@ -15,7 +15,12 @@ public final class StepTimer {
 	private double previousAverageMs = -1;
 	private long previousMaxNanos;
 
-	/** Records one step of {@code nanos}, closing the window once a second has passed. */
+	/**
+	 * Records one step of {@code nanos}, closing the window once a second has passed.
+	 *
+	 * @param nanos the step's duration, in nanoseconds
+	 * @param nowMs the current time, in milliseconds
+	 */
 	public void record(long nanos, long nowMs) {
 		if (windowStart == Long.MIN_VALUE) {
 			windowStart = nowMs;
@@ -32,7 +37,11 @@ public final class StepTimer {
 		maxNanos = Math.max(maxNanos, nanos);
 	}
 
-	/** The average step of the last finished window, or of the current one before any finished. */
+	/**
+	 * The average step of the last finished window, or of the current one before any finished.
+	 *
+	 * @return the average step, in milliseconds
+	 */
 	public double averageMs() {
 		if (previousAverageMs >= 0) {
 			return previousAverageMs;
@@ -40,7 +49,11 @@ public final class StepTimer {
 		return count == 0 ? 0 : totalNanos / NANOS_PER_MS / count;
 	}
 
-	/** The largest step of the last finished window and the current one. */
+	/**
+	 * The largest step of the last finished window and the current one.
+	 *
+	 * @return the largest step, in milliseconds
+	 */
 	public double maxMs() {
 		return Math.max(previousMaxNanos, maxNanos) / NANOS_PER_MS;
 	}

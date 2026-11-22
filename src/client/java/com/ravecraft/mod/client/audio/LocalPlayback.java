@@ -58,6 +58,9 @@ public final class LocalPlayback {
 	/**
 	 * Appends {@code tracks} (at most a full queue) to the queue of speaker {@code speakerId}. The tags are read off
 	 * the client thread; calls are enqueued in the order they were made even when their reads finish out of order.
+	 *
+	 * @param pos where the speaker stands
+	 * @param tracks the files to queue, in order
 	 */
 	public static void add(UUID speakerId, List<Path> tracks) {
 		if (tracks.isEmpty() || !ClientPlayNetworking.canSend(QueueAddPayload.TYPE)) {
@@ -152,7 +155,11 @@ public final class LocalPlayback {
 		cooldown = 0;
 	}
 
-	/** The server orders this player to stream one of its queued tracks (start), or to stop it. */
+	/**
+	 * The server orders this player to stream one of its queued tracks (start), or to stop it.
+	 *
+	 * @param order the server's order
+	 */
 	public static void onOrder(StreamOrderPayload order) {
 		int id = order.sessionId();
 		if (!order.start()) {

@@ -22,7 +22,13 @@ public final class TokenBucket {
 		this.lastNanos = nowNanos;
 	}
 
-	/** Takes {@code amount} tokens if available; otherwise takes nothing and returns false. */
+	/**
+	 * Takes {@code amount} tokens if available; otherwise takes nothing and returns false.
+	 *
+	 * @param amount the tokens to take
+	 * @param nowNanos the current time, in nanoseconds
+	 * @return true when the tokens were taken
+	 */
 	public boolean tryConsume(long amount, long nowNanos) {
 		if (nowNanos > lastNanos) {
 			tokens = Math.min(capacity, tokens + (nowNanos - lastNanos) * ratePerNano);

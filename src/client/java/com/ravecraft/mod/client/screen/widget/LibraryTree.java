@@ -61,7 +61,11 @@ public final class LibraryTree extends TreeList {
 		syncIndex();
 	}
 
-	/** Switches between the folder tree and the flat list. */
+	/**
+	 * Switches between the folder tree and the flat list.
+	 *
+	 * @param flat true for the flat list
+	 */
 	public void setFlat(boolean flat) {
 		if (flat != model.flat()) {
 			model.setFlat(flat);
@@ -90,13 +94,21 @@ public final class LibraryTree extends TreeList {
 		return current;
 	}
 
-	/** Filters the loaded rows by name; never reads the disk. */
+	/**
+	 * Filters the loaded rows by name; never reads the disk.
+	 *
+	 * @param filter the text the names must contain
+	 */
 	public void setFilter(String filter) {
 		model.setFilter(filter);
 		resetScroll();
 	}
 
-	/** True once the roots are known and there are none: the screen then offers to choose a folder. */
+	/**
+	 * True once the roots are known and there are none: the screen then offers to choose a folder.
+	 *
+	 * @return true when the library has no folder
+	 */
 	public boolean isEmptyLibrary() {
 		return model.isEmpty();
 	}

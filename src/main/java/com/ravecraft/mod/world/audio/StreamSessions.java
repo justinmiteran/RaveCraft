@@ -56,6 +56,11 @@ public final class StreamSessions {
 	/**
 	 * Ends session {@code id} at the request of its owner; requests from anyone else are ignored and return empty.
 	 * When the track {@code finished}, listeners play their buffered tail before stopping.
+	 *
+	 * @param id the session id
+	 * @param requester the player asking
+	 * @param finished true at the natural end
+	 * @return the ended session, or empty
 	 */
 	public static Optional<Session<UUID>> close(int id, ServerPlayer requester, boolean finished) {
 		Optional<Session<UUID>> session = TABLE.byId(id);

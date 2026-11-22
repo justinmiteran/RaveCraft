@@ -21,7 +21,13 @@ public final class TrackInfoLoad {
 	private TrackInfoLoad() {
 	}
 
-	/** Never throws: a deleted or unreadable file gives an empty info, so its name shows without details. */
+	/**
+	 * Never throws: a deleted or unreadable file gives an empty info, so its name shows without details.
+	 *
+	 * @param track the audio file
+	 * @param knownModified the modification time already cached
+	 * @return the info, or unchanged when the file did not change
+	 */
 	public static Result load(Path track, long knownModified) {
 		long modified;
 		try {

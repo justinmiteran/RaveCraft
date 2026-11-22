@@ -32,7 +32,13 @@ public final class OcclusionFilter {
 		this.minK = Math.tan(Math.PI * MIN_CUTOFF_HZ / sampleRate);
 	}
 
-	/** Filters the first {@code count} samples in place, gliding from the previous loss to {@code highLossDb}. */
+	/**
+	 * Filters the first {@code count} samples in place, gliding from the previous loss to {@code highLossDb}.
+	 *
+	 * @param samples the samples to filter
+	 * @param count how many samples to filter
+	 * @param highLossDb the treble loss to reach, in decibels
+	 */
 	public void process(float[] samples, int count, double highLossDb) {
 		double from = lossDb;
 		double to = Math.max(0, highLossDb);

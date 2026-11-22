@@ -18,7 +18,11 @@ public final class AcousticSettingsClient {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> settings = AcousticSettings.DEFAULT);
 	}
 
-	/** The settings in force. */
+	/**
+	 * The settings in force.
+	 *
+	 * @return the current acoustic settings
+	 */
 	public static AcousticSettings get() {
 		return settings;
 	}

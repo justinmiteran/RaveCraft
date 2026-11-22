@@ -27,7 +27,13 @@ public final class LossSmoother {
 		this.rampMs = Math.max(rampMs, MIN_RAMP_MS);
 	}
 
-	/** The smoothed loss after {@code dtMs} more milliseconds toward {@code target}. */
+	/**
+	 * The smoothed loss after {@code dtMs} more milliseconds toward {@code target}.
+	 *
+	 * @param target the loss to reach, in decibels
+	 * @param dtMs the time elapsed, in milliseconds
+	 * @return the smoothed loss, in decibels
+	 */
 	public double step(double target, double dtMs) {
 		if (Double.isNaN(target)) {
 			target = 0;

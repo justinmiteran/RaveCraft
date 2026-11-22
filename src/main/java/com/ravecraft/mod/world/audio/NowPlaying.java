@@ -24,22 +24,40 @@ public final class NowPlaying {
 		tell(owner, sessionId);
 	}
 
-	/** Tells {@code player} what session {@code sessionId} plays, unless they were already told. */
+	/**
+	 * Tells {@code player} what session {@code sessionId} plays, unless they were already told.
+	 *
+	 * @param player the player
+	 * @param sessionId the session
+	 */
 	public static void tell(ServerPlayer player, int sessionId) {
 		NOTICES.firstFor(sessionId, player.getUUID()).ifPresent(notice -> Net.send(player, notice));
 	}
 
-	/** The notice of session {@code sessionId}, while it plays. */
+	/**
+	 * The notice of session {@code sessionId}, while it plays.
+	 *
+	 * @param sessionId the session
+	 * @return the notice, or empty
+	 */
 	public static Optional<NowPlayingPayload> of(int sessionId) {
 		return NOTICES.get(sessionId);
 	}
 
-	/** {@code player} left: tell them again if they come back while the same sessions play. */
+	/**
+	 * {@code player} left: tell them again if they come back while the same sessions play.
+	 *
+	 * @param player the player who left
+	 */
 	public static void forget(UUID player) {
 		NOTICES.forget(player);
 	}
 
-	/** Session {@code sessionId} stopped: forgets its notice. */
+	/**
+	 * Session {@code sessionId} stopped: forgets its notice.
+	 *
+	 * @param sessionId the session
+	 */
 	public static void end(int sessionId) {
 		NOTICES.end(sessionId);
 	}

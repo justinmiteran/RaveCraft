@@ -35,7 +35,11 @@ public final class SoundViewEntries {
 	private SoundViewEntries() {
 	}
 
-	/** The F3 + U key. */
+	/**
+	 * The F3 + U key.
+	 *
+	 * @return the key mapping
+	 */
 	public static KeyMapping key() {
 		return KEY;
 	}
@@ -47,13 +51,21 @@ public final class SoundViewEntries {
 		KeyMappingHelper.registerKeyMapping(KEY);
 	}
 
-	/** The layers shown now. */
+	/**
+	 * The layers shown now.
+	 *
+	 * @return the current mode
+	 */
 	public static SoundViewMode mode() {
 		DebugScreenEntryList entries = Minecraft.getInstance().debugEntries;
 		return SoundViewMode.of(entries.isCurrentlyEnabled(PATHS), entries.isCurrentlyEnabled(ROOMS));
 	}
 
-	/** Moves to the next mode of the cycle and returns the message saying which one it is. */
+	/**
+	 * Moves to the next mode of the cycle and returns the message saying which one it is.
+	 *
+	 * @return the message naming the new mode
+	 */
 	public static Component cycle() {
 		SoundViewMode current = mode();
 		SoundViewMode next = current.next();

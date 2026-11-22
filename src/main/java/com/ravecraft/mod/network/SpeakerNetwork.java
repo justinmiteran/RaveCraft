@@ -96,12 +96,22 @@ public final class SpeakerNetwork {
 		});
 	}
 
-	/** Consumes one command token of {@code player}; false when over {@link #COMMANDS_PER_SECOND}. */
+	/**
+	 * Consumes one command token of {@code player}; false when over {@link #COMMANDS_PER_SECOND}.
+	 *
+	 * @param player the player
+	 * @return true when the command is allowed
+	 */
 	public static boolean allowCommand(ServerPlayer player) {
 		return consume(COMMAND_BUCKETS, player, COMMANDS_PER_SECOND);
 	}
 
-	/** Consumes one VOLUME token of {@code player}; false when over {@link #VOLUMES_PER_SECOND}. */
+	/**
+	 * Consumes one VOLUME token of {@code player}; false when over {@link #VOLUMES_PER_SECOND}.
+	 *
+	 * @param player the player
+	 * @return true when the change is allowed
+	 */
 	public static boolean allowVolume(ServerPlayer player) {
 		return consume(VOLUME_BUCKETS, player, VOLUMES_PER_SECOND);
 	}

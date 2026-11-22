@@ -68,6 +68,10 @@ public final class SpeakerPlayback {
 	/**
 	 * The owner's client opened the track of its session, which lasts {@code durationMs} (negative: unknown). Only
 	 * the player streaming the current session of a speaker is heard.
+	 *
+	 * @param player the owner
+	 * @param sessionId the session
+	 * @param durationMs the track's length, in milliseconds
 	 */
 	public static void onStreamStarted(ServerPlayer player, int sessionId, long durationMs) {
 		Optional<UUID> key = keyOf(sessionId);
@@ -85,7 +89,13 @@ public final class SpeakerPlayback {
 
 	// --- Session outcomes --------------------------------------------------------------------------------------
 
-	/** The owner closed its session: at the natural end ({@code finished}), or on a decoding failure. */
+	/**
+	 * The owner closed its session: at the natural end ({@code finished}), or on a decoding failure.
+	 *
+	 * @param player the owner
+	 * @param sessionId the session
+	 * @param finished true at the natural end
+	 */
 	public static void onStreamClose(ServerPlayer player, int sessionId, boolean finished) {
 		if (!finished) {
 			onStreamResult(player, sessionId);
@@ -103,7 +113,12 @@ public final class SpeakerPlayback {
 		SpeakerHosts.handle(player.level().getServer(), key.get()).ifPresent(speaker -> advance(speaker, true));
 	}
 
-	/** The owner cannot find or read the track of its session: drop it and tell them. */
+	/**
+	 * The owner cannot find or read the track of its session: drop it and tell them.
+	 *
+	 * @param player the owner
+	 * @param sessionId the session
+	 */
 	public static void onStreamResult(ServerPlayer player, int sessionId) {
 		Optional<UUID> key = keyOf(sessionId);
 		if (key.isEmpty() || StreamSessions.close(sessionId, player, false).isEmpty()) {
@@ -112,7 +127,11 @@ public final class SpeakerPlayback {
 		dropUnreadable(player.level().getServer(), key.get(), player);
 	}
 
-	/** An accepted chunk proves the owner is streaming. */
+	/**
+	 * An accepted chunk proves the owner is streaming.
+	 *
+	 * @param sessionId the session
+	 */
 	public static void onChunk(int sessionId) {
 		for (Playing playing : PLAYING.values()) {
 			if (playing.sessionId == sessionId) {
@@ -122,7 +141,11 @@ public final class SpeakerPlayback {
 		}
 	}
 
-	/** Treats sessions whose owner never sent anything as unreadable tracks. Iterates only the playing speakers. */
+	/**
+	 * Treats sessions whose owner never sent anything as unreadable tracks. Iterates only the playing speakers.
+	 *
+	 * @param server the server
+	 */
 	public static void tick(MinecraftServer server) {
 		int now = server.getTickCount();
 		List<UUID> silent = new ArrayList<>();
@@ -143,12 +166,21 @@ public final class SpeakerPlayback {
 
 	// --- Players and lifecycle ---------------------------------------------------------------------------------
 
-	/** A player joined: their entries are playable again, which watchers should see. Never resumes playback. */
+	/**
+	 * A player joined: their entries are playable again, which watchers should see. Never resumes playback.
+	 *
+	 * @param player the player who joined
+	 */
 	public static void onJoin(ServerPlayer player) {
 		SpeakerWatchers.markAllDirty();
 	}
 
-	/** A player left: their sessions end and those speakers move on to the next playable entry. */
+	/**
+	 * A player left: their sessions end and those speakers move on to the next playable entry.
+	 *
+	 * @param server the server
+	 * @param player the player who left
+	 */
 	public static void onDisconnect(MinecraftServer server, UUID player) {
 		for (Session<UUID> session : StreamSessions.endByOwner(server, player)) {
 			Playing playing = PLAYING.get(session.key());
@@ -206,7 +238,11 @@ public final class SpeakerPlayback {
 		}
 	}
 
-	/** The server is stopping: pause everything before the world is saved. */
+	/**
+	 * The server is stopping: pause everything before the world is saved.
+	 *
+	 * @param server the server
+	 */
 	public static void pauseAll(MinecraftServer server) {
 		for (UUID key : List.copyOf(PLAYING.keySet())) {
 			SpeakerHosts.handle(server, key).ifPresentOrElse(SpeakerPlayback::pause, () -> PLAYING.remove(key));

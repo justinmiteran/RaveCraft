@@ -13,12 +13,21 @@ public final class LocalFolderSource implements MusicSource {
 	private final Supplier<List<Path>> roots;
 	private final Supplier<List<Path>> excluded;
 
-	/** A source over the folders {@code roots} gives, excluding nothing. */
+	/**
+	 * A source over the folders {@code roots} gives, excluding nothing.
+	 *
+	 * @param roots gives the chosen folders
+	 */
 	public LocalFolderSource(Supplier<List<Path>> roots) {
 		this(roots, List::of);
 	}
 
-	/** {@code excluded}: folders hidden from the tree and the flat view, with everything under them. */
+	/**
+	 * {@code excluded}: folders hidden from the tree and the flat view, with everything under them.
+	 *
+	 * @param roots gives the chosen folders
+	 * @param excluded gives the excluded folders
+	 */
 	public LocalFolderSource(Supplier<List<Path>> roots, Supplier<List<Path>> excluded) {
 		this.roots = roots;
 		this.excluded = excluded;

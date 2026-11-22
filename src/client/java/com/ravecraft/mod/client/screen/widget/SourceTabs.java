@@ -30,7 +30,14 @@ public final class SourceTabs extends AbstractWidget {
 	private final List<MusicSource> sources;
 	private final int selected;
 
-	/** {@code windowLeft} is the window's left edge; the tabs sit just outside it, from {@code y} down. */
+	/**
+	 * {@code windowLeft} is the window's left edge; the tabs sit just outside it, from {@code y} down.
+	 *
+	 * @param windowLeft the window's left edge
+	 * @param y the first tab's top
+	 * @param sources one tab per source
+	 * @param selected the index of the selected source
+	 */
 	public SourceTabs(int windowLeft, int y, List<MusicSource> sources, int selected) {
 		super(windowLeft + JOIN - TAB_W, y, TAB_W, sources.size() * (TAB_H + GAP) - GAP,
 				Component.translatable(SpeakerSprites.KEY + "library"));

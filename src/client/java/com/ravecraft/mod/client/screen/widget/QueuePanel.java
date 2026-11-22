@@ -37,7 +37,11 @@ public final class QueuePanel extends RowList {
 		this.speakerId = speakerId;
 	}
 
-	/** Rebuilds the rows from a new state; the scroll position is kept while it still fits. */
+	/**
+	 * Rebuilds the rows from a new state; the scroll position is kept while it still fits.
+	 *
+	 * @param state the speaker's new state, or null
+	 */
 	public void show(@Nullable SpeakerStatePayload state) {
 		List<Row> built = new ArrayList<>();
 		if (state != null) {

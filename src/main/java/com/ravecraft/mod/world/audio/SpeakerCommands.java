@@ -53,6 +53,12 @@ public final class SpeakerCommands {
 	/**
 	 * Applies a player's command; {@code value} is the argument of SEEK (ms), VOLUME, POWER, REPEAT (mode ordinal),
 	 * SHUFFLE and MOVE (index among what is still to play), validated here. Ignored out of reach.
+	 *
+	 * @param player the player
+	 * @param pos where the speaker stands
+	 * @param command the command
+	 * @param entryId the entry it is about, or empty
+	 * @param value the command's value
 	 */
 	public static void command(ServerPlayer player, UUID speakerId, Command command, Optional<UUID> entryId,
 			long value) {

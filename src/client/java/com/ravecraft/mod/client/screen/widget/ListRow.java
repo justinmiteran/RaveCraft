@@ -19,35 +19,71 @@ public interface ListRow {
 	record Box(int left, int right, int y, int h) {
 	}
 
-	/** The items at the right end, from right to left. */
+	/**
+	 * The items at the right end, from right to left.
+	 *
+	 * @return the items, right to left
+	 */
 	default List<RowItem> items() {
 		return List.of();
 	}
 
-	/** True when the row lights up under the mouse. */
+	/**
+	 * True when the row lights up under the mouse.
+	 *
+	 * @return true when the row highlights
+	 */
 	default boolean highlights() {
 		return true;
 	}
 
-	/** Shown while the mouse is on the row but not on one of its items; empty for none. */
+	/**
+	 * Shown while the mouse is on the row but not on one of its items; empty for none.
+	 *
+	 * @return the tooltip lines
+	 */
 	default List<Component> tooltip() {
 		return List.of();
 	}
 
-	/** Draws the row between {@code left} and {@code end}, where its items begin. */
+	/**
+	 * Draws the row between {@code left} and {@code end}, where its items begin.
+	 *
+	 * @param graphics where to draw
+	 * @param font the font
+	 * @param left the row's left edge
+	 * @param end where the items begin
+	 * @param y the row's top
+	 */
 	void draw(GuiGraphicsExtractor graphics, Font font, int left, int end, int y);
 
-	/** True when the row can be dragged elsewhere in a list that reorders. */
+	/**
+	 * True when the row can be dragged elsewhere in a list that reorders.
+	 *
+	 * @return true when the row can be dragged
+	 */
 	default boolean draggable() {
 		return false;
 	}
 
-	/** True when {@code mouseX} is on one of the items laid from {@code right}. */
+	/**
+	 * True when {@code mouseX} is on one of the items laid from {@code right}.
+	 *
+	 * @param font the font
+	 * @param mouseX the mouse's x
+	 * @param right where the items start, on the right
+	 * @return true when the mouse is on an item
+	 */
 	default boolean onItem(Font font, double mouseX, int right) {
 		return itemAt(font, mouseX, right) != null;
 	}
 
-	/** A click on the row outside its items; true when it did something. */
+	/**
+	 * A click on the row outside its items; true when it did something.
+	 *
+	 * @param doubleClick true for a double click
+	 * @return true when the click did something
+	 */
 	default boolean click(boolean doubleClick) {
 		return false;
 	}
@@ -55,6 +91,12 @@ public interface ListRow {
 	/**
 	 * Draws the items from the right of {@code box} leftwards, then the rest of the row up to them. {@code hovered}: the mouse is
 	 * on this row, at {@code mouseX}; items drawn only on hover wait for it.
+	 *
+	 * @param graphics where to draw
+	 * @param font the font
+	 * @param box the row's bounds
+	 * @param hovered true when the mouse is on the row
+	 * @param mouseX the mouse's x
 	 */
 	default void render(GuiGraphicsExtractor graphics, Font font, Box box, boolean hovered, int mouseX) {
 		List<RowItem> items = items();
@@ -68,13 +110,28 @@ public interface ListRow {
 		draw(graphics, font, box.left(), xs[items.size()], box.y());
 	}
 
-	/** A click at {@code mouseX}: the item under it takes the click, or else the row; true when it did something. */
+	/**
+	 * A click at {@code mouseX}: the item under it takes the click, or else the row; true when it did something.
+	 *
+	 * @param font the font
+	 * @param mouseX the mouse's x
+	 * @param right where the items start, on the right
+	 * @param doubleClick true for a double click
+	 * @return true when the click did something
+	 */
 	default boolean clickAt(Font font, double mouseX, int right, boolean doubleClick) {
 		RowItem item = itemAt(font, mouseX, right);
 		return item != null ? item.click() : click(doubleClick);
 	}
 
-	/** The tooltip for the mouse at {@code mouseX}: the item's under it, or else the row's; empty for none. */
+	/**
+	 * The tooltip for the mouse at {@code mouseX}: the item's under it, or else the row's; empty for none.
+	 *
+	 * @param font the font
+	 * @param mouseX the mouse's x
+	 * @param right where the items start, on the right
+	 * @return the tooltip lines, empty for none
+	 */
 	default List<Component> tooltipAt(Font font, double mouseX, int right) {
 		RowItem item = itemAt(font, mouseX, right);
 		if (item == null) {

@@ -41,17 +41,30 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 	/** The name given to the item in an anvil, shown as the screen's title; null when unnamed. */
 	private @Nullable Component customName;
 
-	/** A speaker with fresh data, undyed and unnamed. */
+	/**
+	 * A speaker with fresh data, undyed and unnamed.
+	 *
+	 * @param pos where the block stands
+	 * @param state the block's state
+	 */
 	public PortableSpeakerBlockEntity(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.PORTABLE_SPEAKER, pos, state);
 	}
 
-	/** The speaker's id, settings and queue. */
+	/**
+	 * The speaker's id, settings and queue.
+	 *
+	 * @return the speaker's data
+	 */
 	public SpeakerData data() {
 		return data;
 	}
 
-	/** Replaces the speaker's data and marks the block entity changed. */
+	/**
+	 * Replaces the speaker's data and marks the block entity changed.
+	 *
+	 * @param data the new data
+	 */
 	public void setData(SpeakerData data) {
 		this.data = data;
 		setChanged();
@@ -60,6 +73,8 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 	/**
 	 * Sets the volume and sends it to everyone tracking the chunk: listeners read it from their own copy of the
 	 * block entity (gain and range). Unlike queue changes, which only go to the screen's watchers.
+	 *
+	 * @param volume the new volume
 	 */
 	public void setVolume(int volume) {
 		setData(data.withSettings(data.settings().withVolume(volume)));
@@ -68,22 +83,38 @@ public class PortableSpeakerBlockEntity extends BlockEntity {
 		}
 	}
 
-	/** The dye on the fabric, or null when undyed. */
+	/**
+	 * The dye on the fabric, or null when undyed.
+	 *
+	 * @return the dye, or null
+	 */
 	public @Nullable DyedItemColor dyedColor() {
 		return color;
 	}
 
-	/** RGB colour of the fabric, as tinted by the client. */
+	/**
+	 * RGB colour of the fabric, as tinted by the client.
+	 *
+	 * @return the fabric's RGB colour
+	 */
 	public int fabricColor() {
 		return color != null ? color.rgb() : PortableSpeakerBlock.DEFAULT_COLOR;
 	}
 
-	/** The name given in an anvil, or null when unnamed. */
+	/**
+	 * The name given in an anvil, or null when unnamed.
+	 *
+	 * @return the custom name, or null
+	 */
 	public @Nullable Component customName() {
 		return customName;
 	}
 
-	/** Dyes the fabric (null: undyed) and sends it to the clients tracking the chunk. */
+	/**
+	 * Dyes the fabric (null: undyed) and sends it to the clients tracking the chunk.
+	 *
+	 * @param color the new dye, or null to undye
+	 */
 	public void setDyedColor(@Nullable DyedItemColor color) {
 		this.color = color;
 		setChanged();

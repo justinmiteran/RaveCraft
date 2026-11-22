@@ -40,7 +40,12 @@ public final class ReceivedStreams {
 		});
 	}
 
-	/** Ends a session: after its buffered tail when {@code drain}, at once otherwise. */
+	/**
+	 * Ends a session: after its buffered tail when {@code drain}, at once otherwise.
+	 *
+	 * @param sessionId the session to end
+	 * @param drain true to play the buffered audio first
+	 */
 	public static void end(int sessionId, boolean drain) {
 		STREAMS.end(sessionId).ifPresent(stream -> {
 			if (drain) {

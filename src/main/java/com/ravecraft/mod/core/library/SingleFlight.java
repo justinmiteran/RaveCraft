@@ -18,6 +18,11 @@ public final class SingleFlight<T> {
 	/**
 	 * Starts {@code task} through {@code launcher} (for example on a new thread), or returns the pending future
 	 * when a task is still running. A task or launcher that throws completes the future with {@code onError}.
+	 *
+	 * @param task the work to run
+	 * @param onError turns a failure into a result
+	 * @param launcher starts the work
+	 * @return the future result
 	 */
 	public synchronized CompletableFuture<T> run(Supplier<T> task, Function<Throwable, T> onError,
 			Consumer<Runnable> launcher) {
@@ -48,7 +53,11 @@ public final class SingleFlight<T> {
 		future.complete(result);
 	}
 
-	/** True while a task runs. */
+	/**
+	 * True while a task runs.
+	 *
+	 * @return true while a task runs
+	 */
 	public boolean busy() {
 		return busy.get();
 	}

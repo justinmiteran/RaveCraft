@@ -39,7 +39,11 @@ public final class VolumeSlider extends AbstractWidget {
 		updateLabel();
 	}
 
-	/** The volume the server reports, shown unless the player has just moved the slider. */
+	/**
+	 * The volume the server reports, shown unless the player has just moved the slider.
+	 *
+	 * @param serverVolume the volume the server reports
+	 */
 	public void sync(int serverVolume) {
 		if (!dragging && Util.getMillis() >= localUntilMs && serverVolume != volume) {
 			volume = serverVolume;

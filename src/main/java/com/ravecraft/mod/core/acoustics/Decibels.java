@@ -15,22 +15,42 @@ public final class Decibels {
 	private Decibels() {
 	}
 
-	/** The amplitude ratio of {@code db} decibels. */
+	/**
+	 * The amplitude ratio of {@code db} decibels.
+	 *
+	 * @param db the level, in decibels
+	 * @return the amplitude ratio
+	 */
 	public static double toAmplitude(double db) {
 		return Math.pow(DECADE, db / AMPLITUDE_DB);
 	}
 
-	/** The decibels of an amplitude ratio; negative infinity for 0. */
+	/**
+	 * The decibels of an amplitude ratio; negative infinity for 0.
+	 *
+	 * @param ratio the amplitude ratio
+	 * @return the level, in decibels
+	 */
 	public static double fromAmplitude(double ratio) {
 		return AMPLITUDE_DB * Math.log10(ratio);
 	}
 
-	/** The power ratio of {@code db} decibels. */
+	/**
+	 * The power ratio of {@code db} decibels.
+	 *
+	 * @param db the level, in decibels
+	 * @return the power ratio
+	 */
 	public static double toPower(double db) {
 		return Math.pow(DECADE, db / POWER_DB);
 	}
 
-	/** The decibels of a power ratio; negative infinity for 0. */
+	/**
+	 * The decibels of a power ratio; negative infinity for 0.
+	 *
+	 * @param ratio the power ratio
+	 * @return the level, in decibels
+	 */
 	public static double fromPower(double ratio) {
 		return POWER_DB * Math.log10(ratio);
 	}

@@ -31,22 +31,38 @@ public final class PathCapture {
 	private int truncated;
 	private @Nullable PathLoss direct;
 
-	/** The voxels of the direct path that lost something, listener to source, at most {@value #MAX_STEPS}. */
+	/**
+	 * The voxels of the direct path that lost something, listener to source, at most {@value #MAX_STEPS}.
+	 *
+	 * @return the lossy voxels, listener to source
+	 */
 	public List<Step> steps() {
 		return Collections.unmodifiableList(steps);
 	}
 
-	/** How many steps were dropped past {@value #MAX_STEPS}. */
+	/**
+	 * How many steps were dropped past {@value #MAX_STEPS}.
+	 *
+	 * @return the number of steps dropped
+	 */
 	public int truncated() {
 		return truncated;
 	}
 
-	/** The detours summed with the direct path, best first. */
+	/**
+	 * The detours summed with the direct path, best first.
+	 *
+	 * @return the detours, best first
+	 */
 	public List<CapturedDetour> detours() {
 		return Collections.unmodifiableList(detours);
 	}
 
-	/** The direct path's loss, or null when it was not traced (occlusion disabled, budget out). */
+	/**
+	 * The direct path's loss, or null when it was not traced (occlusion disabled, budget out).
+	 *
+	 * @return the direct path's loss, or null
+	 */
 	public @Nullable PathLoss direct() {
 		return direct;
 	}

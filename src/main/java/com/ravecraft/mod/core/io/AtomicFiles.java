@@ -13,7 +13,11 @@ public final class AtomicFiles {
 	/** Writes the new content; may throw, the file is then left as it was. */
 	@FunctionalInterface
 	public interface Content {
-		/** Writes the whole content to {@code out}. */
+		/**
+		 * Writes the whole content to {@code out}.
+		 *
+		 * @param out where the content goes
+		 */
 		void write(Writer out) throws IOException;
 	}
 
@@ -23,6 +27,9 @@ public final class AtomicFiles {
 	/**
 	 * Writes {@code content} in UTF-8 to a temporary file next to {@code file}, then moves it over {@code file}
 	 * (atomically when the filesystem can). The temporary file is removed when anything fails.
+	 *
+	 * @param file the file to write
+	 * @param content writes the content
 	 */
 	public static void write(Path file, Content content) throws IOException {
 		Path dir = file.toAbsolutePath().getParent();
@@ -51,7 +58,12 @@ public final class AtomicFiles {
 		}
 	}
 
-	/** {@link #write(Path, Content)} with a whole string. */
+	/**
+	 * {@link #write(Path, Content)} with a whole string.
+	 *
+	 * @param file the file to write
+	 * @param text the content
+	 */
 	public static void write(Path file, String text) throws IOException {
 		write(file, out -> out.write(text));
 	}

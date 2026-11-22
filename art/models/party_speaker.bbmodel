@@ -125,13 +125,14 @@
 			"faces": {
 				"north": {
 					"uv": [
+						0,
 						2,
-						14,
-						14,
-						16
+						2,
+						14
 					],
 					"texture": 0,
-					"tint": 0
+					"tint": 0,
+					"rotation": 90
 				},
 				"east": {
 					"uv": [
@@ -1046,7 +1047,7 @@
 		{
 			"uuid": "eb1bd764-b4d4-4233-8ac8-61b39fcb9b85",
 			"name": "party_speaker_grille.png",
-			"source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCUlEQVR4nKWTvZWDMBCEhVIKIKAL6oA66IYYOiBXCeQUQE5ARkKM36fz3JNkcRd4A493tT+jHVGc53mbL8wuy2K2bfPOdV1mnucIh2GIfPL5D+LbpmnMuq6+Adh1XYRt20Y++RjonDNWh2FQTYVVVUVxDcO3/EzTFDFQMnEVEcenGQYex2EK59xNUlmW/k4q5jDHhPi+774JTa1oYyBBFafXIS4GYlrkGOgwXFyI/zJwfxRLBZ3bnDThInOqfKiwvoPcMX0HYbN0GH4xjuNNknaAVH3fR1vPqVDX9Q+D7j1JO6BYej+pEV73g4GS0kWGu8F+GaQqMBkGKtYzzn0LfgdP7+BJQg2TlC8nnFbJcEqNOAAAAABJRU5ErkJggg==",
+			"source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCUlEQVR4nKVSuRGEMAw0SinAfVAH5HRAN8TQAblKIKcAcgJnJMTcrOeWkT34klOAWNlar57qPM/b/WGyrqvb9z2C67rcsiyJH8cxwbiPf3hgaZrGbdsWCeC7rkt827YJxn0YvKo6YbINkpTee5/E+RiwkNEq4OV5np8kxIFBBoMPIbhqmqbYxL7vY01MxuGbEsSP44gkIBWrAMkIMjkvB3EqoFKxPbDySWYVkMQ+JvjkCkrJdgo8l7cp5EpykmQK/lsTDPLyPbBk+R5EBeFbE4N2dCC3ZMTFPVBVNwzDM+/SNIqbyJdAYmu2jYW3S5f0AIfAUGBl51OxPahU9Qao6/rZxF8jpAIq/gC3MT7qxswuAwAAAABJRU5ErkJggg==",
 			"path": "",
 			"width": 16,
 			"height": 16,

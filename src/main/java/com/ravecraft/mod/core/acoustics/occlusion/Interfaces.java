@@ -13,6 +13,11 @@ public final class Interfaces {
 	/**
 	 * Broadband loss when sound crosses from {@code a} to {@code b} (symmetric), scaled by {@code interfaceScale}:
 	 * 0 for equal impedances, {@link Double#POSITIVE_INFINITY} when nothing is transmitted.
+	 *
+	 * @param a the medium sound leaves
+	 * @param b the medium sound enters
+	 * @param interfaceScale the scale of interface losses
+	 * @return the loss, in decibels
 	 */
 	public static double lossDb(AcousticMedium a, AcousticMedium b, double interfaceScale) {
 		double z1 = a.impedance();
@@ -29,7 +34,13 @@ public final class Interfaces {
 		return loss <= 0 ? 0 : loss;
 	}
 
-	/** The extra treble loss of an interface, a fixed share of its broadband loss. */
+	/**
+	 * The extra treble loss of an interface, a fixed share of its broadband loss.
+	 *
+	 * @param lossDb the interface's broadband loss, in decibels
+	 * @param interfaceHighRatio the share added to the treble
+	 * @return the extra treble loss, in decibels
+	 */
 	public static double highLossDb(double lossDb, double interfaceHighRatio) {
 		return lossDb * interfaceHighRatio;
 	}

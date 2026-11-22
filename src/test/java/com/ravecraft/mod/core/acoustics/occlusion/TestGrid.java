@@ -75,35 +75,74 @@ public final class TestGrid implements AcousticGrid {
 		return this;
 	}
 
-	/** The box from (x0, y0, z0) to (x1, y1, z1), inclusive. */
+	/**
+	 * The box from (x0, y0, z0) to (x1, y1, z1), inclusive.
+	 *
+	 * @param x0 the first corner's x
+	 * @param y0 the first corner's y
+	 * @param z0 the first corner's z
+	 * @param x1 the second corner's x
+	 * @param y1 the second corner's y
+	 * @param z1 the second corner's z
+	 * @return the box
+	 */
 	public static Box box(int x0, int y0, int z0, int x1, int y1, int z1) {
 		return new Box(x0, y0, z0, x1, y1, z1);
 	}
 
-	/** Fills {@code box} with {@code medium}. */
+	/**
+	 * Fills {@code box} with {@code medium}.
+	 *
+	 * @param box the box
+	 * @param medium the fluid's medium
+	 * @return this grid
+	 */
 	public TestGrid fluidBox(Box box, AcousticMedium medium) {
 		boxes.add(new FluidBox(box, medium));
 		return this;
 	}
 
-	/** Fills the plane at {@code x} for y, z in [-8, 8]. */
+	/**
+	 * Fills the plane at {@code x} for y, z in [-8, 8].
+	 *
+	 * @param x the plane's x
+	 * @param material the wall's material
+	 * @return this grid
+	 */
 	public TestGrid wall(int x, AcousticMaterial material) {
 		return fill(box(x, -8, -8, x, 8, 8), material);
 	}
 
-	/** Fills {@code box} with full blocks of {@code material}. */
+	/**
+	 * Fills {@code box} with full blocks of {@code material}.
+	 *
+	 * @param box the box
+	 * @param material the blocks' material
+	 * @return this grid
+	 */
 	public TestGrid fill(Box box, AcousticMaterial material) {
 		box.forEach((x, y, z) -> solid(x, y, z, material));
 		return this;
 	}
 
-	/** Removes every solid in {@code box}. */
+	/**
+	 * Removes every solid in {@code box}.
+	 *
+	 * @param box the box
+	 * @return this grid
+	 */
 	public TestGrid clear(Box box) {
 		box.forEach((x, y, z) -> solids.remove(key(x, y, z)));
 		return this;
 	}
 
-	/** A one-block-thick shell of {@code material} around the open {@code box}. */
+	/**
+	 * A one-block-thick shell of {@code material} around the open {@code box}.
+	 *
+	 * @param box the open box
+	 * @param material the shell's material
+	 * @return this grid
+	 */
 	public TestGrid shell(Box box, AcousticMaterial material) {
 		return fill(box.grown(), material).clear(box);
 	}

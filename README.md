@@ -102,7 +102,7 @@ Un job séparé du build, qui lance `./gradlew codeQuality` : **Checkstyle** (`c
 | Imbrication (Checkstyle) | 2 niveaux de `if` et de boucles, pas de `try` dans un `try`, ≤ 3 `&&`/`\|\|` par condition, ≤ 6 paramètres, ≤ 4 `return`, ≤ 500 lignes par fichier |
 | Architecture | `core` n'importe ni Minecraft ni Fabric ; `src/main` n'importe jamais `net.minecraft.client` |
 | Appels interdits | `System.out`/`err`, `printStackTrace()`, `Thread.sleep` (sauf `StreamPacing`), `fromNamespaceAndPath(MOD_ID, …)` au lieu de `RaveCraft.id` |
-| Javadoc (Checkstyle) | chaque classe ; chaque méthode publique ou protégée ; les autres méthodes au-delà de 10 lignes. Première phrase terminée par un point, `@param`/`@return` cohérents et non vides. Tests et mixins dispensés |
+| Javadoc (Checkstyle) | chaque classe ; chaque méthode publique ou protégée ; les autres méthodes au-delà de 10 lignes. Première phrase terminée par un point. Sur une méthode publique, `@param` pour chaque paramètre (types `<T>` compris) et `@return` si elle renvoie quelque chose ; ailleurs, facultatifs mais cohérents et non vides. Tests et mixins dispensés |
 | Lisibilité | accolades obligatoires, pas de `catch` vide, pas de code inutilisé, pas de nombre magique dans `core`, nommage standard |
 
 Les exceptions de portée sont dans `config/checkstyle/suppressions.xml`. Aucune exception fichier par fichier : on corrige le code.

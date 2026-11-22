@@ -15,6 +15,10 @@ public final class SpaceSlots {
 	 * Returns a new array of length {@link #SLOTS} holding the loudest session ids with gain above
 	 * zero. An id present in {@code previous} and still selected keeps its index; the others fill the
 	 * free indexes in loudness order. Ties are broken by the smaller session id.
+	 *
+	 * @param outsideGains the gain of each session outside the listener's space
+	 * @param previous the last assignment
+	 * @return the session id of each slot, or null
 	 */
 	public static Integer[] assign(Map<Integer, Double> outsideGains, Integer[] previous) {
 		List<Integer> ranked = ranked(outsideGains);
@@ -58,7 +62,14 @@ public final class SpaceSlots {
 		return ids;
 	}
 
-	/** True when the occlusion is unknown or its loss is below the same-space threshold. */
+	/**
+	 * True when the occlusion is unknown or its loss is below the same-space threshold.
+	 *
+	 * @param occlusionKnown true once the speaker has been traced
+	 * @param occlusionLossDb the occlusion loss, in decibels
+	 * @param sameSpaceLossDb the threshold, in decibels
+	 * @return true when the speaker shares the listener's space
+	 */
 	public static boolean sameSpace(boolean occlusionKnown, double occlusionLossDb, double sameSpaceLossDb) {
 		return !occlusionKnown || occlusionLossDb < sameSpaceLossDb;
 	}
@@ -66,6 +77,12 @@ public final class SpaceSlots {
 	/**
 	 * Same-space test with a 1 dB hysteresis: a speaker already in the listener's space stays there until its loss
 	 * reaches {@code threshold + 1}, and joins only below {@code threshold - 1}. Unknown occlusion counts as same.
+	 *
+	 * @param occlusionKnown true once the speaker has been traced
+	 * @param occlusionLossDb the occlusion loss, in decibels
+	 * @param sameSpaceLossDb the threshold, in decibels
+	 * @param wasSame true when the speaker was in the listener's space
+	 * @return true when the speaker shares the listener's space
 	 */
 	public static boolean sameSpace(boolean occlusionKnown, double occlusionLossDb, double sameSpaceLossDb,
 			boolean wasSame) {

@@ -21,7 +21,16 @@ public final class VoxelWalk {
 	private boolean first;
 	private boolean last;
 
-	/** Starts a walk from (x0, y0, z0) to (x1, y1, z1), positioned on the voxel holding the start. */
+	/**
+	 * Starts a walk from (x0, y0, z0) to (x1, y1, z1), positioned on the voxel holding the start.
+	 *
+	 * @param x0 the start's x
+	 * @param y0 the start's y
+	 * @param z0 the start's z
+	 * @param x1 the end's x
+	 * @param y1 the end's y
+	 * @param z1 the end's z
+	 */
 	public void start(double x0, double y0, double z0, double x1, double y1, double z1) {
 		double[] from = {x0, y0, z0};
 		double[] delta = {x1 - x0, y1 - y0, z1 - z0};
@@ -86,47 +95,83 @@ public final class VoxelWalk {
 		}
 	}
 
-	/** The current voxel's x. */
+	/**
+	 * The current voxel's x.
+	 *
+	 * @return the voxel's x
+	 */
 	public int x() {
 		return cell[0];
 	}
 
-	/** The current voxel's y. */
+	/**
+	 * The current voxel's y.
+	 *
+	 * @return the voxel's y
+	 */
 	public int y() {
 		return cell[1];
 	}
 
-	/** The current voxel's z. */
+	/**
+	 * The current voxel's z.
+	 *
+	 * @return the voxel's z
+	 */
 	public int z() {
 		return cell[2];
 	}
 
-	/** The segment's length in blocks. */
+	/**
+	 * The segment's length in blocks.
+	 *
+	 * @return the length, in blocks
+	 */
 	public double length() {
 		return length;
 	}
 
-	/** The fraction of the segment where it enters the current voxel. */
+	/**
+	 * The fraction of the segment where it enters the current voxel.
+	 *
+	 * @return the entry fraction, 0 to 1
+	 */
 	public double enterT() {
 		return enterT;
 	}
 
-	/** The fraction of the segment where it leaves the current voxel (1 for the last one). */
+	/**
+	 * The fraction of the segment where it leaves the current voxel (1 for the last one).
+	 *
+	 * @return the exit fraction, 0 to 1
+	 */
 	public double exitT() {
 		return exitT;
 	}
 
-	/** The axis crossed to enter the current voxel ({@link VoxelSample#X}, {@code Y} or {@code Z}); the dominant axis for the first. */
+	/**
+	 * The axis crossed to enter the current voxel ({@link VoxelSample#X}, {@code Y} or {@code Z}); the dominant axis for the first.
+	 *
+	 * @return the entry axis
+	 */
 	public int entryAxis() {
 		return entryAxis;
 	}
 
-	/** Whether the current voxel holds the segment's start. */
+	/**
+	 * Whether the current voxel holds the segment's start.
+	 *
+	 * @return true for the first voxel
+	 */
 	public boolean first() {
 		return first;
 	}
 
-	/** Whether the current voxel holds the segment's end. */
+	/**
+	 * Whether the current voxel holds the segment's end.
+	 *
+	 * @return true for the last voxel
+	 */
 	public boolean last() {
 		return last;
 	}

@@ -39,7 +39,13 @@ public final class Chorus {
 		this.mixStep = MS_PER_SECOND / (GLIDE_MS * sampleRate);
 	}
 
-	/** Processes {@code count} samples in place; active when {@code fluid} is non-null and has its chorus on. */
+	/**
+	 * Processes {@code count} samples in place; active when {@code fluid} is non-null and has its chorus on.
+	 *
+	 * @param samples the samples to process
+	 * @param count how many samples to process
+	 * @param fluid the fluid's reverb, or null
+	 */
 	public void process(float[] samples, int count, @Nullable FluidReverb fluid) {
 		boolean active = fluid != null && fluid.chorus();
 		if (active) {

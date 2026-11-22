@@ -31,7 +31,14 @@ public final class ReceivedStreams {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> endAll());
 	}
 
-	/** A chunk of session {@code sessionId}, played by speaker {@code speakerId} (placed from its host). */
+	/**
+	 * A chunk of session {@code sessionId}, played by speaker {@code speakerId} (placed from its host).
+	 *
+	 * @param sessionId the session
+	 * @param speakerId the speaker
+	 * @param seq the chunk's sequence number
+	 * @param frames the chunk's encoded frames
+	 */
 	public static void offer(int sessionId, UUID speakerId, int seq, List<byte[]> frames) {
 		long now = Util.getMillis();
 		STREAMS.admit(sessionId, () -> new Stream(speakerId, new StreamPlayout(now))).ifPresent(stream -> {
@@ -40,7 +47,12 @@ public final class ReceivedStreams {
 		});
 	}
 
-	/** Ends a session: after its buffered tail when {@code drain}, at once otherwise. */
+	/**
+	 * Ends a session: after its buffered tail when {@code drain}, at once otherwise.
+	 *
+	 * @param sessionId the session to end
+	 * @param drain true to play the buffered audio first
+	 */
 	public static void end(int sessionId, boolean drain) {
 		STREAMS.end(sessionId).ifPresent(stream -> {
 			if (drain) {

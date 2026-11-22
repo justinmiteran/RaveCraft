@@ -110,7 +110,11 @@ public class AudioRelayGameTest {
 
 
 
-	/** Broken with no drop to take it over: the session ends once the id is lost for good. */
+	/**
+	 * Broken with no drop to take it over: the session ends once the id is lost for good.
+	 *
+	 * @param h the test helper
+	 */
 	@GameTest(maxTicks = 40)
 	public void breakingSpeakerEndsSession(GameTestHelper h) {
 		BlockPos pos = poweredSpeaker(h);

@@ -35,7 +35,11 @@ public final class ClientSpeakerHosts {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> clear());
 	}
 
-	/** Records where speaker {@code host.speakerId()} is, dropping the oldest notice beyond the cap. */
+	/**
+	 * Records where speaker {@code host.speakerId()} is, dropping the oldest notice beyond the cap.
+	 *
+	 * @param host the notice
+	 */
 	public static void put(SpeakerHostPayload host) {
 		HOSTS.remove(host.speakerId());
 		HOSTS.put(host.speakerId(), host);
@@ -46,7 +50,12 @@ public final class ClientSpeakerHosts {
 		}
 	}
 
-	/** The last notice received for speaker {@code speakerId}, if any. */
+	/**
+	 * The last notice received for speaker {@code speakerId}, if any.
+	 *
+	 * @param speakerId the speaker
+	 * @return the notice, or empty
+	 */
 	public static Optional<SpeakerHostPayload> get(UUID speakerId) {
 		return Optional.ofNullable(HOSTS.get(speakerId));
 	}
@@ -54,6 +63,10 @@ public final class ClientSpeakerHosts {
 	/**
 	 * Where speaker {@code speakerId} sounds from in {@code level}: its block centre, its carrier's eyes (in hand) or
 	 * chest, or its item entity. Null when unknown, in another dimension, or its entity is not loaded here.
+	 *
+	 * @param speakerId the speaker
+	 * @param level the client level, or null
+	 * @return the position, or null
 	 */
 	public static @Nullable Vec3 position(UUID speakerId, @Nullable ClientLevel level) {
 		SpeakerHostPayload host = HOSTS.get(speakerId);

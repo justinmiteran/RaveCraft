@@ -42,7 +42,11 @@ public final class ModBlocks {
 	private ModBlocks() {
 	}
 
-	/** Every speaker block, whatever its kind: the blocks the speaker block entity type covers. */
+	/**
+	 * Every speaker block, whatever its kind: the blocks the speaker block entity type covers.
+	 *
+	 * @return the speaker blocks
+	 */
 	public static Set<Block> speakers() {
 		return Set.of(PORTABLE_SPEAKER, PARTY_SPEAKER);
 	}

@@ -44,7 +44,12 @@ public final class LibraryIndexStore {
 	private LibraryIndexStore() {
 	}
 
-	/** The index to show for {@code source} now; loads the saved one and refreshes it when due. */
+	/**
+	 * The index to show for {@code source} now; loads the saved one and refreshes it when due.
+	 *
+	 * @param source the music source
+	 * @return the index of that source
+	 */
 	public static LibraryIndex open(MusicSource source) {
 		State state = state(source);
 		if (!state.loaded) {
@@ -60,7 +65,12 @@ public final class LibraryIndexStore {
 		return state.shown;
 	}
 
-	/** The index shown for {@code source}; it changes object when a walk completes. */
+	/**
+	 * The index shown for {@code source}; it changes object when a walk completes.
+	 *
+	 * @param source the music source
+	 * @return the index of that source
+	 */
 	public static LibraryIndex get(MusicSource source) {
 		return state(source).shown;
 	}
@@ -68,6 +78,10 @@ public final class LibraryIndexStore {
 	/**
 	 * The tracks under a folder (subfolders included) as the label shown beside it: {@code …} while the index has
 	 * not seen it yet, empty when the source's index was never opened.
+	 *
+	 * @param sourceId the source's id
+	 * @param folderId the folder's id
+	 * @return the label, or empty when there is none to show
 	 */
 	public static Optional<String> countLabel(String sourceId, String folderId) {
 		State state = STATES.get(sourceId);
@@ -78,7 +92,12 @@ public final class LibraryIndexStore {
 		return Optional.of(count == 0 && !state.shown.complete() ? "…" : Integer.toString(count));
 	}
 
-	/** True while the disk is being walked for {@code source}. */
+	/**
+	 * True while the disk is being walked for {@code source}.
+	 *
+	 * @param source the music source
+	 * @return true while a walk runs
+	 */
 	public static boolean refreshing(MusicSource source) {
 		State state = state(source);
 		return state.loading || state.scan != null;
@@ -87,6 +106,8 @@ public final class LibraryIndexStore {
 	/**
 	 * Walks the disk again, keeping the shown index until the walk is done. A walk already running for the same
 	 * scope goes on; one for an older scope is stopped. Folders no longer chosen disappear at once.
+	 *
+	 * @param source the music source to walk
 	 */
 	public static void refresh(MusicSource source) {
 		State state = state(source);

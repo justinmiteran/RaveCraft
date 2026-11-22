@@ -19,7 +19,14 @@ public final class SourceSelector {
 	private SourceSelector() {
 	}
 
-	/** The session ids that get a source, out of {@code gains} (linear, before player volumes). */
+	/**
+	 * The session ids that get a source, out of {@code gains} (linear, before player volumes).
+	 *
+	 * @param gains the gain of each session
+	 * @param active the sessions that already have a source
+	 * @param max how many sources there are
+	 * @return the selected session ids
+	 */
 	public static Set<Integer> select(Map<Integer, Double> gains, Set<Integer> active, int max) {
 		List<Map.Entry<Integer, Double>> scored = new ArrayList<>();
 		for (Map.Entry<Integer, Double> entry : gains.entrySet()) {

@@ -13,7 +13,11 @@ public enum SpeakerKind {
 		this.id = id;
 	}
 
-	/** The short name used in the settings file and in translation keys. */
+	/**
+	 * The short name used in the settings file and in translation keys.
+	 *
+	 * @return the short name
+	 */
 	public String id() {
 		return id;
 	}

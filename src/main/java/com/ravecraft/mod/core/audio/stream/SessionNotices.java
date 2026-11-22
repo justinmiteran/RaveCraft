@@ -17,13 +17,24 @@ public final class SessionNotices<T> {
 	/** Everyone told about each session since it first opened, across later notices: who to tell it ended. */
 	private final Map<Integer, Set<UUID>> reached = new HashMap<>();
 
-	/** Sets the notice of {@code sessionId}, forgetting who was told about a previous one. */
+	/**
+	 * Sets the notice of {@code sessionId}, forgetting who was told about a previous one.
+	 *
+	 * @param sessionId the session
+	 * @param notice what the session plays
+	 */
 	public void open(int sessionId, T notice) {
 		notices.put(sessionId, notice);
 		told.put(sessionId, new HashSet<>());
 	}
 
-	/** The notice the first time {@code player} asks about {@code sessionId}; empty afterwards or without one. */
+	/**
+	 * The notice the first time {@code player} asks about {@code sessionId}; empty afterwards or without one.
+	 *
+	 * @param sessionId the session
+	 * @param player the player asking
+	 * @return the notice, or empty
+	 */
 	public Optional<T> firstFor(int sessionId, UUID player) {
 		T notice = notices.get(sessionId);
 		if (notice == null || !told.get(sessionId).add(player)) {
@@ -33,17 +44,31 @@ public final class SessionNotices<T> {
 		return Optional.of(notice);
 	}
 
-	/** The notice of {@code sessionId}, if it is open. */
+	/**
+	 * The notice of {@code sessionId}, if it is open.
+	 *
+	 * @param sessionId the session
+	 * @return the notice, or empty
+	 */
 	public Optional<T> get(int sessionId) {
 		return Optional.ofNullable(notices.get(sessionId));
 	}
 
-	/** The players told about {@code sessionId} by any of its notices since it opened; a copy. */
+	/**
+	 * The players told about {@code sessionId} by any of its notices since it opened; a copy.
+	 *
+	 * @param sessionId the session
+	 * @return the players told
+	 */
 	public Set<UUID> reached(int sessionId) {
 		return Set.copyOf(reached.getOrDefault(sessionId, Set.of()));
 	}
 
-	/** Forgets that {@code player} was told about any session, so a rejoining player is told again. */
+	/**
+	 * Forgets that {@code player} was told about any session, so a rejoining player is told again.
+	 *
+	 * @param player the player
+	 */
 	public void forget(UUID player) {
 		for (Set<UUID> players : told.values()) {
 			players.remove(player);
@@ -53,7 +78,11 @@ public final class SessionNotices<T> {
 		}
 	}
 
-	/** Forgets {@code sessionId} and who was told about it. */
+	/**
+	 * Forgets {@code sessionId} and who was told about it.
+	 *
+	 * @param sessionId the session
+	 */
 	public void end(int sessionId) {
 		notices.remove(sessionId);
 		told.remove(sessionId);

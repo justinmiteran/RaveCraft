@@ -14,7 +14,14 @@ public final class AcousticDebug {
 	private AcousticDebug() {
 	}
 
-	/** The {@code shown} loudest audible speakers, after a summary line. */
+	/**
+	 * The {@code shown} loudest audible speakers, after a summary line.
+	 *
+	 * @param rows the audible speakers
+	 * @param maxSources how many speakers the player hears at once
+	 * @param shown how many speakers to list
+	 * @return the debug lines
+	 */
 	public static List<String> speakers(List<SpeakerRow> rows, int maxSources, int shown) {
 		if (rows.isEmpty()) {
 			return List.of("RaveCraft speakers: none audible");
@@ -31,7 +38,12 @@ public final class AcousticDebug {
 		return lines;
 	}
 
-	/** The listener's medium and losses, then which effects run. */
+	/**
+	 * The listener's medium and losses, then which effects run.
+	 *
+	 * @param r the listener's state
+	 * @return the debug lines
+	 */
 	public static List<String> listener(ListenerRow r) {
 		String head = "RaveCraft listener: head in " + r.medium();
 		if (r.lossDb() > 0 || r.highLossDb() > 0 || r.blur() > 0) {
@@ -46,7 +58,12 @@ public final class AcousticDebug {
 		return List.of(head, state);
 	}
 
-	/** A summary line, then one line per received stream. */
+	/**
+	 * A summary line, then one line per received stream.
+	 *
+	 * @param rows the received streams
+	 * @return the debug lines
+	 */
 	public static List<String> streams(List<StreamRow> rows) {
 		List<String> lines = new ArrayList<>();
 		lines.add("RaveCraft streams: " + (rows.isEmpty() ? "none" : String.valueOf(rows.size())));
@@ -61,7 +78,12 @@ public final class AcousticDebug {
 		return lines;
 	}
 
-	/** The tracing budgets used this tick, then the audio thread's step time. */
+	/**
+	 * The tracing budgets used this tick, then the audio thread's step time.
+	 *
+	 * @param r the tick's costs
+	 * @return the debug lines
+	 */
 	public static List<String> perf(PerfRow r) {
 		String budgets = format("RaveCraft perf: occlusion %d/%d voxels | reverb %d/%d voxels, %d probes running",
 				r.occlusionVoxels(), r.occlusionBudget(), r.reverbVoxels(), r.reverbBudget(), r.probesRunning());

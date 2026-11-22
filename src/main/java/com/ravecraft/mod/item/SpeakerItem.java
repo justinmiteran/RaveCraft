@@ -24,17 +24,31 @@ import org.jspecify.annotations.Nullable;
 
 /** A speaker as an item, of the kind of the block it places: places the block and keeps its data. */
 public class SpeakerItem extends BlockItem {
-	/** The item that places {@code block}. */
+	/**
+	 * The item that places {@code block}.
+	 *
+	 * @param block the block placed
+	 * @param properties the block's properties
+	 */
 	public SpeakerItem(Block block, Properties properties) {
 		super(block, properties);
 	}
 
-	/** The kind of speaker this item places, read from its block. */
+	/**
+	 * The kind of speaker this item places, read from its block.
+	 *
+	 * @return the speaker kind
+	 */
 	public SpeakerKind kind() {
 		return getBlock() instanceof SpeakerBlock block ? block.kind() : SpeakerKind.PORTABLE;
 	}
 
-	/** The kind of the speaker in {@code stack}; a portable one if the stack is somehow not a speaker. */
+	/**
+	 * The kind of the speaker in {@code stack}; a portable one if the stack is somehow not a speaker.
+	 *
+	 * @param stack the speaker item
+	 * @return the speaker kind
+	 */
 	public static SpeakerKind kindOf(ItemStack stack) {
 		return stack.getItem() instanceof SpeakerItem item ? item.kind() : SpeakerKind.PORTABLE;
 	}

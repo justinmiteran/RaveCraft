@@ -12,7 +12,11 @@ public class PartySpeakerBlock extends SpeakerBlock {
 	private static final VoxelShape SHAPE_NORTH_SOUTH = Block.box(1, 0, 2, 15, 16, 14);
 	private static final VoxelShape SHAPE_EAST_WEST = Block.box(2, 0, 1, 14, 16, 15);
 
-	/** A party speaker, unpowered and facing north by default. */
+	/**
+	 * A party speaker, unpowered and facing north by default.
+	 *
+	 * @param properties the block's properties
+	 */
 	public PartySpeakerBlock(BlockBehaviour.Properties properties) {
 		super(properties, SpeakerKind.PARTY, SHAPE_NORTH_SOUTH, SHAPE_EAST_WEST);
 	}

@@ -15,23 +15,41 @@ public enum SoundViewMode {
 		this.rooms = rooms;
 	}
 
-	/** The mode showing exactly the given layers. */
+	/**
+	 * The mode showing exactly the given layers.
+	 *
+	 * @param paths true to show the sound paths
+	 * @param rooms true to show the room probes
+	 * @return the matching mode
+	 */
 	public static SoundViewMode of(boolean paths, boolean rooms) {
 		return paths ? (rooms ? ALL : PATHS) : (rooms ? ROOMS : NONE);
 	}
 
-	/** The next mode of the cycle: none, paths, rooms, both, none. */
+	/**
+	 * The next mode of the cycle: none, paths, rooms, both, none.
+	 *
+	 * @return the next mode
+	 */
 	public SoundViewMode next() {
 		SoundViewMode[] all = values();
 		return all[(ordinal() + 1) % all.length];
 	}
 
-	/** Whether the sound paths (direct path, crossed blocks, detours) are shown. */
+	/**
+	 * Whether the sound paths (direct path, crossed blocks, detours) are shown.
+	 *
+	 * @return true when the paths are shown
+	 */
 	public boolean paths() {
 		return paths;
 	}
 
-	/** Whether the room probes (rays, room summary, echo) are shown. */
+	/**
+	 * Whether the room probes (rays, room summary, echo) are shown.
+	 *
+	 * @return true when the room probes are shown
+	 */
 	public boolean rooms() {
 		return rooms;
 	}

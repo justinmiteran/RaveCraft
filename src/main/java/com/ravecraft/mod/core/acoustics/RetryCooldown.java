@@ -14,12 +14,21 @@ public final class RetryCooldown {
 		this.cooldownMs = cooldownMs;
 	}
 
-	/** Whether the cooldown after the last failure is over. */
+	/**
+	 * Whether the cooldown after the last failure is over.
+	 *
+	 * @param nowMs the current time, in milliseconds
+	 * @return true when a new try may run
+	 */
 	public boolean canTry(long nowMs) {
 		return nowMs >= retryAtMs;
 	}
 
-	/** A try failed at {@code nowMs}: the next one waits for the cooldown. */
+	/**
+	 * A try failed at {@code nowMs}: the next one waits for the cooldown.
+	 *
+	 * @param nowMs the time of the failure, in milliseconds
+	 */
 	public void failed(long nowMs) {
 		retryAtMs = nowMs + cooldownMs;
 	}

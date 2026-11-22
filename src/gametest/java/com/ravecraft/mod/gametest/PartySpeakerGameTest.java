@@ -92,7 +92,11 @@ public class PartySpeakerGameTest {
 		h.succeed();
 	}
 
-	/** Vanilla ticks the chest slot as {@link EquipmentSlot#CHEST}: the wearer hosts the speaker, on its back. */
+	/**
+	 * Vanilla ticks the chest slot as {@link EquipmentSlot#CHEST}: the wearer hosts the speaker, on its back.
+	 *
+	 * @param h the test helper
+	 */
 	@GameTest(maxTicks = 40)
 	public void chestSlotMakesWearerHost(GameTestHelper h) {
 		ServerPlayer owner = SharedQueueGameTest.online(h, 2);
@@ -114,7 +118,11 @@ public class PartySpeakerGameTest {
 				.thenSucceed();
 	}
 
-	/** Sneaking and using the party speaker in the air puts it on the back; a plain use opens its screen instead. */
+	/**
+	 * Sneaking and using the party speaker in the air puts it on the back; a plain use opens its screen instead.
+	 *
+	 * @param h the test helper
+	 */
 	@GameTest
 	public void sneakUseWearsIt(GameTestHelper h) {
 		ServerPlayer owner = SharedQueueGameTest.online(h, 2);
@@ -127,7 +135,11 @@ public class PartySpeakerGameTest {
 		h.succeed();
 	}
 
-	/** An accessory mod whose API changed fails at its first lookup: the finder is dropped, the chest slot remains. */
+	/**
+	 * An accessory mod whose API changed fails at its first lookup: the finder is dropped, the chest slot remains.
+	 *
+	 * @param h the test helper
+	 */
 	@GameTest
 	public void brokenBackFinderIsDropped(GameTestHelper h) {
 		ServerPlayer owner = SharedQueueGameTest.online(h, 2);

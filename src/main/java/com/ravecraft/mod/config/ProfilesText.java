@@ -43,9 +43,9 @@ final class ProfilesText {
 				    }
 				  },
 
-				""".formatted(AcousticSettingsJson.n(p.powerWatts()), AcousticSettingsJson.n(p.sensitivityDb()),
-				AcousticSettingsJson.n(p.bassCutDb()), AcousticSettingsJson.n(p.bassCutHz()),
-				AcousticSettingsJson.n(q.powerWatts()), AcousticSettingsJson.n(q.sensitivityDb()),
-				AcousticSettingsJson.n(q.bassCutDb()), AcousticSettingsJson.n(q.bassCutHz()));
+				""".formatted(AcousticSettingsWriter.n(p.powerWatts()), AcousticSettingsWriter.n(p.sensitivityDb()),
+				AcousticSettingsWriter.n(p.bassCutDb()), AcousticSettingsWriter.n(p.bassCutHz()),
+				AcousticSettingsWriter.n(q.powerWatts()), AcousticSettingsWriter.n(q.sensitivityDb()),
+				AcousticSettingsWriter.n(q.bassCutDb()), AcousticSettingsWriter.n(q.bassCutHz()));
 	}
 }

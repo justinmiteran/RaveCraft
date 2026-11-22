@@ -28,6 +28,9 @@ public final class TrackInfos {
 	/**
 	 * Client thread only. Empty while the info is still loading. A load starts only once the same track has been asked
 	 * for continuously for {@link HoverDwell#DELAY_MS}; cached info is returned at once.
+	 *
+	 * @param track the audio file
+	 * @return the track's info, or empty while it loads
 	 */
 	public static Optional<TrackInfo> get(Path track) {
 		String key = track.toString();
@@ -49,12 +52,22 @@ public final class TrackInfos {
 		return lookup.info();
 	}
 
-	/** Client thread only. The cached info of {@code track}, if any; never starts a load. */
+	/**
+	 * Client thread only. The cached info of {@code track}, if any; never starts a load.
+	 *
+	 * @param track the audio file
+	 * @return the cached info, or empty
+	 */
 	public static Optional<TrackInfo> cached(Path track) {
 		return CACHE.peek(track.toString());
 	}
 
-	/** Any thread. Reads the file directly, bypassing the cache. */
+	/**
+	 * Any thread. Reads the file directly, bypassing the cache.
+	 *
+	 * @param track the audio file
+	 * @return the info read from the file
+	 */
 	public static TrackInfo readNow(Path track) {
 		return TrackInfoReader.read(track);
 	}

@@ -20,7 +20,16 @@ public final class IconButton extends AbstractButton {
 	private Component label;
 	private boolean copper;
 
-	/** A square button of side {@code size} showing {@code icon}, {@code label} as its tooltip. */
+	/**
+	 * A square button of side {@code size} showing {@code icon}, {@code label} as its tooltip.
+	 *
+	 * @param x the button's left edge
+	 * @param y the button's top
+	 * @param size the button's side
+	 * @param icon the icon's sprite
+	 * @param label the tooltip and narration
+	 * @param onPress runs on a click
+	 */
 	public IconButton(int x, int y, int size, Identifier icon, Component label, Runnable onPress) {
 		super(x, y, size, size, label);
 		this.onPress = onPress;
@@ -29,13 +38,22 @@ public final class IconButton extends AbstractButton {
 		setTooltip(Tooltip.create(label));
 	}
 
-	/** Draws the button in copper. */
+	/**
+	 * Draws the button in copper.
+	 *
+	 * @return this button
+	 */
 	public IconButton copper() {
 		copper = true;
 		return this;
 	}
 
-	/** Changes the icon and the label; the tooltip is rebuilt only when the label changes. */
+	/**
+	 * Changes the icon and the label; the tooltip is rebuilt only when the label changes.
+	 *
+	 * @param icon the new icon's sprite
+	 * @param label the new label
+	 */
 	public void show(Identifier icon, Component label) {
 		this.icon = icon;
 		if (!label.equals(this.label)) {

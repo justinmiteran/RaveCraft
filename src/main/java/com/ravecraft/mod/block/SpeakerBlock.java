@@ -66,7 +66,11 @@ public abstract class SpeakerBlock extends BaseEntityBlock implements SimpleWate
 		registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(POWERED, false).setValue(WATERLOGGED, false));
 	}
 
-	/** The kind of speaker, which picks its acoustic profile. */
+	/**
+	 * The kind of speaker, which picks its acoustic profile.
+	 *
+	 * @return the speaker kind
+	 */
 	public SpeakerKind kind() {
 		return kind;
 	}

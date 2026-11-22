@@ -15,7 +15,13 @@ public final class SpeakerBackSlots {
 	/** Searches a player's accessory back slots for a stack. */
 	@FunctionalInterface
 	public interface Finder {
-		/** The first stack in the player's back slots that matches {@code filter}. */
+		/**
+		 * The first stack in the player's back slots that matches {@code filter}.
+		 *
+		 * @param player the player
+		 * @param filter true for the stack sought
+		 * @return the stack, or empty
+		 */
 		Optional<ItemStack> find(Player player, Predicate<ItemStack> filter);
 	}
 
@@ -24,7 +30,11 @@ public final class SpeakerBackSlots {
 	private SpeakerBackSlots() {
 	}
 
-	/** Installs the finder of the loaded accessory mod. */
+	/**
+	 * Installs the finder of the loaded accessory mod.
+	 *
+	 * @param newFinder the accessory mod's finder
+	 */
 	public static void set(Finder newFinder) {
 		finder = newFinder;
 	}
@@ -32,6 +42,10 @@ public final class SpeakerBackSlots {
 	/**
 	 * The first stack worn in an accessory back slot that matches {@code filter}; empty without an accessory mod. An
 	 * accessory mod whose API no longer links (an incompatible version) is dropped at its first failure, logged once.
+	 *
+	 * @param player the player
+	 * @param filter true for the stack sought
+	 * @return the stack, or empty
 	 */
 	public static Optional<ItemStack> find(Player player, Predicate<ItemStack> filter) {
 		Finder current = finder;

@@ -87,12 +87,22 @@ public final class SpeakerHosts {
 		});
 	}
 
-	/** The speaker {@code id} where it is now; empty when unknown, lost, or its host is not loaded. */
+	/**
+	 * The speaker {@code id} where it is now; empty when unknown, lost, or its host is not loaded.
+	 *
+	 * @param server the server
+	 * @param id the speaker's id
+	 * @return the speaker, or empty
+	 */
 	public static Optional<SpeakerHandle> handle(MinecraftServer server, UUID id) {
 		return TRACKER.host(id).flatMap(host -> SpeakerLookup.handle(server, host, id));
 	}
 
-	/** Registers a placed or loaded speaker block; a copy of an id already placed elsewhere gets a fresh id. */
+	/**
+	 * Registers a placed or loaded speaker block; a copy of an id already placed elsewhere gets a fresh id.
+	 *
+	 * @param speaker the speaker
+	 */
 	public static void placed(SpeakerBlockEntity speaker) {
 		if (!(speaker.getLevel() instanceof ServerLevel level)) {
 			return;
@@ -115,7 +125,11 @@ public final class SpeakerHosts {
 		arrived(level.getServer(), new BlockHandle(level, speaker.getBlockPos(), speaker), verdict);
 	}
 
-	/** The block was broken or its chunk unloaded: the id is lost, and expires unless it shows up again. */
+	/**
+	 * The block was broken or its chunk unloaded: the id is lost, and expires unless it shows up again.
+	 *
+	 * @param speaker the speaker
+	 */
 	public static void removed(SpeakerBlockEntity speaker) {
 		if (!(speaker.getLevel() instanceof ServerLevel level)) {
 			return;
@@ -128,6 +142,10 @@ public final class SpeakerHosts {
 	/**
 	 * {@code player} carries {@code stack} this tick, at {@code place}: in a hand, in its inventory or on its back.
 	 * Called every tick for each carried speaker; a fresh stack gets its identity here, a copy a new one.
+	 *
+	 * @param player the player
+	 * @param stack the speaker item
+	 * @param place where it is carried: in a hand, in the inventory or on the back
 	 */
 	public static void carried(ServerPlayer player, ItemStack stack, CarryPlace place) {
 		ServerLevel level = player.level();
@@ -156,7 +174,11 @@ public final class SpeakerHosts {
 		arrived(level.getServer(), new CarrierHandle(player, stack, place), verdict);
 	}
 
-	/** A speaker item entity was added to or loaded in a level. Items without a speaker identity are ignored. */
+	/**
+	 * A speaker item entity was added to or loaded in a level. Items without a speaker identity are ignored.
+	 *
+	 * @param item the item entity
+	 */
 	public static void dropped(ItemEntity item) {
 		if (item.level() instanceof ServerLevel level && placeDropped(level, item, false)) {
 			PENDING_DROPS.add(item);
@@ -185,7 +207,11 @@ public final class SpeakerHosts {
 		return false;
 	}
 
-	/** A speaker item entity left its level: picked up, unloaded with its chunk, despawned or destroyed. */
+	/**
+	 * A speaker item entity left its level: picked up, unloaded with its chunk, despawned or destroyed.
+	 *
+	 * @param item the item entity
+	 */
 	public static void droppedRemoved(ItemEntity item) {
 		PENDING_DROPS.remove(item);
 		UUID id = DROPPED_IDS.remove(item.getUUID());
@@ -205,7 +231,12 @@ public final class SpeakerHosts {
 		TRACKER.lose(id, host, level.getServer().getTickCount());
 	}
 
-	/** The speaker item burnt, exploded or was otherwise destroyed: its session ends for good. */
+	/**
+	 * The speaker item burnt, exploded or was otherwise destroyed: its session ends for good.
+	 *
+	 * @param server the server
+	 * @param id the speaker's id
+	 */
 	public static void destroyed(MinecraftServer server, UUID id) {
 		SpeakerPlayback.stopAt(server, id);
 		forgetId(id);
@@ -214,7 +245,11 @@ public final class SpeakerHosts {
 		SpeakerWatchers.markDirty(id);
 	}
 
-	/** {@code player} is leaving: the speakers it carries pause, their position written into its inventory. */
+	/**
+	 * {@code player} is leaving: the speakers it carries pause, their position written into its inventory.
+	 *
+	 * @param player the player
+	 */
 	public static void disconnected(ServerPlayer player) {
 		MinecraftServer server = player.level().getServer();
 		// Only on a disconnect: walks the tracked ids rather than keeping an index per player.
@@ -265,6 +300,8 @@ public final class SpeakerHosts {
 	 * for {@link HostTracker#LOST_AFTER_TICKS}. A carried speaker that went into a chest, or a drop taken by a
 	 * hopper, pauses and plays again once carried; a block or a drop unloaded with its chunk pauses; a drop that
 	 * despawned stops.
+	 *
+	 * @param server the server
 	 */
 	public static void tick(MinecraftServer server) {
 		retryDrops();
@@ -348,12 +385,22 @@ public final class SpeakerHosts {
 		CARRIED_AT.remove(id);
 	}
 
-	/** Whether {@code id} is known, hosted or in its grace after a loss; for tests and diagnostics. */
+	/**
+	 * Whether {@code id} is known, hosted or in its grace after a loss; for tests and diagnostics.
+	 *
+	 * @param id the speaker's id
+	 * @return true when the id is tracked
+	 */
 	public static boolean isTracked(UUID id) {
 		return TRACKER.contains(id);
 	}
 
-	/** The queue a lost playing speaker was paused at, until its id shows up again; for tests and diagnostics. */
+	/**
+	 * The queue a lost playing speaker was paused at, until its id shows up again; for tests and diagnostics.
+	 *
+	 * @param id the speaker's id
+	 * @return the paused queue, or empty
+	 */
 	public static Optional<SpeakerQueue> parkedQueue(UUID id) {
 		return Optional.ofNullable(PARKED.get(id)).map(Parked::queue);
 	}

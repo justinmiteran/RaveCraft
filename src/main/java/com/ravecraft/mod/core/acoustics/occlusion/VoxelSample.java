@@ -18,7 +18,12 @@ public final class VoxelSample {
 	public double fillZ;
 	public @Nullable AcousticMedium medium;
 
-	/** The fill seen by a ray crossing the voxel along {@code axis} (0 = X, 1 = Y, 2 = Z). */
+	/**
+	 * The fill seen by a ray crossing the voxel along {@code axis} (0 = X, 1 = Y, 2 = Z).
+	 *
+	 * @param axis the ray's axis: 0 = X, 1 = Y, 2 = Z
+	 * @return the fill along that axis
+	 */
 	public double fill(int axis) {
 		return switch (axis) {
 			case X -> fillX;

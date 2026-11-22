@@ -48,7 +48,12 @@ public class RaveCraft implements ModInitializer {
 		}
 	}
 
-	/** An identifier in the mod's namespace. */
+	/**
+	 * An identifier in the mod's namespace.
+	 *
+	 * @param path the identifier's path
+	 * @return the identifier
+	 */
 	public static Identifier id(String path) {
 		return Identifier.fromNamespaceAndPath(MOD_ID, path);
 	}

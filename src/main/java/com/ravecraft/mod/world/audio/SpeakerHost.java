@@ -10,7 +10,12 @@ import net.minecraft.world.level.Level;
 public sealed interface SpeakerHost {
 	/** A placed speaker block. */
 	record Block(ResourceKey<Level> dimension, BlockPos pos) implements SpeakerHost {
-		/** Keeps an immutable copy of the position. */
+		/**
+		 * Keeps an immutable copy of the position.
+		 *
+		 * @param dimension the block's dimension
+		 * @param pos the block's position
+		 */
 		public Block {
 			pos = pos.immutable();
 		}

@@ -44,7 +44,11 @@ public final class NowPlayingToasts {
 		});
 	}
 
-	/** Remembers what session {@code notice} plays, the latest notices only. */
+	/**
+	 * Remembers what session {@code notice} plays, the latest notices only.
+	 *
+	 * @param notice what a session now plays
+	 */
 	public static void onNotice(NowPlayingPayload notice) {
 		NOTICES.remove(notice.sessionId());
 		NOTICES.put(notice.sessionId(), notice);
@@ -53,7 +57,11 @@ public final class NowPlayingToasts {
 		}
 	}
 
-	/** Session {@code sessionId} ended: forgets its notice. */
+	/**
+	 * Session {@code sessionId} ended: forgets its notice.
+	 *
+	 * @param sessionId the session that ended
+	 */
 	public static void onSessionEnd(int sessionId) {
 		NOTICES.remove(sessionId);
 	}

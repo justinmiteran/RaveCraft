@@ -51,7 +51,12 @@ public final class BackSpeakerRenderer implements ArmorRenderer {
 		this.resolver = resolver;
 	}
 
-	/** A renderer drawing with {@code resolver}; also used for the Trinkets back slot. */
+	/**
+	 * A renderer drawing with {@code resolver}; also used for the Trinkets back slot.
+	 *
+	 * @param resolver resolves the speaker's block model
+	 * @return the renderer
+	 */
 	public static BackSpeakerRenderer create(BlockModelResolver resolver) {
 		return new BackSpeakerRenderer(resolver);
 	}
@@ -72,7 +77,16 @@ public final class BackSpeakerRenderer implements ArmorRenderer {
 		submitOnBack(poseStack, submitNodeCollector, stack, contextModel.body, light, humanoidRenderState.outlineColor);
 	}
 
-	/** Draws {@code stack} on the back of {@code body}, at the current pose of the wearer's model. */
+	/**
+	 * Draws {@code stack} on the back of {@code body}, at the current pose of the wearer's model.
+	 *
+	 * @param poseStack the pose to draw at
+	 * @param submitNodeCollector collects the draw calls
+	 * @param stack the speaker item
+	 * @param body the wearer's body part
+	 * @param light the packed light
+	 * @param outlineColor the outline colour, 0 for none
+	 */
 	public void submitOnBack(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, ItemStack stack, ModelPart body,
 			int light, int outlineColor) {
 		resolver.update(model, stateOf(stack), DISPLAY_CONTEXT);

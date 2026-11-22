@@ -84,7 +84,12 @@ public final class SpeakerScreen extends Screen {
 	/** The {@code Folders…} popup while it is open; it then gets all the input. */
 	private @Nullable FoldersPopup folders;
 
-	/** The screen of speaker {@code speakerId}, titled {@code title}. */
+	/**
+	 * The screen of speaker {@code speakerId}, titled {@code title}.
+	 *
+	 * @param speakerId the speaker
+	 * @param title the screen's title
+	 */
 	public SpeakerScreen(UUID speakerId, Component title) {
 		super(title);
 		this.speakerId = speakerId;
@@ -94,7 +99,11 @@ public final class SpeakerScreen extends Screen {
 		SpeakerStates.forget(speakerId);
 	}
 
-	/** The speaker this screen controls. */
+	/**
+	 * The speaker this screen controls.
+	 *
+	 * @return the speaker's id
+	 */
 	public UUID speakerId() {
 		return speakerId;
 	}
@@ -257,7 +266,11 @@ public final class SpeakerScreen extends Screen {
 		library.reload();
 	}
 
-	/** The library column (search field and tree), in screen coordinates. */
+	/**
+	 * The library column (search field and tree), in screen coordinates.
+	 *
+	 * @return the library column's area
+	 */
 	public ScreenRectangle libraryArea() {
 		Rect lib = layout.library();
 		return new ScreenRectangle(left + lib.x(), top + lib.y(), lib.w(), lib.h());

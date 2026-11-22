@@ -32,14 +32,26 @@ public final class VolumeSlider extends AbstractWidget {
 	private long lastSendMs;
 	private long localUntilMs;
 
-	/** The volume slider of speaker {@code speakerId}. */
+	/**
+	 * The volume slider of speaker {@code speakerId}.
+	 *
+	 * @param x the left edge
+	 * @param y the top
+	 * @param width the width
+	 * @param height the height
+	 * @param speakerId the speaker
+	 */
 	public VolumeSlider(int x, int y, int width, int height, UUID speakerId) {
 		super(x, y, width, height, Component.empty());
 		this.speakerId = speakerId;
 		updateLabel();
 	}
 
-	/** The volume the server reports, shown unless the player has just moved the slider. */
+	/**
+	 * The volume the server reports, shown unless the player has just moved the slider.
+	 *
+	 * @param serverVolume the volume the server reports
+	 */
 	public void sync(int serverVolume) {
 		if (!dragging && Util.getMillis() >= localUntilMs && serverVolume != volume) {
 			volume = serverVolume;

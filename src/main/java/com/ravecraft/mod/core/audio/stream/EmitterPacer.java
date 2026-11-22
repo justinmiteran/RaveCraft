@@ -16,6 +16,10 @@ public final class EmitterPacer {
 	/**
 	 * How long to wait before sending audio that would bring the total sent to {@code sentAudioMillis}, when
 	 * {@code elapsedMillis} of real time have passed since the stream started.
+	 *
+	 * @param elapsedMillis the real time since the start, in milliseconds
+	 * @param sentAudioMillis the audio sent after this send, in milliseconds
+	 * @return the wait, in milliseconds
 	 */
 	public long delayBeforeNextMillis(long elapsedMillis, long sentAudioMillis) {
 		return Math.max(0, sentAudioMillis - elapsedMillis - leadMillis);

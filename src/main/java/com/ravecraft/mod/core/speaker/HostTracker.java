@@ -34,7 +34,14 @@ public final class HostTracker<H> {
 
 	private final Map<UUID, Entry<H>> entries = new HashMap<>();
 
-	/** A host that stays until lost: placed block, item on the ground. */
+	/**
+	 * A host that stays until lost: placed block, item on the ground.
+	 *
+	 * @param id the speaker's id
+	 * @param host where the speaker is
+	 * @param tick the current tick
+	 * @return what the tracker made of it
+	 */
 	public Verdict place(UUID id, H host, long tick) {
 		Entry<H> e = entries.get(id);
 		if (e != null && e.host != null) {
@@ -51,7 +58,14 @@ public final class HostTracker<H> {
 		return Verdict.MOVED;
 	}
 
-	/** A host that must report every tick: a carrier. */
+	/**
+	 * A host that must report every tick: a carrier.
+	 *
+	 * @param id the speaker's id
+	 * @param host where the speaker is
+	 * @param tick the current tick
+	 * @return what the tracker made of it
+	 */
 	public Verdict report(UUID id, H host, long tick) {
 		Entry<H> e = entries.computeIfAbsent(id, k -> new Entry<>());
 		if (e.host != null) {
@@ -85,7 +99,13 @@ public final class HostTracker<H> {
 		return Verdict.SAME;
 	}
 
-	/** {@code host} no longer holds {@code id}; ignored unless it is the current host. Grace starts. */
+	/**
+	 * {@code host} no longer holds {@code id}; ignored unless it is the current host. Grace starts.
+	 *
+	 * @param id the speaker's id
+	 * @param host where the speaker is
+	 * @param tick the current tick
+	 */
 	public void lose(UUID id, H host, long tick) {
 		Entry<H> e = entries.get(id);
 		if (e != null && e.host != null && e.host.equals(host)) {
@@ -94,13 +114,23 @@ public final class HostTracker<H> {
 		}
 	}
 
-	/** Current host, empty while lost or unknown. */
+	/**
+	 * Current host, empty while lost or unknown.
+	 *
+	 * @param id the speaker's id
+	 * @return the host, or empty
+	 */
 	public Optional<H> host(UUID id) {
 		Entry<H> e = entries.get(id);
 		return e == null ? Optional.empty() : Optional.ofNullable(e.host);
 	}
 
-	/** Removes and returns what expired. */
+	/**
+	 * Removes and returns what expired.
+	 *
+	 * @param tick the current tick
+	 * @return the expired ids with their last host
+	 */
 	public List<Expired<H>> expire(long tick) {
 		List<Expired<H>> out = new ArrayList<>();
 		Iterator<Map.Entry<UUID, Entry<H>>> it = entries.entrySet().iterator();
@@ -117,12 +147,21 @@ public final class HostTracker<H> {
 		return out;
 	}
 
-	/** Whether {@code id} has an entry, hosted or within its grace after a loss. */
+	/**
+	 * Whether {@code id} has an entry, hosted or within its grace after a loss.
+	 *
+	 * @param id the speaker's id
+	 * @return true when the id is tracked
+	 */
 	public boolean contains(UUID id) {
 		return entries.containsKey(id);
 	}
 
-	/** Forgets {@code id} at once, with no grace. */
+	/**
+	 * Forgets {@code id} at once, with no grace.
+	 *
+	 * @param id the speaker's id
+	 */
 	public void forget(UUID id) {
 		entries.remove(id);
 	}

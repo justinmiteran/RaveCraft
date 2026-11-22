@@ -60,6 +60,11 @@ public final class AcousticRenderer {
 	/**
 	 * Client thread: starts rendering a stream. A no-op when this playout is already attached; a session that
 	 * restarts with a new playout replaces the old one.
+	 *
+	 * @param sessionId the stream's session
+	 * @param speakerId the speaker
+	 * @param playout the decoded audio to play
+	 * @param alive false once the stream must stop
 	 */
 	public static void attach(int sessionId, UUID speakerId, StreamPlayout playout, BooleanSupplier alive) {
 		STREAMS.compute(sessionId, (id, old) -> {
@@ -72,7 +77,11 @@ public final class AcousticRenderer {
 		});
 	}
 
-	/** Stops rendering session {@code sessionId}. */
+	/**
+	 * Stops rendering session {@code sessionId}.
+	 *
+	 * @param sessionId the session to stop
+	 */
 	public static void detach(int sessionId) {
 		STREAMS.remove(sessionId);
 	}
@@ -110,7 +119,11 @@ public final class AcousticRenderer {
 		paused = false;
 	}
 
-	/** The listener is now at {@code camera}. */
+	/**
+	 * The listener is now at {@code camera}.
+	 *
+	 * @param camera the camera position
+	 */
 	public static void onListenerMoved(Vec3 camera) {
 		listener = camera;
 	}
@@ -120,7 +133,11 @@ public final class AcousticRenderer {
 		return STREAMS.values();
 	}
 
-	/** Client thread: the gain each attached stream is heard at, by session id (0: silent or not traced yet). */
+	/**
+	 * Client thread: the gain each attached stream is heard at, by session id (0: silent or not traced yet).
+	 *
+	 * @return the heard gain of each session
+	 */
 	public static Map<Integer, Double> heard() {
 		Map<Integer, Double> gains = new HashMap<>();
 		for (RenderStream stream : STREAMS.values()) {

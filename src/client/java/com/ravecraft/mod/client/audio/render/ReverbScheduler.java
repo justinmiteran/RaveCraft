@@ -371,7 +371,11 @@ public final class ReverbScheduler {
 		return running;
 	}
 
-	/** The debug screen lines for the listener's space. Client thread only. */
+	/**
+	 * The debug screen lines for the listener's space. Client thread only.
+	 *
+	 * @return the lines about the listener's space
+	 */
 	public static List<String> debugLines() {
 		FluidReverb fluid = headFluid;
 		if (fluid == null) {

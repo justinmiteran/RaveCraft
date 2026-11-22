@@ -23,13 +23,25 @@ import net.minecraft.network.chat.Component;
 public final class FolderTree extends TreeList {
 	/** What the tree's items do. */
 	public interface Actions {
-		/** Removes the chosen folder {@code chosen}. */
+		/**
+		 * Removes the chosen folder {@code chosen}.
+		 *
+		 * @param chosen the chosen folder
+		 */
 		void remove(Path chosen);
 
-		/** Excludes {@code folder} from the library. */
+		/**
+		 * Excludes {@code folder} from the library.
+		 *
+		 * @param folder the folder to exclude
+		 */
 		void exclude(Path folder);
 
-		/** Shows the excluded {@code folder} again. */
+		/**
+		 * Shows the excluded {@code folder} again.
+		 *
+		 * @param folder the excluded folder
+		 */
 		void include(Path folder);
 	}
 
@@ -38,13 +50,23 @@ public final class FolderTree extends TreeList {
 	/** The chosen folders the roots are listed from. */
 	private volatile List<Path> roots = List.of();
 
-	/** An empty tree; {@code actions} does what its items ask. */
+	/**
+	 * An empty tree; {@code actions} does what its items ask.
+	 *
+	 * @param width the tree's width
+	 * @param height the tree's height
+	 * @param actions does what the items ask
+	 */
 	public FolderTree(int width, int height, Actions actions) {
 		super(0, 0, width, height, Component.translatable(SpeakerSprites.KEY + "folders.title"));
 		this.actions = actions;
 	}
 
-	/** Shows {@code folders}: the tree is reloaded when the chosen folders changed, kept as it is otherwise. */
+	/**
+	 * Shows {@code folders}: the tree is reloaded when the chosen folders changed, kept as it is otherwise.
+	 *
+	 * @param folders the chosen folders
+	 */
 	public void setFolders(LibraryFolders folders) {
 		boolean reload = model.generation() == 0 || !folders.paths().equals(this.folders.paths());
 		this.folders = folders;

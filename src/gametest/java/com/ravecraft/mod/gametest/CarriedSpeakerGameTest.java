@@ -180,7 +180,11 @@ public class CarriedSpeakerGameTest {
 				.thenSucceed();
 	}
 
-	/** Held on the mouse cursor, where vanilla never ticks it: still found, still playing. */
+	/**
+	 * Held on the mouse cursor, where vanilla never ticks it: still found, still playing.
+	 *
+	 * @param h the test helper
+	 */
 	@GameTest(maxTicks = 60)
 	public void cursorStackKeepsPlaying(GameTestHelper h) {
 		ServerPlayer owner = online(h, 2);
@@ -197,7 +201,11 @@ public class CarriedSpeakerGameTest {
 		});
 	}
 
-	/** A speaker paused in a chest must not start again on its own when its carrier comes back after leaving. */
+	/**
+	 * A speaker paused in a chest must not start again on its own when its carrier comes back after leaving.
+	 *
+	 * @param h the test helper
+	 */
 	@GameTest(maxTicks = 60)
 	public void disconnectCancelsParkedResume(GameTestHelper h) {
 		ServerPlayer owner = online(h, 2);
@@ -216,7 +224,11 @@ public class CarriedSpeakerGameTest {
 				.thenSucceed();
 	}
 
-	/** Stored out of reach: the screens open on it close. */
+	/**
+	 * Stored out of reach: the screens open on it close.
+	 *
+	 * @param h the test helper
+	 */
 	@GameTest(maxTicks = 60)
 	public void storedCarrierClosesScreens(GameTestHelper h) {
 		ServerPlayer owner = online(h, 2);
@@ -232,7 +244,11 @@ public class CarriedSpeakerGameTest {
 		});
 	}
 
-	/** Burnt on the ground: the screens open on it close. */
+	/**
+	 * Burnt on the ground: the screens open on it close.
+	 *
+	 * @param h the test helper
+	 */
 	@GameTest
 	public void destroyedClosesScreens(GameTestHelper h) {
 		ServerPlayer owner = online(h, 2);
@@ -254,7 +270,11 @@ public class CarriedSpeakerGameTest {
 				.thenSucceed();
 	}
 
-	/** Moving the speaker between hand and pocket on successive ticks is a move of the same speaker, not a copy. */
+	/**
+	 * Moving the speaker between hand and pocket on successive ticks is a move of the same speaker, not a copy.
+	 *
+	 * @param h the test helper
+	 */
 	@GameTest(maxTicks = 40)
 	public void hotbarScrollKeepsId(GameTestHelper h) {
 		ServerPlayer owner = online(h, 2);
@@ -275,7 +295,11 @@ public class CarriedSpeakerGameTest {
 				.thenSucceed();
 	}
 
-	/** A speaker in a plain inventory slot, ticked by the inventory itself, is carried in the inventory. */
+	/**
+	 * A speaker in a plain inventory slot, ticked by the inventory itself, is carried in the inventory.
+	 *
+	 * @param h the test helper
+	 */
 	@GameTest
 	public void inventoryIsInventoryPlace(GameTestHelper h) {
 		ServerPlayer owner = online(h, 2);
@@ -348,7 +372,11 @@ public class CarriedSpeakerGameTest {
 		h.succeed();
 	}
 
-	/** In its own batch: pausing everything would pause the speakers of concurrent tests. */
+	/**
+	 * In its own batch: pausing everything would pause the speakers of concurrent tests.
+	 *
+	 * @param h the test helper
+	 */
 	@GameTest(maxTicks = 80, environment = "ravecraft:isolated")
 	public void pauseAllWritesCarriedPosition(GameTestHelper h) {
 		ServerPlayer owner = online(h, 2);

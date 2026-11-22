@@ -47,7 +47,11 @@ public final class FlatScan {
 	private long lastFlush;
 	private volatile boolean cancelled;
 
-	/** A walk of {@code roots}, excluding nothing, up to {@link LibraryIndex#LIMIT}. */
+	/**
+	 * A walk of {@code roots}, excluding nothing, up to {@link LibraryIndex#LIMIT}.
+	 *
+	 * @param roots the folders to walk
+	 */
 	public FlatScan(List<Path> roots) {
 		this(roots, List.of(), LibraryIndex.LIMIT);
 	}
@@ -55,6 +59,10 @@ public final class FlatScan {
 	/**
 	 * {@code excluded}: folders not entered when met on the way, so nothing under them is walked either;
 	 * {@code limit}: the walk stops once it found this many tracks and playlists, however many folders that takes.
+	 *
+	 * @param roots the folders to walk
+	 * @param excluded the folders to skip
+	 * @param limit the most tracks to find
 	 */
 	public FlatScan(List<Path> roots, List<Path> excluded, int limit) {
 		this(roots, excluded, limit, MusicLibrary::list);
@@ -71,6 +79,10 @@ public final class FlatScan {
 	 * Walks until the limit is reached, nothing is left or the scan is cancelled. A batch goes to {@code sink} every
 	 * {@code batchSize} entries, after a folder when the last batch is 100 ms old, and at the end. Returns true when
 	 * it stopped at the limit with folders left to walk.
+	 *
+	 * @param sink receives each batch
+	 * @param batchSize the entries per batch
+	 * @return true when the walk reached the limit
 	 */
 	public boolean run(Consumer<List<SourceNode>> sink, int batchSize) {
 		batch.clear();

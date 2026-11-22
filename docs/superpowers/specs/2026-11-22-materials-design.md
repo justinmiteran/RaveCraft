@@ -4,12 +4,13 @@ Deuxième sous-projet ([SPEC](../../SPEC.md), sections 3.7, 4 et 10), après le 
 
 ## 1. Objectif
 
-Fabriquer son matériel comme un vrai équipement : extraire des matières, les transformer dans un petit atelier de machines spécialisées, puis assembler les composants en enceintes. La chaîne donne envie d'explorer (trois minerais) et de construire (quatre machines), et sert de base aux paliers suivants, qui ajouteront leurs propres composants.
+Fabriquer son matériel comme un vrai équipement : extraire des matières, les transformer dans un petit atelier de machines spécialisées, puis assembler les composants en enceintes. La chaîne donne envie d'explorer (deux minerais, une nouvelle roche et le quartz du Nether) et de construire (quatre machines), et sert de base aux paliers suivants, qui ajouteront leurs propres composants.
 
 ### Périmètre
 
 - ✅ Le système de fabrication et les matériaux des paliers 1 (*Nomade*) et 2 (*Maison / soirée*) seulement.
-- ✅ Surtout de la transformation de matériaux vanilla, plus des minerais propres au mod ; le néodyme et le silicium sont des objectifs d'exploration du palier 2.
+- ✅ Surtout de la transformation de matériaux vanilla, plus des minerais propres au mod ; le néodyme (sous terre) et le silicium (tiré du quartz du Nether) sont des objectifs d'exploration du palier 2.
+- ✅ Une nouvelle roche, le schiste, avec ses dérivés décoratifs comme le tuf ; le schiste bitumineux en est la variante riche en bitume.
 - ✅ Des machines spécialisées qui fonctionnent comme un four, plutôt qu'un établi en grille.
 - ✅ Du pétrole, traité comme un minerai solide (pas de fluides).
 - ✅ Les moules de l'extrudeuse sont des objets à fabriquer et à placer dans la machine.
@@ -22,7 +23,7 @@ Hors périmètre : les composants des paliers 3 à 5, les fluides (seaux, tuyaux
 
 - Dans un monde survie neuf, je fabrique l'enceinte portable puis l'enceinte de soirée à partir de zéro, en ne m'aidant que du livre de recettes.
 - Chaque recette (table de craft, four, machines) apparaît dans le livre dès que je ramasse **l'un** de ses ingrédients.
-- Je trouve le schiste bitumineux en surface sans guide ; le néodyme et le silicium demandent de descendre.
+- Je trouve le schiste et le schiste bitumineux près de la surface sans guide ; le néodyme demande de descendre dans l'ardoise des abîmes, le silicium d'aller chercher du quartz dans le Nether.
 - Je branche des entonnoirs sur une machine : elle tourne seule tant qu'elle a des entrées et de la redstone.
 
 ### Découpage
@@ -31,7 +32,7 @@ Une spec, quatre PR successives, chacune avec un build vert et testable seule :
 
 | PR | Branche | Contenu |
 |---|---|---|
-| 7a | `feat/materials-ores` | 3 minerais (4 blocs), génération, matières premières, recettes de fonte |
+| 7a | `feat/materials-ores` | 2 minerais, famille du schiste (13 blocs), génération, matières premières, recettes de fonte et de taille |
 | 7b | `feat/machine-core` | Base commune des machines (logique `core`, bloc, block entity, inventaire latéral, menu, écran, livre de recettes, type de recette), livrée avec la **bobineuse** |
 | 7c | `feat/machines` | Magnétiseur, graveur, extrudeuse, moules |
 | 7d | `feat/components-recipes` | Composants des paliers 1 et 2, assemblages à la table de craft, nouvelles recettes des enceintes, critères de déblocage, infobulles « Fabriqué dans », onglet créatif, mise à jour de `docs/SPEC.md` |
@@ -43,15 +44,18 @@ Chaque PR commence par ses propositions visuelles (3 à 4 rendus par modèle ou 
 | # | Décision | Écarté |
 |---|---|---|
 | D1 | Paliers 1 et 2 seulement | Tous les paliers d'un coup |
-| D2 | Transformation de vanilla + 3 minerais du mod | Vanilla seul ; minerais seuls |
+| D2 | Transformation de vanilla (dont le quartz du Nether) + 2 minerais et le schiste du mod | Vanilla seul ; minerais seuls |
 | D3 | Quatre machines spécialisées style four : bobineuse, magnétiseur, graveur, extrudeuse | Établi en grille 3×3 ; liste façon tailleur de pierre ; établi à gabarit ; un seul poste de soudure |
 | D4 | Chaque machine fait un seul geste (enrouler, aimanter, graver, mouler) ; l'assemblage se fait à la table de craft | Machines qui assemblent les haut-parleurs |
 | D5 | Énergie : poudre de redstone (8 opérations) ou bloc de redstone (72) dans un emplacement dédié | Charbon ; électricité |
 | D6 | Pétrole = schiste bitumineux, minerai solide qui donne du bitume | Fluides ; bioplastique d'algues |
 | D7 | Moules en objets, non consommés, sans usure, dans un emplacement inaccessible aux entonnoirs | Boutons de sélection dans l'écran |
 | D8 | Recettes des machines dans le livre vanilla, onglet par machine, état ouvert/filtré partagé avec le four (`RecipeBookType.FURNACE`) | Panneau de recettes maison ; mixin pour un nouveau `RecipeBookType` |
-| D9 | Silicium en minerai classique (pierre et ardoise) | Cristal posé sur les parois des grottes (gardé pour plus tard) |
+| D9 | Silicium tiré du quartz du Nether au haut fourneau (réaliste : le silicium industriel vient du quartz) | Minerai de silicium dans la pierre et l'ardoise ; cristal sur les parois des grottes |
 | D10 | Déblocage d'une recette par n'importe lequel de ses ingrédients | Déblocage par l'ingrédient le plus rare |
+| D11 | Schiste en roche à part entière (poches comme l'andésite) avec sa famille décorative comme le tuf ; le schiste bitumineux reprend sa texture avec des veines de bitume | Schiste bitumineux seul |
+| D12 | Textures du schiste bitumineux et du minerai de néodyme en plusieurs variantes tirées au hasard par bloc (blockstate `variants`), pour un rendu organique sans motif répété | Une texture unique ; rotation aléatoire |
+| D13 | Le fond d'ardoise du minerai de néodyme est la texture `deepslate.png` de Minecraft, copiée sans modification, comme les minerais vanilla (choix de l'utilisateur, exception à la règle « aucune texture Mojang », signalée dans `LICENSE-ASSETS.md`) | Superposition en jeu sur le modèle vanilla ; fond redessiné |
 
 ## 3. Contenu
 
@@ -61,8 +65,13 @@ Chaque PR commence par ses propositions visuelles (3 à 4 rendus par modèle ou 
 |---|---|---|
 | `oil_shale` | Schiste bitumineux / Oil Shale | minerai de bitume |
 | `deepslate_neodymium_ore` | Minerai de néodyme des abîmes / Deepslate Neodymium Ore | minerai de néodyme |
-| `silicon_ore` | Minerai de silicium / Silicon Ore | minerai de silicium |
-| `deepslate_silicon_ore` | Minerai de silicium des abîmes / Deepslate Silicon Ore | minerai de silicium |
+| `shale` | Schiste / Shale | roche |
+| `shale_stairs`, `shale_slab`, `shale_wall` | Escalier en schiste, Dalle de schiste, Muret de schiste / Shale Stairs, Shale Slab, Shale Wall | décoration |
+| `polished_shale` | Schiste poli / Polished Shale | décoration |
+| `polished_shale_stairs`, `polished_shale_slab`, `polished_shale_wall` | Escalier en schiste poli, Dalle de schiste poli, Muret de schiste poli / Polished Shale Stairs, Polished Shale Slab, Polished Shale Wall | décoration |
+| `shale_bricks` | Briques de schiste / Shale Bricks | décoration |
+| `shale_brick_stairs`, `shale_brick_slab`, `shale_brick_wall` | Escalier en briques de schiste, Dalle de briques de schiste, Muret de briques de schiste / Shale Brick Stairs, Shale Brick Slab, Shale Brick Wall | décoration |
+| `chiseled_shale` | Schiste sculpté / Chiseled Shale | décoration (onde sonore gravée) |
 | `coil_winder` | Bobineuse / Coil Winder | machine |
 | `magnetizer` | Magnétiseur / Magnetizer | machine |
 | `etcher` | Graveur / Etcher | machine |
@@ -75,7 +84,7 @@ Chaque PR commence par ses propositions visuelles (3 à 4 rendus par modèle ou 
 | Matières | `bitumen` | Bitume / Bitumen |
 | | `raw_neodymium` | Néodyme brut / Raw Neodymium |
 | | `neodymium_ingot` | Lingot de néodyme / Neodymium Ingot |
-| | `silicon_crystal` | Cristal de silicium / Silicon Crystal |
+| | `silicon` | Silicium / Silicon |
 | | `silicon_wafer` | Plaquette de silicium / Silicon Wafer |
 | Palier 1 | `copper_wire` | Fil de cuivre / Copper Wire |
 | | `voice_coil` | Bobine mobile / Voice Coil |
@@ -104,21 +113,23 @@ La plaque de plastique sert aux membranes (section 6.1) et sera la matière de b
 |---|---|---|---|---|---|---|
 | `oil_shale` | Y 20 à 80 (uniforme) | tous les biomes de l'Overworld ; un second placement dans `#c:is_desert` et `#minecraft:is_badlands` | 17 blocs × 12, + 17 × 8 | pioche en pierre | 1 à 3 `bitumen`, Fortune comme le charbon | 0 à 2 |
 | `deepslate_neodymium_ore` | Y −64 à −16 (triangle centré sur −40) | tous les biomes de l'Overworld | 6 blocs × 3, 50 % exposé à l'air retiré | pioche en fer | 1 `raw_neodymium`, Fortune comme le fer | 0 |
-| `silicon_ore` / `deepslate_silicon_ore` | Y −32 à 48 (triangle centré sur 8) | tous les biomes de l'Overworld | 8 blocs × 5 | pioche en fer | 1 à 2 `silicon_crystal`, Fortune comme le lapis | 1 à 3 |
+| `shale` | Y 0 à 80 (uniforme) | tous les biomes de l'Overworld | poches de 64 blocs × 2, comme l'andésite | pioche en bois | lui-même | — |
 
-- Le filon de silicium remplace la pierre par `silicon_ore` et l'ardoise des abîmes par `deepslate_silicon_ore` (règles `stone_ore_replaceables` / `deepslate_ore_replaceables`), comme les minerais vanilla.
+- Le filon de schiste bitumineux remplace la pierre (`stone_ore_replaceables`) et le schiste ; le néodyme remplace l'ardoise des abîmes (`deepslate_ore_replaceables`). Les poches de schiste remplacent la pierre (`base_stone_overworld`), comme l'andésite.
+- Le silicium n'a pas de minerai : il vient du quartz du Nether (section Fonte).
 - Le toucher de soie rend le bloc de minerai ; chaque bloc de minerai se fond (four et haut fourneau) en sa matière.
+- Le schiste et ses dérivés se comportent comme le tuf et ses dérivés : résistance 1,5 / 6, sons du tuf (`TUFF`, `POLISHED_TUFF`, `TUFF_BRICKS`), pioche requise, chaque bloc lâche lui-même (la dalle double lâche 2 dalles). Recettes de table de craft et de tailleur de pierre comme la famille du tuf : schiste → poli (2×2) → briques (2×2), 2 dalles de briques → schiste sculpté, escaliers, dalles et murets de chaque base ; au tailleur, chaque base donne ses dérivés et ceux qui suivent dans la chaîne.
 - Les minerais n'apparaissent que dans les chunks générés après l'installation ; les notes de version le diront.
 - Les features (`configured_feature`, `placed_feature`) sont écrites par le datagen ; elles sont ajoutées aux biomes par `BiomeModifications.addFeature` (étape `UNDERGROUND_ORES`).
-- Tags : `c:ores`, `c:ores/neodymium`, `c:ores/silicon`, `c:ores/oil_shale`, `c:ores_in_ground/stone`, `c:ores_in_ground/deepslate`, `mineable/pickaxe`, `needs_stone_tool` (schiste), `needs_iron_tool` (néodyme, silicium) ; `c:raw_materials/neodymium`, `c:ingots/neodymium`, `c:gems/silicon`.
+- Tags : `c:ores`, `c:ores/neodymium`, `c:ores/oil_shale`, `c:ores_in_ground/stone`, `c:ores_in_ground/deepslate`, `mineable/pickaxe` (tous les blocs), `needs_stone_tool` (schiste bitumineux), `needs_iron_tool` (néodyme), `stairs`, `slabs`, `walls` ; `c:raw_materials/neodymium`, `c:ingots/neodymium`, `c:silicon`.
 
 ### Fonte
 
 | Entrée | Sortie | Four | Haut fourneau | XP |
 |---|---|---|---|---|
 | `raw_neodymium`, `deepslate_neodymium_ore` | `neodymium_ingot` | 200 ticks | 100 ticks | 1,0 |
-| `silicon_crystal` | `silicon_wafer` | 200 ticks | — | 0,5 |
-| `silicon_ore`, `deepslate_silicon_ore` | `silicon_crystal` | 200 ticks | 100 ticks | 0,7 |
+| quartz du Nether | `silicon` | — | 100 ticks | 0,5 |
+| `silicon` | `silicon_wafer` | 200 ticks | — | 0,5 |
 | `oil_shale` | `bitumen` | 200 ticks | 100 ticks | 0,1 |
 
 ## 5. Machines
@@ -219,7 +230,7 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 
 ### 6.4 Onglet créatif et traductions
 
-- Onglet RaveCraft, dans l'ordre de la chaîne : minerais, matières, composants du palier 1, du palier 2, moules, machines, puis les enceintes (déjà présentes).
+- Onglet RaveCraft, dans l'ordre de la chaîne : minerais, famille du schiste, matières, composants du palier 1, du palier 2, moules, machines, puis les enceintes (déjà présentes).
 - Tous les noms et lignes en `en_us.json` et `fr_fr.json`.
 
 ## 7. Architecture du code
@@ -251,15 +262,24 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 - Extrudeuse sans moule : aucune opération.
 - Casser une machine lâche entrées, énergie, sortie et moule.
 - Chaque minerai lâche son butin à la pioche prévue, rien avec une pioche trop faible, et lui-même au toucher de soie.
-- Chaque feature de minerai est ajoutée aux biomes prévus (vérification du registre des biomes).
+- Chaque feature de minerai et de schiste est ajoutée aux biomes prévus (vérification du registre des biomes).
+- Chaque bloc de la famille du schiste lâche lui-même à la pioche ; ses recettes de table de craft et de tailleur de pierre existent.
+- Le quartz du Nether donne du silicium au haut fourneau seulement.
 - Les nouvelles recettes des deux enceintes existent et les anciennes non.
 
 **En jeu** : monde survie neuf, du minage du schiste à l'enceinte de soirée en suivant le livre ; entonnoirs ; écran et livre de chaque machine ; textures, modèles et animations.
 
 ## 9. Visuels
 
-- Propositions avant implémentation (3 à 4 rendus chacune) : 4 minerais, 4 machines (modèle Blockbench, face `_on` animée, fond d'écran), 23 objets.
-- Textures produites par `tools/textures/gen_textures.py`, palette commune `C` ; minerais dans le style des minerais vanilla (pierre ou ardoise + taches de la matière).
+- Propositions avant implémentation (3 à 4 rendus chacune) : minerais et famille du schiste, 4 machines (modèle Blockbench, face `_on` animée, fond d'écran), 23 objets.
+- Textures produites par `tools/textures/gen_textures.py`, palette commune `C`.
+- Choix de 7a (rendus dans `art/proposals/materials-ores/`, non versionnés) :
+  - schiste : gris-bleu, traits obliques organiques ;
+  - schiste bitumineux : 8 variantes, veine de bitume tressée qui traverse, s'arrête, commence ou se coupe, ancrée au bord à la même hauteur pour se raccorder d'un bloc à l'autre ;
+  - minerai de néodyme : 6 variantes, grains lilas (couleur des composés du néodyme) sur l'ardoise des abîmes vanilla (D13) ;
+  - schiste poli : dégradés façon blocs polis vanilla (7 teintes proches, lignes claires et sombres alternées, transitions douces), cadre ;
+  - briques de schiste : 8×4 en quinconce ; schiste sculpté : onde sonore gravée ;
+  - bitume : morceau noir brillant ; néodyme brut : morceau lilas ; lingot de néodyme : argent (le métal pur) ; silicium : morceau gris-bleu métallique ; plaquette de silicium : disque vu de biais, irisé, sans puces.
 - Modèles des machines dans `art/models`, exportés en JSON de bloc.
 
 ## 10. Mise à jour de la SPEC

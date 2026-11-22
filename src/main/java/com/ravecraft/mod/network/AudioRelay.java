@@ -85,6 +85,9 @@ public final class AudioRelay {
 	/**
 	 * How far {@code speaker} is relayed: its profile range at its current volume, plus a margin. 0 when it is
 	 * unpowered.
+	 *
+	 * @param speaker the speaker
+	 * @return the radius, in blocks
 	 */
 	public static double relayRadius(SpeakerHandle speaker) {
 		if (!speaker.powered()) {
@@ -94,7 +97,16 @@ public final class AudioRelay {
 		return Propagation.relayRadius(AcousticConfig.get(), AcousticConfig.get().portable(), volume);
 	}
 
-	/** The candidates in {@code level} within {@code radius} of {@code centre} (the speaker), owner excluded. */
+	/**
+	 * The candidates in {@code level} within {@code radius} of {@code centre} (the speaker), owner excluded.
+	 *
+	 * @param level the level
+	 * @param centre where the sound comes from
+	 * @param owner the player streaming
+	 * @param candidates the players to filter
+	 * @param radius the relay radius, in blocks
+	 * @return the players to relay to
+	 */
 	public static List<ServerPlayer> listeners(ServerLevel level, Vec3 centre, UUID owner, Collection<ServerPlayer> candidates,
 			double radius) {
 		if (radius <= 0) {

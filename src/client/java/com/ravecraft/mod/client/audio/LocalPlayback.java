@@ -59,7 +59,7 @@ public final class LocalPlayback {
 	 * Appends {@code tracks} (at most a full queue) to the queue of speaker {@code speakerId}. The tags are read off
 	 * the client thread; calls are enqueued in the order they were made even when their reads finish out of order.
 	 *
-	 * @param pos where the speaker stands
+	 * @param speakerId the speaker
 	 * @param tracks the files to queue, in order
 	 */
 	public static void add(UUID speakerId, List<Path> tracks) {

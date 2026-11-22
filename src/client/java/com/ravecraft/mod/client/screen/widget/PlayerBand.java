@@ -45,7 +45,15 @@ public final class PlayerBand extends AbstractWidget {
 	private boolean seeking;
 	private long seekMs;
 
-	/** The band of speaker {@code speakerId}. */
+	/**
+	 * The band of speaker {@code speakerId}.
+	 *
+	 * @param x the left edge
+	 * @param y the top
+	 * @param width the width
+	 * @param speakerId the speaker
+	 * @param fabricColour gives the fabric's RGB colour
+	 */
 	public PlayerBand(int x, int y, int width, UUID speakerId, IntSupplier fabricColour) {
 		super(x, y, width, HEIGHT, Component.empty());
 		this.speakerId = speakerId;

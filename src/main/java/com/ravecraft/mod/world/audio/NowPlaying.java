@@ -18,7 +18,14 @@ public final class NowPlaying {
 	private NowPlaying() {
 	}
 
-	/** Session {@code sessionId} starts streaming {@code entry}: remembers it and tells the owner. */
+	/**
+	 * Session {@code sessionId} starts streaming {@code entry}: remembers it and tells the owner.
+	 *
+	 * @param owner the player streaming
+	 * @param sessionId the session
+	 * @param speakerId the speaker
+	 * @param entry the entry played
+	 */
 	public static void start(ServerPlayer owner, int sessionId, UUID speakerId, QueueEntry entry) {
 		NOTICES.open(sessionId, NowPlayingPayload.of(sessionId, speakerId, entry));
 		tell(owner, sessionId);

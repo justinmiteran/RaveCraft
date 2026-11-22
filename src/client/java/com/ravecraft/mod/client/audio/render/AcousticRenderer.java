@@ -62,7 +62,7 @@ public final class AcousticRenderer {
 	 * restarts with a new playout replaces the old one.
 	 *
 	 * @param sessionId the stream's session
-	 * @param pos where the speaker stands
+	 * @param speakerId the speaker
 	 * @param playout the decoded audio to play
 	 * @param alive false once the stream must stop
 	 */

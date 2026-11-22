@@ -54,12 +54,21 @@ public final class SessionNotices<T> {
 		return Optional.ofNullable(notices.get(sessionId));
 	}
 
-	/** The players told about {@code sessionId} by any of its notices since it opened; a copy. */
+	/**
+	 * The players told about {@code sessionId} by any of its notices since it opened; a copy.
+	 *
+	 * @param sessionId the session
+	 * @return the players told
+	 */
 	public Set<UUID> reached(int sessionId) {
 		return Set.copyOf(reached.getOrDefault(sessionId, Set.of()));
 	}
 
-	/** Forgets that {@code player} was told about any session, so a rejoining player is told again. */
+	/**
+	 * Forgets that {@code player} was told about any session, so a rejoining player is told again.
+	 *
+	 * @param player the player
+	 */
 	public void forget(UUID player) {
 		for (Set<UUID> players : told.values()) {
 			players.remove(player);

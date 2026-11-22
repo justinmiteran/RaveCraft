@@ -6,8 +6,6 @@ import com.ravecraft.mod.core.queue.PlaybackClock;
 import com.ravecraft.mod.core.queue.QueueEntry;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.network.Net;
-import com.ravecraft.mod.network.payload.SpeakerStatePayload;
-import com.ravecraft.mod.network.payload.SpeakerStatePayload.StateEntry;
 import com.ravecraft.mod.network.payload.StreamOrderPayload;
 import com.ravecraft.mod.network.payload.TrackRemovedPayload;
 import java.util.ArrayList;
@@ -195,6 +193,9 @@ public final class SpeakerPlayback {
 	/**
 	 * Speaker {@code speakerId} is switched off: stop, remembering where the track was. Safe to call on a speaker that
 	 * is not playing, or that is not loaded (then only its session ends).
+	 *
+	 * @param server the server
+	 * @param speakerId the speaker
 	 */
 	public static void pauseAt(MinecraftServer server, UUID speakerId) {
 		SpeakerHosts.handle(server, speakerId).ifPresentOrElse(SpeakerPlayback::pause, () -> {
@@ -207,13 +208,20 @@ public final class SpeakerPlayback {
 	 * The speaker leaves the world with its holder (its carrier disconnects): stop, writing where the track was
 	 * where it lives, and forget what it played before. Takes a handle built directly: the registry may no longer
 	 * resolve a host that is leaving.
+	 *
+	 * @param speaker the speaker
 	 */
 	public static void pauseRemoved(SpeakerHandle speaker) {
 		pause(speaker);
 		HISTORY.remove(speaker.id());
 	}
 
-	/** Speaker {@code speakerId} is gone for good (destroyed, despawned): end its session and forget its history. */
+	/**
+	 * Speaker {@code speakerId} is gone for good (destroyed, despawned): end its session and forget its history.
+	 *
+	 * @param server the server
+	 * @param speakerId the speaker
+	 */
 	public static void stopAt(MinecraftServer server, UUID speakerId) {
 		PLAYING.remove(speakerId);
 		HISTORY.remove(speakerId);
@@ -223,6 +231,11 @@ public final class SpeakerPlayback {
 	/**
 	 * The host of speaker {@code speakerId} is out of reach (a chest, an unloaded chunk): end its session and return
 	 * {@code lastStored}, its last known queue, at the position the track is at now, for when it shows up again.
+	 *
+	 * @param server the server
+	 * @param speakerId the speaker
+	 * @param lastStored its last known queue
+	 * @return the queue at the position reached
 	 */
 	public static SpeakerQueue detach(MinecraftServer server, UUID speakerId, SpeakerQueue lastStored) {
 		SpeakerQueue live = liveQueue(speakerId, lastStored);
@@ -231,7 +244,11 @@ public final class SpeakerPlayback {
 		return live;
 	}
 
-	/** A speaker paused by losing its host is back: play from the stored position, when powered. */
+	/**
+	 * A speaker paused by losing its host is back: play from the stored position, when powered.
+	 *
+	 * @param speaker the speaker
+	 */
 	public static void resume(SpeakerHandle speaker) {
 		if (speaker.powered() && !isPlaying(speaker.id())) {
 			start(speaker, onlinePlayers(speaker, null));
@@ -254,7 +271,12 @@ public final class SpeakerPlayback {
 
 	// --- Reading -----------------------------------------------------------------------------------------------
 
-	/** Whether speaker {@code speakerId} plays a session now. */
+	/**
+	 * Whether speaker {@code speakerId} plays a session now.
+	 *
+	 * @param speakerId the speaker
+	 * @return true while it plays
+	 */
 	public static boolean isPlaying(UUID speakerId) {
 		return PLAYING.containsKey(speakerId);
 	}
@@ -262,6 +284,10 @@ public final class SpeakerPlayback {
 	/**
 	 * The {@code stored} queue of speaker {@code speakerId}, with the position estimated now while it plays: what
 	 * should be copied into a dropped item or a save.
+	 *
+	 * @param speakerId the speaker
+	 * @param stored the queue stored with the speaker
+	 * @return the queue
 	 */
 	public static SpeakerQueue liveQueue(UUID speakerId, SpeakerQueue stored) {
 		Playing playing = PLAYING.get(speakerId);
@@ -269,20 +295,6 @@ public final class SpeakerPlayback {
 			return stored;
 		}
 		return stored.withPosition(playing.clock.positionAt(Util.getMillis()));
-	}
-
-	/** What watchers of {@code speaker} see. */
-	public static SpeakerStatePayload stateOf(SpeakerHandle speaker) {
-		SpeakerQueue queue = liveQueue(speaker);
-		MinecraftServer server = speaker.level().getServer();
-		List<StateEntry> entries = new ArrayList<>();
-		for (QueueEntry entry : queue.displayOrder()) {
-			boolean online = server.getPlayerList().getPlayer(entry.owner()) != null;
-			entries.add(new StateEntry(entry.entryId(), entry.ownerName(), entry.title(), online, entry.durationMs()));
-		}
-		return new SpeakerStatePayload(speaker.id(), isPlaying(speaker.id()), queue.current(), queue.positionMs(), entries,
-				queue.repeat(), queue.shuffle(), speaker.data().settings().volume(), speaker.powered(),
-				queue.nextRoundIndex());
 	}
 
 	// --- Internals ---------------------------------------------------------------------------------------------

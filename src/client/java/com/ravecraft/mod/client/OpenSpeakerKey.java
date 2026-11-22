@@ -22,7 +22,11 @@ public final class OpenSpeakerKey {
 	private OpenSpeakerKey() {
 	}
 
-	/** The key mapping, to show its current binding. */
+	/**
+	 * The key mapping, to show its current binding.
+	 *
+	 * @return the key mapping
+	 */
 	public static KeyMapping key() {
 		return KEY;
 	}

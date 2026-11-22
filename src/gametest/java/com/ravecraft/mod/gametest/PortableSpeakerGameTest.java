@@ -198,7 +198,11 @@ public class PortableSpeakerGameTest {
 		h.succeed();
 	}
 
-	/** A plain use opens the screen (client side); it no longer toggles power. */
+	/**
+	 * A plain use opens the screen (client side); it no longer toggles power.
+	 *
+	 * @param h the test helper
+	 */
 	@GameTest
 	public void useInAirNoLongerTogglesPower(GameTestHelper h) {
 		Player player = h.makeMockPlayer(GameType.SURVIVAL);

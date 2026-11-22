@@ -27,7 +27,11 @@ public final class StreamSessions {
 	private StreamSessions() {
 	}
 
-	/** Read access for the relay and the tests. */
+	/**
+	 * Read access for the relay and the tests.
+	 *
+	 * @return the session table
+	 */
 	public static SessionTable<UUID> table() {
 		return TABLE;
 	}
@@ -35,6 +39,11 @@ public final class StreamSessions {
 	/**
 	 * Opens a session for {@code owner} to stream {@code entryId} into the powered speaker {@code handle}, cutting any
 	 * other stream there. Distance does not matter: the owner may be anywhere. Sends no order.
+	 *
+	 * @param handle the speaker
+	 * @param owner the player streaming
+	 * @param entryId the entry it is about, or empty
+	 * @return the new session, or empty
 	 */
 	public static Optional<Session<UUID>> open(SpeakerHandle handle, ServerPlayer owner, UUID entryId) {
 		if (!handle.powered()) {
@@ -46,7 +55,13 @@ public final class StreamSessions {
 		return Optional.of(session);
 	}
 
-	/** Ends the session of speaker {@code speakerId}, if any, cutting it at once everywhere. */
+	/**
+	 * Ends the session of speaker {@code speakerId}, if any, cutting it at once everywhere.
+	 *
+	 * @param server the server
+	 * @param speakerId the speaker
+	 * @return the ended session, or empty
+	 */
 	public static Optional<Session<UUID>> endAt(MinecraftServer server, UUID speakerId) {
 		Optional<Session<UUID>> ended = TABLE.endByKey(speakerId);
 		ended.ifPresent(s -> notifyEnded(server, s, true, false));
@@ -72,7 +87,13 @@ public final class StreamSessions {
 		return session;
 	}
 
-	/** Ends every session of a player who left, without telling them. */
+	/**
+	 * Ends every session of a player who left, without telling them.
+	 *
+	 * @param server the server
+	 * @param owner the player streaming
+	 * @return the ended sessions
+	 */
 	public static List<Session<UUID>> endByOwner(MinecraftServer server, UUID owner) {
 		List<Session<UUID>> ended = TABLE.endByOwner(owner);
 		ended.forEach(s -> notifyEnded(server, s, false, false));

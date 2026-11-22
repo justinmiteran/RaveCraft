@@ -27,6 +27,9 @@ public final class SpeakerHostNotices {
 	 * (Re)builds the host notice of speaker {@code speakerId} while it plays, and sends it to the players tracking it
 	 * and to the session owner. Called when the session starts and when the host, volume or power change; a no-op
 	 * when it does not play or its host is not reachable.
+	 *
+	 * @param server the server
+	 * @param speakerId the speaker
 	 */
 	public static void notice(MinecraftServer server, UUID speakerId) {
 		Optional<Session<UUID>> session = StreamSessions.table().byKey(speakerId);
@@ -46,14 +49,25 @@ public final class SpeakerHostNotices {
 		}
 	}
 
-	/** Sends the host of session {@code sessionId} to {@code player} unless already told; returns whether it sent. */
+	/**
+	 * Sends the host of session {@code sessionId} to {@code player} unless already told; returns whether it sent.
+	 *
+	 * @param player the player
+	 * @param sessionId the session
+	 * @return true when the notice was sent
+	 */
 	public static boolean tellHost(ServerPlayer player, int sessionId) {
 		Optional<SpeakerHostPayload> notice = NOTICES.firstFor(sessionId, player.getUUID());
 		notice.ifPresent(payload -> Net.send(player, payload));
 		return notice.isPresent();
 	}
 
-	/** The host notice of session {@code sessionId}, while it plays. */
+	/**
+	 * The host notice of session {@code sessionId}, while it plays.
+	 *
+	 * @param sessionId the session
+	 * @return the notice, or empty
+	 */
 	public static Optional<SpeakerHostPayload> noticeOf(int sessionId) {
 		return NOTICES.get(sessionId);
 	}
@@ -65,7 +79,11 @@ public final class SpeakerHostNotices {
 		return reached;
 	}
 
-	/** {@code player} left: tell them again if they come back while the same sessions play. */
+	/**
+	 * {@code player} left: tell them again if they come back while the same sessions play.
+	 *
+	 * @param player the player
+	 */
 	public static void forget(UUID player) {
 		NOTICES.forget(player);
 	}

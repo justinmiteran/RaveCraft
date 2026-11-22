@@ -1,11 +1,16 @@
 package com.ravecraft.mod.world.audio;
 
+import com.ravecraft.mod.core.queue.QueueEntry;
+import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.network.Net;
 import com.ravecraft.mod.network.payload.SpeakerClosedPayload;
+import com.ravecraft.mod.network.payload.SpeakerStatePayload.StateEntry;
 import com.ravecraft.mod.network.payload.SpeakerStatePayload;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -28,6 +33,10 @@ public final class SpeakerWatchers {
 	/**
 	 * {@code player} opened ({@code open}) or closed the screen of speaker {@code speakerId}; opening needs control of
 	 * it.
+	 *
+	 * @param player the player
+	 * @param speakerId the speaker
+	 * @param open true when the screen opened
 	 */
 	public static void watch(ServerPlayer player, UUID speakerId, boolean open) {
 		if (!open) {
@@ -43,19 +52,34 @@ public final class SpeakerWatchers {
 		}
 	}
 
-	/** Speaker {@code speakerId} changed: its watchers get its state at the next flush. */
+	/**
+	 * Speaker {@code speakerId} changed: its watchers get its state at the next flush.
+	 *
+	 * @param speakerId the speaker
+	 */
 	public static void markDirty(UUID speakerId) {
 		if (WATCHERS.containsKey(speakerId)) {
 			DIRTY.add(speakerId);
 		}
 	}
 
-	/** Whether speaker {@code speakerId} has a state waiting to be sent to its watchers. */
+	/**
+	 * Whether speaker {@code speakerId} has a state waiting to be sent to its watchers.
+	 *
+	 * @param speakerId the speaker
+	 * @return true when a state waits
+	 */
 	public static boolean isDirty(UUID speakerId) {
 		return DIRTY.contains(speakerId);
 	}
 
-	/** Whether {@code player} has the screen of speaker {@code speakerId} open; for tests and diagnostics. */
+	/**
+	 * Whether {@code player} has the screen of speaker {@code speakerId} open; for tests and diagnostics.
+	 *
+	 * @param speakerId the speaker
+	 * @param player the player
+	 * @return true when the screen is open
+	 */
 	public static boolean isWatching(UUID speakerId, UUID player) {
 		Set<UUID> watchers = WATCHERS.get(speakerId);
 		return watchers != null && watchers.contains(player);
@@ -81,7 +105,7 @@ public final class SpeakerWatchers {
 				continue;
 			}
 			Optional<SpeakerHandle> handle = SpeakerHosts.handle(server, id);
-			SpeakerStatePayload state = handle.map(SpeakerPlayback::stateOf).orElse(null);
+			SpeakerStatePayload state = handle.map(SpeakerWatchers::stateOf).orElse(null);
 			for (Iterator<UUID> it = watchers.iterator(); it.hasNext(); ) {
 				ServerPlayer player = server.getPlayerList().getPlayer(it.next());
 				if (player == null) {
@@ -100,7 +124,11 @@ public final class SpeakerWatchers {
 		DIRTY.clear();
 	}
 
-	/** {@code player} left: it watches nothing any more. */
+	/**
+	 * {@code player} left: it watches nothing any more.
+	 *
+	 * @param player the player
+	 */
 	public static void forget(UUID player) {
 		WATCHERS.values().forEach(set -> set.remove(player));
 		WATCHERS.values().removeIf(Set::isEmpty);
@@ -117,5 +145,24 @@ public final class SpeakerWatchers {
 		if (watchers != null && watchers.remove(player) && watchers.isEmpty()) {
 			WATCHERS.remove(speakerId);
 		}
+	}
+
+	/**
+	 * What watchers of {@code speaker} see.
+	 *
+	 * @param speaker the speaker
+	 * @return the state
+	 */
+	private static SpeakerStatePayload stateOf(SpeakerHandle speaker) {
+		SpeakerQueue queue = SpeakerPlayback.liveQueue(speaker.id(), SpeakerPlayback.queueOf(speaker));
+		MinecraftServer server = speaker.level().getServer();
+		List<StateEntry> entries = new ArrayList<>();
+		for (QueueEntry entry : queue.displayOrder()) {
+			boolean online = server.getPlayerList().getPlayer(entry.owner()) != null;
+			entries.add(new StateEntry(entry.entryId(), entry.ownerName(), entry.title(), online, entry.durationMs()));
+		}
+		return new SpeakerStatePayload(speaker.id(), SpeakerPlayback.isPlaying(speaker.id()), queue.current(), queue.positionMs(), entries,
+				queue.repeat(), queue.shuffle(), speaker.data().settings().volume(), speaker.powered(),
+				queue.nextRoundIndex());
 	}
 }

@@ -42,7 +42,7 @@ public final class ControlRow {
 	 * @param left the row's left edge
 	 * @param top the row's top
 	 * @param width the row's width
-	 * @param pos where the speaker stands
+	 * @param speakerId the speaker
 	 * @param add receives each control
 	 */
 	public ControlRow(int left, int top, int width, UUID speakerId, Consumer<AbstractWidget> add) {

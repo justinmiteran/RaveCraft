@@ -41,7 +41,16 @@ public final class LibraryTree extends TreeList {
 	private @org.jspecify.annotations.Nullable LibraryIndex index;
 	private int indexVersion;
 
-	/** The library of {@code source}, adding to the queue of speaker {@code speakerId}. */
+	/**
+	 * The library of {@code source}, adding to the queue of speaker {@code speakerId}.
+	 *
+	 * @param x the left edge
+	 * @param y the top
+	 * @param width the width
+	 * @param height the height
+	 * @param source the music source shown
+	 * @param speakerId the speaker
+	 */
 	public LibraryTree(int x, int y, int width, int height, MusicSource source, UUID speakerId) {
 		super(x, y, width, height, Component.translatable(SpeakerSprites.KEY + "library"));
 		this.source = source;

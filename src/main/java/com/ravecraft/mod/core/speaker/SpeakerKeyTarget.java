@@ -17,6 +17,10 @@ public final class SpeakerKeyTarget {
 	/**
 	 * The slot of the speaker to open: the selected hotbar slot, the offhand, then the hotbar and the main inventory in
 	 * order; empty without a speaker.
+	 *
+	 * @param selectedHotbar the selected hotbar slot
+	 * @param isSpeaker true for a slot holding a speaker
+	 * @return the slot, or empty
 	 */
 	public static OptionalInt choose(int selectedHotbar, IntPredicate isSpeaker) {
 		if (isSpeaker.test(selectedHotbar)) {

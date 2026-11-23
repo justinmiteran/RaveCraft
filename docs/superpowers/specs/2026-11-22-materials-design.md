@@ -284,6 +284,15 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
   - bitume : galet de goudron brillant ; néodyme brut : pépites lilas ; lingot de néodyme : forme du lingot vanilla, argent lilas clair ; silicium : morceau gris-bleu taillé ; plaquette de silicium : disque vu de biais, irisé, sans puces.
   - blocs de stockage, construits sur la structure des blocs de métal vanilla (cadre, reflets en diagonale) : néodyme brut en grosses pépites lilas éclairées en haut à gauche (R1) ; néodyme en bandes de lumière ondulées en diagonale, cadre de tons moyens et liseré clair en haut (O2) ; silicium en éclats de cristal superposés, chaque facette en dégradé par paliers, dans un cadre biseauté (B4).
 - Rendus finaux de 7a : `art/proposals/materials-ores/final/` et `summary_final_v2.png` (non versionnés).
+- Choix de 7c (rendus dans `art/proposals/`, non versionnés) :
+  - machines : même boîtier en acier brossé et même fenêtre que la bobineuse, une façade par machine : bobine de champ entre deux pôles pour le magnétiseur (M1), carte verte sous un laser rouge pour la graveuse (E1), buse chauffée au-dessus d'un bac de goudron pour l'extrudeuse (X2) ; faces `_on` animées (4 images) ;
+  - effets en marche : magnétiseur (bourdonnement de balise, étincelles), graveuse (cliquetis de sculk, poussière de redstone), extrudeuse (bulles de lave, fumée) ;
+  - écrans : disposition de la bobineuse avec 2, 3 et 1 entrées ; emplacement du moule à gauche de l'entrée de l'extrudeuse, icône vide grise du moule et de son empreinte ;
+  - aimants : disques vus de biais, ferrite gris sombre et néodyme lilas, à taches et reflets façon vanilla ;
+  - circuits : plaque verte (A), circuit simple avec pistes cuivre, puce noire à pattes ;
+  - plastique noir brillant : feuille (première version du rework), boîtier ouvert, membrane renforcée en cône ;
+  - moules : cadre gris clair avec l'empreinte du produit en creux (A r2) ;
+  - textures des objets gardées en grilles de pixels dans `tools/textures/machine_parts.py` (identiques aux propositions validées).
 - Modèles des machines dans `art/models`, exportés en JSON de bloc.
 
 ## 10. Mise à jour de la SPEC

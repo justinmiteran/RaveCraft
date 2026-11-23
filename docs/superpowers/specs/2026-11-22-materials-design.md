@@ -207,9 +207,9 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 | `extruder` | `IPI / IHI / III` (`P` piston, `H` haut fourneau) |
 | `blank_mold` | ` I  / IKI /  I ` (`K` boule d'argile) |
 | `sheet_mold` | sans forme : 1 moule vierge + 1 plaque de pression lourde |
-| `casing_mold` | sans forme : 1 moule vierge + 1 seau |
-| `membrane_mold` | sans forme : 1 moule vierge + 1 bol |
-| `board_mold` | sans forme : 1 moule vierge + 1 poudre de redstone |
+| `casing_mold` | sans forme : 1 moule vierge + 1 bloc de fer |
+| `membrane_mold` | sans forme : 1 moule vierge + 1 membrane |
+| `board_mold` | sans forme : 1 moule vierge + 1 feuille de plastique |
 | `membrane` ×2 | sans forme : 2 papiers + 1 plaque de plastique |
 | `speaker_driver` | ` M  / IVI /  G ` (`M` membrane, `V` bobine mobile, `G` aimant en fer) |
 | `woofer` | ` M  / IVI /  G ` (`M` membrane renforcée, `V` bobine mobile, `G` aimant en néodyme) |
@@ -299,7 +299,7 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
   - textures des objets gardées en grilles de pixels dans `tools/textures/machine_parts.py` (identiques aux propositions validées).
 - Choix de 7d (rendus dans `art/proposals/items7d/`, non versionnés) :
   - membrane : la grille de la membrane renforcée recolorée en papier (A) ; haut-parleur simple et haut-parleur de grave : saladier carré en acier à 4 vis, membrane en retrait, joint sombre (E) ; carte d'amplification : puce et condensateurs bleus sur la plaque de circuit (B) ; moule vierge : le cadre des moules autour d'une plaque d'acier lisse (A) ;
-  - recettes : membrane renforcée extrudée à partir de 2 feuilles de plastique (l'extrudeuse garde une seule entrée) ; enceinte portable avec un haut-parleur simple de chaque côté ; enceinte de soirée avec des boîtiers en plastique au lieu du cuivre ; magnétiseur M3 (néodyme et cuivre) ; extrudeuse au haut fourneau (X3) ; moules fabriqués à partir d'un moule vierge (C).
+  - recettes : membrane renforcée extrudée à partir de 2 feuilles de plastique (l'extrudeuse garde une seule entrée) ; enceinte portable avec un haut-parleur simple de chaque côté ; enceinte de soirée avec des boîtiers en plastique au lieu du cuivre ; magnétiseur M3 (néodyme et cuivre) ; extrudeuse au haut fourneau (X3) ; moules fabriqués à partir d'un moule vierge (C) et d'un objet qui a la forme de la pièce : plaque de pression lourde (plaque), bloc de fer (boîtier), membrane (membrane renforcée), feuille de plastique (plaque de circuit). Le moule à plaque vient donc en premier : ses feuilles servent aux moules à membrane et à support.
 - Modèles des machines dans `art/models`, exportés en JSON de bloc.
 
 ## 10. Mise à jour de la SPEC

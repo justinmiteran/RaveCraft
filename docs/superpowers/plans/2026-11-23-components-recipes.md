@@ -33,7 +33,7 @@
   - `magnetizer`: `INI / CRC / INI`, with N = `neodymium_ingot`, C = copper ingot, R = redstone (M3).
   - `extruder`: `IPI / IHI / III`, with P = piston, H = blast furnace (X3).
   - `blank_mold`: ` I  / IKI /  I `, with K = clay ball. Texture A (user choice): the sheet mold frame with a flat grained steel plate, `art/proposals/items7d/blank_mold_A.png`. Stacks to 16, not in the `molds` tag, not accepted in the extruder's mold slot.
-  - Each mold: shapeless, 1 `blank_mold` + its shape item (heavy weighted pressure plate, bucket, bowl, redstone). Recipe ids stay `ravecraft:<mold>`.
+  - Each mold: shapeless, 1 `blank_mold` + its shape item (heavy weighted pressure plate, iron block, `membrane`, `plastic_sheet`; user decision after the 7d review). Recipe ids stay `ravecraft:<mold>`.
 - **Removed:** the provisional speaker crafts (`FFF / NRN / FFF` and `INI / CPC / IRI`). The dye recipes (`*_dyed`) stay.
 - **Reinforced membrane (user decision, 7d):** extruding takes 2 `plastic_sheet` with `membrane_mold` and gives 1 `reinforced_membrane`. It replaces 2 `bitumen`. The extruder keeps its single input (user decision).
 - **Unlock:** one `has_<item>` criterion per distinct ingredient, any of them unlocks the recipe (spec 6.2).

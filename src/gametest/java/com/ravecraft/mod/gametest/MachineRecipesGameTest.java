@@ -76,7 +76,8 @@ public class MachineRecipesGameTest {
 
 	@GameTest
 	public void moldCraftsExist(GameTestHelper h) {
-		List<Item> shapes = List.of(Items.HEAVY_WEIGHTED_PRESSURE_PLATE, Items.BUCKET, Items.BOWL, Items.REDSTONE);
+		List<Item> shapes = List.of(Items.HEAVY_WEIGHTED_PRESSURE_PLATE, Items.IRON_BLOCK, ModItems.MEMBRANE,
+				ModItems.PLASTIC_SHEET);
 		for (int i = 0; i < shapes.size(); i++) {
 			Item mold = ModItems.molds().get(i);
 			String name = mold.builtInRegistryHolder().key().identifier().getPath();

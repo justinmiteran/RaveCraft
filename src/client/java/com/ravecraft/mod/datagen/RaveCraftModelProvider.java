@@ -51,6 +51,7 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 		shale(generators);
 		randomVariants(ModBlocks.OIL_SHALE, OIL_SHALE_VARIANTS, generators);
 		randomVariants(ModBlocks.DEEPSLATE_NEODYMIUM_ORE, NEODYMIUM_VARIANTS, generators);
+		ModBlocks.storageBlocks().forEach(generators::createTrivialCube);
 		generators.family(ModBlocks.POLISHED_SHALE).generateFor(ModBlockFamilies.POLISHED_SHALE);
 		generators.family(ModBlocks.SHALE_BRICKS).generateFor(ModBlockFamilies.SHALE_BRICKS);
 	}

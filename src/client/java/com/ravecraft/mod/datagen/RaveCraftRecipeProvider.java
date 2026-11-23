@@ -18,6 +18,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CookingBookCategory;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.block.Block;
 
 /** Crafting, cooking and stonecutter recipes. */
 public class RaveCraftRecipeProvider extends FabricRecipeProvider {
@@ -69,6 +70,7 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 						.save(output);
 				dyedItem(ModBlocks.PARTY_SPEAKER.asItem(), "party_speaker_dye");
 				materials(this);
+				storageBlocks(this);
 				for (BlockFamily family : List.of(ModBlockFamilies.SHALE, ModBlockFamilies.POLISHED_SHALE,
 						ModBlockFamilies.SHALE_BRICKS)) {
 					generateRecipes(family, FeatureFlags.VANILLA_SET);
@@ -96,5 +98,19 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 				SMELT_TIME, "bitumen");
 		recipes.oreBlasting(oilShale, RecipeCategory.MISC, CookingBookCategory.MISC, ModItems.BITUMEN, BITUMEN_XP,
 				BLAST_TIME, "bitumen");
+	}
+
+	/** Nine items to a storage block and back; the unpacking recipe is named {@code <item>_from_<block>}. */
+	private static void storageBlocks(RecipeProvider recipes) {
+		List<ItemLike> contents = List.of(ModItems.RAW_NEODYMIUM, ModItems.NEODYMIUM_INGOT, ModItems.SILICON);
+		List<Block> blocks = ModBlocks.storageBlocks();
+		for (int i = 0; i < blocks.size(); i++) {
+			ItemLike content = contents.get(i);
+			Block block = blocks.get(i);
+			recipes.nineBlockStorageRecipesRecipesWithCustomUnpacking(RecipeCategory.MISC, content,
+					RecipeCategory.BUILDING_BLOCKS, block,
+					RecipeProvider.getItemName(content) + "_from_" + RecipeProvider.getItemName(block),
+					RecipeProvider.getItemName(content));
+		}
 	}
 }

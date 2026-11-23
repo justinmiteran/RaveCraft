@@ -32,7 +32,7 @@ Une spec, quatre PR successives, chacune avec un build vert et testable seule :
 
 | PR | Branche | Contenu |
 |---|---|---|
-| 7a | `feat/materials-ores` | 2 minerais, famille du schiste (13 blocs), génération, matières premières, recettes de fonte et de taille |
+| 7a | `feat/materials-ores` | 2 minerais, famille du schiste (13 blocs), 3 blocs de stockage, génération, matières premières, recettes de fonte et de taille |
 | 7b | `feat/machine-core` | Base commune des machines (logique `core`, bloc, block entity, inventaire latéral, menu, écran, livre de recettes, type de recette), livrée avec la **bobineuse** |
 | 7c | `feat/machines` | Magnétiseur, graveur, extrudeuse, moules |
 | 7d | `feat/components-recipes` | Composants des paliers 1 et 2, assemblages à la table de craft, nouvelles recettes des enceintes, critères de déblocage, infobulles « Fabriqué dans », onglet créatif, mise à jour de `docs/SPEC.md` |
@@ -265,6 +265,7 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 - Chaque feature de minerai et de schiste est ajoutée aux biomes prévus (vérification du registre des biomes).
 - Chaque bloc de la famille du schiste lâche lui-même à la pioche ; ses recettes de table de craft et de tailleur de pierre existent.
 - Le quartz du Nether donne du silicium au haut fourneau seulement.
+- Blocs de néodyme brut, de néodyme et de silicium : 9 objets donnent un bloc et un bloc rend 9 objets ; pioche en fer pour les deux blocs de néodyme, en pierre pour le silicium ; chacun lâche lui-même et porte ses tags `c:storage_blocks`.
 - Les nouvelles recettes des deux enceintes existent et les anciennes non.
 
 **En jeu** : monde survie neuf, du minage du schiste à l'enceinte de soirée en suivant le livre ; entonnoirs ; écran et livre de chaque machine ; textures, modèles et animations.
@@ -281,6 +282,7 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
   - schiste poli : dégradés gris-bleu façon tuf poli (8 tons, lignes claires et sombres alternées), cadre discret ;
   - briques de schiste : 8×4 en quinconce, chaque brique gris-bleu ou brun chaud ; schiste sculpté : onde sonore gravée, creux brun chaud, reliefs gris-bleu ;
   - bitume : galet de goudron brillant ; néodyme brut : pépites lilas ; lingot de néodyme : forme du lingot vanilla, argent lilas clair ; silicium : morceau gris-bleu taillé ; plaquette de silicium : disque vu de biais, irisé, sans puces.
+  - blocs de stockage, construits sur la structure des blocs de métal vanilla (cadre, reflets en diagonale) : néodyme brut en grosses pépites lilas éclairées en haut à gauche (R1) ; néodyme en bandes de lumière ondulées en diagonale, cadre de tons moyens et liseré clair en haut (O2) ; silicium en éclats de cristal superposés, chaque facette en dégradé par paliers, dans un cadre biseauté (B4).
 - Rendus finaux de 7a : `art/proposals/materials-ores/final/` et `summary_final_v2.png` (non versionnés).
 - Modèles des machines dans `art/models`, exportés en JSON de bloc.
 

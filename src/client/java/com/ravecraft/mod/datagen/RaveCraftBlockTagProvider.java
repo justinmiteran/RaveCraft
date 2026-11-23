@@ -36,13 +36,25 @@ public class RaveCraftBlockTagProvider extends FabricTagsProvider.BlockTagsProvi
 				.add(key(ModBlocks.PORTABLE_SPEAKER)).add(key(ModBlocks.PARTY_SPEAKER));
 		addAll(pickaxe, ModBlocks.ores());
 		addAll(pickaxe, ModBlocks.shaleFamily());
-		builder(BlockTags.NEEDS_STONE_TOOL).add(key(ModBlocks.OIL_SHALE));
-		builder(BlockTags.NEEDS_IRON_TOOL).add(key(ModBlocks.DEEPSLATE_NEODYMIUM_ORE));
+		addAll(pickaxe, ModBlocks.storageBlocks());
+		builder(BlockTags.NEEDS_STONE_TOOL).add(key(ModBlocks.OIL_SHALE)).add(key(ModBlocks.SILICON_BLOCK));
+		builder(BlockTags.NEEDS_IRON_TOOL).add(key(ModBlocks.DEEPSLATE_NEODYMIUM_ORE))
+				.add(key(ModBlocks.RAW_NEODYMIUM_BLOCK)).add(key(ModBlocks.NEODYMIUM_BLOCK));
 		addAll(builder(BlockTags.STAIRS), shapes(StairBlock.class));
 		addAll(builder(BlockTags.SLABS), shapes(SlabBlock.class));
 		addAll(builder(BlockTags.WALLS), shapes(WallBlock.class));
 		ores();
+		storageBlocks();
 		acoustics();
+	}
+
+	/** The convention storage block tags; {@code c:storage_blocks} holds its per-material sub-tags. */
+	private void storageBlocks() {
+		builder(ModTags.Blocks.STORAGE_BLOCKS_RAW_NEODYMIUM).add(key(ModBlocks.RAW_NEODYMIUM_BLOCK));
+		builder(ModTags.Blocks.STORAGE_BLOCKS_NEODYMIUM).add(key(ModBlocks.NEODYMIUM_BLOCK));
+		builder(ModTags.Blocks.STORAGE_BLOCKS_SILICON).add(key(ModBlocks.SILICON_BLOCK));
+		builder(ModTags.Blocks.STORAGE_BLOCKS).addTag(ModTags.Blocks.STORAGE_BLOCKS_RAW_NEODYMIUM)
+				.addTag(ModTags.Blocks.STORAGE_BLOCKS_NEODYMIUM).addTag(ModTags.Blocks.STORAGE_BLOCKS_SILICON);
 	}
 
 	/** The convention ore tags; {@code c:ores} holds its per-ore sub-tags, as other mods expect. */

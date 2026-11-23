@@ -1,5 +1,7 @@
 {
   "values": [
-    "ravecraft:deepslate_neodymium_ore"
+    "ravecraft:deepslate_neodymium_ore",
+    "ravecraft:raw_neodymium_block",
+    "ravecraft:neodymium_block"
   ]
 }

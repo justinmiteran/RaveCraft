@@ -17,7 +17,7 @@ class MaterialsLangTest {
 	private static final List<String> BLOCKS = List.of("oil_shale", "deepslate_neodymium_ore", "shale", "shale_stairs",
 			"shale_slab", "shale_wall", "polished_shale", "polished_shale_stairs", "polished_shale_slab",
 			"polished_shale_wall", "shale_bricks", "shale_brick_stairs", "shale_brick_slab", "shale_brick_wall",
-			"chiseled_shale");
+			"chiseled_shale", "raw_neodymium_block", "neodymium_block", "silicon_block");
 	private static final List<String> ITEMS = List.of("bitumen", "raw_neodymium", "neodymium_ingot", "silicon",
 			"silicon_wafer");
 

@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "group": "silicon",
+  "ingredients": [
+    "ravecraft:silicon_block"
+  ],
+  "result": {
+    "count": 9,
+    "id": "ravecraft:silicon"
+  }
+}

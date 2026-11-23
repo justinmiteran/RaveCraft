@@ -20,6 +20,10 @@ public final class ModTags {
 		public static final TagKey<Block> ORES_OIL_SHALE = block("ores/oil_shale");
 		public static final TagKey<Block> ORES_IN_GROUND_STONE = block("ores_in_ground/stone");
 		public static final TagKey<Block> ORES_IN_GROUND_DEEPSLATE = block("ores_in_ground/deepslate");
+		public static final TagKey<Block> STORAGE_BLOCKS = block("storage_blocks");
+		public static final TagKey<Block> STORAGE_BLOCKS_RAW_NEODYMIUM = block("storage_blocks/raw_neodymium");
+		public static final TagKey<Block> STORAGE_BLOCKS_NEODYMIUM = block("storage_blocks/neodymium");
+		public static final TagKey<Block> STORAGE_BLOCKS_SILICON = block("storage_blocks/silicon");
 
 		private Blocks() {
 		}
@@ -35,6 +39,10 @@ public final class ModTags {
 		public static final TagKey<Item> RAW_MATERIALS_NEODYMIUM = item("raw_materials/neodymium");
 		public static final TagKey<Item> INGOTS_NEODYMIUM = item("ingots/neodymium");
 		public static final TagKey<Item> SILICON = item("silicon");
+		public static final TagKey<Item> STORAGE_BLOCKS = item("storage_blocks");
+		public static final TagKey<Item> STORAGE_BLOCKS_RAW_NEODYMIUM = item("storage_blocks/raw_neodymium");
+		public static final TagKey<Item> STORAGE_BLOCKS_NEODYMIUM = item("storage_blocks/neodymium");
+		public static final TagKey<Item> STORAGE_BLOCKS_SILICON = item("storage_blocks/silicon");
 
 		private Items() {
 		}

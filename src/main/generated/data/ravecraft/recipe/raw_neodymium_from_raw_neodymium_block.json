@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "group": "raw_neodymium",
+  "ingredients": [
+    "ravecraft:raw_neodymium_block"
+  ],
+  "result": {
+    "count": 9,
+    "id": "ravecraft:raw_neodymium"
+  }
+}

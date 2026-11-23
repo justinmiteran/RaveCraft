@@ -19,6 +19,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -89,6 +90,7 @@ public class MaterialsGameTest {
 		CreativeModeTabs.tryRebuildTabContents(h.getLevel().enabledFeatures(), false, h.getLevel().registryAccess());
 		List<ItemLike> expected = new ArrayList<>(ModBlocks.ores());
 		expected.addAll(ModBlocks.shaleFamily());
+		expected.addAll(ModBlocks.storageBlocks());
 		expected.addAll(ModItems.materials());
 		for (ItemLike item : expected) {
 			h.assertTrue(ModCreativeTabs.RAVECRAFT.contains(new ItemStack(item)), item + " in the RaveCraft tab");
@@ -196,6 +198,56 @@ public class MaterialsGameTest {
 		}
 		for (Block wall : List.of(ModBlocks.SHALE_WALL, ModBlocks.POLISHED_SHALE_WALL, ModBlocks.SHALE_BRICK_WALL)) {
 			h.assertTrue(wall.defaultBlockState().is(BlockTags.WALLS), wall + " in walls");
+		}
+		h.succeed();
+	}
+
+	@GameTest
+	public void storageBlocksNeedTheirTool(GameTestHelper h) {
+		for (Block block : ModBlocks.storageBlocks()) {
+			BlockState state = block.defaultBlockState();
+			h.assertFalse(ItemStack.EMPTY.isCorrectToolForDrops(state), "bare hand on " + block);
+			h.assertFalse(new ItemStack(Items.WOODEN_PICKAXE).isCorrectToolForDrops(state), "wood on " + block);
+			h.assertTrue(new ItemStack(Items.IRON_PICKAXE).isCorrectToolForDrops(state), "iron on " + block);
+			List<ItemStack> drops = drops(h, state, new ItemStack(Items.IRON_PICKAXE));
+			h.assertValueEqual(drops.size(), 1, block + " one stack");
+			h.assertTrue(drops.get(0).is(block.asItem()), block + " drops itself, got " + drops);
+		}
+		ItemStack stone = new ItemStack(Items.STONE_PICKAXE);
+		h.assertTrue(stone.isCorrectToolForDrops(ModBlocks.SILICON_BLOCK.defaultBlockState()), "stone on silicon");
+		h.assertFalse(stone.isCorrectToolForDrops(ModBlocks.NEODYMIUM_BLOCK.defaultBlockState()), "stone on neodymium");
+		h.assertFalse(stone.isCorrectToolForDrops(ModBlocks.RAW_NEODYMIUM_BLOCK.defaultBlockState()), "stone on raw");
+		h.succeed();
+	}
+
+	@GameTest
+	public void storageBlockTags(GameTestHelper h) {
+		List<TagKey<Block>> blockTags = List.of(ModTags.Blocks.STORAGE_BLOCKS_RAW_NEODYMIUM,
+				ModTags.Blocks.STORAGE_BLOCKS_NEODYMIUM, ModTags.Blocks.STORAGE_BLOCKS_SILICON);
+		List<TagKey<Item>> itemTags = List.of(ModTags.Items.STORAGE_BLOCKS_RAW_NEODYMIUM,
+				ModTags.Items.STORAGE_BLOCKS_NEODYMIUM, ModTags.Items.STORAGE_BLOCKS_SILICON);
+		List<Block> blocks = ModBlocks.storageBlocks();
+		for (int i = 0; i < blocks.size(); i++) {
+			Block block = blocks.get(i);
+			h.assertTrue(block.defaultBlockState().is(blockTags.get(i)), block + " in " + blockTags.get(i));
+			h.assertTrue(block.defaultBlockState().is(ModTags.Blocks.STORAGE_BLOCKS), block + " in c:storage_blocks");
+			h.assertTrue(new ItemStack(block).is(itemTags.get(i)), block + " item in " + itemTags.get(i));
+			h.assertTrue(new ItemStack(block).is(ModTags.Items.STORAGE_BLOCKS), block + " item in c:storage_blocks");
+		}
+		h.succeed();
+	}
+
+	@GameTest
+	public void storageBlockRecipes(GameTestHelper h) {
+		RecipeManager recipes = h.getLevel().getServer().getRecipeManager();
+		List<ItemLike> contents = List.of(ModItems.RAW_NEODYMIUM, ModItems.NEODYMIUM_INGOT, ModItems.SILICON);
+		List<Block> blocks = ModBlocks.storageBlocks();
+		for (int i = 0; i < blocks.size(); i++) {
+			Block block = blocks.get(i);
+			ItemLike content = contents.get(i);
+			crafted(h, recipes, name(block), block, CraftingInput.of(3, 3, copies(content, 9)), 1);
+			crafted(h, recipes, name(content) + "_from_" + name(block), content,
+					CraftingInput.of(1, 1, copies(block, 1)), 9);
 		}
 		h.succeed();
 	}
@@ -340,7 +392,12 @@ public class MaterialsGameTest {
 	}
 
 	private static void crafted(GameTestHelper h, RecipeManager recipes, Block result, CraftingInput input, int count) {
-		Recipe<?> recipe = recipe(recipes, name(result)).orElseThrow(() -> h.assertionException(result + " missing"));
+		crafted(h, recipes, name(result), result, input, count);
+	}
+
+	private static void crafted(GameTestHelper h, RecipeManager recipes, String id, ItemLike result,
+			CraftingInput input, int count) {
+		Recipe<?> recipe = recipe(recipes, id).orElseThrow(() -> h.assertionException(id + " missing"));
 		ItemStack out = ((CraftingRecipe) recipe).assemble(input);
 		h.assertTrue(out.is(result.asItem()), result + " result, got " + out);
 		h.assertValueEqual(out.getCount(), count, result + " count");

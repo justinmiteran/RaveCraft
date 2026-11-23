@@ -77,6 +77,13 @@ public final class ModBlocks {
 	public static final Block CHISELED_SHALE = registerSimple("chiseled_shale", Block::new,
 			shale(SoundType.TUFF_BRICKS));
 
+	public static final Block RAW_NEODYMIUM_BLOCK = registerSimple("raw_neodymium_block", Block::new,
+			stone(MapColor.COLOR_PURPLE, SoundType.STONE).strength(5.0F, 6.0F));
+	public static final Block NEODYMIUM_BLOCK = registerSimple("neodymium_block", Block::new,
+			metal(MapColor.TERRACOTTA_WHITE).strength(5.0F, 6.0F));
+	public static final Block SILICON_BLOCK = registerSimple("silicon_block", Block::new,
+			metal(MapColor.COLOR_LIGHT_BLUE).strength(3.0F, 6.0F));
+
 	private ModBlocks() {
 	}
 
@@ -107,6 +114,24 @@ public final class ModBlocks {
 		return List.of(SHALE, SHALE_STAIRS, SHALE_SLAB, SHALE_WALL, POLISHED_SHALE, POLISHED_SHALE_STAIRS,
 				POLISHED_SHALE_SLAB, POLISHED_SHALE_WALL, SHALE_BRICKS, SHALE_BRICK_STAIRS, SHALE_BRICK_SLAB,
 				SHALE_BRICK_WALL, CHISELED_SHALE);
+	}
+
+	/**
+	 * The storage blocks (nine items each), in creative tab order: raw neodymium, neodymium, silicon.
+	 *
+	 * @return the storage blocks
+	 */
+	public static List<Block> storageBlocks() {
+		return List.of(RAW_NEODYMIUM_BLOCK, NEODYMIUM_BLOCK, SILICON_BLOCK);
+	}
+
+	/** Metal block properties, as a vanilla iron block: pickaxe required, iron xylophone note. */
+	private static BlockBehaviour.Properties metal(MapColor color) {
+		return BlockBehaviour.Properties.of()
+				.mapColor(color)
+				.instrument(NoteBlockInstrument.IRON_XYLOPHONE)
+				.sound(SoundType.METAL)
+				.requiresCorrectToolForDrops();
 	}
 
 	/** Stone-like properties: pickaxe required, bass drum note. */

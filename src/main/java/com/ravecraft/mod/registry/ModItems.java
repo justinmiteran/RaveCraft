@@ -26,6 +26,10 @@ public final class ModItems {
 	public static final Item NEODYMIUM_MAGNET = register("neodymium_magnet", Item::new);
 	public static final Item REINFORCED_MEMBRANE = register("reinforced_membrane", Item::new);
 	public static final Item CHIP = register("chip", Item::new);
+	public static final Item MEMBRANE = register("membrane", Item::new);
+	public static final Item SPEAKER_DRIVER = register("speaker_driver", Item::new);
+	public static final Item AMPLIFIER_BOARD = register("amplifier_board", Item::new);
+	public static final Item WOOFER = register("woofer", Item::new);
 	public static final Item SHEET_MOLD = registerMold("sheet_mold");
 	public static final Item CASING_MOLD = registerMold("casing_mold");
 	public static final Item MEMBRANE_MOLD = registerMold("membrane_mold");
@@ -49,8 +53,8 @@ public final class ModItems {
 	 * @return the component items
 	 */
 	public static List<Item> components() {
-		return List.of(COPPER_WIRE, VOICE_COIL, IRON_MAGNET, PLASTIC_SHEET, PLASTIC_CASING, CIRCUIT_BOARD,
-				SIMPLE_CIRCUIT, NEODYMIUM_MAGNET, REINFORCED_MEMBRANE, CHIP);
+		return List.of(COPPER_WIRE, VOICE_COIL, IRON_MAGNET, MEMBRANE, PLASTIC_SHEET, PLASTIC_CASING, CIRCUIT_BOARD,
+				SIMPLE_CIRCUIT, SPEAKER_DRIVER, NEODYMIUM_MAGNET, REINFORCED_MEMBRANE, CHIP, AMPLIFIER_BOARD, WOOFER);
 	}
 
 	/**

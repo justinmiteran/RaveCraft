@@ -36,7 +36,7 @@ public class MachineRecipesGameTest {
 		check(h, "plastic_casing_from_extruding", ModRecipes.EXTRUDING, ModItems.CASING_MOLD,
 				out(ModItems.PLASTIC_CASING, 1), ModItems.BITUMEN, 3);
 		check(h, "reinforced_membrane_from_extruding", ModRecipes.EXTRUDING, ModItems.MEMBRANE_MOLD,
-				out(ModItems.REINFORCED_MEMBRANE, 1), ModItems.BITUMEN, 2);
+				out(ModItems.REINFORCED_MEMBRANE, 1), ModItems.PLASTIC_SHEET, 2);
 		check(h, "circuit_board_from_extruding", ModRecipes.EXTRUDING, ModItems.BOARD_MOLD,
 				out(ModItems.CIRCUIT_BOARD, 2), ModItems.BITUMEN, 1);
 		h.succeed();

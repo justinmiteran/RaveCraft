@@ -48,7 +48,7 @@ public class MachinesGameTest {
 				new Case(ModBlocks.EXTRUDER, ModItems.CASING_MOLD, ModItems.PLASTIC_CASING, 1,
 						new ItemStack(ModItems.BITUMEN, 3)),
 				new Case(ModBlocks.EXTRUDER, ModItems.MEMBRANE_MOLD, ModItems.REINFORCED_MEMBRANE, 1,
-						new ItemStack(ModItems.BITUMEN, 2)),
+						new ItemStack(ModItems.PLASTIC_SHEET, 2)),
 				new Case(ModBlocks.EXTRUDER, ModItems.BOARD_MOLD, ModItems.CIRCUIT_BOARD, 2,
 						new ItemStack(ModItems.BITUMEN)));
 	}

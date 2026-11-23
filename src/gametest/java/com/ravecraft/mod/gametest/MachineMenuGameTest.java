@@ -165,6 +165,13 @@ public class MachineMenuGameTest {
 	}
 
 	@GameTest
+	public void emptyMoldSlotShowsMold(GameTestHelper h) {
+		MachineMenu menu = menu(h, h.makeMockPlayer(GameType.SURVIVAL), ModBlocks.EXTRUDER);
+		h.assertValueEqual(menu.moldSlot().getNoItemIcon(), RaveCraft.id("container/slot/mold"), "mold silhouette");
+		h.succeed();
+	}
+
+	@GameTest
 	public void moldSlotHiddenOffExtruder(GameTestHelper h) {
 		Player player = h.makeMockPlayer(GameType.SURVIVAL);
 		h.assertFalse(menu(h, player, ModBlocks.MAGNETIZER).getSlot(MachineBlockEntity.MOLD).isActive(), "magnetizer");

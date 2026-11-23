@@ -1,7 +1,12 @@
 {
-	"minecraft:copper_ingot": "#C46A46",
-	"ravecraft:copper_wire": "#C46A46",
-	"minecraft:iron_ingot": "#D8D8D8",
-	"minecraft:gold_nugget": "#FACD3C",
-	"ravecraft:neodymium_ingot": "#AE9BB9"
+	"ravecraft:copper_wire": "#A05236",
+	"ravecraft:voice_coil": "#BC6644",
+	"ravecraft:iron_magnet": "#656572",
+	"ravecraft:neodymium_magnet": "#937DA0",
+	"ravecraft:simple_circuit": "#61A568",
+	"ravecraft:chip": "#464653",
+	"ravecraft:plastic_sheet": "#292931",
+	"ravecraft:plastic_casing": "#24242A",
+	"ravecraft:reinforced_membrane": "#383840",
+	"ravecraft:circuit_board": "#61A568"
 }

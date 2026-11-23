@@ -269,12 +269,16 @@ ENERGY_FRAME = (47, 52)
 BOLT_POS = (49, 36)  # 14x14 energy bolt between the input and the energy slot, like the furnace flame
 ARROW_POS = (89, 34)  # 24x16 progress arrow, the furnace's proportions
 OUTPUT_FRAME = (120, 30, 26)
+MOLD_FRAME = (25, 16)  # left of the input (MachineMenu.MOLD_X/MOLD_Y minus the frame)
 CONTAINER_SIZE = 256
 
 
-def machine_container(inputs):
-    """A machine window on a 256x256 sheet: its used inputs, empty arrow and gauge (filled at draw time)."""
+def machine_container(inputs, mold=False):
+    """A machine window on a 256x256 sheet: its used inputs (and the mold slot), empty arrow and gauge (filled at
+    draw time)."""
     img = gui_base()
+    if mold:
+        slot(img, *MOLD_FRAME)
     for i in range(inputs):
         slot(img, INPUT_CENTER_FRAME[0] + (2 * i - (inputs - 1)) * SLOT_STEP // 2, INPUT_CENTER_FRAME[1])
     slot(img, *ENERGY_FRAME)
@@ -344,4 +348,9 @@ ANIMATED = {"coil_winder_front_on": (coil_winder_front_on, 2)}
 ITEMS = {"copper_wire": w5_hank, "voice_coil": v7_ribbed}
 GUI = {"container/machine/progress": (machine_progress, None)}
 GUI["container/machine/energy"] = (machine_energy, None)
-CONTAINERS = {"coil_winder": lambda: machine_container(1)}  # textures/gui/container/<name>.png
+CONTAINERS = {  # textures/gui/container/<name>.png
+    "coil_winder": lambda: machine_container(1),
+    "magnetizer": lambda: machine_container(2),
+    "etcher": lambda: machine_container(3),
+    "extruder": lambda: machine_container(1, mold=True),
+}

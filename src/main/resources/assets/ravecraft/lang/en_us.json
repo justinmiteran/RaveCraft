@@ -171,6 +171,8 @@
   "key.category.ravecraft.ravecraft": "RaveCraft",
   "tooltip.ravecraft.speaker.open_key": "[%s]: open the interface from the inventory",
   "gui.ravecraft.recipebook.toggle_recipes.machine": "Machine Recipes",
+	"gui.ravecraft.jei.time": "%s s",
+	"gui.ravecraft.jei.energy": "Energy: %s operations",
   "subtitles.ravecraft.machine.coil_winder": "Coil Winder whirs",
   "subtitles.ravecraft.machine.magnetizer": "Magnetizer hums",
   "subtitles.ravecraft.machine.extruder": "Extruder rattles",

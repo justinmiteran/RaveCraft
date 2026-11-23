@@ -171,6 +171,8 @@
   "key.category.ravecraft.ravecraft": "RaveCraft",
   "tooltip.ravecraft.speaker.open_key": "[%s] : ouvrir l'interface depuis l'inventaire",
   "gui.ravecraft.recipebook.toggle_recipes.machine": "Recettes de la machine",
+	"gui.ravecraft.jei.time": "%s s",
+	"gui.ravecraft.jei.energy": "Énergie : %s opérations",
   "subtitles.ravecraft.machine.coil_winder": "La bobineuse vrombit",
   "subtitles.ravecraft.machine.magnetizer": "Le magnétiseur bourdonne",
   "subtitles.ravecraft.machine.extruder": "L'extrudeuse cliquette",

@@ -25,6 +25,12 @@
 		"client": [
 			"com.ravecraft.mod.client.RaveCraftClient"
 		],
+		"jei_mod_plugin": [
+			"com.ravecraft.mod.client.compat.jei.RaveCraftJeiPlugin"
+		],
+		"jer_mod_plugin": [
+			"com.ravecraft.mod.client.compat.jer.RaveCraftJerPlugin"
+		],
 		"fabric-datagen": [
 			"com.ravecraft.mod.datagen.RaveCraftDataGenerator"
 		]

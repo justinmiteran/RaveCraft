@@ -1,6 +1,7 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube_column",
   "textures": {
-    "all": "ravecraft:block/shale_4"
+    "end": "ravecraft:block/shale_top",
+    "side": "ravecraft:block/shale_4"
   }
 }

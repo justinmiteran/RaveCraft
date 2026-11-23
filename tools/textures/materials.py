@@ -166,6 +166,28 @@ def shale_variants():
     return tuple(indexed((SHALE_PALETTE, *rows)) for rows in SHALE_TILES)
 
 
+# The top and bottom of shale and oil shale: one bedding plane, calm blobs in 4 of the laminae tones (proposal A,
+# frozen from 4x4 tileable bilinear noise, seed 7), so the laminae only show on the sides.
+SHALE_TOP = (
+    "1131133433331111",
+    "3331134444111111",
+    "3333133344311133",
+    "4311113333311131",
+    "3331113344111113",
+    "1111133343133331",
+    "1111111333333133",
+    "1111133333344431",
+    "1111113333446441",
+    "1133333344344443",
+    "1333333344664441",
+    "1334336466446431",
+    "1343466664464343",
+    "3333344464643333",
+    "3333133464443333",
+    "3131134464331133",
+)
+
+
 # ---------------------------------------------------------------- oil shale: shale + a straight tar seam
 TAR = [(24, 21, 24), (32, 28, 31), (42, 37, 40), (58, 53, 57)]
 # Per variant: the seam's first row and its two rows of TAR indices (the lower row is the thick part).
@@ -475,6 +497,7 @@ BLOCKS = {f"shale_{i}": _shale(i) for i in range(SHALE_VARIANTS)}
 BLOCKS.update({f"oil_shale_{i}": _oil(i) for i in range(len(OIL_SEAMS))})
 BLOCKS.update({f"deepslate_neodymium_ore_{i}": _ore(s) for i, s in enumerate(NEODYMIUM_SEEDS)})
 BLOCKS.update({
+    "shale_top": lambda: indexed((SHALE_PALETTE, *SHALE_TOP)),
     "polished_shale": polished_shale,
     "shale_bricks": lambda: indexed(SHALE_BRICKS),
     "chiseled_shale": lambda: indexed(CHISELED_SHALE),

@@ -1,7 +1,8 @@
 """Machine products and molds of the 7c machines (magnetizer, etcher, extruder): iron and neodymium magnets, plastic
 sheet and casing, circuit board, simple circuit, chip, reinforced membrane, and the four molds. Imported by
 machines.py. All original: the user picked each one from rounds of Pillow proposals (molds A, plain discs N3,
-circuits A, chip, membrane cone, sheet S2c first rework, casing O2 N3); the chosen pixels are kept here as one
+circuits A, chip, membrane cone, sheet S2c first rework, casing O2 N3), then the 7d components (membrane A,
+speaker driver and woofer E, amplifier board B); the chosen pixels are kept here as one
 palette per item (darkest tone first) and a 16x16 grid, one letter per palette index, '.' for transparent."""
 from __future__ import annotations
 
@@ -281,6 +282,95 @@ BOARD_MOLD = ([
 ])
 
 
+MEMBRANE = ([
+    (116, 99, 76), (141, 125, 100), (165, 150, 124), (189, 175, 148), (214, 201, 172), (238, 226, 196)], [
+    "................",
+    ".....dddeeb.....",
+    "...dddddcccea...",
+    "..dcedeeddccdb..",
+    "..ddedddcccdbb..",
+    ".ddddddcdccbbbb.",
+    ".ddeddccdebbcbb.",
+    ".ddedccceeebcbb.",
+    ".ecdcddefffabbb.",
+    ".ecdcceeffaabab.",
+    ".bccccbefaaaaab.",
+    "..eccbbbaaabac..",
+    "..adbbccbbaaec..",
+    "...bbbbbbaacc...",
+    ".....bbbbbb.....",
+    "................",
+])
+
+
+SPEAKER_DRIVER = ([
+    (31, 31, 36), (38, 40, 46), (46, 46, 53), (64, 67, 73), (91, 93, 100), (116, 99, 76), (117, 120, 127),
+    (141, 125, 100), (143, 147, 154), (165, 150, 124), (170, 173, 181), (189, 175, 148), (214, 201, 172),
+    (238, 226, 196)], [
+    "..kkkkkkkiiiid..",
+    ".kiiiiiccgggkgd.",
+    "kibicclljjccgbgd",
+    "kiicmlmmlljjcggd",
+    "kiclmllljjjlhagd",
+    "kiclllljljjhhagd",
+    "kilmlljjlmhhjhgd",
+    "kclmljjjmmmhjhad",
+    "icjljllmnnnfhhad",
+    "igjljjmmnnffhfed",
+    "igcjjjhmnffffaed",
+    "igcjjhhhfffhfaed",
+    "ikgchhjjhhffaeed",
+    "dgbgaahhhfaaebed",
+    ".dgggggaaeeeeed.",
+    "..dddddddddddd..",
+])
+
+
+AMPLIFIER_BOARD = ([
+    (24, 24, 28), (10, 36, 20), (36, 36, 42), (27, 62, 37), (38, 52, 100), (56, 56, 64), (42, 84, 51),
+    (57, 105, 65), (96, 96, 108), (70, 125, 78), (92, 118, 190), (84, 145, 91), (187, 119, 82), (97, 165, 104),
+    (145, 149, 156), (110, 184, 116), (212, 140, 97), (195, 199, 205), (220, 224, 230)], [
+    "................",
+    "................",
+    ".pppppppppppppb.",
+    ".pprprdrpbseseb.",
+    ".pniiffajnkekeb.",
+    ".ppifccajjeeeeb.",
+    ".pnicccanbjjbjb.",
+    ".ppaaaaanjjnjjb.",
+    ".pnonononjsehjb.",
+    ".lpbjjbjnbkebhb.",
+    ".pjqmqmqmjeehjb.",
+    ".pnnjjnjqmjhjhb.",
+    ".ljbjjbjhbhhbhb.",
+    ".bgbdbbbbbbbbbb.",
+    "................",
+    "................",
+])
+
+
+WOOFER = ([
+    (14, 14, 17), (24, 24, 28), (31, 31, 36), (36, 36, 42), (38, 40, 46), (46, 46, 53), (56, 56, 64), (64, 67, 73),
+    (91, 93, 100), (96, 96, 108), (117, 120, 127), (143, 147, 154), (170, 170, 184), (170, 173, 181)], [
+    "..nnnnnnnllllh..",
+    ".nlllllffkkknkh.",
+    "nlelffggddffkekh",
+    "nllfjgjjggddfkkh",
+    "nlfgjgggdddgbckh",
+    "nlfggggdgddbbckh",
+    "nlgjggddgjbbdbkh",
+    "nfgjgdddjjjbdbch",
+    "lfdgdggjmmmabbch",
+    "lkdgddjjmmaabaih",
+    "lkfdddbjmaaaacih",
+    "lkfddbbbaaabacih",
+    "lnkfbbddbbaaciih",
+    "hkekccbbbaccieih",
+    ".hkkkkkcciiiiih.",
+    "..hhhhhhhhhhhh..",
+])
+
+
 def outline(mask):
     """The cells of a mask that touch a cell outside it."""
     return {(x, y) for x, y in mask
@@ -308,4 +398,5 @@ ITEMS = {name.lower(): _item(item) for name, item in {
     "IRON_MAGNET": IRON_MAGNET, "PLASTIC_SHEET": PLASTIC_SHEET, "PLASTIC_CASING": PLASTIC_CASING,
     "CIRCUIT_BOARD": CIRCUIT_BOARD, "SIMPLE_CIRCUIT": SIMPLE_CIRCUIT, "NEODYMIUM_MAGNET": NEODYMIUM_MAGNET,
     "REINFORCED_MEMBRANE": REINFORCED_MEMBRANE, "CHIP": CHIP, "SHEET_MOLD": SHEET_MOLD, "CASING_MOLD": CASING_MOLD,
-    "MEMBRANE_MOLD": MEMBRANE_MOLD, "BOARD_MOLD": BOARD_MOLD}.items()}
+    "MEMBRANE_MOLD": MEMBRANE_MOLD, "BOARD_MOLD": BOARD_MOLD, "MEMBRANE": MEMBRANE,
+    "SPEAKER_DRIVER": SPEAKER_DRIVER, "AMPLIFIER_BOARD": AMPLIFIER_BOARD, "WOOFER": WOOFER}.items()}

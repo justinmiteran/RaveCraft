@@ -6,6 +6,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.util.ExtraCodecs;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.Ingredient;
 
 /**
@@ -18,7 +19,7 @@ public record CountedIngredient(Ingredient ingredient, int count) {
 	/** JSON form: {@code {"ingredient": ..., "count": n}}, count defaulting to 1. */
 	public static final Codec<CountedIngredient> CODEC = RecordCodecBuilder.create(i -> i.group(
 			Ingredient.CODEC.fieldOf("ingredient").forGetter(CountedIngredient::ingredient),
-			ExtraCodecs.POSITIVE_INT.optionalFieldOf("count", 1).forGetter(CountedIngredient::count))
+			ExtraCodecs.intRange(1, Item.ABSOLUTE_MAX_STACK_SIZE).optionalFieldOf("count", 1).forGetter(CountedIngredient::count))
 			.apply(i, CountedIngredient::new));
 	/** Network form. */
 	public static final StreamCodec<RegistryFriendlyByteBuf, CountedIngredient> STREAM_CODEC = StreamCodec.composite(

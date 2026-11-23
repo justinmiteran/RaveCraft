@@ -140,7 +140,7 @@ public class MachineMenu extends RecipeBookMenu {
 
 	/**
 	 * Shift-click: the output and the machine slots go to the inventory; from the inventory, redstone goes to the
-	 * energy slot first, anything else to the inputs, and what does not fit moves between inventory and hotbar.
+	 * energy slot (or onto redstone already in an input), anything else to the inputs, and what does not fit moves between inventory and hotbar.
 	 */
 	@Override
 	public ItemStack quickMoveStack(Player player, int index) {
@@ -173,14 +173,30 @@ public class MachineMenu extends RecipeBookMenu {
 		if (index < INVENTORY_START) {
 			return moveItemStackTo(stack, INVENTORY_START, HOTBAR_END, index == MachineBlockEntity.OUTPUT);
 		}
-		boolean energy = MachineBlockEntity.isEnergy(stack)
-				&& moveItemStackTo(stack, MachineBlockEntity.ENERGY, MachineBlockEntity.ENERGY + 1, false);
-		if (energy || moveItemStackTo(stack, MachineBlockEntity.INPUT_0, MachineBlockEntity.INPUT_2 + 1, false)) {
+		boolean moved = MachineBlockEntity.isEnergy(stack)
+				? moveItemStackTo(stack, MachineBlockEntity.ENERGY, MachineBlockEntity.ENERGY + 1, false)
+						|| mergeIntoInputs(stack)
+				: moveItemStackTo(stack, MachineBlockEntity.INPUT_0, MachineBlockEntity.INPUT_2 + 1, false);
+		if (moved) {
 			return true;
 		}
 		return index < HOTBAR_START
 				? moveItemStackTo(stack, HOTBAR_START, HOTBAR_END, false)
 				: moveItemStackTo(stack, INVENTORY_START, HOTBAR_START, false);
+	}
+
+	/**
+	 * Redstone goes to an input only to join redstone already there (a recipe ingredient), never to an empty input:
+	 * a full energy slot must not spill fuel into the inputs and jam the recipe.
+	 */
+	private boolean mergeIntoInputs(ItemStack stack) {
+		boolean moved = false;
+		for (Slot input : inputSlots()) {
+			if (ItemStack.isSameItemSameComponents(input.getItem(), stack)) {
+				moved |= moveItemStackTo(stack, input.index, input.index + 1, false);
+			}
+		}
+		return moved;
 	}
 
 	@Override

@@ -3,6 +3,9 @@ package com.ravecraft.mod.gametest;
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.blockentity.MachineBlockEntity;
 import com.ravecraft.mod.menu.MachineMenu;
+import com.ravecraft.mod.recipe.CountedIngredient;
+import com.google.gson.JsonParser;
+import com.mojang.serialization.JsonOps;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
@@ -12,6 +15,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.RecipeBookMenu.PostPlaceAction;
 import net.minecraft.world.inventory.RecipeBookType;
 import net.minecraft.world.item.Item;
@@ -41,6 +45,31 @@ public class MachineMenuGameTest {
 		h.assertValueEqual(menu.getSlot(MachineBlockEntity.INPUT_0).getItem().getCount(), 3, "all three");
 		h.assertTrue(menu.getSlot(MachineBlockEntity.OUTPUT).getItem().isEmpty(), "output emptied");
 		h.assertValueEqual(count(inventory, ModItems.COPPER_WIRE), 4, "wire to the player");
+		h.succeed();
+	}
+
+	@GameTest
+	public void shiftClickRedstoneNeverReachesInputs(GameTestHelper h) {
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		MachineMenu menu = menu(h, player);
+		menu.getSlot(MachineBlockEntity.ENERGY).set(new ItemStack(Items.REDSTONE, 60));
+		player.getInventory().setItem(9, new ItemStack(Items.REDSTONE, 64));
+		menu.clicked(FIRST_INVENTORY, 0, ContainerInput.QUICK_MOVE, player);
+		h.assertValueEqual(menu.getSlot(MachineBlockEntity.ENERGY).getItem().getCount(), 64, "energy filled");
+		for (int i = MachineBlockEntity.INPUT_0; i <= MachineBlockEntity.INPUT_2; i++) {
+			h.assertTrue(menu.getSlot(i).getItem().isEmpty(), "no redstone in input " + i);
+		}
+		h.assertValueEqual(count(player.getInventory(), Items.REDSTONE), 60, "rest stays with the player");
+		h.succeed();
+	}
+
+	@GameTest
+	public void ingredientCountIsBounded(GameTestHelper h) {
+		var ops = h.getLevel().registryAccess().createSerializationContext(JsonOps.INSTANCE);
+		var json = JsonParser.parseString("{\"ingredient\":\"minecraft:copper_ingot\",\"count\":1000}");
+		h.assertTrue(CountedIngredient.CODEC.parse(ops, json).isError(), "count above a stack refused");
+		var ok = JsonParser.parseString("{\"ingredient\":\"minecraft:copper_ingot\",\"count\":64}");
+		h.assertTrue(CountedIngredient.CODEC.parse(ops, ok).isSuccess(), "a full stack accepted");
 		h.succeed();
 	}
 

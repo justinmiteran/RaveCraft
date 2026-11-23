@@ -19,7 +19,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.RecipeBookMenu.PostPlaceAction;
-import net.minecraft.world.inventory.RecipeBookType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -137,13 +136,6 @@ public class MachineMenuGameTest {
 		var codec = ModRecipes.WINDING.serializer().codec().codec();
 		h.assertTrue(codec.parse(ops, JsonParser.parseString(one)).isSuccess(), "one ingredient accepted");
 		h.assertTrue(codec.parse(ops, JsonParser.parseString(two)).isError(), "two ingredients refused");
-		h.succeed();
-	}
-
-	@GameTest
-	public void bookTypeIsFurnace(GameTestHelper h) {
-		MachineMenu menu = menu(h, h.makeMockPlayer(GameType.SURVIVAL));
-		h.assertValueEqual(menu.getRecipeBookType(), RecipeBookType.FURNACE, "furnace book");
 		h.succeed();
 	}
 

@@ -229,7 +229,7 @@ public class MachineMenu extends RecipeBookMenu {
 
 	@Override
 	public RecipeBookType getRecipeBookType() {
-		return RecipeBookType.FURNACE;
+		return MachineBookType.MACHINE;
 	}
 
 	/**

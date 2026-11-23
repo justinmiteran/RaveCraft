@@ -2,13 +2,13 @@ package com.ravecraft.mod.block;
 
 import com.ravecraft.mod.recipe.MachineKind;
 import com.ravecraft.mod.registry.ModRecipes;
+import com.ravecraft.mod.registry.ModSounds;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 
 /** The coil winder: winds copper into wire and wire into voice coils. */
 public class CoilWinderBlock extends MachineBlock {
-	private static final MachineEffects EFFECTS = new MachineEffects(SoundEvents.CRAFTER_CRAFT, 1.0F,
+	private static final MachineEffects EFFECTS = new MachineEffects(ModSounds.COIL_WINDER,
 			ParticleTypes.ELECTRIC_SPARK);
 
 	/**
@@ -25,9 +25,9 @@ public class CoilWinderBlock extends MachineBlock {
 		return ModRecipes.WINDING;
 	}
 
-	/** While it works: the click of the winding head, and sparks. */
+	/** While it works: the whine of the winding motor, and sparks. */
 	@Override
-	protected MachineEffects effects() {
+	public MachineEffects effects() {
 		return EFFECTS;
 	}
 }

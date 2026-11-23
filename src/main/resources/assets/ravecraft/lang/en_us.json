@@ -165,6 +165,10 @@
   "key.category.ravecraft.ravecraft": "RaveCraft",
   "tooltip.ravecraft.speaker.open_key": "[%s]: open the interface from the inventory",
   "gui.ravecraft.recipebook.toggle_recipes.machine": "Machine Recipes",
+  "subtitles.ravecraft.machine.coil_winder": "Coil Winder whirs",
+  "subtitles.ravecraft.machine.magnetizer": "Magnetizer hums",
+  "subtitles.ravecraft.machine.extruder": "Extruder rattles",
+  "subtitles.ravecraft.machine.etcher": "Etcher whirs",
   "tag.item.c.ingots.neodymium": "Neodymium Ingots",
   "tag.item.c.raw_materials.neodymium": "Raw Neodymium Materials",
   "tag.item.c.ores.neodymium": "Neodymium Ores",
@@ -172,5 +176,6 @@
   "tag.item.c.storage_blocks.raw_neodymium": "Raw Neodymium Storage Blocks",
   "tag.item.c.storage_blocks.neodymium": "Neodymium Storage Blocks",
   "tag.item.c.storage_blocks.silicon": "Silicon Storage Blocks",
-  "tag.item.c.silicon": "Silicon"
+  "tag.item.c.silicon": "Silicon",
+  "tag.item.ravecraft.molds": "Molds"
 }

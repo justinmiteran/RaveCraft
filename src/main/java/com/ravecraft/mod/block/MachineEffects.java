@@ -4,11 +4,11 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.sounds.SoundEvent;
 
 /**
- * What a working machine plays and shows on the client: a sound now and then, and a particle at its front.
+ * What a working machine plays and shows on the client: a sound looped as long as it works, and a particle at its
+ * front now and then.
  *
- * @param sound the sound played while it works
- * @param pitch the sound's base pitch, raised a little at random
+ * @param sound the loop played while it works
  * @param particle the particle shown at the front
  */
-public record MachineEffects(SoundEvent sound, float pitch, ParticleOptions particle) {
+public record MachineEffects(SoundEvent sound, ParticleOptions particle) {
 }

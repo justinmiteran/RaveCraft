@@ -22,6 +22,17 @@ These files contain textures by Mojang (© Mojang Studios, used under the
 `tools/textures/materials.py` reads both vanilla textures from the local Minecraft jar at generation time; the
 repository holds no other Mojang texture.
 
+## Sources: machine sounds
+
+The machine loops in `sounds/machine/` are cut, loudness-matched and looped by `tools/sounds/cut_sounds.py` from
+recordings by [BigSoundBank](https://bigsoundbank.com) (Joseph Sardin), released under
+[CC0 1.0](https://bigsoundbank.com/licenses.html). The originals, kept in `art/sounds/source/`, stay under CC0:
+
+- `coil_winder.ogg`: sound 3547, a drone motor;
+- `magnetizer.ogg`: sound 2437, a high-voltage transformer;
+- `extruder.ogg`: sound 0856, a small air compressor;
+- `etcher.ogg`: sound 0395, a laser printer.
+
 Full legal text: https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
 
 In short, you may share and adapt these assets if you:

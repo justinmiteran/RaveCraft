@@ -2,13 +2,13 @@ package com.ravecraft.mod.block;
 
 import com.ravecraft.mod.recipe.MachineKind;
 import com.ravecraft.mod.registry.ModRecipes;
+import com.ravecraft.mod.registry.ModSounds;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 
 /** The magnetizer: magnetizes iron and neodymium into magnets. */
 public class MagnetizerBlock extends MachineBlock {
-	private static final MachineEffects EFFECTS = new MachineEffects(SoundEvents.BEACON_AMBIENT, 1.0F,
+	private static final MachineEffects EFFECTS = new MachineEffects(ModSounds.MAGNETIZER,
 			ParticleTypes.ELECTRIC_SPARK);
 
 	/**
@@ -25,9 +25,9 @@ public class MagnetizerBlock extends MachineBlock {
 		return ModRecipes.MAGNETIZING;
 	}
 
-	/** While it works: the hum of its field and sparks. */
+	/** While it works: the hum of its transformer, and sparks. */
 	@Override
-	protected MachineEffects effects() {
+	public MachineEffects effects() {
 		return EFFECTS;
 	}
 }

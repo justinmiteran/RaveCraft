@@ -2,13 +2,13 @@ package com.ravecraft.mod.block;
 
 import com.ravecraft.mod.recipe.MachineKind;
 import com.ravecraft.mod.registry.ModRecipes;
+import com.ravecraft.mod.registry.ModSounds;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 
 /** The extruder: shapes bitumen in a mold into plastic parts. */
 public class ExtruderBlock extends MachineBlock {
-	private static final MachineEffects EFFECTS = new MachineEffects(SoundEvents.LAVA_POP, 1.0F,
+	private static final MachineEffects EFFECTS = new MachineEffects(ModSounds.EXTRUDER,
 			ParticleTypes.SMOKE);
 
 	/**
@@ -25,9 +25,9 @@ public class ExtruderBlock extends MachineBlock {
 		return ModRecipes.EXTRUDING;
 	}
 
-	/** While it works: the pop of hot bitumen and smoke. */
+	/** While it works: the rattle of its compressor, and smoke. */
 	@Override
-	protected MachineEffects effects() {
+	public MachineEffects effects() {
 		return EFFECTS;
 	}
 }

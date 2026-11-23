@@ -6,7 +6,6 @@ import com.ravecraft.mod.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
@@ -34,14 +33,12 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * A processing machine, like a furnace: it faces the player who placed it, is lit while it works, keeps its contents
- * in a {@link MachineBlockEntity} (dropped when broken) and ticks on the server only. Each machine gives its kind.
+ * in a {@link MachineBlockEntity} (dropped when broken), works on the server and plays its loop on the client.
+ * Each machine gives its kind.
  */
 public abstract class MachineBlock extends BaseEntityBlock {
 	public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
 	public static final BooleanProperty LIT = BlockStateProperties.LIT;
-	private static final double SOUND_CHANCE = 0.1;
-	private static final float SOUND_VOLUME = 0.4F;
-	private static final float PITCH_SPREAD = 0.2F;
 	private static final double FRONT_OFFSET = 0.52;
 	private static final double SPREAD = 0.6;
 	private static final double PARTICLE_HEIGHT = 0.4;
@@ -68,9 +65,9 @@ public abstract class MachineBlock extends BaseEntityBlock {
 	 *
 	 * @return the machine's sound and particle
 	 */
-	protected abstract MachineEffects effects();
+	public abstract MachineEffects effects();
 
-	/** While it works: now and then the machine's sound, and its particle at the front. */
+	/** While it works, its particle at the front; its loop is played by {@link MachineSounds}. */
 	@Override
 	public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
 		if (!state.getValue(LIT)) {
@@ -80,10 +77,6 @@ public abstract class MachineBlock extends BaseEntityBlock {
 		double x = pos.getX() + 0.5;
 		double y = pos.getY();
 		double z = pos.getZ() + 0.5;
-		if (random.nextDouble() < SOUND_CHANCE) {
-			level.playLocalSound(x, y, z, effects.sound(), SoundSource.BLOCKS, SOUND_VOLUME,
-					effects.pitch() + random.nextFloat() * PITCH_SPREAD, false);
-		}
 		Direction facing = state.getValue(FACING);
 		double across = random.nextDouble() * SPREAD - SPREAD / 2;
 		double dx = facing.getAxis() == Direction.Axis.X ? facing.getStepX() * FRONT_OFFSET : across;
@@ -153,6 +146,6 @@ public abstract class MachineBlock extends BaseEntityBlock {
 			BlockEntityType<T> type) {
 		return level instanceof ServerLevel
 				? createTickerHelper(type, ModBlockEntities.MACHINE, MachineBlockEntity::serverTick)
-				: null;
+				: createTickerHelper(type, ModBlockEntities.MACHINE, MachineSounds::clientTick);
 	}
 }

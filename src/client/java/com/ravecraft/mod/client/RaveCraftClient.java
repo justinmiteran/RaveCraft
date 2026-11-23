@@ -7,6 +7,7 @@ import com.ravecraft.mod.client.audio.render.ReverbScheduler;
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.block.SpeakerScreenOpener;
 import com.ravecraft.mod.client.audio.LocalPlayback;
+import com.ravecraft.mod.client.audio.MachineLoopSounds;
 import com.ravecraft.mod.client.audio.stream.ClientRelay;
 import com.ravecraft.mod.client.debug.AcousticDebugEntry;
 import com.ravecraft.mod.client.debug.SoundViewEntries;
@@ -34,6 +35,7 @@ public class RaveCraftClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		SpeakerPowered.register();
 		LocalPlayback.register();
+		MachineLoopSounds.register();
 		ClientRelay.init();
 		AcousticSettingsClient.register();
 		AcousticRenderer.register();

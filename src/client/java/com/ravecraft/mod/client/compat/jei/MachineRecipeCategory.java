@@ -1,9 +1,9 @@
 package com.ravecraft.mod.client.compat.jei;
 
 import com.ravecraft.mod.RaveCraft;
-import com.ravecraft.mod.core.machine.MachineConstants;
 import com.ravecraft.mod.menu.MachineMenu;
 import com.ravecraft.mod.recipe.CountedIngredient;
+import com.ravecraft.mod.recipe.MachineEnergy;
 import com.ravecraft.mod.recipe.MachineKind;
 import com.ravecraft.mod.recipe.MachineRecipe;
 import java.util.List;
@@ -15,15 +15,16 @@ import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.category.AbstractRecipeCategory;
 import mezz.jei.api.recipe.types.IRecipeHolderType;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
 /**
  * The JEI page of one machine, laid out like the furnace page and like the machine screen: the counted inputs (and
- * the mold) on top, the energy bolt and the redstone energy slot below them, the progress arrow, the result and the
+ * the mold) on top, the energy bolt and the energy slot (every machine energy item) below them, the progress arrow, the result and the
  * operation time. Positions are those of {@link MachineMenu}, moved to the top left corner.
  */
 final class MachineRecipeCategory extends AbstractRecipeCategory<RecipeHolder<MachineRecipe>> {
@@ -78,10 +79,10 @@ final class MachineRecipeCategory extends AbstractRecipeCategory<RecipeHolder<Ma
 				.add(mold)
 				.setStandardSlotBackground());
 		builder.addSlot(RecipeIngredientRole.RENDER_ONLY, MachineMenu.ENERGY_X - shiftX, MachineMenu.ENERGY_Y - SHIFT_Y)
-				.addItemStacks(List.of(new ItemStack(Items.REDSTONE), new ItemStack(Items.REDSTONE_BLOCK)))
+				.addItemStacks(energyItems())
 				.setStandardSlotBackground()
-				.addRichTooltipCallback((view, tooltip) -> tooltip.add(Component.translatable("gui.ravecraft.jei.energy",
-						MachineConstants.OPERATIONS_PER_DUST, MachineConstants.OPERATIONS_PER_BLOCK)));
+				.addRichTooltipCallback((view, tooltip) -> view.getDisplayedItemStack().ifPresent(stack ->
+						tooltip.add(Component.translatable("gui.ravecraft.jei.energy", operations(stack)))));
 		builder.addOutputSlot(MachineMenu.OUTPUT_X - shiftX, MachineMenu.OUTPUT_Y - SHIFT_Y)
 				.add(recipe.result())
 				.setOutputSlotBackground();
@@ -100,6 +101,22 @@ final class MachineRecipeCategory extends AbstractRecipeCategory<RecipeHolder<Ma
 				.setPosition(arrowX, TIME_Y)
 				.setTextAlignment(HorizontalAlignment.RIGHT)
 				.setColor(0xFF808080);
+	}
+
+	/** Every item of the synchronised {@link MachineEnergy} recipes, in recipe order. */
+	private static List<ItemStack> energyItems() {
+		ClientLevel level = Minecraft.getInstance().level;
+		if (level == null) {
+			return List.of();
+		}
+		return level.recipeAccess().getSynchronizedRecipes().getAllOfType(MachineEnergy.TYPE).stream()
+				.flatMap(holder -> holder.value().ingredient().items())
+				.map(ItemStack::new).toList();
+	}
+
+	private static int operations(ItemStack stack) {
+		ClientLevel level = Minecraft.getInstance().level;
+		return level == null ? 0 : MachineEnergy.operations(level, stack);
 	}
 
 	/** Every item the ingredient accepts, each at the counted amount. */

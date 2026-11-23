@@ -1,8 +1,9 @@
 """Materials textures (PR 7a): shale family, oil shale, neodymium ore and the raw materials.
 
-Procedural textures are built here from their seeds; the ones whose validated shape was drawn by hand during the
-proposals (shale bricks, chiseled shale, the item silhouettes, the oil shale tar seams) are stored as indexed maps:
-a palette, dark to light, and 16 rows of palette indices ("." = transparent, or "keep the base" for an overlay).
+Procedural textures are built here from their seeds; the ones whose validated shape was drawn by hand or picked during
+the proposals (shale tiles, shale bricks, chiseled shale, the item silhouettes, the oil shale tar seams) are stored as
+indexed maps: a palette, dark to light, and 16 rows of palette indices ("." = transparent, or "keep the base" for
+an overlay).
 
 Two textures start from a Mojang texture read from the local Minecraft jar at generation time (see
 LICENSE-ASSETS.md): the neodymium ore draws its grains on vanilla deepslate, and the neodymium ingot is a recolour
@@ -13,7 +14,6 @@ from __future__ import annotations
 import io
 import random
 import zipfile
-from functools import lru_cache
 from pathlib import Path
 
 from PIL import Image
@@ -43,71 +43,127 @@ def indexed(spec, base=None):
 
 
 # ---------------------------------------------------------------- shale: laminae in the colours of a real shale
-BLUE = [(110, 116, 128), (126, 133, 145), (146, 153, 165)]
-GREY = [(96, 92, 86), (116, 112, 106), (138, 135, 129)]
-RUST = [(96, 81, 71), (114, 100, 89), (132, 117, 106)]
-OCHRE = [(112, 95, 70), (134, 116, 90), (155, 138, 113)]
-CREVICE = (66, 62, 58)
-LIP = {"BLUE": (166, 173, 184), "GREY": (156, 153, 147), "RUST": (148, 134, 122), "OCHRE": (172, 155, 128)}
-FAMILIES = {"BLUE": BLUE, "GREY": GREY, "RUST": RUST, "OCHRE": OCHRE}
-SHALE_WEIGHTS = {"BLUE": 4, "GREY": 3, "RUST": 2, "OCHRE": 2}
+# The 6 random blockstate variants were picked during the proposals from 400 seeded tiles of long streaks (the
+# closest to the median colour, so none reads as a patch on a wall) and quantised to one 10-colour palette. They are
+# stored as indexed maps so the result no longer depends on the Pillow version.
 SHALE_VARIANTS = 6
-SHALE_COLOURS = 10
+SHALE_PALETTE = [(66, 62, 58), (96, 88, 80), (112, 95, 70), (114, 100, 89), (116, 112, 106), (110, 116, 128), (133, 117, 98), (127, 133, 143), (147, 137, 120), (153, 158, 165)]
+# The 6 random blockstate variants, frozen from the seeded laminae generator of the proposals.
+SHALE_TILES = (
+    (
+        "7799950050055597",
+        "1100001110000001",
+        "0010011414414410",
+        "4444499775444444",
+        "8822222666668848",
+        "3848488888883368",
+        "1017977944444410",
+        "3384848888336363",
+        "8888884666666666",
+        "6344946663666663",
+        "3666017775768388",
+        "5577777779950500",
+        "7779999997959977",
+        "7775799995050557",
+        "6699977662626686",
+        "6999788868866666",
+    ),
+    (
+        "2667977777778668",
+        "8888889777778888",
+        "6662020266666866",
+        "8886866414444148",
+        "6266648444484666",
+        "8666667759999782",
+        "0199444490000510",
+        "0000177500505111",
+        "3333333797777761",
+        "9366679999999997",
+        "6665555057579776",
+        "7888884887777777",
+        "9999978888888899",
+        "5055541441149994",
+        "7999110111010001",
+        "2000202024414444",
+    ),
+    (
+        "5005111000100010",
+        "7788888202227797",
+        "3336133344433633",
+        "6363866666633313",
+        "3311016333333333",
+        "8888865777777775",
+        "0000017777757797",
+        "7586888888887777",
+        "5578888888777975",
+        "7788888888887777",
+        "7726666685777977",
+        "9999411941499977",
+        "0000510011500055",
+        "5779748998887777",
+        "4110111001141488",
+        "4994444999999999",
+    ),
+    (
+        "4994420002444999",
+        "1001505544141000",
+        "4444441444844441",
+        "4441499779757744",
+        "7811100177777777",
+        "9444117777777755",
+        "9777499999979757",
+        "5111166666550555",
+        "6664143313666666",
+        "6666648888888888",
+        "4448444847777744",
+        "9779795999979997",
+        "9550500005888888",
+        "2002022999988688",
+        "8882686989484888",
+        "2222202020288888",
+    ),
+    (
+        "3363313333336633",
+        "3366366666633333",
+        "1363333333333333",
+        "3133333313333366",
+        "3333336666633333",
+        "6363666886886666",
+        "6666779777775756",
+        "3633331999979999",
+        "6318397799977797",
+        "7200202200025977",
+        "7944498577775977",
+        "4177101194999444",
+        "7797777701000177",
+        "7777666688686367",
+        "9999999700101999",
+        "1444484666999994",
+    ),
+    (
+        "8999979999996888",
+        "4811455055005184",
+        "7666684444844979",
+        "6888888879999988",
+        "6666677777776666",
+        "1333333364444444",
+        "7777531333633797",
+        "7999944883399599",
+        "5500051001150500",
+        "8411101110101988",
+        "4414141100100014",
+        "6888886686886666",
+        "8444436666666444",
+        "7748499477799977",
+        "6266500555500056",
+        "5777765555557977",
+    ),
+)
 
 
-def shale_raw(seed, weights=SHALE_WEIGHTS, dark_lines=0.22, stack=0.55):
-    """Each row is a lamina of long streaks (4-11 px). A streak takes a hue family (often the one above, so bands
-    stack) and a tone; a dark streak has a crevice core, and the pixel above a crevice core gets a lit lip."""
-    rnd = random.Random(seed)
-    fams = list(weights)
-    fam_at, tone_at = {}, {}
-    for y in range(S):
-        x, done = rnd.randrange(S), 0
-        while done < S:
-            n = rnd.randint(4, 11)
-            above = fam_at.get(((x + n // 2) % S, y - 1))
-            f = above if above and rnd.random() < stack else rnd.choices(fams, [weights[k] for k in fams])[0]
-            dark = rnd.random() < dark_lines
-            t = 0 if dark else rnd.choice((1, 1, 2))
-            for i in range(n):
-                xx = (x + i) % S
-                fam_at[(xx, y)] = f
-                tt = t
-                if not dark and rnd.random() < 0.18:
-                    tt = max(0, min(2, t + rnd.choice((-1, 1))))
-                if dark and 0 < i < n - 1 and rnd.random() < 0.6:
-                    tt = -1
-                tone_at[(xx, y)] = tt
-            x, done = x + n, done + n
-    img = Image.new("RGBA", (S, S))
-    for (x, y), t in tone_at.items():
-        img.putpixel((x, y), (*(CREVICE if t == -1 else FAMILIES[fam_at[(x, y)]][t]), 255))
-    for (x, y), t in tone_at.items():
-        if t == -1 and tone_at[(x, (y - 1) % S)] >= 1:
-            img.putpixel((x, (y - 1) % S), (*LIP[fam_at[(x, (y - 1) % S)]], 255))
-    return img
-
-
-def _mean(img):
-    px = [img.getpixel((x, y))[:3] for y in range(S) for x in range(S)]
-    blue = sum(1 for p in px if p[2] > p[0] + 6) / len(px)
-    return [sum(p[c] for p in px) / len(px) for c in range(3)] + [blue * 100]
-
-
-@lru_cache(maxsize=1)
 def shale_variants():
-    """The 6 random blockstate variants: of 400 seeds, the tiles closest to the median colour and blue share (so
-    none reads as a patch on a wall), quantised together to one 10-colour palette."""
-    cands = [(s, shale_raw(s)) for s in range(41, 441)]
-    means = {s: _mean(img) for s, img in cands}
-    med = [sorted(m[c] for m in means.values())[len(means) // 2] for c in range(4)]
-    best = sorted(cands, key=lambda c: sum((means[c[0]][i] - med[i]) ** 2 for i in range(4)))[:SHALE_VARIANTS]
-    strip = Image.new("RGB", (S * SHALE_VARIANTS, S))
-    for i, (_, img) in enumerate(best):
-        strip.paste(img.convert("RGB"), (i * S, 0))
-    q = strip.quantize(colors=SHALE_COLOURS, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
-    q = q.convert("RGBA")
-    return tuple(q.crop((i * S, 0, (i + 1) * S, S)) for i in range(SHALE_VARIANTS))
+    """The 6 shale tiles, also the base of the oil shale variants."""
+    return tuple(indexed((SHALE_PALETTE, *rows)) for rows in SHALE_TILES)
 
 
 # ---------------------------------------------------------------- oil shale: shale + a straight tar seam

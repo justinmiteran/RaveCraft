@@ -148,6 +148,9 @@ public class MaterialsGameTest {
 	public void toolTiers(GameTestHelper h) {
 		BlockState oil = ModBlocks.OIL_SHALE.defaultBlockState();
 		BlockState neodymium = ModBlocks.DEEPSLATE_NEODYMIUM_ORE.defaultBlockState();
+		for (Block ore : ModBlocks.ores()) {
+			h.assertFalse(ItemStack.EMPTY.isCorrectToolForDrops(ore.defaultBlockState()), "bare hand on " + ore);
+		}
 		h.assertFalse(new ItemStack(Items.WOODEN_PICKAXE).isCorrectToolForDrops(oil), "wood on oil shale");
 		h.assertTrue(new ItemStack(Items.STONE_PICKAXE).isCorrectToolForDrops(oil), "stone on oil shale");
 		h.assertFalse(new ItemStack(Items.STONE_PICKAXE).isCorrectToolForDrops(neodymium), "stone on neodymium");
@@ -243,11 +246,52 @@ public class MaterialsGameTest {
 		h.succeed();
 	}
 
-	private static boolean hasOre(GameTestHelper h, ResourceKey<Biome> biome, ResourceKey<PlacedFeature> ore) {
+	@GameTest
+	public void oilShaleRunsAfterShale(GameTestHelper h) {
+		for (ResourceKey<Biome> biome : List.of(Biomes.PLAINS, Biomes.DESERT)) {
+			List<Holder<PlacedFeature>> ores = ores(h, biome);
+			int shale = indexOf(ores, ModWorldgen.PLACED_SHALE);
+			h.assertTrue(shale >= 0 && shale < indexOf(ores, ModWorldgen.PLACED_OIL_SHALE),
+					biome.identifier() + ": shale pockets placed before the oil shale veins");
+		}
+		h.succeed();
+	}
+
+	@GameTest
+	public void neodymiumFortuneAndExplosions(GameTestHelper h) {
+		BlockState ore = ModBlocks.DEEPSLATE_NEODYMIUM_ORE.defaultBlockState();
+		ItemStack fortune = enchanted(h, Enchantments.FORTUNE, 3);
+		ItemStack tool = new ItemStack(Items.IRON_PICKAXE);
+		int max = 0;
+		int exploded = 0;
+		for (int i = 0; i < 50; i++) {
+			max = Math.max(max, count(drops(h, ore, fortune), ModItems.RAW_NEODYMIUM));
+			exploded += count(ore.getDrops(params(h, tool).withParameter(LootContextParams.EXPLOSION_RADIUS, 100.0F)),
+					ModItems.RAW_NEODYMIUM);
+		}
+		h.assertTrue(max > 1, "fortune drops more than one raw neodymium, max " + max);
+		h.assertTrue(exploded < 25, "explosion decays raw neodymium, got " + exploded);
+		h.succeed();
+	}
+
+	private static List<Holder<PlacedFeature>> ores(GameTestHelper h, ResourceKey<Biome> biome) {
 		List<HolderSet<PlacedFeature>> steps = h.getLevel().registryAccess().lookupOrThrow(Registries.BIOME)
 				.getOrThrow(biome).value().getGenerationSettings().features();
 		int step = GenerationStep.Decoration.UNDERGROUND_ORES.ordinal();
-		return steps.size() > step && steps.get(step).stream().anyMatch(feature -> feature.is(ore));
+		return steps.size() > step ? steps.get(step).stream().toList() : List.of();
+	}
+
+	private static int indexOf(List<Holder<PlacedFeature>> features, ResourceKey<PlacedFeature> key) {
+		for (int i = 0; i < features.size(); i++) {
+			if (features.get(i).is(key)) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	private static boolean hasOre(GameTestHelper h, ResourceKey<Biome> biome, ResourceKey<PlacedFeature> ore) {
+		return indexOf(ores(h, biome), ore) >= 0;
 	}
 
 	@GameTest

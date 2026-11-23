@@ -2,11 +2,15 @@ package com.ravecraft.mod.datagen;
 
 import com.ravecraft.mod.block.SpeakerBlock;
 import com.ravecraft.mod.client.item.SpeakerPowered;
+import com.ravecraft.mod.registry.ModBlockFamilies;
 import com.ravecraft.mod.registry.ModBlocks;
+import com.ravecraft.mod.registry.ModItems;
+import java.util.stream.IntStream;
 import net.fabricmc.fabric.api.client.datagen.v1.provider.FabricModelProvider;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
+import net.minecraft.client.data.models.MultiVariant;
 import net.minecraft.client.color.item.Dye;
 import net.minecraft.client.data.models.blockstates.MultiVariantGenerator;
 import net.minecraft.client.data.models.model.ItemModelUtils;
@@ -14,6 +18,7 @@ import net.minecraft.client.renderer.item.ItemModel;
 import net.minecraft.client.data.models.model.ModelLocationUtils;
 import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.client.data.models.model.TextureMapping;
+import net.minecraft.client.renderer.block.dispatch.Variant;
 import net.minecraft.client.renderer.item.properties.select.DisplayContext;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
@@ -26,6 +31,10 @@ import net.minecraft.world.level.block.Block;
  * Blockbench ({@code art/models}), export the JSON to {@code assets/<modid>/models/block/} and reference it here.
  */
 public class RaveCraftModelProvider extends FabricModelProvider {
+	private static final int SHALE_VARIANTS = 6;
+	private static final int OIL_SHALE_VARIANTS = 8;
+	private static final int NEODYMIUM_VARIANTS = 6;
+
 	/**
 	 * A provider writing to {@code output}.
 	 *
@@ -39,6 +48,43 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 	public void generateBlockStateModels(BlockModelGenerators generators) {
 		speaker(ModBlocks.PORTABLE_SPEAKER, generators);
 		speaker(ModBlocks.PARTY_SPEAKER, generators);
+		shale(generators);
+		randomVariants(ModBlocks.OIL_SHALE, OIL_SHALE_VARIANTS, generators);
+		randomVariants(ModBlocks.DEEPSLATE_NEODYMIUM_ORE, NEODYMIUM_VARIANTS, generators);
+		generators.family(ModBlocks.POLISHED_SHALE).generateFor(ModBlockFamilies.POLISHED_SHALE);
+		generators.family(ModBlocks.SHALE_BRICKS).generateFor(ModBlockFamilies.SHALE_BRICKS);
+	}
+
+	/**
+	 * Shale: a random choice of its texture variants per block, like oil shale; the stairs, slab and wall use
+	 * {@code shale_0}, and a double slab is a random shale block.
+	 */
+	private static void shale(BlockModelGenerators generators) {
+		MultiVariant shale = randomVariants(ModBlocks.SHALE, SHALE_VARIANTS, generators);
+		TextureMapping first = TextureMapping.cube(TextureMapping.getBlockTexture(ModBlocks.SHALE, "_0"));
+		generators.new BlockFamilyProvider(first).stairs(ModBlocks.SHALE_STAIRS).wall(ModBlocks.SHALE_WALL);
+		Identifier bottom = ModelTemplates.SLAB_BOTTOM.create(ModBlocks.SHALE_SLAB, first, generators.modelOutput);
+		Identifier top = ModelTemplates.SLAB_TOP.create(ModBlocks.SHALE_SLAB, first, generators.modelOutput);
+		generators.blockStateOutput.accept(BlockModelGenerators.createSlab(ModBlocks.SHALE_SLAB,
+				BlockModelGenerators.plainVariant(bottom), BlockModelGenerators.plainVariant(top), shale));
+		generators.registerSimpleItemModel(ModBlocks.SHALE_SLAB, bottom);
+	}
+
+	/**
+	 * A cube per texture variant ({@code <id>_0} ... {@code <id>_<count-1>}), one picked at random per block with
+	 * equal weights and no rotation; the item shows {@code _0}.
+	 *
+	 * @return the random variants, for reuse (double slabs)
+	 */
+	private static MultiVariant randomVariants(Block block, int count, BlockModelGenerators generators) {
+		Variant[] variants = IntStream.range(0, count).mapToObj(i -> BlockModelGenerators.plainModel(
+				ModelTemplates.CUBE_ALL.createWithSuffix(block, "_" + i,
+						TextureMapping.cube(TextureMapping.getBlockTexture(block, "_" + i)), generators.modelOutput)))
+				.toArray(Variant[]::new);
+		MultiVariant random = BlockModelGenerators.variants(variants);
+		generators.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(block, random));
+		generators.registerSimpleItemModel(block, ModelLocationUtils.getModelLocation(block, "_0"));
+		return random;
 	}
 
 	/**
@@ -78,5 +124,8 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 
 	@Override
 	public void generateItemModels(ItemModelGenerators generators) {
+		for (Item item : ModItems.materials()) {
+			generators.generateFlatItem(item, ModelTemplates.FLAT_ITEM);
+		}
 	}
 }

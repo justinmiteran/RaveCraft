@@ -1,0 +1,30 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "ravecraft:block/oil_shale_0"
+      },
+      {
+        "model": "ravecraft:block/oil_shale_1"
+      },
+      {
+        "model": "ravecraft:block/oil_shale_2"
+      },
+      {
+        "model": "ravecraft:block/oil_shale_3"
+      },
+      {
+        "model": "ravecraft:block/oil_shale_4"
+      },
+      {
+        "model": "ravecraft:block/oil_shale_5"
+      },
+      {
+        "model": "ravecraft:block/oil_shale_6"
+      },
+      {
+        "model": "ravecraft:block/oil_shale_7"
+      }
+    ]
+  }
+}

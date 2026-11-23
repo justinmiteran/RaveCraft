@@ -19,6 +19,8 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
+import materials  # sibling module: shale family, ores, raw materials
+
 MOD_ID = "ravecraft"
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / f"src/main/resources/assets/{MOD_ID}"
@@ -353,6 +355,8 @@ ITEMS = {  # name -> fn (flat item textures)
     "party_speaker_overlay": party_speaker_overlay,
     "party_speaker_overlay_on": party_speaker_overlay_on,
 }
+BLOCKS.update(materials.BLOCKS)
+ITEMS.update(materials.ITEMS)
 
 
 # ---------------------------------------------------------------- GUI sprites (speaker screen)

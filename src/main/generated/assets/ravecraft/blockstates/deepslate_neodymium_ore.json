@@ -1,0 +1,24 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "ravecraft:block/deepslate_neodymium_ore_0"
+      },
+      {
+        "model": "ravecraft:block/deepslate_neodymium_ore_1"
+      },
+      {
+        "model": "ravecraft:block/deepslate_neodymium_ore_2"
+      },
+      {
+        "model": "ravecraft:block/deepslate_neodymium_ore_3"
+      },
+      {
+        "model": "ravecraft:block/deepslate_neodymium_ore_4"
+      },
+      {
+        "model": "ravecraft:block/deepslate_neodymium_ore_5"
+      }
+    ]
+  }
+}

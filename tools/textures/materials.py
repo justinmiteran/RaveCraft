@@ -188,6 +188,29 @@ SHALE_TOP = (
 )
 
 
+# The top and bottom of oil shale: the shale bedding plane crossed by the outcrop of the tar seam (proposal A), a
+# broken wavy band shaded like a vanilla coal ore spot. Indices 0-9 are the shale palette, a-f the tar ramp.
+TAR_RAMP = [(30, 26, 28), (38, 33, 35), (47, 41, 42), (58, 51, 50), (72, 63, 58), (88, 78, 68)]
+OIL_SHALE_TOP = (
+    "1131133433331111",
+    "3331134444111111",
+    "3333133344311133",
+    "4311113333311131",
+    "3331113344111113",
+    "1111133343133331",
+    "111111133fee1133",
+    "eee1133febba1fee",
+    "bbbe11fba1111ebb",
+    "111e13e111344111",
+    "1331131144664441",
+    "1334336466446431",
+    "1343466664464343",
+    "3333344464643333",
+    "3333133464443333",
+    "3131134464331133",
+)
+
+
 # ---------------------------------------------------------------- oil shale: shale + a straight tar seam
 TAR = [(24, 21, 24), (32, 28, 31), (42, 37, 40), (58, 53, 57)]
 # Per variant: the seam's first row and its two rows of TAR indices (the lower row is the thick part).
@@ -498,6 +521,7 @@ BLOCKS.update({f"oil_shale_{i}": _oil(i) for i in range(len(OIL_SEAMS))})
 BLOCKS.update({f"deepslate_neodymium_ore_{i}": _ore(s) for i, s in enumerate(NEODYMIUM_SEEDS)})
 BLOCKS.update({
     "shale_top": lambda: indexed((SHALE_PALETTE, *SHALE_TOP)),
+    "oil_shale_top": lambda: indexed((SHALE_PALETTE + TAR_RAMP, *OIL_SHALE_TOP)),
     "polished_shale": polished_shale,
     "shale_bricks": lambda: indexed(SHALE_BRICKS),
     "chiseled_shale": lambda: indexed(CHISELED_SHALE),

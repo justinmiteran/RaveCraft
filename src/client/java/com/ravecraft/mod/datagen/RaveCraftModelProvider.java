@@ -52,7 +52,8 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 		speaker(ModBlocks.PORTABLE_SPEAKER, generators);
 		speaker(ModBlocks.PARTY_SPEAKER, generators);
 		shale(generators);
-		randomVariants(ModBlocks.OIL_SHALE, OIL_SHALE_VARIANTS, shaleTop(), generators);
+		randomVariants(ModBlocks.OIL_SHALE, OIL_SHALE_VARIANTS,
+				TextureMapping.getBlockTexture(ModBlocks.OIL_SHALE, "_top"), generators);
 		randomVariants(ModBlocks.DEEPSLATE_NEODYMIUM_ORE, NEODYMIUM_VARIANTS, null, generators);
 		ModBlocks.storageBlocks().forEach(generators::createTrivialCube);
 		generators.family(ModBlocks.POLISHED_SHALE).generateFor(ModBlockFamilies.POLISHED_SHALE);
@@ -77,7 +78,7 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 		generators.registerSimpleItemModel(ModBlocks.SHALE_SLAB, bottom);
 	}
 
-	/** The bedding plane on top and bottom of shale and oil shale, whose laminae only show on the sides. */
+	/** The bedding plane on top and bottom of shale, whose laminae only show on the sides. */
 	private static Material shaleTop() {
 		return TextureMapping.getBlockTexture(ModBlocks.SHALE, "_top");
 	}

@@ -224,7 +224,7 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 
 - Chaque recette de table de craft, de fonte et de machine a un critère `has_<ingrédient>` **par ingrédient distinct**, combinés en « ou » : elle se débloque dès que le joueur possède l'un d'eux.
 - La bobineuse, le graveur, l'extrudeuse et le moule vierge se débloquent donc avec le fer ou le cuivre, très tôt ; le magnétiseur aussi, mais sa fabrication demande du néodyme, donc une descente en profondeur avant la première enceinte (choix de 7d).
-- Le moule vierge n'est pas un moule : il ne va pas dans l'extrudeuse et n'est pas dans le tag des moules. Il s'empile par 16.
+- Le moule vierge n'est pas un moule : il ne va pas dans l'emplacement du moule de l'extrudeuse et n'est pas dans le tag des moules. Il s'empile par 16.
 
 ### 6.3 Infobulles
 

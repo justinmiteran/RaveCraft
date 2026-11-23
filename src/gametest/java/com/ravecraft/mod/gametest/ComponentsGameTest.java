@@ -24,6 +24,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -147,6 +148,7 @@ public class ComponentsGameTest {
 		ItemStack blank = new ItemStack(ModItems.BLANK_MOLD);
 		h.assertValueEqual(blank.getMaxStackSize(), 16, "blank mold stack size");
 		h.assertFalse(blank.is(ModTags.Items.MOLDS), "blank mold not in the molds tag");
+		CreativeModeTabs.tryRebuildTabContents(h.getLevel().enabledFeatures(), false, h.getLevel().registryAccess());
 		h.assertTrue(ModCreativeTabs.RAVECRAFT.contains(blank), "blank mold in the tab");
 		h.setBlock(POS, ModBlocks.EXTRUDER);
 		MachineBlockEntity extruder = h.getBlockEntity(POS, MachineBlockEntity.class);

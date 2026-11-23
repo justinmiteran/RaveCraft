@@ -27,6 +27,7 @@ public final class MachineProcess {
 	private int total;
 	private int progress;
 	private int energy;
+	private int capacity;
 
 	/**
 	 * Sets the recipe the inputs currently match. The same recipe keeps the progress (and takes the given duration, which
@@ -79,6 +80,7 @@ public final class MachineProcess {
 	private boolean start(IntSupplier refuel) {
 		if (energy == 0) {
 			energy = Math.min(MachineConstants.MAX_ENERGY, Math.max(0, refuel.getAsInt()));
+			capacity = energy > 0 ? energy : capacity;
 		}
 		if (energy == 0) {
 			return false;
@@ -92,12 +94,14 @@ public final class MachineProcess {
 	 * {@link #setRecipe}, which keeps the progress if it names the same recipe.
 	 *
 	 * @param savedEnergy the energy reserve
+	 * @param savedCapacity the units of the last energy item, never below the reserve
 	 * @param savedProgress the progress of the current operation, in ticks
 	 * @param savedRecipe the identity of the recipe in progress, or null
 	 */
-	public void load(int savedEnergy, int savedProgress, @Nullable Object savedRecipe) {
+	public void load(int savedEnergy, int savedCapacity, int savedProgress, @Nullable Object savedRecipe) {
 		recipe = savedRecipe;
 		energy = Math.clamp(savedEnergy, 0, MachineConstants.MAX_ENERGY);
+		capacity = Math.clamp(savedCapacity, energy, MachineConstants.MAX_ENERGY);
 		progress = Math.max(0, savedProgress);
 	}
 
@@ -108,6 +112,16 @@ public final class MachineProcess {
 	 */
 	public int energy() {
 		return energy;
+	}
+
+	/**
+	 * Returns the units the last energy item gave, so a gauge shows the reserve against a full item, like the furnace
+	 * flame against the fuel's burn time.
+	 *
+	 * @return the units of the last energy item (0 before the first one)
+	 */
+	public int capacity() {
+		return capacity;
 	}
 
 	/**

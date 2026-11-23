@@ -55,6 +55,7 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 	private static final int[] SLOTS_SIDE = {ENERGY};
 	private static final int[] SLOTS_DOWN = {OUTPUT};
 	private static final String ENERGY_KEY = "energy";
+	private static final String CAPACITY_KEY = "energy_capacity";
 	private static final String PROGRESS_KEY = "progress";
 	private static final String RECIPE_KEY = "recipe";
 
@@ -68,6 +69,7 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 			return switch (index) {
 				case MachineMenu.DATA_PROGRESS -> process.progress();
 				case MachineMenu.DATA_TOTAL -> process.total();
+				case MachineMenu.DATA_CAPACITY -> process.capacity();
 				default -> process.energy();
 			};
 		}
@@ -155,7 +157,7 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 	}
 
 	/**
-	 * Returns the values the menu syncs: progress, total and energy.
+	 * Returns the values the menu syncs: progress, total, energy and energy capacity.
 	 *
 	 * @return the read-only menu data
 	 */
@@ -266,6 +268,7 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 		super.saveAdditional(output);
 		ContainerHelper.saveAllItems(output, items);
 		output.putInt(ENERGY_KEY, process.energy());
+		output.putInt(CAPACITY_KEY, process.capacity());
 		output.putInt(PROGRESS_KEY, process.progress());
 		output.storeNullable(RECIPE_KEY, Recipe.KEY_CODEC, recipe == null ? null : recipe.id());
 	}
@@ -275,7 +278,8 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 		super.loadAdditional(input);
 		ContainerHelper.loadAllItems(input, items);
 		ResourceKey<Recipe<?>> saved = input.read(RECIPE_KEY, Recipe.KEY_CODEC).orElse(null);
-		process.load(input.getIntOr(ENERGY_KEY, 0), input.getIntOr(PROGRESS_KEY, 0), saved);
+		process.load(input.getIntOr(ENERGY_KEY, 0), input.getIntOr(CAPACITY_KEY, 0), input.getIntOr(PROGRESS_KEY, 0),
+				saved);
 		dirty = true;
 	}
 

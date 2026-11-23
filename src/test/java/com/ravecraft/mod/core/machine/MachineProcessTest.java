@@ -143,10 +143,10 @@ class MachineProcessTest {
 	@Test
 	void energyNeverExceedsMax() {
 		MachineProcess process = new MachineProcess();
-		process.load(500, 20, null);
+		process.load(500, 900, 20, null);
 		assertEquals(MachineConstants.MAX_ENERGY, process.energy());
 		assertEquals(20, process.progress());
-		process.load(-3, -1, null);
+		process.load(-3, -3, -1, null);
 		assertEquals(0, process.energy());
 		assertEquals(0, process.progress());
 	}
@@ -162,7 +162,7 @@ class MachineProcessTest {
 	@Test
 	void loadedProgressSurvivesFirstLookup() {
 		MachineProcess process = new MachineProcess();
-		process.load(7, 50, WIRE);
+		process.load(7, 8, 50, WIRE);
 		process.setRecipe(WIRE, 100);
 		assertEquals(50, process.progress());
 		assertEquals(100, process.total());
@@ -170,5 +170,29 @@ class MachineProcessTest {
 		assertEquals(51, process.progress());
 		process.setRecipe(COIL, 100);
 		assertEquals(0, process.progress());
+	}
+
+	@Test
+	void refuelSetsCapacityToTheFuelUnits() {
+		MachineProcess process = running(WIRE);
+		Fuel dust = new Fuel(8);
+		assertEquals(0, process.capacity());
+		runOperation(process, dust);
+		assertEquals(8, process.capacity());
+		assertEquals(7, process.energy());
+		runOperation(process, dust);
+		assertEquals(8, process.capacity());
+		assertEquals(6, process.energy());
+	}
+
+	@Test
+	void loadedCapacityHoldsTheEnergy() {
+		MachineProcess process = new MachineProcess();
+		process.load(5, 8, 0, null);
+		assertEquals(8, process.capacity());
+		process.load(7, 0, 0, null);
+		assertEquals(7, process.capacity());
+		process.load(500, 900, 0, null);
+		assertEquals(MachineConstants.MAX_ENERGY, process.capacity());
 	}
 }

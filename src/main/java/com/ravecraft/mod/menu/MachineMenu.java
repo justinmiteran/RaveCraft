@@ -2,7 +2,6 @@ package com.ravecraft.mod.menu;
 
 import com.ravecraft.mod.block.MachineBlock;
 import com.ravecraft.mod.blockentity.MachineBlockEntity;
-import com.ravecraft.mod.core.machine.MachineConstants;
 import com.ravecraft.mod.recipe.MachineKind;
 import com.ravecraft.mod.recipe.MachineRecipe;
 import com.ravecraft.mod.registry.ModMenus;
@@ -34,7 +33,9 @@ public class MachineMenu extends RecipeBookMenu {
 	public static final int DATA_PROGRESS = 0;
 	public static final int DATA_TOTAL = 1;
 	public static final int DATA_ENERGY = 2;
-	public static final int DATA_COUNT = 3;
+	/** The units of the last energy item, which a full bolt stands for. */
+	public static final int DATA_CAPACITY = 3;
+	public static final int DATA_COUNT = 4;
 	/** X of the middle input slot; the used inputs are centred on it. */
 	public static final int INPUT_CENTER_X = 48;
 	public static final int INPUT_Y = 17;
@@ -135,7 +136,8 @@ public class MachineMenu extends RecipeBookMenu {
 	 * @return a fraction of the largest reserve, between 0 and 1
 	 */
 	public float energy() {
-		return Math.clamp((float) data.get(DATA_ENERGY) / MachineConstants.MAX_ENERGY, 0, 1);
+		int capacity = data.get(DATA_CAPACITY);
+		return capacity <= 0 ? 0 : Math.clamp((float) data.get(DATA_ENERGY) / capacity, 0, 1);
 	}
 
 	/**

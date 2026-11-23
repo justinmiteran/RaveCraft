@@ -2,6 +2,7 @@ package com.ravecraft.mod.gametest;
 
 import com.ravecraft.mod.block.MachineBlock;
 import com.ravecraft.mod.blockentity.MachineBlockEntity;
+import com.ravecraft.mod.menu.MachineMenu;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModItems;
 import java.util.List;
@@ -34,6 +35,7 @@ public class CoilWinderGameTest {
 			h.assertTrue(winder.getItem(MachineBlockEntity.INPUT_0).isEmpty(), "ingot used");
 			h.assertTrue(winder.getItem(MachineBlockEntity.ENERGY).isEmpty(), "dust used");
 			h.assertValueEqual(winder.energy(), 7, "reserve");
+			h.assertValueEqual(winder.data().get(MachineMenu.DATA_CAPACITY), 8, "a full bolt is one dust");
 			h.succeed();
 		});
 	}
@@ -161,6 +163,7 @@ public class CoilWinderGameTest {
 					tag));
 			h.assertValueEqual(copy.progress(), winder.progress(), "progress");
 			h.assertValueEqual(copy.energy(), winder.energy(), "energy");
+			h.assertValueEqual(copy.data().get(MachineMenu.DATA_CAPACITY), 8, "capacity");
 			h.assertTrue(copy.getItem(MachineBlockEntity.INPUT_0).is(Items.COPPER_INGOT), "items");
 			h.succeed();
 		});

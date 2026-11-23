@@ -8,14 +8,15 @@ import com.ravecraft.mod.recipe.MachineRecipe;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
-import net.minecraft.advancements.triggers.Criterion;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.recipes.RecipeCategory;
 import net.minecraft.data.recipes.RecipeOutput;
+import net.minecraft.data.recipes.RecipeProvider;
 import net.minecraft.data.recipes.RecipeUnlockAdvancementBuilder;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
@@ -23,21 +24,21 @@ import net.minecraft.world.level.ItemLike;
 
 /**
  * Builds a machine recipe and its unlock advancement: one {@code has_<item>} criterion per ingredient (any of them
- * unlocks it). Saved as {@code ravecraft:<result>_from_<process>}.
+ * unlocks it), {@code has_<tag path>} for a tag. Saved as {@code ravecraft:<result>_from_<process>}.
  */
 public final class MachineRecipeBuilder {
 	private final MachineKind kind;
 	private final ItemStackTemplate result;
-	private final Function<ItemLike, Criterion<?>> has;
+	private final RecipeProvider recipes;
 	private final List<CountedIngredient> ingredients = new ArrayList<>();
 	private final RecipeUnlockAdvancementBuilder advancement = new RecipeUnlockAdvancementBuilder();
 	private Optional<Ingredient> mold = Optional.empty();
 	private int processingTime = MachineConstants.DEFAULT_PROCESSING_TICKS;
 
-	private MachineRecipeBuilder(MachineKind kind, ItemStackTemplate result, Function<ItemLike, Criterion<?>> has) {
+	private MachineRecipeBuilder(MachineKind kind, ItemStackTemplate result, RecipeProvider recipes) {
 		this.kind = kind;
 		this.result = result;
-		this.has = has;
+		this.recipes = recipes;
 	}
 
 	/**
@@ -46,12 +47,11 @@ public final class MachineRecipeBuilder {
 	 * @param kind the machine kind
 	 * @param result the result item
 	 * @param count the result count
-	 * @param has the provider's "player has this item" criterion
+	 * @param recipes the provider, for tag ingredients and unlock criteria
 	 * @return the builder
 	 */
-	public static MachineRecipeBuilder machine(MachineKind kind, ItemLike result, int count,
-			Function<ItemLike, Criterion<?>> has) {
-		return new MachineRecipeBuilder(kind, new ItemStackTemplate(result.asItem(), count), has);
+	public static MachineRecipeBuilder machine(MachineKind kind, ItemLike result, int count, RecipeProvider recipes) {
+		return new MachineRecipeBuilder(kind, new ItemStackTemplate(result.asItem(), count), recipes);
 	}
 
 	/**
@@ -63,7 +63,20 @@ public final class MachineRecipeBuilder {
 	 */
 	public MachineRecipeBuilder input(ItemLike item, int count) {
 		ingredients.add(new CountedIngredient(Ingredient.of(item), count));
-		advancement.unlockedBy("has_" + name(item), has.apply(item));
+		advancement.unlockedBy("has_" + name(item), recipes.has(item));
+		return this;
+	}
+
+	/**
+	 * Adds an ingredient by tag (a convention tag, so other mods' materials work) and its unlock criterion.
+	 *
+	 * @param tag the ingredient tag
+	 * @param count the items consumed per operation
+	 * @return this builder
+	 */
+	public MachineRecipeBuilder input(TagKey<Item> tag, int count) {
+		ingredients.add(new CountedIngredient(recipes.tag(tag), count));
+		advancement.unlockedBy("has_" + tag.location().getPath().replace('/', '_'), recipes.has(tag));
 		return this;
 	}
 

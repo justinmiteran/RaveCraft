@@ -19,6 +19,7 @@
 			"com.ravecraft.mod.gametest.MachineGameTest",
 			"com.ravecraft.mod.gametest.CoilWinderGameTest",
 			"com.ravecraft.mod.gametest.MachineMenuGameTest",
+			"com.ravecraft.mod.gametest.MachineEnergyGameTest",
 			"com.ravecraft.mod.gametest.MachineBookGameTest"
 		]
 	},

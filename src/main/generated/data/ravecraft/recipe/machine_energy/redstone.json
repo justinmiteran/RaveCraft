@@ -1,0 +1,5 @@
+{
+  "type": "ravecraft:machine_energy",
+  "ingredient": "#c:dusts/redstone",
+  "operations": 8
+}

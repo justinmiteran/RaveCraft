@@ -1,0 +1,5 @@
+{
+  "type": "ravecraft:machine_energy",
+  "ingredient": "#c:storage_blocks/redstone",
+  "operations": 72
+}

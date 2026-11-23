@@ -1,9 +1,9 @@
 {
   "type": "minecraft:crafting_shaped",
   "key": {
-    "C": "minecraft:copper_ingot",
-    "I": "minecraft:iron_ingot",
-    "R": "minecraft:redstone"
+    "C": "#c:ingots/copper",
+    "I": "#c:ingots/iron",
+    "R": "#c:dusts/redstone"
   },
   "pattern": [
     "III",

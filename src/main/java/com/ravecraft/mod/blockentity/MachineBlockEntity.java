@@ -1,10 +1,10 @@
 package com.ravecraft.mod.blockentity;
 
 import com.ravecraft.mod.block.MachineBlock;
-import com.ravecraft.mod.core.machine.MachineConstants;
 import com.ravecraft.mod.core.machine.MachineProcess;
 import com.ravecraft.mod.core.machine.MachineProcess.TickResult;
 import com.ravecraft.mod.menu.MachineMenu;
+import com.ravecraft.mod.recipe.MachineEnergy;
 import com.ravecraft.mod.recipe.MachineKind;
 import com.ravecraft.mod.recipe.MachineRecipe;
 import com.ravecraft.mod.recipe.MachineRecipeInput;
@@ -27,7 +27,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
@@ -205,10 +204,10 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 				&& output.getCount() + result.getCount() <= output.getMaxStackSize();
 	}
 
-	/** Uses one redstone from the energy slot, if there is one. */
+	/** Uses one energy item from the energy slot, if there is one. */
 	private int refuel() {
 		ItemStack fuel = items.get(ENERGY);
-		int units = energyUnits(fuel);
+		int units = level == null ? 0 : MachineEnergy.operations(level, fuel);
 		if (units > 0) {
 			fuel.shrink(1);
 		}
@@ -218,18 +217,12 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 	/**
 	 * Whether a stack can go in the energy slot.
 	 *
+	 * @param level the level whose {@link MachineEnergy} recipes are read
 	 * @param stack the stack
-	 * @return true for redstone dust and redstone blocks
+	 * @return true for the items of a machine energy recipe (redstone dust and blocks by default)
 	 */
-	public static boolean isEnergy(ItemStack stack) {
-		return energyUnits(stack) > 0;
-	}
-
-	private static int energyUnits(ItemStack stack) {
-		if (stack.is(Items.REDSTONE)) {
-			return MachineConstants.OPERATIONS_PER_DUST;
-		}
-		return stack.is(Items.REDSTONE_BLOCK) ? MachineConstants.OPERATIONS_PER_BLOCK : 0;
+	public static boolean isEnergy(Level level, ItemStack stack) {
+		return MachineEnergy.operations(level, stack) > 0;
 	}
 
 	/** Consumes each ingredient's count from its slot and adds the result to the output. */
@@ -331,14 +324,14 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 	}
 
 	/**
-	 * Energy slot: redstone dust and blocks only. Output: nothing. Inputs: a stack of the same item, or an empty slot
+	 * Energy slot: the machine energy items only. Output: nothing. Inputs: a stack of the same item, or an empty slot
 	 * when no other input holds that item (so one ingredient does not spread over the three slots); the
 	 * inputs the machine does not use take nothing.
 	 */
 	@Override
 	public boolean canPlaceItem(int slot, ItemStack stack) {
 		if (slot == ENERGY) {
-			return isEnergy(stack);
+			return level != null && isEnergy(level, stack);
 		}
 		return slot != OUTPUT && fitsInput(slot, stack);
 	}

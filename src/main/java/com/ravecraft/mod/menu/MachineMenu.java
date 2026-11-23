@@ -22,6 +22,7 @@ import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.level.Level;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -53,6 +54,7 @@ public class MachineMenu extends RecipeBookMenu {
 	private final Container container;
 	private final ContainerData data;
 	private final MachineKind kind;
+	private final Level level;
 
 	/**
 	 * The client-side menu, opened from the position the server sends.
@@ -85,11 +87,12 @@ public class MachineMenu extends RecipeBookMenu {
 		this.container = container;
 		this.data = data;
 		this.kind = kind;
+		this.level = inventory.player.level();
 		for (int i = MachineBlockEntity.INPUT_0; i <= MachineBlockEntity.INPUT_2; i++) {
-			addSlot(new MachineSlot(container, i, inputX(i, kind.inputs()), INPUT_Y, i < kind.inputs()));
+			addSlot(new MachineSlot(container, level, i, inputX(i, kind.inputs()), INPUT_Y, i < kind.inputs()));
 		}
-		addSlot(new MachineSlot(container, MachineBlockEntity.ENERGY, ENERGY_X, ENERGY_Y, true));
-		addSlot(new MachineSlot(container, MachineBlockEntity.OUTPUT, OUTPUT_X, OUTPUT_Y, true));
+		addSlot(new MachineSlot(container, level, MachineBlockEntity.ENERGY, ENERGY_X, ENERGY_Y, true));
+		addSlot(new MachineSlot(container, level, MachineBlockEntity.OUTPUT, OUTPUT_X, OUTPUT_Y, true));
 		addStandardInventorySlots(inventory, INVENTORY_X, INVENTORY_Y);
 		addDataSlots(data);
 	}
@@ -189,7 +192,7 @@ public class MachineMenu extends RecipeBookMenu {
 		if (index < INVENTORY_START) {
 			return moveItemStackTo(stack, INVENTORY_START, HOTBAR_END, index == MachineBlockEntity.OUTPUT);
 		}
-		boolean moved = MachineBlockEntity.isEnergy(stack)
+		boolean moved = MachineBlockEntity.isEnergy(level, stack)
 				? moveItemStackTo(stack, MachineBlockEntity.ENERGY, MachineBlockEntity.ENERGY + 1, false)
 						|| mergeIntoInputs(stack)
 				: moveItemStackTo(stack, MachineBlockEntity.INPUT_0, MachineBlockEntity.INPUT_2 + 1, false);
@@ -237,17 +240,19 @@ public class MachineMenu extends RecipeBookMenu {
 	}
 
 	/**
-	 * A machine slot: the energy slot takes redstone only, the output nothing, the inputs what the machine takes;
+	 * A machine slot: the energy slot takes the machine energy items only, the output nothing, the inputs what the machine takes;
 	 * the inputs the machine does not use are hidden and take nothing.
 	 */
 	private static final class MachineSlot extends Slot {
 		/** The vanilla redstone silhouette shown in the empty energy slot. */
 		private static final Identifier EMPTY_ENERGY_ICON = Identifier.withDefaultNamespace("container/slot/redstone_dust");
 
+		private final Level level;
 		private final boolean active;
 
-		MachineSlot(Container container, int slot, int x, int y, boolean active) {
+		MachineSlot(Container container, Level level, int slot, int x, int y, boolean active) {
 			super(container, slot, x, y);
+			this.level = level;
 			this.active = active;
 		}
 
@@ -268,7 +273,7 @@ public class MachineMenu extends RecipeBookMenu {
 			}
 			int slot = getContainerSlot();
 			if (slot == MachineBlockEntity.ENERGY) {
-				return MachineBlockEntity.isEnergy(stack);
+				return MachineBlockEntity.isEnergy(level, stack);
 			}
 			return slot != MachineBlockEntity.OUTPUT && container.canPlaceItem(slot, stack);
 		}

@@ -5,6 +5,7 @@ import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModCreativeTabs;
 import com.ravecraft.mod.registry.ModItems;
 import com.ravecraft.mod.registry.ModTags;
+import com.ravecraft.mod.world.gen.ModWorldgen;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.Optional;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -32,6 +34,8 @@ import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DropExperienceBlock;
 import net.minecraft.world.level.block.SlabBlock;
@@ -39,6 +43,8 @@ import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.world.level.levelgen.GenerationStep;
+import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
@@ -205,6 +211,43 @@ public class MaterialsGameTest {
 		h.assertTrue(exploded < 25, "explosion decays drops, got " + exploded);
 		h.assertTrue(mined >= 50, "mining drops at least 50, got " + mined);
 		h.succeed();
+	}
+
+	@GameTest
+	public void overworldBiomesHaveOres(GameTestHelper h) {
+		for (ResourceKey<Biome> biome : List.of(Biomes.PLAINS, Biomes.DESERT)) {
+			for (ResourceKey<PlacedFeature> ore : List.of(ModWorldgen.PLACED_SHALE, ModWorldgen.PLACED_OIL_SHALE,
+					ModWorldgen.PLACED_NEODYMIUM)) {
+				h.assertTrue(hasOre(h, biome, ore), biome.identifier() + " has " + ore.identifier());
+			}
+		}
+		h.succeed();
+	}
+
+	@GameTest
+	public void extraShaleOnlyInDryBiomes(GameTestHelper h) {
+		h.assertTrue(hasOre(h, Biomes.DESERT, ModWorldgen.PLACED_OIL_SHALE_EXTRA), "desert has extra oil shale");
+		h.assertTrue(hasOre(h, Biomes.BADLANDS, ModWorldgen.PLACED_OIL_SHALE_EXTRA), "badlands has extra oil shale");
+		h.assertFalse(hasOre(h, Biomes.PLAINS, ModWorldgen.PLACED_OIL_SHALE_EXTRA), "plains has no extra oil shale");
+		h.succeed();
+	}
+
+	@GameTest
+	public void noOresOutsideOverworld(GameTestHelper h) {
+		for (ResourceKey<Biome> biome : List.of(Biomes.NETHER_WASTES, Biomes.THE_END)) {
+			for (ResourceKey<PlacedFeature> ore : List.of(ModWorldgen.PLACED_SHALE, ModWorldgen.PLACED_OIL_SHALE,
+					ModWorldgen.PLACED_OIL_SHALE_EXTRA, ModWorldgen.PLACED_NEODYMIUM)) {
+				h.assertFalse(hasOre(h, biome, ore), biome.identifier() + " has no " + ore.identifier());
+			}
+		}
+		h.succeed();
+	}
+
+	private static boolean hasOre(GameTestHelper h, ResourceKey<Biome> biome, ResourceKey<PlacedFeature> ore) {
+		List<HolderSet<PlacedFeature>> steps = h.getLevel().registryAccess().lookupOrThrow(Registries.BIOME)
+				.getOrThrow(biome).value().getGenerationSettings().features();
+		int step = GenerationStep.Decoration.UNDERGROUND_ORES.ordinal();
+		return steps.size() > step && steps.get(step).stream().anyMatch(feature -> feature.is(ore));
 	}
 
 	@GameTest

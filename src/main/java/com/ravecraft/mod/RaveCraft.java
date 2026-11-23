@@ -10,6 +10,7 @@ import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModCreativeTabs;
 import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.registry.ModItems;
+import com.ravecraft.mod.world.gen.ModWorldgen;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.resources.Identifier;
@@ -28,6 +29,7 @@ public class RaveCraft implements ModInitializer {
 		ModBlocks.init();
 		ModBlockEntities.init();
 		ModItems.init();
+		ModWorldgen.init();
 		ModCreativeTabs.init();
 		ModPayloads.init();
 		AcousticConfig.init();

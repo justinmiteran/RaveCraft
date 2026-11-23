@@ -24,6 +24,8 @@
   "item.ravecraft.neodymium_ingot": "Neodymium Ingot",
   "item.ravecraft.silicon": "Silicon",
   "item.ravecraft.silicon_wafer": "Silicon Wafer",
+  "item.ravecraft.copper_wire": "Copper Wire",
+  "item.ravecraft.voice_coil": "Voice Coil",
   "itemGroup.ravecraft.main": "RaveCraft",
   "screen.ravecraft.speaker.library": "Library",
   "screen.ravecraft.speaker.queue": "Queue",

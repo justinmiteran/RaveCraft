@@ -20,6 +20,7 @@ public final class ModCreativeTabs {
 						ModBlocks.shaleFamily().forEach(output::accept);
 						ModBlocks.storageBlocks().forEach(output::accept);
 						ModItems.materials().forEach(output::accept);
+						ModItems.components().forEach(output::accept);
 						ModBlocks.speakers().forEach(output::accept);
 					})
 					.build());

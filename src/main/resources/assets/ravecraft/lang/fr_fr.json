@@ -24,6 +24,8 @@
   "item.ravecraft.neodymium_ingot": "Lingot de néodyme",
   "item.ravecraft.silicon": "Silicium",
   "item.ravecraft.silicon_wafer": "Plaquette de silicium",
+  "item.ravecraft.copper_wire": "Fil de cuivre",
+  "item.ravecraft.voice_coil": "Bobine mobile",
   "itemGroup.ravecraft.main": "RaveCraft",
   "screen.ravecraft.speaker.library": "Bibliothèque",
   "screen.ravecraft.speaker.queue": "File",

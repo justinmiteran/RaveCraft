@@ -3,6 +3,7 @@ package com.ravecraft.mod.datagen;
 import com.ravecraft.mod.registry.ModBlockFamilies;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModItems;
+import com.ravecraft.mod.registry.ModRecipes;
 import com.ravecraft.mod.registry.ModTags;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -27,7 +28,7 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.SmeltingRecipe;
 import net.minecraft.world.level.ItemLike;
 
-/** Crafting, cooking and stonecutter recipes. */
+/** Crafting, cooking, stonecutter and machine recipes. */
 public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 	private static final int SMELT_TIME = 200;
 	private static final int BLAST_TIME = 100;
@@ -35,6 +36,8 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 	private static final float SILICON_XP = 0.5F;
 	private static final float BITUMEN_XP = 0.1F;
 	private static final int STORAGE_COUNT = 9;
+	private static final int WIRES_PER_INGOT = 4;
+	private static final int WIRES_PER_COIL = 4;
 
 	/**
 	 * A provider writing to {@code output}.
@@ -66,6 +69,7 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 			speakers();
 			materials();
 			storageBlocks();
+			machines();
 			for (BlockFamily family : List.of(ModBlockFamilies.SHALE, ModBlockFamilies.POLISHED_SHALE,
 					ModBlockFamilies.SHALE_BRICKS)) {
 				generateRecipes(family, FeatureFlags.VANILLA_SET);
@@ -98,6 +102,14 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 					.unlockedBy("has_portable_speaker", has(ModBlocks.PORTABLE_SPEAKER))
 					.save(output);
 			dyedItem(ModBlocks.PARTY_SPEAKER.asItem(), "party_speaker_dye");
+		}
+
+		/** What the machines make. */
+		private void machines() {
+			MachineRecipeBuilder.machine(ModRecipes.WINDING, ModItems.COPPER_WIRE, WIRES_PER_INGOT, this::has)
+					.input(Items.COPPER_INGOT, 1).save(output);
+			MachineRecipeBuilder.machine(ModRecipes.WINDING, ModItems.VOICE_COIL, 1, this::has)
+					.input(ModItems.COPPER_WIRE, WIRES_PER_COIL).save(output);
 		}
 
 		/**

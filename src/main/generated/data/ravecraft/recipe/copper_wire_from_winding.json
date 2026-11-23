@@ -1,0 +1,12 @@
+{
+  "type": "ravecraft:winding",
+  "ingredients": [
+    {
+      "ingredient": "minecraft:copper_ingot"
+    }
+  ],
+  "result": {
+    "count": 4,
+    "id": "ravecraft:copper_wire"
+  }
+}

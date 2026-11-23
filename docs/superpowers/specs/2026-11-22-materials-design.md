@@ -297,6 +297,9 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
   - plastique noir brillant : feuille (première version du rework), boîtier ouvert, membrane renforcée en cône ;
   - moules : cadre gris clair avec l'empreinte du produit en creux (A r2) ;
   - textures des objets gardées en grilles de pixels dans `tools/textures/machine_parts.py` (identiques aux propositions validées).
+- Choix de 7d (rendus dans `art/proposals/items7d/`, non versionnés) :
+  - membrane : la grille de la membrane renforcée recolorée en papier (A) ; haut-parleur simple et haut-parleur de grave : saladier carré en acier à 4 vis, membrane en retrait, joint sombre (E) ; carte d'amplification : puce et condensateurs bleus sur la plaque de circuit (B) ; moule vierge : le cadre des moules autour d'une plaque d'acier lisse (A) ;
+  - recettes : membrane renforcée extrudée à partir de 2 feuilles de plastique (l'extrudeuse garde une seule entrée) ; enceinte portable avec un haut-parleur simple de chaque côté ; enceinte de soirée avec des boîtiers en plastique au lieu du cuivre ; magnétiseur M3 (néodyme et cuivre) ; extrudeuse au haut fourneau (X3) ; moules fabriqués à partir d'un moule vierge (C).
 - Modèles des machines dans `art/models`, exportés en JSON de bloc.
 
 ## 10. Mise à jour de la SPEC

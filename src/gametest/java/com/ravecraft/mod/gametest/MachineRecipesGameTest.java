@@ -23,22 +23,22 @@ import net.minecraft.world.item.crafting.ShapedRecipe;
 public class MachineRecipesGameTest {
 	@GameTest
 	public void machineRecipesExist(GameTestHelper h) {
-		check(h, "iron_magnet_from_magnetizing", ModRecipes.MAGNETIZING, null, ModItems.IRON_MAGNET, 1,
+		check(h, "iron_magnet_from_magnetizing", ModRecipes.MAGNETIZING, null, out(ModItems.IRON_MAGNET, 1),
 				Items.IRON_INGOT, 1, Items.REDSTONE, 1);
-		check(h, "neodymium_magnet_from_magnetizing", ModRecipes.MAGNETIZING, null, ModItems.NEODYMIUM_MAGNET, 2,
+		check(h, "neodymium_magnet_from_magnetizing", ModRecipes.MAGNETIZING, null, out(ModItems.NEODYMIUM_MAGNET, 2),
 				ModItems.NEODYMIUM_INGOT, 1, Items.IRON_INGOT, 1);
-		check(h, "simple_circuit_from_etching", ModRecipes.ETCHING, null, ModItems.SIMPLE_CIRCUIT, 1,
+		check(h, "simple_circuit_from_etching", ModRecipes.ETCHING, null, out(ModItems.SIMPLE_CIRCUIT, 1),
 				ModItems.CIRCUIT_BOARD, 1, ModItems.COPPER_WIRE, 2, Items.REDSTONE, 1);
-		check(h, "chip_from_etching", ModRecipes.ETCHING, null, ModItems.CHIP, 1,
+		check(h, "chip_from_etching", ModRecipes.ETCHING, null, out(ModItems.CHIP, 1),
 				ModItems.SILICON_WAFER, 1, Items.GOLD_NUGGET, 2, Items.REDSTONE, 1);
-		check(h, "plastic_sheet_from_extruding", ModRecipes.EXTRUDING, ModItems.SHEET_MOLD, ModItems.PLASTIC_SHEET, 2,
-				ModItems.BITUMEN, 1);
-		check(h, "plastic_casing_from_extruding", ModRecipes.EXTRUDING, ModItems.CASING_MOLD, ModItems.PLASTIC_CASING,
-				1, ModItems.BITUMEN, 3);
+		check(h, "plastic_sheet_from_extruding", ModRecipes.EXTRUDING, ModItems.SHEET_MOLD,
+				out(ModItems.PLASTIC_SHEET, 2), ModItems.BITUMEN, 1);
+		check(h, "plastic_casing_from_extruding", ModRecipes.EXTRUDING, ModItems.CASING_MOLD,
+				out(ModItems.PLASTIC_CASING, 1), ModItems.BITUMEN, 3);
 		check(h, "reinforced_membrane_from_extruding", ModRecipes.EXTRUDING, ModItems.MEMBRANE_MOLD,
-				ModItems.REINFORCED_MEMBRANE, 1, ModItems.BITUMEN, 2);
-		check(h, "circuit_board_from_extruding", ModRecipes.EXTRUDING, ModItems.BOARD_MOLD, ModItems.CIRCUIT_BOARD, 2,
-				ModItems.BITUMEN, 1);
+				out(ModItems.REINFORCED_MEMBRANE, 1), ModItems.BITUMEN, 2);
+		check(h, "circuit_board_from_extruding", ModRecipes.EXTRUDING, ModItems.BOARD_MOLD,
+				out(ModItems.CIRCUIT_BOARD, 2), ModItems.BITUMEN, 1);
 		h.succeed();
 	}
 
@@ -95,8 +95,12 @@ public class MachineRecipesGameTest {
 				.map(holder -> holder.value().assemble(in));
 	}
 
-	/** Checks a recipe: kind, mold, result and count, then (item, count) pairs for the ingredients in order. */
-	private static void check(GameTestHelper h, String name, MachineKind kind, Item mold, Item result, int count,
+	private static ItemStack out(Item item, int count) {
+		return new ItemStack(item, count);
+	}
+
+	/** Checks a recipe: kind, mold, result with its count, then (item, count) pairs for the ingredients in order. */
+	private static void check(GameTestHelper h, String name, MachineKind kind, Item mold, ItemStack result,
 			Object... inputs) {
 		MachineRecipe recipe = MachineGameTest.recipe(h, name);
 		h.assertTrue(recipe.kind() == kind, name + " kind");
@@ -110,8 +114,8 @@ public class MachineRecipesGameTest {
 		if (mold != null) {
 			h.assertTrue(recipe.mold().get().test(new ItemStack(mold)), name + " mold");
 		}
-		h.assertTrue(recipe.result().create().is(result), name + " result");
-		h.assertValueEqual(recipe.result().count(), count, name + " result count");
+		h.assertTrue(recipe.result().create().is(result.getItem()), name + " result");
+		h.assertValueEqual(recipe.result().count(), result.getCount(), name + " result count");
 		h.assertValueEqual(recipe.processingTime(), 100, name + " time");
 	}
 }

@@ -2,8 +2,14 @@ package com.ravecraft.mod.gametest;
 
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.blockentity.MachineBlockEntity;
+import com.ravecraft.mod.item.ItemOrigins;
+import com.ravecraft.mod.recipe.MachineKind;
+import com.ravecraft.mod.recipe.MachineRecipe;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModItems;
+import com.ravecraft.mod.registry.ModRecipes;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -11,6 +17,7 @@ import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
@@ -28,6 +35,7 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.block.Block;
 
 /** The table-crafted components, their unlock criteria and the reinforced membrane extrusion (spec 3, 6). */
 public class ComponentsGameTest {
@@ -132,6 +140,62 @@ public class ComponentsGameTest {
 		return h.getLevel().recipeAccess().getRecipeFor(RecipeType.CRAFTING, input, h.getLevel());
 	}
 
+	@GameTest
+	public void madeInMatchesRecipes(GameTestHelper h) {
+		Set<Item> results = new HashSet<>();
+		for (MachineKind kind : List.of(ModRecipes.WINDING, ModRecipes.MAGNETIZING, ModRecipes.ETCHING,
+				ModRecipes.EXTRUDING)) {
+			for (MachineRecipe recipe : machineRecipes(h, kind)) {
+				Item result = recipe.result().create().getItem();
+				results.add(result);
+				Optional<Block> machine = ItemOrigins.madeIn(result);
+				h.assertTrue(machine.isPresent() && BuiltInRegistries.BLOCK.getKey(machine.get()).getPath()
+						.equals(kind.machine()), result + " made in " + kind.machine());
+			}
+		}
+		for (Item item : BuiltInRegistries.ITEM) {
+			h.assertValueEqual(ItemOrigins.madeIn(item).isPresent(), results.contains(item), item + " has an origin");
+		}
+		h.succeed();
+	}
+
+	@GameTest
+	public void moldForMatchesRecipes(GameTestHelper h) {
+		for (MachineRecipe recipe : machineRecipes(h, ModRecipes.EXTRUDING)) {
+			Item result = recipe.result().create().getItem();
+			for (Item mold : ModItems.molds()) {
+				if (recipe.mold().orElseThrow().test(new ItemStack(mold))) {
+					h.assertValueEqual(ItemOrigins.moldFor(mold), Optional.of(result), mold + " makes " + result);
+				}
+			}
+		}
+		for (Item mold : ModItems.molds()) {
+			h.assertTrue(ItemOrigins.moldFor(mold).isPresent(), mold + " has a product");
+		}
+		h.succeed();
+	}
+
+	@GameTest
+	public void noOriginWithoutMachine(GameTestHelper h) {
+		for (Item item : List.of(ModItems.BITUMEN, ModItems.NEODYMIUM_INGOT, ModItems.MEMBRANE, ModItems.SPEAKER_DRIVER,
+				Items.IRON_INGOT, ModBlocks.PORTABLE_SPEAKER.asItem())) {
+			h.assertTrue(ItemOrigins.madeIn(item).isEmpty(), item + " has no machine");
+		}
+		h.assertTrue(ItemOrigins.moldFor(ModItems.BITUMEN).isEmpty(), "bitumen is no mold");
+		h.succeed();
+	}
+
+	private static List<MachineRecipe> machineRecipes(GameTestHelper h, MachineKind kind) {
+		List<MachineRecipe> found = new ArrayList<>();
+		for (RecipeHolder<?> holder : h.getLevel().getServer().getRecipeManager().getRecipes()) {
+			if (holder.value() instanceof MachineRecipe recipe && recipe.kind() == kind) {
+				found.add(recipe);
+			}
+		}
+		h.assertFalse(found.isEmpty(), kind.machine() + " has recipes");
+		return found;
+	}
+
 	/** The speaker driver pattern: membrane on top, iron, voice coil and iron in the middle, magnet below. */
 	private static void driver(GameTestHelper h, String name, Item membrane, Item magnet) {
 		ShapedRecipe recipe = shaped(h, name);
@@ -181,7 +245,7 @@ public class ComponentsGameTest {
 	static void criteria(GameTestHelper h, String path, String... criteria) {
 		AdvancementHolder holder = h.getLevel().getServer().getAdvancements().get(RaveCraft.id("recipes/" + path));
 		h.assertTrue(holder != null, path + " advancement");
-		Set<String> expected = new java.util.HashSet<>(List.of(criteria));
+		Set<String> expected = new HashSet<>(List.of(criteria));
 		expected.add("has_the_recipe");
 		h.assertValueEqual(holder.value().criteria().keySet(), expected, path + " criteria");
 		List<List<String>> requirements = holder.value().requirements().requirements();

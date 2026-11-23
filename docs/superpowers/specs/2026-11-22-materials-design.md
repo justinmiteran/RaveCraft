@@ -105,7 +105,7 @@ Chaque PR commence par ses propositions visuelles (3 à 4 rendus par modèle ou 
 | | `membrane_mold` | Moule à membrane / Membrane Mold |
 | | `board_mold` | Moule à support / Board Mold |
 
-La plaque de plastique sert aux membranes (section 6.1) et sera la matière de base des façades et boîtiers des paliers suivants.
+La membrane renforcée part de la membrane simple (décidé en 7d, pour que le palier 2 prolonge le palier 1). La plaque de plastique sert aux membranes (section 6.1) et sera la matière de base des façades et boîtiers des paliers suivants.
 
 ## 4. Minerais et génération
 
@@ -159,7 +159,7 @@ La plaque de plastique sert aux membranes (section 6.1) et sera la matière de b
 | | 1 `silicon_wafer` + 2 pépites d'or + 1 poudre de redstone | — | 1 `chip` |
 | Extrudeuse | 1 `bitumen` | `sheet_mold` | 2 `plastic_sheet` |
 | | 3 `bitumen` | `casing_mold` | 1 `plastic_casing` |
-| | 2 `bitumen` | `membrane_mold` | 1 `reinforced_membrane` |
+| | 1 `membrane` + 1 `bitumen` | `membrane_mold` | 1 `reinforced_membrane` |
 | | 1 `bitumen` | `board_mold` | 2 `circuit_board` |
 
 La poudre de redstone d'une recette est un ingrédient, pas de l'énergie : elle va dans une entrée.
@@ -267,6 +267,7 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 - Le quartz du Nether donne du silicium au haut fourneau seulement.
 - Blocs de néodyme brut, de néodyme et de silicium : 9 objets donnent un bloc et un bloc rend 9 objets ; pioche en fer pour les deux blocs de néodyme, en pierre pour le silicium ; chacun lâche lui-même et porte ses tags `c:storage_blocks`.
 - Les nouvelles recettes des deux enceintes existent et les anciennes non.
+- Chaque objet produit par une machine affiche « Fabriqué dans », chaque moule « Pour l'extrudeuse », et ces tables correspondent aux recettes chargées.
 
 **En jeu** : monde survie neuf, du minage du schiste à l'enceinte de soirée en suivant le livre ; entonnoirs ; écran et livre de chaque machine ; textures, modèles et animations.
 

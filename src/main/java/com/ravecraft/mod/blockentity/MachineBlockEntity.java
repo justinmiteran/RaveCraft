@@ -328,7 +328,8 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 
 	/**
 	 * Energy slot: redstone dust and blocks only. Output: nothing. Inputs: a stack of the same item, or an empty slot
-	 * when no other input holds that item (so one ingredient does not spread over the three slots).
+	 * when no other input holds that item (so one ingredient does not spread over the three slots); the
+	 * inputs the machine does not use take nothing.
 	 */
 	@Override
 	public boolean canPlaceItem(int slot, ItemStack stack) {
@@ -339,6 +340,9 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 	}
 
 	private boolean fitsInput(int slot, ItemStack stack) {
+		if (slot >= kind().inputs()) {
+			return false;
+		}
 		ItemStack here = items.get(slot);
 		if (!here.isEmpty()) {
 			return ItemStack.isSameItemSameComponents(here, stack);
@@ -350,7 +354,7 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 	@Override
 	public int[] getSlotsForFace(Direction side) {
 		if (side == Direction.UP) {
-			return SLOTS_UP.clone();
+			return Arrays.copyOf(SLOTS_UP, kind().inputs());
 		}
 		return side == Direction.DOWN ? SLOTS_DOWN.clone() : SLOTS_SIDE.clone();
 	}

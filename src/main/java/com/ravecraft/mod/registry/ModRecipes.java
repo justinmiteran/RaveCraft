@@ -9,7 +9,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 /** Machine recipe kinds: their recipe types, serializers, recipe book tabs, and the shared recipe display. */
 public final class ModRecipes {
 	/** The coil winder's process: copper into wire, wire into voice coils. */
-	public static final MachineKind WINDING = register(new MachineKind("winding", "coil_winder", false));
+	public static final MachineKind WINDING = register(new MachineKind("winding", "coil_winder", 1, false));
 
 	private ModRecipes() {
 	}

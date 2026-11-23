@@ -8,6 +8,8 @@ import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModItems;
+import com.ravecraft.mod.registry.ModRecipes;
+import net.minecraft.core.Direction;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
@@ -93,9 +95,8 @@ public class MachineMenuGameTest {
 		Player player = h.makeMockPlayer(GameType.SURVIVAL);
 		player.getInventory().setItem(9, new ItemStack(Items.COPPER_INGOT, 2));
 		MachineMenu menu = menu(h, player);
-		menu.getSlot(MachineBlockEntity.INPUT_1).set(new ItemStack(Items.COBBLESTONE, 5));
+		menu.getSlot(MachineBlockEntity.INPUT_0).set(new ItemStack(Items.COBBLESTONE, 5));
 		place(h, menu, player, "copper_wire_from_winding", false);
-		h.assertTrue(menu.getSlot(MachineBlockEntity.INPUT_1).getItem().isEmpty(), "old input removed");
 		h.assertValueEqual(count(player.getInventory(), Items.COBBLESTONE), 5, "back in the inventory");
 		h.assertValueEqual(menu.getSlot(MachineBlockEntity.INPUT_0).getItem().getCount(), 1, "ingot placed");
 		h.succeed();
@@ -110,6 +111,32 @@ public class MachineMenuGameTest {
 		h.assertValueEqual(action, PostPlaceAction.PLACE_GHOST_RECIPE, "ghost");
 		h.assertValueEqual(count(player.getInventory(), ModItems.COPPER_WIRE), 3, "inventory unchanged");
 		h.assertTrue(menu.getSlot(MachineBlockEntity.INPUT_0).getItem().isEmpty(), "nothing placed");
+		h.succeed();
+	}
+
+	@GameTest
+	public void winderHasOneInput(GameTestHelper h) {
+		MachineMenu menu = menu(h, h.makeMockPlayer(GameType.SURVIVAL));
+		MachineBlockEntity winder = h.getBlockEntity(POS, MachineBlockEntity.class);
+		h.assertTrue(menu.getSlot(MachineBlockEntity.INPUT_0).isActive(), "first input shown");
+		h.assertFalse(menu.getSlot(MachineBlockEntity.INPUT_1).isActive(), "second input hidden");
+		h.assertFalse(menu.getSlot(MachineBlockEntity.INPUT_2).isActive(), "third input hidden");
+		h.assertFalse(winder.canPlaceItem(MachineBlockEntity.INPUT_1, new ItemStack(Items.COPPER_INGOT)), "unused input");
+		h.assertValueEqual(winder.getSlotsForFace(Direction.UP).length, 1, "hoppers fill one input");
+		h.assertValueEqual(menu.inputSlots().size(), 1, "the book places in one input");
+		h.succeed();
+	}
+
+	@GameTest
+	public void windingRecipeTakesOneIngredient(GameTestHelper h) {
+		var ops = h.getLevel().registryAccess().createSerializationContext(JsonOps.INSTANCE);
+		String result = ",\"result\":{\"id\":\"ravecraft:copper_wire\"}}";
+		String one = "{\"ingredients\":[{\"ingredient\":\"minecraft:copper_ingot\"}]" + result;
+		String two = "{\"ingredients\":[{\"ingredient\":\"minecraft:copper_ingot\"},"
+				+ "{\"ingredient\":\"minecraft:iron_ingot\"}]" + result;
+		var codec = ModRecipes.WINDING.serializer().codec().codec();
+		h.assertTrue(codec.parse(ops, JsonParser.parseString(one)).isSuccess(), "one ingredient accepted");
+		h.assertTrue(codec.parse(ops, JsonParser.parseString(two)).isError(), "two ingredients refused");
 		h.succeed();
 	}
 

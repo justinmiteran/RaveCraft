@@ -63,7 +63,7 @@ public class MachineGameTest {
 
 	@GameTest
 	public void recipeJsonRoundTrip(GameTestHelper h) {
-		MachineKind moulding = new MachineKind("test_moulding", "test_machine", true);
+		MachineKind moulding = new MachineKind("test_moulding", "test_machine", 3, true);
 		MachineRecipe recipe = new MachineRecipe(moulding, true,
 				List.of(new CountedIngredient(Ingredient.of(Items.COPPER_INGOT), 2),
 						new CountedIngredient(Ingredient.of(Items.IRON_INGOT), 1)),
@@ -85,7 +85,7 @@ public class MachineGameTest {
 		String noMold = "{\"ingredients\":[{\"ingredient\":\"minecraft:copper_ingot\",\"count\":2}],"
 				+ "\"result\":{\"id\":\"minecraft:iron_bars\"}}";
 		h.assertTrue(parse(ModRecipes.WINDING, ops, withMold).isError(), "winding refuses a mold");
-		MachineKind moulding = new MachineKind("test_moulding", "test_machine", true);
+		MachineKind moulding = new MachineKind("test_moulding", "test_machine", 3, true);
 		h.assertTrue(parse(moulding, ops, noMold).isError(), "moulding needs a mold");
 		MachineRecipe parsed = parse(ModRecipes.WINDING, ops, noMold).getOrThrow();
 		h.assertValueEqual(parsed.processingTime(), 100, "default processing time");

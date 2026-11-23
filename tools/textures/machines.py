@@ -299,7 +299,7 @@ def coil_winder_front_on():
 
 
 # Positions shared with MachineMenu / MachineScreen (Java constants): change both together.
-INPUT_FRAME = (29, 16)
+INPUT_CENTER_FRAME = (47, 16)  # frame of the middle input; the used inputs are centred on it
 SLOT_STEP = 18
 ENERGY_FRAME = (47, 52)
 GAUGE = (67, 53, 5, 16)
@@ -308,11 +308,11 @@ OUTPUT_FRAME = (120, 30, 26)
 CONTAINER_SIZE = 256
 
 
-def machine_container():
-    """The machine window on a 256x256 sheet: empty arrow and empty gauge, filled at draw time by the sprites."""
+def machine_container(inputs):
+    """A machine window on a 256x256 sheet: its used inputs, empty arrow and gauge (filled at draw time)."""
     img = gui_base()
-    for i in range(3):
-        slot(img, INPUT_FRAME[0] + i * SLOT_STEP, INPUT_FRAME[1])
+    for i in range(inputs):
+        slot(img, INPUT_CENTER_FRAME[0] + (2 * i - (inputs - 1)) * SLOT_STEP // 2, INPUT_CENTER_FRAME[1])
     slot(img, *ENERGY_FRAME)
     gauge(img, *GAUGE, 0.0)
     arrow(img, *ARROW, 0.0)
@@ -345,4 +345,4 @@ BLOCKS = {"coil_winder_front": a2_front, "coil_winder_side": a2_side, "coil_wind
 ANIMATED = {"coil_winder_front_on": (coil_winder_front_on, 2)}
 ITEMS = {"copper_wire": w5_hank, "voice_coil": v7_ribbed}
 GUI = {"container/machine/progress": (machine_progress, None), "container/machine/energy": (machine_energy, None)}
-CONTAINERS = {"machine": machine_container}  # textures/gui/container/<name>.png
+CONTAINERS = {"coil_winder": lambda: machine_container(1)}  # textures/gui/container/<name>.png

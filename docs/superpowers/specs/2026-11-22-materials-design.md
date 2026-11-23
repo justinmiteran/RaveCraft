@@ -136,7 +136,7 @@ La plaque de plastique sert aux membranes (section 6.1) et sera la matière de b
 
 ### 5.1 Comportement commun
 
-- **Emplacements** : 3 entrées, 1 énergie, 1 sortie ; l'extrudeuse a en plus 1 emplacement de moule.
+- **Emplacements** : 1 à 3 entrées selon la machine (bobineuse 1, magnétiseur 2, graveur 3, extrudeuse 1), 1 énergie, 1 sortie ; l'extrudeuse a en plus 1 emplacement de moule. Les entrées inutilisées sont masquées et refusent tout ; une recette ne peut pas avoir plus d'ingrédients que sa machine n'a d'entrées.
 - **Recette** : sans forme. Chaque ingrédient de la recette (au plus 3, chacun avec une quantité) doit occuper un emplacement d'entrée distinct, en quantité suffisante ; les entrées non utilisées doivent être vides. C'est l'entrée qui décide de la recette (aucune sélection), sauf le moule pour l'extrudeuse.
 - **Énergie** : une opération coûte 1 unité. Quand une opération doit démarrer et que la réserve est vide, la machine consomme un objet d'énergie : poudre de redstone = 8 unités, bloc de redstone = 72 unités. La réserve est sauvegardée avec la machine.
 - **Durée** : 100 ticks par opération (5 s, deux fois plus vite que le four), pour toutes les recettes de ce sous-projet. La durée est un champ de la recette.

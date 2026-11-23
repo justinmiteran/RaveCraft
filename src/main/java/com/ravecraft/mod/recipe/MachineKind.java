@@ -9,12 +9,14 @@ import net.minecraft.world.item.crafting.RecipeType;
 
 /**
  * One kind of machine and its recipes: the recipe type and serializer (both named after the process, e.g.
- * {@code winding}), the recipe book tab (named after the machine) and whether recipes need a mold. Built here,
+ * {@code winding}), the recipe book tab (named after the machine), how many input slots the machine uses and
+ * whether recipes need a mold. Built here,
  * registered by {@code ModRecipes}.
  */
 public final class MachineKind {
 	private final String process;
 	private final String machine;
+	private final int inputs;
 	private final boolean needsMold;
 	private final RecipeType<MachineRecipe> type;
 	private final RecipeSerializer<MachineRecipe> serializer;
@@ -25,11 +27,13 @@ public final class MachineKind {
 	 *
 	 * @param process the process name, id of the recipe type and serializer (e.g. {@code winding})
 	 * @param machine the machine's block id path, id of the recipe book category (e.g. {@code coil_winder})
+	 * @param inputs how many input slots the machine uses, 1 to 3; recipes take at most that many ingredients
 	 * @param needsMold whether every recipe of this kind names a mold
 	 */
-	public MachineKind(String process, String machine, boolean needsMold) {
+	public MachineKind(String process, String machine, int inputs, boolean needsMold) {
 		this.process = process;
 		this.machine = machine;
+		this.inputs = inputs;
 		this.needsMold = needsMold;
 		this.type = new RecipeType<>() {
 			@Override
@@ -56,6 +60,15 @@ public final class MachineKind {
 	 */
 	public String machine() {
 		return machine;
+	}
+
+	/**
+	 * Returns how many input slots the machine uses.
+	 *
+	 * @return 1 to 3; the other input slots stay empty and hidden
+	 */
+	public int inputs() {
+		return inputs;
 	}
 
 	/**

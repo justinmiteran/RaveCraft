@@ -104,7 +104,7 @@ public class CoilWinderGameTest {
 		hopper(h, POS.above(), Direction.DOWN, new ItemStack(Items.COPPER_INGOT), new ItemStack(Items.REDSTONE));
 		h.runAfterDelay(40, () -> {
 			h.assertTrue(winder.getItem(MachineBlockEntity.INPUT_0).is(Items.COPPER_INGOT), "ingot in slot 0");
-			h.assertTrue(winder.getItem(MachineBlockEntity.INPUT_1).is(Items.REDSTONE), "top fills inputs only");
+			h.assertTrue(winder.getItem(MachineBlockEntity.INPUT_1).isEmpty(), "the winder has one input");
 			h.assertTrue(winder.getItem(MachineBlockEntity.ENERGY).isEmpty(), "no energy from the top");
 			h.succeed();
 		});

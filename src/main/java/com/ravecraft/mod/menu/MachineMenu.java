@@ -33,7 +33,8 @@ public class MachineMenu extends RecipeBookMenu {
 	public static final int DATA_TOTAL = 1;
 	public static final int DATA_ENERGY = 2;
 	public static final int DATA_COUNT = 3;
-	public static final int INPUT_X = 30;
+	/** X of the middle input slot; the used inputs are centred on it. */
+	public static final int INPUT_CENTER_X = 48;
 	public static final int INPUT_Y = 17;
 	public static final int SLOT_SPACING = 18;
 	public static final int ENERGY_X = 48;
@@ -82,12 +83,23 @@ public class MachineMenu extends RecipeBookMenu {
 		this.data = data;
 		this.kind = kind;
 		for (int i = MachineBlockEntity.INPUT_0; i <= MachineBlockEntity.INPUT_2; i++) {
-			addSlot(new MachineSlot(container, i, INPUT_X + i * SLOT_SPACING, INPUT_Y));
+			addSlot(new MachineSlot(container, i, inputX(i, kind.inputs()), INPUT_Y, i < kind.inputs()));
 		}
-		addSlot(new MachineSlot(container, MachineBlockEntity.ENERGY, ENERGY_X, ENERGY_Y));
-		addSlot(new MachineSlot(container, MachineBlockEntity.OUTPUT, OUTPUT_X, OUTPUT_Y));
+		addSlot(new MachineSlot(container, MachineBlockEntity.ENERGY, ENERGY_X, ENERGY_Y, true));
+		addSlot(new MachineSlot(container, MachineBlockEntity.OUTPUT, OUTPUT_X, OUTPUT_Y, true));
 		addStandardInventorySlots(inventory, INVENTORY_X, INVENTORY_Y);
 		addDataSlots(data);
+	}
+
+	/**
+	 * The x of an input slot, the used inputs centred above the energy slot.
+	 *
+	 * @param index the input index
+	 * @param inputs how many inputs the machine uses
+	 * @return the slot x in the screen
+	 */
+	public static int inputX(int index, int inputs) {
+		return INPUT_CENTER_X + (2 * index - (inputs - 1)) * SLOT_SPACING / 2;
 	}
 
 	private static MachineKind kindAt(Inventory inventory, BlockPos pos) {
@@ -125,12 +137,12 @@ public class MachineMenu extends RecipeBookMenu {
 	}
 
 	/**
-	 * Returns the three input slots, in order.
+	 * Returns the input slots the machine uses, in order.
 	 *
-	 * @return the input slots
+	 * @return the used input slots
 	 */
 	public List<Slot> inputSlots() {
-		return slots.subList(MachineBlockEntity.INPUT_0, MachineBlockEntity.INPUT_2 + 1);
+		return slots.subList(MachineBlockEntity.INPUT_0, MachineBlockEntity.INPUT_0 + kind.inputs());
 	}
 
 	@Override
@@ -220,14 +232,28 @@ public class MachineMenu extends RecipeBookMenu {
 		return RecipeBookType.FURNACE;
 	}
 
-	/** A machine slot: the energy slot takes redstone only, the output nothing, the inputs what the machine takes. */
+	/**
+	 * A machine slot: the energy slot takes redstone only, the output nothing, the inputs what the machine takes;
+	 * the inputs the machine does not use are hidden and take nothing.
+	 */
 	private static final class MachineSlot extends Slot {
-		MachineSlot(Container container, int slot, int x, int y) {
+		private final boolean active;
+
+		MachineSlot(Container container, int slot, int x, int y, boolean active) {
 			super(container, slot, x, y);
+			this.active = active;
+		}
+
+		@Override
+		public boolean isActive() {
+			return active;
 		}
 
 		@Override
 		public boolean mayPlace(ItemStack stack) {
+			if (!active) {
+				return false;
+			}
 			int slot = getContainerSlot();
 			if (slot == MachineBlockEntity.ENERGY) {
 				return MachineBlockEntity.isEnergy(stack);

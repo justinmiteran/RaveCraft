@@ -83,9 +83,17 @@ public final class MachineRecipe implements Recipe<MachineRecipeInput> {
 						.forGetter(MachineRecipe::processingTime))
 				.apply(i, (info, ingredients, mold, result, time) ->
 						new MachineRecipe(kind, info, ingredients, mold, result, time)));
-		return codec.validate(recipe -> recipe.mold.isPresent() == kind.needsMold() ? DataResult.success(recipe)
+		return codec.validate(recipe -> check(kind, recipe));
+	}
+
+	/** A recipe fits its machine: a mold exactly when the kind needs one, no more ingredients than inputs. */
+	private static DataResult<MachineRecipe> check(MachineKind kind, MachineRecipe recipe) {
+		if (recipe.ingredients.size() > kind.inputs()) {
+			return DataResult.error(() -> kind + " recipes take at most " + kind.inputs() + " ingredients");
+		}
+		return recipe.mold.isPresent() == kind.needsMold() ? DataResult.success(recipe)
 				: DataResult.error(() -> kind.needsMold() ? kind + " recipes need a mold"
-						: kind + " recipes take no mold"));
+						: kind + " recipes take no mold");
 	}
 
 	/**

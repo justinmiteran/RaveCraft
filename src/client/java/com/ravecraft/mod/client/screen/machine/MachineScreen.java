@@ -12,12 +12,12 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 
 /**
- * The screen of any machine, laid out like a furnace: the three inputs in a row, the energy slot below with its
- * redstone gauge, the progress arrow and the output on the right. The positions are constants, shared with the slot
+ * The screen of any machine, laid out like a furnace: the inputs in a row, the energy slot below with its
+ * redstone gauge, the progress arrow and the output on the right. Each machine has its own background showing only
+ * the inputs it uses, {@code textures/gui/container/<machine>.png}. The positions are constants, shared with the slot
  * positions of {@link MachineMenu}.
  */
 public class MachineScreen extends AbstractRecipeBookScreen<MachineMenu> {
-	private static final Identifier TEXTURE = RaveCraft.id("textures/gui/container/machine.png");
 	private static final Identifier PROGRESS_SPRITE = RaveCraft.id("container/machine/progress");
 	private static final Identifier ENERGY_SPRITE = RaveCraft.id("container/machine/energy");
 	private static final int TEXTURE_SIZE = 256;
@@ -32,6 +32,8 @@ public class MachineScreen extends AbstractRecipeBookScreen<MachineMenu> {
 	private static final int BOOK_BUTTON_X = 20;
 	private static final int BOOK_BUTTON_Y = -49;
 
+	private final Identifier texture;
+
 	/**
 	 * A machine screen.
 	 *
@@ -41,6 +43,7 @@ public class MachineScreen extends AbstractRecipeBookScreen<MachineMenu> {
 	 */
 	public MachineScreen(MachineMenu menu, Inventory inventory, Component title) {
 		super(menu, new MachineRecipeBookComponent(menu), inventory, title);
+		texture = RaveCraft.id("textures/gui/container/" + menu.kind().machine() + ".png");
 	}
 
 	@Override
@@ -58,7 +61,7 @@ public class MachineScreen extends AbstractRecipeBookScreen<MachineMenu> {
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 		super.extractBackground(graphics, mouseX, mouseY, a);
-		graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight,
+		graphics.blit(RenderPipelines.GUI_TEXTURED, texture, leftPos, topPos, 0, 0, imageWidth, imageHeight,
 				TEXTURE_SIZE, TEXTURE_SIZE);
 		int arrow = Mth.ceil(menu.progress() * ARROW_WIDTH);
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_SPRITE, ARROW_WIDTH, ARROW_HEIGHT, 0, 0,

@@ -6,8 +6,10 @@ import com.ravecraft.mod.item.ItemOrigins;
 import com.ravecraft.mod.recipe.MachineKind;
 import com.ravecraft.mod.recipe.MachineRecipe;
 import com.ravecraft.mod.registry.ModBlocks;
+import com.ravecraft.mod.registry.ModCreativeTabs;
 import com.ravecraft.mod.registry.ModItems;
 import com.ravecraft.mod.registry.ModRecipes;
+import com.ravecraft.mod.registry.ModTags;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -138,6 +140,22 @@ public class ComponentsGameTest {
 	private static Optional<?> crafts(GameTestHelper h, ItemStack... grid) {
 		CraftingInput input = CraftingInput.of(3, 3, List.of(grid));
 		return h.getLevel().recipeAccess().getRecipeFor(RecipeType.CRAFTING, input, h.getLevel());
+	}
+
+	@GameTest
+	public void blankMoldIsNoMold(GameTestHelper h) {
+		ItemStack blank = new ItemStack(ModItems.BLANK_MOLD);
+		h.assertValueEqual(blank.getMaxStackSize(), 16, "blank mold stack size");
+		h.assertFalse(blank.is(ModTags.Items.MOLDS), "blank mold not in the molds tag");
+		h.assertTrue(ModCreativeTabs.RAVECRAFT.contains(blank), "blank mold in the tab");
+		h.setBlock(POS, ModBlocks.EXTRUDER);
+		MachineBlockEntity extruder = h.getBlockEntity(POS, MachineBlockEntity.class);
+		h.assertFalse(extruder.canPlaceItem(MachineBlockEntity.MOLD, blank), "extruder refuses the blank mold");
+		ShapedRecipe recipe = shaped(h, "blank_mold");
+		cells(h, "blank_mold", recipe, null, Items.IRON_INGOT, null, Items.IRON_INGOT, Items.CLAY_BALL,
+				Items.IRON_INGOT, null, Items.IRON_INGOT, null);
+		criteria(h, "misc/blank_mold", "has_iron_ingot", "has_clay_ball");
+		h.succeed();
 	}
 
 	@GameTest

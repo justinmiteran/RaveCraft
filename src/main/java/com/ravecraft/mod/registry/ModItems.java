@@ -30,6 +30,7 @@ public final class ModItems {
 	public static final Item SPEAKER_DRIVER = register("speaker_driver", Item::new);
 	public static final Item AMPLIFIER_BOARD = register("amplifier_board", Item::new);
 	public static final Item WOOFER = register("woofer", Item::new);
+	public static final Item BLANK_MOLD = register("blank_mold", properties -> new Item(properties.stacksTo(16)));
 	public static final Item SHEET_MOLD = registerMold("sheet_mold");
 	public static final Item CASING_MOLD = registerMold("casing_mold");
 	public static final Item MEMBRANE_MOLD = registerMold("membrane_mold");

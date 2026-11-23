@@ -1,25 +1,19 @@
 package com.ravecraft.mod.gametest;
 
-import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.blockentity.MachineBlockEntity;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModItems;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.HopperBlock;
@@ -180,11 +174,13 @@ public class MachinesGameTest {
 
 	@GameTest
 	public void machineCraftsExist(GameTestHelper h) {
-		for (String name : List.of("magnetizer", "etcher", "extruder")) {
-			Optional<RecipeHolder<?>> found = h.getLevel().getServer().getRecipeManager()
-					.byKey(ResourceKey.create(Registries.RECIPE, RaveCraft.id(name)));
-			h.assertTrue(found.isPresent() && found.get().value() instanceof ShapedRecipe, name + " craft");
-		}
+		Item iron = Items.IRON_INGOT;
+		ComponentsGameTest.cells(h, "magnetizer", ComponentsGameTest.shaped(h, "magnetizer"), iron,
+				ModItems.NEODYMIUM_INGOT, iron, Items.COPPER_INGOT, Items.REDSTONE, Items.COPPER_INGOT, iron,
+				ModItems.NEODYMIUM_INGOT, iron);
+		ComponentsGameTest.shaped(h, "etcher");
+		ComponentsGameTest.cells(h, "extruder", ComponentsGameTest.shaped(h, "extruder"), iron, Items.PISTON, iron,
+				iron, Items.BLAST_FURNACE, iron, iron, iron, iron);
 		h.succeed();
 	}
 

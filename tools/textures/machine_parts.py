@@ -371,6 +371,20 @@ WOOFER = ([
 ])
 
 
+
+def _blank_mold():
+    """The blank mold (7d choice A): the sheet mold's frame around a flat grained steel plate."""
+    palette, rows = SHEET_MOLD
+    plate = [list(row) for row in rows]
+    for y in range(5, 11):
+        for x in range(3, 13):
+            plate[y][x] = "g" if (x * 3 + y * 5) % 7 == 0 else "f"
+    return palette, ["".join(row) for row in plate]
+
+
+BLANK_MOLD = _blank_mold()
+
+
 def outline(mask):
     """The cells of a mask that touch a cell outside it."""
     return {(x, y) for x, y in mask
@@ -399,4 +413,5 @@ ITEMS = {name.lower(): _item(item) for name, item in {
     "CIRCUIT_BOARD": CIRCUIT_BOARD, "SIMPLE_CIRCUIT": SIMPLE_CIRCUIT, "NEODYMIUM_MAGNET": NEODYMIUM_MAGNET,
     "REINFORCED_MEMBRANE": REINFORCED_MEMBRANE, "CHIP": CHIP, "SHEET_MOLD": SHEET_MOLD, "CASING_MOLD": CASING_MOLD,
     "MEMBRANE_MOLD": MEMBRANE_MOLD, "BOARD_MOLD": BOARD_MOLD, "MEMBRANE": MEMBRANE,
-    "SPEAKER_DRIVER": SPEAKER_DRIVER, "AMPLIFIER_BOARD": AMPLIFIER_BOARD, "WOOFER": WOOFER}.items()}
+    "SPEAKER_DRIVER": SPEAKER_DRIVER, "AMPLIFIER_BOARD": AMPLIFIER_BOARD, "WOOFER": WOOFER,
+    "BLANK_MOLD": BLANK_MOLD}.items()}

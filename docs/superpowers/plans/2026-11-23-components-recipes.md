@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add the last four components (membrane, speaker driver, amplifier board, woofer). Give both speakers their final recipes built from those components. Add the "Made in" and mold tooltips, and close the materials sub-project in the SPEC.
+**Goal:** Add the last four components (membrane, speaker driver, amplifier board, woofer). Give both speakers their final recipes built from those components. Rework the magnetizer, extruder and mold crafts around a blank mold. Add the "Made in" and mold tooltips, and close the materials sub-project in the SPEC.
 
 **Architecture:**
 - The four items are plain `Item`s in `ModItems`, listed in `components()` in tab order. Models and the creative tab follow that list, as they already do.
@@ -21,15 +21,21 @@
   - `speaker_driver`: Haut-parleur simple / Speaker Driver
   - `amplifier_board`: Carte d'amplification / Amplifier Board
   - `woofer`: Haut-parleur de grave / Woofer
+  - `blank_mold`: Moule vierge / Blank Mold
 - **Crafts (spec 6.1):**
   - `membrane` ×2: shapeless, 2 paper + 1 `plastic_sheet`.
   - `speaker_driver`: ` M  / IVI /  G `, with M = `membrane`, I = iron ingot, V = `voice_coil`, G = `iron_magnet`.
   - `woofer`: the same pattern, with M = `reinforced_membrane` and G = `neodymium_magnet`.
   - `amplifier_board`: shapeless, 1 `chip` + 1 `simple_circuit` + 2 `copper_wire`.
-  - `portable_speaker`: ` D  /  B  /  S `, with D = `speaker_driver`, B = `plastic_casing`, S = `simple_circuit`.
-  - `party_speaker`: `IWI / CPC / IAI`, with W = `woofer`, C = copper ingot, P = `portable_speaker`, A = `amplifier_board`.
+  - `portable_speaker` (user decision, 7d): `DBD /  S `, with D = `speaker_driver` (one on each side), B = `plastic_casing`, S = `simple_circuit`.
+  - `party_speaker` (user decision, 7d): `IWI / BPB / IAI`, with W = `woofer`, B = `plastic_casing`, P = `portable_speaker`, A = `amplifier_board`.
+- **Machine and mold crafts (user decisions, 7d):**
+  - `magnetizer`: `INI / CRC / INI`, with N = `neodymium_ingot`, C = copper ingot, R = redstone (M3).
+  - `extruder`: `IPI / IHI / III`, with P = piston, H = blast furnace (X3).
+  - `blank_mold`: ` I  / IKI /  I `, with K = clay ball. Stacks to 16, not in the `molds` tag, not accepted by the extruder.
+  - Each mold: shapeless, 1 `blank_mold` + its shape item (heavy weighted pressure plate, bucket, bowl, redstone). Recipe ids stay `ravecraft:<mold>`.
 - **Removed:** the provisional speaker crafts (`FFF / NRN / FFF` and `INI / CPC / IRI`). The dye recipes (`*_dyed`) stay.
-- **Reinforced membrane (user decision, 7d):** extruding takes 1 `membrane` + 1 `bitumen` with `membrane_mold` and gives 1 `reinforced_membrane`. It replaces 2 `bitumen`.
+- **Reinforced membrane (user decision, 7d):** extruding takes 2 `plastic_sheet` with `membrane_mold` and gives 1 `reinforced_membrane`. It replaces 2 `bitumen`. The extruder keeps its single input (user decision).
 - **Unlock:** one `has_<item>` criterion per distinct ingredient, any of them unlocks the recipe (spec 6.2).
 - **Tooltips:** a grey line at the bottom of the tooltip, shown without Shift.
   - Machine products: `tooltip.ravecraft.made_in` = "Made in: %s" / "Fabriqué dans : %s", where `%s` is the machine's block name.
@@ -38,7 +44,7 @@
   - ores, shale family, storage blocks, materials;
   - tier 1: `copper_wire, voice_coil, iron_magnet, membrane, plastic_sheet, plastic_casing, circuit_board, simple_circuit, speaker_driver`;
   - tier 2: `neodymium_magnet, reinforced_membrane, chip, amplifier_board, woofer`;
-  - molds, machines, speakers.
+  - `blank_mold`, molds, machines, speakers.
 - **Textures chosen by the user**, all saved in `art/proposals/items7d/`, which is not versioned:
   - membrane A: the reinforced membrane grid recoloured to paper (`membrane_A.png`);
   - speaker driver E and woofer E: square steel flange with 4 screws, membrane inset, dark gasket (`speaker_driver_E.png`, `woofer_E.png`);
@@ -54,13 +60,13 @@
 
 1. **A dyed or named portable speaker still crafts into a party speaker.** The ingredient matches any portable speaker, whatever its components. Pinned in Task 3 (`partyAcceptsDyedPortable`).
 2. **The old provisional speaker crafts are gone.** Iron, note blocks and redstone no longer give a speaker. Pinned in Task 3 (`oldSpeakerCraftsGone`).
-3. **A membrane put in the extruder lands in an input, never in the mold slot,** and the reinforced membrane recipe runs with it. Pinned in Task 1 (`extruderTakesMembraneAsInput`).
+3. **Plastic sheets put in the extruder land in its input, never in the mold slot,** and the reinforced membrane recipe runs with them. Pinned in Task 1 (`extruderTakesSheetsAsInput`).
 4. **The tooltip tables never drift from the recipes.** Every machine recipe result has the right machine, and no item claims a machine that does not make it. Pinned in Task 4 (`madeInMatchesRecipes`, `moldForMatchesRecipes`).
 5. **Items with no origin get no line.** Raw materials, vanilla items and speakers show no "Made in" line. Pinned in Task 4 (`noOriginWithoutMachine`).
 
 ---
 
-### Task 1: The four components, their crafts and the reinforced membrane chain
+### Task 1: The four components, their crafts and the reinforced membrane recipe
 
 **Files:**
 - Modify: `src/main/java/com/ravecraft/mod/registry/ModItems.java`, `src/client/java/com/ravecraft/mod/datagen/RaveCraftRecipeProvider.java`, `src/main/resources/assets/ravecraft/lang/en_us.json`, `fr_fr.json`
@@ -85,21 +91,21 @@
     - For `membrane`, its criteria are exactly `{has_paper, has_plastic_sheet, has_the_recipe}`.
     - For `speaker_driver`, they are exactly `{has_membrane, has_iron_ingot, has_voice_coil, has_iron_magnet, has_the_recipe}`.
     - Each requirement is a single "or" group.
-  - `extruderTakesMembraneAsInput`:
+  - `extruderTakesSheetsAsInput`:
     - Place an extruder and set `MEMBRANE_MOLD` in slot `MOLD`.
-    - `canPlaceItem(INPUT_0, membrane)` is true and `canPlaceItem(MOLD, membrane)` is false.
-    - With 1 membrane and 1 bitumen in the inputs and redstone in `ENERGY`, run `h.runAfterDelay(110, ...)`. The output is 1 `reinforced_membrane`, and both inputs are empty.
-  - In `MachineRecipesGameTest.machineRecipesExist`, change the reinforced membrane check to `ModItems.MEMBRANE, 1, ModItems.BITUMEN, 1`, in that order.
+    - `canPlaceItem(INPUT_0, plastic sheet)` is true and `canPlaceItem(MOLD, plastic sheet)` is false.
+    - With 2 plastic sheets in `INPUT_0` and redstone in `ENERGY`, run `h.runAfterDelay(110, ...)`. The output is 1 `reinforced_membrane`, and the input is empty.
+  - In `MachineRecipesGameTest.machineRecipesExist`, change the reinforced membrane check to `ModItems.PLASTIC_SHEET, 2`. In `MachinesGameTest.cases()`, the reinforced membrane case takes 2 plastic sheets.
 
 - [ ] **Step 2: Run** `./gradlew runGameTest`. Expected: it fails to compile because `MEMBRANE` and the others are missing. That counts as RED.
 
 - [ ] **Step 3: Implement.**
   - Register the four items with `register(name, Item::new)`, and update `components()`.
   - Add the lang entries (Global Constraints names).
-  - Add the four crafts and replace `extrusion(REINFORCED_MEMBRANE, 1, 2, MEMBRANE_MOLD)` with `MachineRecipeBuilder.machine(EXTRUDING, REINFORCED_MEMBRANE, 1, this::has).input(MEMBRANE, 1).input(BITUMEN, 1).mold(MEMBRANE_MOLD)`.
+  - Add the four crafts and replace `extrusion(REINFORCED_MEMBRANE, 1, 2, MEMBRANE_MOLD)` with `MachineRecipeBuilder.machine(EXTRUDING, REINFORCED_MEMBRANE, 1, this::has).input(PLASTIC_SHEET, 2).mold(MEMBRANE_MOLD)`.
   - The flat item models come from the existing `components()` loop in `RaveCraftModelProvider`. Until Task 2, the textures are missing and show the missing-texture checkerboard, which is accepted between the two commits.
 
-- [ ] **Step 4: Run** `./gradlew runDatagen && ./gradlew runGameTest`. Expected: all required tests pass, and `src/main/generated` contains the 4 recipe JSONs and the reinforced membrane recipe with `ravecraft:membrane`.
+- [ ] **Step 4: Run** `./gradlew runDatagen && ./gradlew runGameTest`. Expected: all required tests pass, and `src/main/generated` contains the 4 recipe JSONs and the reinforced membrane recipe with 2 `ravecraft:plastic_sheet`.
 
 - [ ] **Step 5: Commit** `Add the membrane, speaker driver, amplifier board and woofer` (src, including `src/main/generated`).
 
@@ -130,14 +136,14 @@
 - Produces: recipe ids `ravecraft:portable_speaker` and `ravecraft:party_speaker`, both kept (category REDSTONE). The dye recipes are unchanged.
 
 - [ ] **Step 1: Write the failing tests** in `ComponentsGameTest`, plus the one change in `PartySpeakerGameTest`.
-  - `portableSpeakerCraft`: shaped 3×3. Index 1 is `speaker_driver`, 4 is `plastic_casing`, 7 is `simple_circuit`, and every other index is empty.
+  - `portableSpeakerCraft`: shaped 3×2 (6 cells). Cells 0 and 2 are `speaker_driver`, 1 is `plastic_casing`, 4 is `simple_circuit`, and 3 and 5 are empty.
   - `partySpeakerCraft`:
-    - Index 0, 2, 6 and 8 are iron, 1 is `woofer`, 3 and 5 are copper, 4 is the portable speaker, and 7 is `amplifier_board`.
-    - The advancement criteria are exactly `{has_iron_ingot, has_woofer, has_copper_ingot, has_portable_speaker, has_amplifier_board, has_the_recipe}`.
+    - Index 0, 2, 6 and 8 are iron, 1 is `woofer`, 3 and 5 are `plastic_casing`, 4 is the portable speaker, and 7 is `amplifier_board`.
+    - The advancement criteria are exactly `{has_iron_ingot, has_woofer, has_plastic_casing, has_portable_speaker, has_amplifier_board, has_the_recipe}`.
   - `partyAcceptsDyedPortable`: a portable speaker stack carrying `DataComponents.DYED_COLOR` and `CUSTOM_NAME` still passes index 4's ingredient test.
   - `oldSpeakerCraftsGone`:
     - Build a `CraftingInput` 3×3 with `FFF / NRN / FFF` (F iron, N note block, R redstone). `recipeAccess().getRecipeFor(CRAFTING, ...)` is empty.
-    - Do the same with `INI / CPC / IRI` (redstone block in R, a portable speaker in P). It is empty too.
+    - Do the same with `INI / CPC / IRI` (N note block, C copper ingot, R redstone block, P a portable speaker). It is empty too.
   - `PartySpeakerGameTest.recipeConsumesPortable` stays as it is: it must still pass.
 - [ ] **Step 2: Run** `./gradlew runDatagen && ./gradlew runGameTest`. Expected: the four new tests fail, because the old recipes still exist.
 - [ ] **Step 3: Implement.** Replace the two provisional `shaped(...)` blocks and their `PROVISIONAL` comments with `shapedCraft(...)` calls. The speakers keep `RecipeCategory.REDSTONE`, so give `shapedCraft` a `RecipeCategory` parameter if Task 1 did not; that keeps it at 6 parameters at most.
@@ -179,19 +185,39 @@
 - [ ] **Step 4: Run** `./gradlew runGameTest && ./gradlew build && ./gradlew codeQuality`. Expected: all green.
 - [ ] **Step 5: Commit** `Show where machine parts are made and what each mold makes`.
 
-### Task 5: In-game check and SPEC
+### Task 5: Magnetizer, extruder and mold crafts
+
+**Files:**
+- Modify: `src/main/java/com/ravecraft/mod/registry/ModItems.java`, `ModCreativeTabs.java`, `src/client/java/com/ravecraft/mod/datagen/RaveCraftRecipeProvider.java`, `RaveCraftModelProvider.java`, both lang files, `tools/textures/machine_parts.py`
+- Modify: `src/gametest/java/com/ravecraft/mod/gametest/MachineRecipesGameTest.java`, `MachinesGameTest.java`, `ComponentsGameTest.java`
+
+**Interfaces:**
+- Consumes: `shapedCraft` and `shapelessCraft` (Task 1).
+- Produces: `ModItems.BLANK_MOLD` (stack size 16), placed in the tab right before the molds. `ModItems.molds()` still returns the 4 molds only.
+
+- [ ] **Step 1: Write the failing tests.**
+  - `MachineRecipesGameTest.moldCraftsExist`: each mold recipe is a `ShapelessRecipe` with exactly 2 ingredients, `blank_mold` and its shape item, and its advancement criteria are `{has_blank_mold, has_<shape>, has_the_recipe}`.
+  - `ComponentsGameTest.blankMoldIsNoMold`: `blank_mold` stacks to 16, is not in `ModTags.Items.MOLDS`, `canPlaceItem(MOLD, blank_mold)` is false on an extruder, and its craft is shaped 3×3 with iron at 1, 3, 5 and 7, clay ball at 4, and the other cells empty.
+  - `MachinesGameTest.machineCraftsExist`: also checks the magnetizer cells (`N` at 1 and 7, copper at 3 and 5, redstone at 4, iron at the corners) and the extruder cell 4 is a blast furnace.
+- [ ] **Step 2: Run** `./gradlew runGameTest`. Expected: compile failure on `BLANK_MOLD` (RED).
+- [ ] **Step 3: Implement.** Register `BLANK_MOLD`, add it to the tab and the flat item models, add the lang entries, replace the `mold(...)` helper by a shapeless craft and change the two machine crafts. Add the chosen blank mold texture grid to `machine_parts.ITEMS` and regenerate.
+- [ ] **Step 4: Run** `./gradlew runDatagen && ./gradlew build`. Expected: green, and the generated mold JSONs are `crafting_shapeless` with `ravecraft:blank_mold`.
+- [ ] **Step 5: Commit** `Craft molds from a blank mold and add neodymium to the magnetizer`.
+
+### Task 6: In-game check and SPEC
 
 - [ ] **Step 1:** Give the user this checklist:
   - In a new survival world, follow the book from the plastic sheet to the party speaker. The membrane, speaker driver, woofer, amplifier board and both speakers unlock from any one of their ingredients.
-  - The reinforced membrane extrudes from a membrane and a bitumen.
+  - The reinforced membrane extrudes from 2 plastic sheets.
   - A dyed portable speaker crafts into a new party speaker.
   - The "Made in" line shows on the 10 machine products, and "For the extruder" on the 4 molds, in both languages, with no line on raw materials.
   - The four new textures look right in the hand and in the inventory.
+  - The magnetizer needs neodymium, the extruder a blast furnace, and each mold is a blank mold plus its shape item.
   - The tab order is as listed.
 - [ ] **Step 2:** Update `docs/SPEC.md` as the spec's section 10 asks:
   - section 3.7: delivered content;
   - section 9: "Obtention des matériaux" settled (both), "Énergie" still open, since redstone is only a machine fuel;
   - section 11: tick 7d with links to this plan, and tick "Matériaux et composants" with the spec and the four plans. Add "(vérifié en jeu)" only if the user confirms.
   - Remove "Recette définitive de l'enceinte portable" from "Prévu plus tard".
-- [ ] **Step 3:** In the materials spec section 9, add "Choix de 7d": membrane A, speaker drivers E, amplifier board B, and the reinforced membrane now made from the membrane.
+- [ ] **Step 3:** In the materials spec section 9, add "Choix de 7d": membrane A, speaker drivers E, amplifier board B; the reinforced membrane extruded from 2 plastic sheets, the portable speaker with a driver on each side, the party speaker with plastic casings instead of copper; magnetizer M3 with neodymium and copper, extruder with a blast furnace, molds from a blank mold.
 - [ ] **Step 4:** Commit `Track materials 7d in the spec`.

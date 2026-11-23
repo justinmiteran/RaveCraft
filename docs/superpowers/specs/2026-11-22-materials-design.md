@@ -100,12 +100,13 @@ Chaque PR commence par ses propositions visuelles (3 à 4 rendus par modèle ou 
 | | `chip` | Puce / Chip |
 | | `amplifier_board` | Carte d'amplification / Amplifier Board |
 | | `woofer` | Haut-parleur de grave / Woofer |
-| Moules | `sheet_mold` | Moule à plaque / Sheet Mold |
+| Moules | `blank_mold` | Moule vierge / Blank Mold |
+| | `sheet_mold` | Moule à plaque / Sheet Mold |
 | | `casing_mold` | Moule à boîtier / Casing Mold |
 | | `membrane_mold` | Moule à membrane / Membrane Mold |
 | | `board_mold` | Moule à support / Board Mold |
 
-La membrane renforcée part de la membrane simple (décidé en 7d, pour que le palier 2 prolonge le palier 1). La plaque de plastique sert aux membranes (section 6.1) et sera la matière de base des façades et boîtiers des paliers suivants.
+La membrane renforcée est extrudée à partir de 2 plaques de plastique (décidé en 7d : l'extrudeuse garde une seule entrée). La plaque de plastique sert aux membranes (section 6.1) et sera la matière de base des façades et boîtiers des paliers suivants.
 
 ## 4. Minerais et génération
 
@@ -159,7 +160,7 @@ La membrane renforcée part de la membrane simple (décidé en 7d, pour que le p
 | | 1 `silicon_wafer` + 2 pépites d'or + 1 poudre de redstone | — | 1 `chip` |
 | Extrudeuse | 1 `bitumen` | `sheet_mold` | 2 `plastic_sheet` |
 | | 3 `bitumen` | `casing_mold` | 1 `plastic_casing` |
-| | 1 `membrane` + 1 `bitumen` | `membrane_mold` | 1 `reinforced_membrane` |
+| | 2 `plastic_sheet` | `membrane_mold` | 1 `reinforced_membrane` |
 | | 1 `bitumen` | `board_mold` | 2 `circuit_board` |
 
 La poudre de redstone d'une recette est un ingrédient, pas de l'énergie : elle va dans une entrée.
@@ -201,19 +202,20 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 | Résultat | Recette |
 |---|---|
 | `coil_winder` | `III / CRC / III` |
-| `magnetizer` | `IRI / RIR / IRI` |
+| `magnetizer` | `INI / CRC / INI` (`N` lingot de néodyme) |
 | `etcher` | `IGI / RAR / III` (`G` verre, `A` éclat d'améthyste) |
-| `extruder` | `IPI / IFI / III` (`P` piston, `F` four) |
-| `sheet_mold` | `III / IXI`, `X` plaque de pression lourde |
-| `casing_mold` | `III / IXI`, `X` seau |
-| `membrane_mold` | `III / IXI`, `X` bol |
-| `board_mold` | `III / IXI`, `X` poudre de redstone |
+| `extruder` | `IPI / IHI / III` (`P` piston, `H` haut fourneau) |
+| `blank_mold` | ` I  / IKI /  I ` (`K` boule d'argile) |
+| `sheet_mold` | sans forme : 1 moule vierge + 1 plaque de pression lourde |
+| `casing_mold` | sans forme : 1 moule vierge + 1 seau |
+| `membrane_mold` | sans forme : 1 moule vierge + 1 bol |
+| `board_mold` | sans forme : 1 moule vierge + 1 poudre de redstone |
 | `membrane` ×2 | sans forme : 2 papiers + 1 plaque de plastique |
 | `speaker_driver` | ` M  / IVI /  G ` (`M` membrane, `V` bobine mobile, `G` aimant en fer) |
 | `woofer` | ` M  / IVI /  G ` (`M` membrane renforcée, `V` bobine mobile, `G` aimant en néodyme) |
 | `amplifier_board` | sans forme : 1 puce + 1 circuit simple + 2 fils de cuivre |
-| `portable_speaker` | ` D  /  B  /  S ` (`D` haut-parleur simple, `B` boîtier en plastique, `S` circuit simple) |
-| `party_speaker` | `IWI / CPC / IAI` (`W` haut-parleur de grave, `P` enceinte portable, `A` carte d'amplification) |
+| `portable_speaker` | `DBD /  S ` (`D` haut-parleur simple, un de chaque côté, `B` boîtier en plastique, `S` circuit simple) |
+| `party_speaker` | `IWI / BPB / IAI` (`W` haut-parleur de grave, `B` boîtier en plastique, `P` enceinte portable, `A` carte d'amplification) |
 
 - Les recettes provisoires des deux enceintes (`FFF / NRN / FFF` et `INI / CPC / IRI`) sont supprimées. Les recettes de teinture (`*_dyed`) restent inchangées.
 - L'enceinte de soirée sort neuve (recette à forme) : la couleur, le nom et la file de l'enceinte portable utilisée ne sont pas repris, comme aujourd'hui.
@@ -221,7 +223,8 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 ### 6.2 Déblocage
 
 - Chaque recette de table de craft, de fonte et de machine a un critère `has_<ingrédient>` **par ingrédient distinct**, combinés en « ou » : elle se débloque dès que le joueur possède l'un d'eux.
-- Les machines et les moules se débloquent donc avec le fer ou le cuivre, très tôt.
+- La bobineuse, le graveur, l'extrudeuse et le moule vierge se débloquent donc avec le fer ou le cuivre, très tôt ; le magnétiseur aussi, mais sa fabrication demande du néodyme, donc une descente en profondeur avant la première enceinte (choix de 7d).
+- Le moule vierge n'est pas un moule : il ne va pas dans l'extrudeuse et n'est pas dans le tag des moules. Il s'empile par 16.
 
 ### 6.3 Infobulles
 
@@ -230,7 +233,7 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 
 ### 6.4 Onglet créatif et traductions
 
-- Onglet RaveCraft, dans l'ordre de la chaîne : minerais, famille du schiste, matières, composants du palier 1, du palier 2, moules, machines, puis les enceintes (déjà présentes).
+- Onglet RaveCraft, dans l'ordre de la chaîne : minerais, famille du schiste, matières, composants du palier 1, du palier 2, moule vierge, moules, machines, puis les enceintes (déjà présentes).
 - Tous les noms et lignes en `en_us.json` et `fr_fr.json`.
 
 ## 7. Architecture du code

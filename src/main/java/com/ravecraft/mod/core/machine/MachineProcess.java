@@ -29,18 +29,18 @@ public final class MachineProcess {
 	private int energy;
 
 	/**
-	 * Sets the recipe the inputs currently match. The same recipe keeps the progress; another one, or none, resets it.
+	 * Sets the recipe the inputs currently match. The same recipe keeps the progress (and takes the given duration, which
+	 * completes a {@link #load}); another one, or none, resets it.
 	 *
 	 * @param recipeKey an identity of the recipe, or null when nothing matches
 	 * @param processingTicks the recipe's duration, in ticks
 	 */
 	public void setRecipe(@Nullable Object recipeKey, int processingTicks) {
-		if (Objects.equals(recipeKey, recipe)) {
-			return;
-		}
-		recipe = recipeKey;
 		total = recipeKey == null ? 0 : Math.max(1, processingTicks);
-		progress = 0;
+		if (!Objects.equals(recipeKey, recipe)) {
+			recipe = recipeKey;
+			progress = 0;
+		}
 	}
 
 	/**
@@ -88,12 +88,15 @@ public final class MachineProcess {
 	}
 
 	/**
-	 * Restores saved values, clamped to their valid ranges.
+	 * Restores saved values, clamped to their valid ranges. The duration stays unknown until the next
+	 * {@link #setRecipe}, which keeps the progress if it names the same recipe.
 	 *
 	 * @param savedEnergy the energy reserve
 	 * @param savedProgress the progress of the current operation, in ticks
+	 * @param savedRecipe the identity of the recipe in progress, or null
 	 */
-	public void load(int savedEnergy, int savedProgress) {
+	public void load(int savedEnergy, int savedProgress, @Nullable Object savedRecipe) {
+		recipe = savedRecipe;
 		energy = Math.clamp(savedEnergy, 0, MachineConstants.MAX_ENERGY);
 		progress = Math.max(0, savedProgress);
 	}

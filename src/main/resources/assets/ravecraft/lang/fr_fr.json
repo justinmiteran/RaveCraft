@@ -26,6 +26,7 @@
   "item.ravecraft.silicon_wafer": "Plaquette de silicium",
   "item.ravecraft.copper_wire": "Fil de cuivre",
   "item.ravecraft.voice_coil": "Bobine mobile",
+  "block.ravecraft.coil_winder": "Bobineuse",
   "itemGroup.ravecraft.main": "RaveCraft",
   "screen.ravecraft.speaker.library": "Bibliothèque",
   "screen.ravecraft.speaker.queue": "File",

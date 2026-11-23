@@ -104,8 +104,19 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 			dyedItem(ModBlocks.PARTY_SPEAKER.asItem(), "party_speaker_dye");
 		}
 
-		/** What the machines make. */
+		/** The machines and what they make. */
 		private void machines() {
+			shaped(RecipeCategory.MISC, ModBlocks.COIL_WINDER)
+					.define('I', ConventionalItemTags.IRON_INGOTS)
+					.define('C', ConventionalItemTags.COPPER_INGOTS)
+					.define('R', ConventionalItemTags.REDSTONE_DUSTS)
+					.pattern("III")
+					.pattern("CRC")
+					.pattern("III")
+					.unlockedBy("has_iron_ingot", has(ConventionalItemTags.IRON_INGOTS))
+					.unlockedBy("has_copper_ingot", has(ConventionalItemTags.COPPER_INGOTS))
+					.unlockedBy("has_redstone", has(ConventionalItemTags.REDSTONE_DUSTS))
+					.save(output);
 			MachineRecipeBuilder.machine(ModRecipes.WINDING, ModItems.COPPER_WIRE, WIRES_PER_INGOT, this::has)
 					.input(Items.COPPER_INGOT, 1).save(output);
 			MachineRecipeBuilder.machine(ModRecipes.WINDING, ModItems.VOICE_COIL, 1, this::has)

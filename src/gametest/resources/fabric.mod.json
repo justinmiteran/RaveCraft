@@ -16,7 +16,8 @@
 			"com.ravecraft.mod.gametest.CarriedSpeakerGameTest",
 			"com.ravecraft.mod.gametest.PartySpeakerGameTest",
 			"com.ravecraft.mod.gametest.MaterialsGameTest",
-			"com.ravecraft.mod.gametest.MachineGameTest"
+			"com.ravecraft.mod.gametest.MachineGameTest",
+			"com.ravecraft.mod.gametest.CoilWinderGameTest"
 		]
 	},
 	"depends": {

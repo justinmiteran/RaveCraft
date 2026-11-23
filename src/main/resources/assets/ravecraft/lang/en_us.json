@@ -26,6 +26,7 @@
   "item.ravecraft.silicon_wafer": "Silicon Wafer",
   "item.ravecraft.copper_wire": "Copper Wire",
   "item.ravecraft.voice_coil": "Voice Coil",
+  "block.ravecraft.coil_winder": "Coil Winder",
   "itemGroup.ravecraft.main": "RaveCraft",
   "screen.ravecraft.speaker.library": "Library",
   "screen.ravecraft.speaker.queue": "Queue",

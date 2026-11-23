@@ -143,10 +143,10 @@ class MachineProcessTest {
 	@Test
 	void energyNeverExceedsMax() {
 		MachineProcess process = new MachineProcess();
-		process.load(500, 20);
+		process.load(500, 20, null);
 		assertEquals(MachineConstants.MAX_ENERGY, process.energy());
 		assertEquals(20, process.progress());
-		process.load(-3, -1);
+		process.load(-3, -1, null);
 		assertEquals(0, process.energy());
 		assertEquals(0, process.progress());
 	}
@@ -157,5 +157,18 @@ class MachineProcessTest {
 		process.setRecipe(WIRE, 40);
 		assertEquals(40, process.total());
 		assertEquals(40, runOperation(process, new Fuel(8)));
+	}
+
+	@Test
+	void loadedProgressSurvivesFirstLookup() {
+		MachineProcess process = new MachineProcess();
+		process.load(7, 50, WIRE);
+		process.setRecipe(WIRE, 100);
+		assertEquals(50, process.progress());
+		assertEquals(100, process.total());
+		assertEquals(TickResult.WORKING, process.tick(true, () -> 0));
+		assertEquals(51, process.progress());
+		process.setRecipe(COIL, 100);
+		assertEquals(0, process.progress());
 	}
 }

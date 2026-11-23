@@ -17,6 +17,7 @@
 			"com.ravecraft.mod.gametest.PartySpeakerGameTest",
 			"com.ravecraft.mod.gametest.MaterialsGameTest",
 			"com.ravecraft.mod.gametest.MachineGameTest",
+			"com.ravecraft.mod.gametest.MachineRecipesGameTest",
 			"com.ravecraft.mod.gametest.CoilWinderGameTest",
 			"com.ravecraft.mod.gametest.MachineMenuGameTest",
 			"com.ravecraft.mod.gametest.MachineEnergyGameTest",

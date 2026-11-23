@@ -12,6 +12,12 @@ import net.minecraft.core.registries.BuiltInRegistries;
 public final class ModRecipes {
 	/** The coil winder's process: copper into wire, wire into voice coils. */
 	public static final MachineKind WINDING = register(new MachineKind("winding", "coil_winder", 1, false));
+	/** The magnetizer: two inputs. */
+	public static final MachineKind MAGNETIZING = register(new MachineKind("magnetizing", "magnetizer", 2, false));
+	/** The etcher: three inputs. */
+	public static final MachineKind ETCHING = register(new MachineKind("etching", "etcher", 3, false));
+	/** The extruder: one input and a mold. */
+	public static final MachineKind EXTRUDING = register(new MachineKind("extruding", "extruder", 1, true));
 
 	private ModRecipes() {
 	}

@@ -1,12 +1,13 @@
 package com.ravecraft.mod.registry;
 
+import com.ravecraft.mod.RaveCraft;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 
-/** Convention tags shared with other mods (namespace {@code c}). */
+/** Convention tags shared with other mods (namespace {@code c}), and the mod's own tags. */
 public final class ModTags {
 	private static final String COMMON = "c";
 
@@ -43,6 +44,8 @@ public final class ModTags {
 		public static final TagKey<Item> STORAGE_BLOCKS_RAW_NEODYMIUM = item("storage_blocks/raw_neodymium");
 		public static final TagKey<Item> STORAGE_BLOCKS_NEODYMIUM = item("storage_blocks/neodymium");
 		public static final TagKey<Item> STORAGE_BLOCKS_SILICON = item("storage_blocks/silicon");
+		/** The extruder molds: the only items its mold slot takes. */
+		public static final TagKey<Item> MOLDS = TagKey.create(Registries.ITEM, RaveCraft.id("molds"));
 
 		private Items() {
 		}

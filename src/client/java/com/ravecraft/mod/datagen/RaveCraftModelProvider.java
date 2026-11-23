@@ -6,6 +6,7 @@ import com.ravecraft.mod.registry.ModBlockFamilies;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModItems;
 import java.util.stream.IntStream;
+import java.util.List;
 import java.util.stream.Stream;
 import net.fabricmc.fabric.api.client.datagen.v1.provider.FabricModelProvider;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
@@ -150,7 +151,8 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 
 	@Override
 	public void generateItemModels(ItemModelGenerators generators) {
-		for (Item item : Stream.concat(ModItems.materials().stream(), ModItems.components().stream()).toList()) {
+		for (Item item : Stream.of(ModItems.materials(), ModItems.components(), ModItems.molds()).flatMap(List::stream)
+				.toList()) {
 			generators.generateFlatItem(item, ModelTemplates.FLAT_ITEM);
 		}
 	}

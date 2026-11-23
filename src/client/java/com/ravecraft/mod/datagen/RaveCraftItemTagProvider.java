@@ -51,6 +51,7 @@ public class RaveCraftItemTagProvider extends FabricTagsProvider.ItemTagsProvide
 		builder(ModTags.Items.STORAGE_BLOCKS_SILICON).add(key(ModBlocks.SILICON_BLOCK));
 		builder(ModTags.Items.STORAGE_BLOCKS).addTag(ModTags.Items.STORAGE_BLOCKS_RAW_NEODYMIUM)
 				.addTag(ModTags.Items.STORAGE_BLOCKS_NEODYMIUM).addTag(ModTags.Items.STORAGE_BLOCKS_SILICON);
+		addAll(builder(ModTags.Items.MOLDS), ModItems.molds());
 		addAll(builder(BlockItemTags.STAIRS.item()), RaveCraftBlockTagProvider.shapes(StairBlock.class));
 		addAll(builder(BlockItemTags.SLABS.item()), RaveCraftBlockTagProvider.shapes(SlabBlock.class));
 		addAll(builder(BlockItemTags.WALLS.item()), RaveCraftBlockTagProvider.shapes(WallBlock.class));

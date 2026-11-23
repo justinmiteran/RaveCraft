@@ -18,6 +18,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.StackedItemContents;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.RecipeBookMenu.PostPlaceAction;
 import net.minecraft.world.item.Item;
@@ -245,6 +246,27 @@ public class MachineMenuGameTest {
 		h.succeed();
 	}
 
+	@GameTest
+	public void bookNeedsTheMold(GameTestHelper h) {
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		MachineMenu menu = menu(h, player, ModBlocks.EXTRUDER);
+		player.getInventory().setItem(9, new ItemStack(ModItems.BITUMEN, 4));
+		h.assertFalse(craftable(h, menu, player, "plastic_sheet_from_extruding"), "no mold, not craftable");
+		player.getInventory().setItem(10, new ItemStack(ModItems.SHEET_MOLD));
+		h.assertTrue(craftable(h, menu, player, "plastic_sheet_from_extruding"), "mold in the inventory");
+		player.getInventory().setItem(10, ItemStack.EMPTY);
+		menu.getSlot(MachineBlockEntity.MOLD).set(new ItemStack(ModItems.SHEET_MOLD));
+		h.assertTrue(craftable(h, menu, player, "plastic_sheet_from_extruding"), "mold in its slot");
+		h.succeed();
+	}
+
+	private static boolean craftable(GameTestHelper h, MachineMenu menu, Player player, String name) {
+		StackedItemContents contents = new StackedItemContents();
+		player.getInventory().fillStackedContents(contents);
+		menu.fillCraftSlotsStackedContents(contents);
+		return contents.canCraft(recipe(h, name).value(), null);
+	}
+
 	private static MachineMenu menu(GameTestHelper h, Player player) {
 		return menu(h, player, ModBlocks.COIL_WINDER);
 	}
@@ -256,10 +278,13 @@ public class MachineMenuGameTest {
 
 	private static PostPlaceAction place(GameTestHelper h, MachineMenu menu, Player player, String name,
 			boolean useMaxItems) {
-		RecipeHolder<?> recipe = h.getLevel().getServer().getRecipeManager()
+		return menu.handlePlacement(useMaxItems, false, recipe(h, name), h.getLevel(), player.getInventory());
+	}
+
+	private static RecipeHolder<?> recipe(GameTestHelper h, String name) {
+		return h.getLevel().getServer().getRecipeManager()
 				.byKey(ResourceKey.create(Registries.RECIPE, RaveCraft.id(name)))
 				.orElseThrow(() -> h.assertionException(name + " missing"));
-		return menu.handlePlacement(useMaxItems, false, recipe, h.getLevel(), player.getInventory());
 	}
 
 	private static int count(Inventory inventory, Item item) {

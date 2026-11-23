@@ -6,6 +6,8 @@ import com.ravecraft.mod.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -37,6 +39,12 @@ import org.jspecify.annotations.Nullable;
 public abstract class MachineBlock extends BaseEntityBlock {
 	public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
 	public static final BooleanProperty LIT = BlockStateProperties.LIT;
+	private static final double SOUND_CHANCE = 0.1;
+	private static final float SOUND_VOLUME = 0.4F;
+	private static final float PITCH_SPREAD = 0.2F;
+	private static final double FRONT_OFFSET = 0.52;
+	private static final double SPREAD = 0.6;
+	private static final double PARTICLE_HEIGHT = 0.4;
 
 	/**
 	 * A machine facing north, unlit.
@@ -54,6 +62,35 @@ public abstract class MachineBlock extends BaseEntityBlock {
 	 * @return the machine kind
 	 */
 	public abstract MachineKind kind();
+
+	/**
+	 * What the machine plays and shows while it works.
+	 *
+	 * @return the machine's sound and particle
+	 */
+	protected abstract MachineEffects effects();
+
+	/** While it works: now and then the machine's sound, and its particle at the front. */
+	@Override
+	public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
+		if (!state.getValue(LIT)) {
+			return;
+		}
+		MachineEffects effects = effects();
+		double x = pos.getX() + 0.5;
+		double y = pos.getY();
+		double z = pos.getZ() + 0.5;
+		if (random.nextDouble() < SOUND_CHANCE) {
+			level.playLocalSound(x, y, z, effects.sound(), SoundSource.BLOCKS, SOUND_VOLUME,
+					effects.pitch() + random.nextFloat() * PITCH_SPREAD, false);
+		}
+		Direction facing = state.getValue(FACING);
+		double across = random.nextDouble() * SPREAD - SPREAD / 2;
+		double dx = facing.getAxis() == Direction.Axis.X ? facing.getStepX() * FRONT_OFFSET : across;
+		double dz = facing.getAxis() == Direction.Axis.Z ? facing.getStepZ() * FRONT_OFFSET : across;
+		double dy = PARTICLE_HEIGHT + random.nextDouble() * PARTICLE_HEIGHT;
+		level.addParticle(effects.particle(), x + dx, y + dy, z + dz, 0, 0, 0);
+	}
 
 	@Override
 	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {

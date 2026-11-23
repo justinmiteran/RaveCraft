@@ -9,12 +9,14 @@ import com.ravecraft.mod.recipe.MachineKind;
 import com.ravecraft.mod.recipe.MachineRecipe;
 import com.ravecraft.mod.recipe.MachineRecipeInput;
 import com.ravecraft.mod.registry.ModBlockEntities;
+import com.ravecraft.mod.registry.ModTags;
 import java.util.Arrays;
 import java.util.List;
 import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -38,9 +40,9 @@ import net.minecraft.world.level.storage.ValueOutput;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The contents and the work of any machine: three input slots, a redstone energy slot and an output slot. The recipe
- * is looked up again only after a change of contents ({@link #setChanged()}), never every tick; {@link MachineProcess}
- * does the timing and the energy. Hoppers fill the inputs from the top and the energy from the sides, and empty the
+ * The contents and the work of any machine: three input slots, a redstone energy slot, an output slot and a mold
+ * slot (used by the extruder only, never reached by hoppers). The recipe is looked up again only after a change of
+ * contents ({@link #setChanged()}), never every tick; {@link MachineProcess} does the timing and the energy. Hoppers fill the inputs from the top and the energy from the sides, and empty the
  * output from below. It opens a {@link MachineMenu}, whose client side finds the machine from its position.
  */
 public class MachineBlockEntity extends BlockEntity implements WorldlyContainer, ExtendedMenuProvider<BlockPos> {
@@ -49,7 +51,8 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 	public static final int INPUT_2 = 2;
 	public static final int ENERGY = 3;
 	public static final int OUTPUT = 4;
-	public static final int SIZE = 5;
+	public static final int MOLD = 5;
+	public static final int SIZE = 6;
 	private static final int[] SLOTS_UP = {INPUT_0, INPUT_1, INPUT_2};
 	private static final int[] SLOTS_SIDE = {ENERGY};
 	private static final int[] SLOTS_DOWN = {OUTPUT};
@@ -69,6 +72,7 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 				case MachineMenu.DATA_PROGRESS -> process.progress();
 				case MachineMenu.DATA_TOTAL -> process.total();
 				case MachineMenu.DATA_CAPACITY -> process.capacity();
+				case MachineMenu.DATA_RESULT -> resultId();
 				default -> process.energy();
 			};
 		}
@@ -181,7 +185,7 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 
 	private MachineRecipeInput input() {
 		return new MachineRecipeInput(List.of(items.get(INPUT_0), items.get(INPUT_1), items.get(INPUT_2)),
-				ItemStack.EMPTY);
+				kind().needsMold() ? items.get(MOLD) : ItemStack.EMPTY);
 	}
 
 	private void findRecipe(ServerLevel level) {
@@ -192,6 +196,12 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 		} else {
 			process.setRecipe(recipe.id(), recipe.value().processingTime());
 		}
+	}
+
+	/** The registry id of the current recipe's result, which the menu syncs to colour its arrow. */
+	private int resultId() {
+		return recipe == null ? MachineMenu.NO_RESULT
+				: BuiltInRegistries.ITEM.getId(recipe.value().result().item().value());
 	}
 
 	private boolean outputFits() {
@@ -324,16 +334,18 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer,
 	}
 
 	/**
-	 * Energy slot: the machine energy items only. Output: nothing. Inputs: a stack of the same item, or an empty slot
+	 * Energy slot: the machine energy items only. Mold slot: a mold, on a machine that uses one. Output: nothing. Inputs: a stack of the same item, or an empty slot
 	 * when no other input holds that item (so one ingredient does not spread over the three slots); the
 	 * inputs the machine does not use take nothing.
 	 */
 	@Override
 	public boolean canPlaceItem(int slot, ItemStack stack) {
-		if (slot == ENERGY) {
-			return level != null && isEnergy(level, stack);
-		}
-		return slot != OUTPUT && fitsInput(slot, stack);
+		return switch (slot) {
+			case ENERGY -> level != null && isEnergy(level, stack);
+			case MOLD -> kind().needsMold() && stack.is(ModTags.Items.MOLDS);
+			case OUTPUT -> false;
+			default -> fitsInput(slot, stack);
+		};
 	}
 
 	private boolean fitsInput(int slot, ItemStack stack) {

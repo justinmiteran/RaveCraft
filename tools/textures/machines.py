@@ -1,7 +1,8 @@
 """Machine textures: the coil winder (brushed steel casing, copper spool, status lamp), its products (copper wire,
-voice coil) and the machine screen (furnace-like layout: three inputs, energy slot with a redstone gauge, progress
-arrow, large output). Imported by gen_textures.py. All original, drawn with Pillow; the shapes were picked by the
-user from proposals (block A v2, wire 5 "hank", coil 7 "ribbed", screen C)."""
+voice coil) and the machine screen (furnace-like layout: the inputs, a redstone bolt gauge above the energy slot, a
+progress arrow tinted by the input, large output). Imported by gen_textures.py. All original, drawn with Pillow; the
+shapes were picked by the user from proposals (block A v2, wire 5 "hank", coil 7 "ribbed", screen A with the thin
+arrow and bolt 2)."""
 from __future__ import annotations
 
 import math
@@ -88,43 +89,6 @@ def slot(img, x, y, size=18):
     d.line((x, y, x + size - 2, y), fill=SLOT_DARK); d.line((x, y, x, y + size - 2), fill=SLOT_DARK)
     d.line((x + 1, y + size - 1, x + size - 1, y + size - 1), fill=G_LIGHT)
     d.line((x + size - 1, y + 1, x + size - 1, y + size - 1), fill=G_LIGHT)
-
-
-def gauge(img, x, y, w, h, fill_frac, vertical=True):
-    d = ImageDraw.Draw(img)
-    d.rectangle((x, y, x + w - 1, y + h - 1), fill=(40, 12, 12))
-    d.line((x - 1, y - 1, x + w - 1, y - 1), fill=SLOT_DARK); d.line((x - 1, y - 1, x - 1, y + h - 1), fill=SLOT_DARK)
-    d.line((x, y + h, x + w, y + h), fill=G_LIGHT); d.line((x + w, y, x + w, y + h), fill=G_LIGHT)
-    if fill_frac <= 0:
-        return
-    if vertical:
-        top = y + h - int(h * fill_frac)
-        d.rectangle((x, top, x + w - 1, y + h - 1), fill=(200, 30, 24))
-        d.line((x, top, x, y + h - 1), fill=(255, 90, 70))
-    else:
-        right = x + int(w * fill_frac) - 1
-        d.rectangle((x, y, right, y + h - 1), fill=(200, 30, 24))
-        d.line((x, y, right, y), fill=(255, 90, 70))
-
-
-def arrow(img, x, y, frac):
-    """22x16 arrow: grey outline, copper fill for the progress (the winder's colour, not the furnace white)."""
-    d = ImageDraw.Draw(img)
-    shape = []
-    for yy in range(16):
-        half = 7.5
-        dy = abs(yy - half)
-        if 4 <= yy <= 11:
-            xs = range(0, 15)
-        else:
-            xs = range(0, 0)
-        shape += [(x + xx, y + yy) for xx in xs]
-        head_w = int(8 - dy)
-        shape += [(x + 14 + xx, y + yy) for xx in range(max(0, head_w))]
-    filled = x + int(22 * frac)
-    for (px_, py_) in shape:
-        c = COPPER[3] if px_ < filled else SLOT_IN
-        img.putpixel((px_, py_), (*c, 255))
 
 
 def blank():
@@ -302,8 +266,8 @@ def coil_winder_front_on():
 INPUT_CENTER_FRAME = (47, 16)  # frame of the middle input; the used inputs are centred on it
 SLOT_STEP = 18
 ENERGY_FRAME = (47, 52)
-GAUGE = (67, 53, 5, 16)
-ARROW = (90, 34)
+BOLT_POS = (49, 36)  # 14x14 energy bolt between the input and the energy slot, like the furnace flame
+ARROW_POS = (89, 34)  # 24x16 progress arrow, the furnace's proportions
 OUTPUT_FRAME = (120, 30, 26)
 CONTAINER_SIZE = 256
 
@@ -314,31 +278,71 @@ def machine_container(inputs):
     for i in range(inputs):
         slot(img, INPUT_CENTER_FRAME[0] + (2 * i - (inputs - 1)) * SLOT_STEP // 2, INPUT_CENTER_FRAME[1])
     slot(img, *ENERGY_FRAME)
-    gauge(img, *GAUGE, 0.0)
-    arrow(img, *ARROW, 0.0)
+    bolt(img, *BOLT_POS, lit=False)
+    thin_arrow(img, *ARROW_POS, filled=False)
     slot(img, OUTPUT_FRAME[0], OUTPUT_FRAME[1], OUTPUT_FRAME[2])
     sheet = Image.new("RGBA", (CONTAINER_SIZE, CONTAINER_SIZE), (0, 0, 0, 0))
     sheet.paste(img, (0, 0))
     return sheet
 
 
+# The bolt chosen by the user (proposal 2, "fin"): 14 rows, 3-pixel strokes.
+BOLT = [
+    ".......####...", "......####....", ".....####.....", "....####......", "...####.......",
+    "..#########...", "......####....", ".....####.....", ".....###......", "....###.......",
+    "....##........", "...##.........", "...#..........", "..#..........."]
+BOLT_TONES = [(160, 18, 12), (214, 36, 26), (255, 86, 64)]  # edge, body, lit side
+
+
+def bolt(img, x0, y0, lit):
+    """Lit: redstone tones, light on the left edge, dark on the right and below, a grey drop shadow on the right like
+    the furnace flame. Unlit: only the grey outline."""
+    pts = {(x, y) for y, row in enumerate(BOLT) for x, ch in enumerate(row) if ch == "#"}
+    for (x, y) in pts:
+        left, right = (x - 1, y) not in pts, (x + 1, y) not in pts
+        below, above = (x, y + 1) not in pts, (x, y - 1) not in pts
+        if not lit:
+            if left or right or below or above:
+                px(img, x0 + x, y0 + y, SLOT_IN)
+            continue
+        c = BOLT_TONES[2] if left else (BOLT_TONES[0] if right or below else BOLT_TONES[1])
+        px(img, x0 + x, y0 + y, c)
+        if right and x + 1 < len(BOLT[0]):
+            px(img, x0 + x + 1, y0 + y, SLOT_IN)
+
+
+ARROW_FILL, ARROW_SHADOW = (255, 255, 255), (104, 104, 104)
+
+
+def thin_arrow(img, x0, y0, filled):
+    """The furnace arrow's shape (24x16): a 3-row shaft and a 15-row head. Empty: slot grey. Filled: white with a grey
+    shadow on the lower edges, tinted at draw time with the input's colour."""
+    for y in range(16):
+        for x in range(24):
+            shaft = y in (6, 7, 8) and 1 <= x <= (22 if y == 7 else 21)
+            head = 15 <= x and x - 15 <= min(y, 15 - y)
+            shadow = (y == 9 and 1 <= x <= 14) or (head and x - 15 == 15 - y and y >= 8)
+            if not (shaft or head or shadow):
+                continue
+            if not filled:
+                c = SLOT_IN
+            else:
+                c = ARROW_SHADOW if shadow else ARROW_FILL
+            px(img, x0 + x, y0 + y, c)
+
+
 def machine_progress():
-    """The copper arrow fill, 22x16, drawn over the empty arrow from the left."""
-    img = Image.new("RGBA", (22, 16), (0, 0, 0, 0))
-    arrow(img, 0, 0, 1.0)
-    for x in range(22):
-        for y in range(16):
-            if img.getpixel((x, y))[:3] == SLOT_IN:
-                img.putpixel((x, y), (0, 0, 0, 0))
+    """The full arrow, white so the screen can tint it with the input's colour, drawn from the left."""
+    img = Image.new("RGBA", (24, 16), (0, 0, 0, 0))
+    thin_arrow(img, 0, 0, filled=True)
     return img
 
 
 def machine_energy():
-    """The full redstone gauge, 5x16, drawn over the empty one from below."""
-    _, _, w, h = GAUGE
-    img = Image.new("RGBA", (w + 2, h + 2), (0, 0, 0, 0))
-    gauge(img, 1, 1, w, h, 1.0)
-    return img.crop((1, 1, 1 + w, 1 + h))
+    """The lit bolt, 14x14, drawn over the outline from below as the energy fills."""
+    img = Image.new("RGBA", (14, 14), (0, 0, 0, 0))
+    bolt(img, 0, 0, lit=True)
+    return img
 
 
 BLOCKS = {"coil_winder_front": a2_front, "coil_winder_side": a2_side, "coil_winder_top": a2_top}

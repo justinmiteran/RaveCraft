@@ -9,6 +9,7 @@ import com.ravecraft.mod.registry.ModMenus;
 import com.ravecraft.mod.registry.ModRecipes;
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
@@ -22,6 +23,7 @@ import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The menu of any machine: three inputs, the redstone energy slot and the output, above the player's inventory. It
@@ -237,11 +239,19 @@ public class MachineMenu extends RecipeBookMenu {
 	 * the inputs the machine does not use are hidden and take nothing.
 	 */
 	private static final class MachineSlot extends Slot {
+		/** The vanilla redstone silhouette shown in the empty energy slot. */
+		private static final Identifier EMPTY_ENERGY_ICON = Identifier.withDefaultNamespace("container/slot/redstone_dust");
+
 		private final boolean active;
 
 		MachineSlot(Container container, int slot, int x, int y, boolean active) {
 			super(container, slot, x, y);
 			this.active = active;
+		}
+
+		@Override
+		public @Nullable Identifier getNoItemIcon() {
+			return getContainerSlot() == MachineBlockEntity.ENERGY ? EMPTY_ENERGY_ICON : null;
 		}
 
 		@Override

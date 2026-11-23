@@ -14,6 +14,7 @@ import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -110,6 +111,15 @@ public class MachineMenuGameTest {
 		h.assertValueEqual(action, PostPlaceAction.PLACE_GHOST_RECIPE, "ghost");
 		h.assertValueEqual(count(player.getInventory(), ModItems.COPPER_WIRE), 3, "inventory unchanged");
 		h.assertTrue(menu.getSlot(MachineBlockEntity.INPUT_0).getItem().isEmpty(), "nothing placed");
+		h.succeed();
+	}
+
+	@GameTest
+	public void emptyEnergySlotShowsRedstone(GameTestHelper h) {
+		MachineMenu menu = menu(h, h.makeMockPlayer(GameType.SURVIVAL));
+		h.assertValueEqual(menu.getSlot(MachineBlockEntity.ENERGY).getNoItemIcon(),
+				Identifier.withDefaultNamespace("container/slot/redstone_dust"), "redstone silhouette");
+		h.assertTrue(menu.getSlot(MachineBlockEntity.INPUT_0).getNoItemIcon() == null, "no icon on the input");
 		h.succeed();
 	}
 

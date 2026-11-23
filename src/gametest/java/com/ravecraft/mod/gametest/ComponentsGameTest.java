@@ -10,16 +10,21 @@ import java.util.Set;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.DyedItemColor;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraft.world.level.ItemLike;
@@ -77,6 +82,54 @@ public class ComponentsGameTest {
 			h.assertTrue(extruder.getItem(MachineBlockEntity.INPUT_0).isEmpty(), "sheets used");
 			h.succeed();
 		});
+	}
+
+	@GameTest
+	public void portableSpeakerCraft(GameTestHelper h) {
+		ShapedRecipe recipe = shaped(h, "portable_speaker");
+		h.assertValueEqual(recipe.getWidth(), 3, "portable width");
+		h.assertValueEqual(recipe.getHeight(), 2, "portable height");
+		cells(h, "portable_speaker", recipe, ModItems.SPEAKER_DRIVER, ModItems.PLASTIC_CASING, ModItems.SPEAKER_DRIVER,
+				null, ModItems.SIMPLE_CIRCUIT, null);
+		h.succeed();
+	}
+
+	@GameTest
+	public void partySpeakerCraft(GameTestHelper h) {
+		ShapedRecipe recipe = shaped(h, "party_speaker");
+		cells(h, "party_speaker", recipe, Items.IRON_INGOT, ModItems.WOOFER, Items.IRON_INGOT, ModItems.PLASTIC_CASING,
+				ModBlocks.PORTABLE_SPEAKER, ModItems.PLASTIC_CASING, Items.IRON_INGOT, ModItems.AMPLIFIER_BOARD,
+				Items.IRON_INGOT);
+		criteria(h, "redstone/party_speaker", "has_iron_ingot", "has_woofer", "has_plastic_casing",
+				"has_portable_speaker", "has_amplifier_board");
+		h.succeed();
+	}
+
+	@GameTest
+	public void partyAcceptsDyedPortable(GameTestHelper h) {
+		ItemStack portable = new ItemStack(ModBlocks.PORTABLE_SPEAKER);
+		portable.set(DataComponents.DYED_COLOR, DyedItemColor.applyDyes((DyedItemColor) null, List.of(DyeColor.RED)));
+		portable.set(DataComponents.CUSTOM_NAME, Component.literal("Garage"));
+		Optional<Ingredient> centre = shaped(h, "party_speaker").getIngredients().get(4);
+		h.assertTrue(centre.isPresent() && centre.get().test(portable), "dyed, named portable accepted");
+		h.succeed();
+	}
+
+	@GameTest
+	public void oldSpeakerCraftsGone(GameTestHelper h) {
+		ItemStack iron = new ItemStack(Items.IRON_INGOT);
+		ItemStack note = new ItemStack(Items.NOTE_BLOCK);
+		h.assertTrue(crafts(h, iron, iron, iron, note, new ItemStack(Items.REDSTONE), note, iron, iron, iron).isEmpty(),
+				"old portable craft gone");
+		h.assertTrue(crafts(h, iron, note, iron, new ItemStack(Items.COPPER_INGOT),
+				new ItemStack(ModBlocks.PORTABLE_SPEAKER), new ItemStack(Items.COPPER_INGOT), iron,
+				new ItemStack(Items.REDSTONE_BLOCK), iron).isEmpty(), "old party craft gone");
+		h.succeed();
+	}
+
+	private static Optional<?> crafts(GameTestHelper h, ItemStack... grid) {
+		CraftingInput input = CraftingInput.of(3, 3, List.of(grid));
+		return h.getLevel().recipeAccess().getRecipeFor(RecipeType.CRAFTING, input, h.getLevel());
 	}
 
 	/** The speaker driver pattern: membrane on top, iron, voice coil and iron in the middle, magnet below. */

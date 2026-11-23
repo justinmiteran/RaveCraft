@@ -14,15 +14,18 @@ import com.ravecraft.mod.client.debug.SoundViewRenderer;
 import com.ravecraft.mod.client.item.SpeakerPowered;
 import com.ravecraft.mod.client.render.BackSpeakerRenderer;
 import com.ravecraft.mod.client.screen.SpeakerScreen;
+import com.ravecraft.mod.client.screen.machine.MachineScreen;
 import com.ravecraft.mod.compat.trinkets.TrinketsClientCompat;
 import com.ravecraft.mod.network.payload.SpeakerClosedPayload;
 import com.ravecraft.mod.registry.ModBlocks;
+import com.ravecraft.mod.registry.ModMenus;
 import java.util.List;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.BlockColorRegistry;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.world.level.block.Block;
 
 /** Client-only setup: renderers, screens, key mappings, HUD. Never referenced from {@code src/main}. */
@@ -43,6 +46,7 @@ public class RaveCraftClient implements ClientModInitializer {
 			RaveCraft.LOGGER.info("Sound Physics Remastered is loaded: RaveCraft speakers keep their own occlusion");
 		}
 		SpeakerTooltip.register();
+		MenuScreens.register(ModMenus.MACHINE, MachineScreen::new);
 		OpenSpeakerKey.register();
 		SpeakerScreenOpener.set((speakerId, title) -> Minecraft.getInstance().gui.setScreen(new SpeakerScreen(speakerId, title)));
 		// The server no longer lets this player control the speaker (gone, or out of reach): close its screen.

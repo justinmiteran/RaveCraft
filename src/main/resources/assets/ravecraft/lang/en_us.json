@@ -149,6 +149,7 @@
   "key.ravecraft.open_speaker": "Open speaker",
   "key.category.ravecraft.ravecraft": "RaveCraft",
   "tooltip.ravecraft.speaker.open_key": "[%s]: open the interface from the inventory",
+  "gui.ravecraft.recipebook.toggle_recipes.machine": "Machine Recipes",
   "tag.item.c.ingots.neodymium": "Neodymium Ingots",
   "tag.item.c.raw_materials.neodymium": "Raw Neodymium Materials",
   "tag.item.c.ores.neodymium": "Neodymium Ores",

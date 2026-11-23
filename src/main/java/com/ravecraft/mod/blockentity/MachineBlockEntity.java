@@ -4,21 +4,28 @@ import com.ravecraft.mod.block.MachineBlock;
 import com.ravecraft.mod.core.machine.MachineConstants;
 import com.ravecraft.mod.core.machine.MachineProcess;
 import com.ravecraft.mod.core.machine.MachineProcess.TickResult;
+import com.ravecraft.mod.menu.MachineMenu;
 import com.ravecraft.mod.recipe.MachineKind;
 import com.ravecraft.mod.recipe.MachineRecipe;
 import com.ravecraft.mod.recipe.MachineRecipeInput;
 import com.ravecraft.mod.registry.ModBlockEntities;
 import java.util.Arrays;
 import java.util.List;
+import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.WorldlyContainer;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Recipe;
@@ -35,9 +42,9 @@ import org.jspecify.annotations.Nullable;
  * The contents and the work of any machine: three input slots, a redstone energy slot and an output slot. The recipe
  * is looked up again only after a change of contents ({@link #setChanged()}), never every tick; {@link MachineProcess}
  * does the timing and the energy. Hoppers fill the inputs from the top and the energy from the sides, and empty the
- * output from below.
+ * output from below. It opens a {@link MachineMenu}, whose client side finds the machine from its position.
  */
-public class MachineBlockEntity extends BlockEntity implements WorldlyContainer {
+public class MachineBlockEntity extends BlockEntity implements WorldlyContainer, ExtendedMenuProvider<BlockPos> {
 	public static final int INPUT_0 = 0;
 	public static final int INPUT_1 = 1;
 	public static final int INPUT_2 = 2;
@@ -55,6 +62,26 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer 
 	private final MachineProcess process = new MachineProcess();
 	private @Nullable RecipeHolder<MachineRecipe> recipe;
 	private boolean dirty = true;
+	private final ContainerData data = new ContainerData() {
+		@Override
+		public int get(int index) {
+			return switch (index) {
+				case MachineMenu.DATA_PROGRESS -> process.progress();
+				case MachineMenu.DATA_TOTAL -> process.total();
+				default -> process.energy();
+			};
+		}
+
+		@Override
+		public void set(int index, int value) {
+			// Read-only: the server is the source of truth.
+		}
+
+		@Override
+		public int getCount() {
+			return MachineMenu.DATA_COUNT;
+		}
+	};
 
 	/**
 	 * An empty machine.
@@ -127,6 +154,30 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer 
 		return process.energy();
 	}
 
+	/**
+	 * Returns the values the menu syncs: progress, total and energy.
+	 *
+	 * @return the read-only menu data
+	 */
+	public ContainerData data() {
+		return data;
+	}
+
+	@Override
+	public Component getDisplayName() {
+		return getBlockState().getBlock().getName();
+	}
+
+	@Override
+	public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+		return new MachineMenu(id, inventory, this);
+	}
+
+	@Override
+	public BlockPos getScreenOpeningData(ServerPlayer player) {
+		return worldPosition;
+	}
+
 	private MachineRecipeInput input() {
 		return new MachineRecipeInput(List.of(items.get(INPUT_0), items.get(INPUT_1), items.get(INPUT_2)),
 				ItemStack.EMPTY);
@@ -160,6 +211,16 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer 
 			fuel.shrink(1);
 		}
 		return units;
+	}
+
+	/**
+	 * Whether a stack can go in the energy slot.
+	 *
+	 * @param stack the stack
+	 * @return true for redstone dust and redstone blocks
+	 */
+	public static boolean isEnergy(ItemStack stack) {
+		return energyUnits(stack) > 0;
 	}
 
 	private static int energyUnits(ItemStack stack) {
@@ -272,7 +333,7 @@ public class MachineBlockEntity extends BlockEntity implements WorldlyContainer 
 	@Override
 	public boolean canPlaceItem(int slot, ItemStack stack) {
 		if (slot == ENERGY) {
-			return energyUnits(stack) > 0;
+			return isEnergy(stack);
 		}
 		return slot != OUTPUT && fitsInput(slot, stack);
 	}

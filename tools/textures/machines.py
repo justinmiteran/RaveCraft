@@ -331,11 +331,49 @@ def thin_arrow(img, x0, y0, filled):
             px(img, x0 + x, y0 + y, c)
 
 
-def machine_progress():
-    """The full arrow, white so the screen can tint it with the input's colour, drawn from the left."""
+ARROW_LAYERS = 6  # darkest first: shadow, lower rim, body, sheen 1/4, sheen 1/2, top rim (ArrowShades.LAYERS)
+SHEEN_CENTRE = 10.5  # the soft "\\" sheen band runs along x - y = 10.5 (mod 16)
+
+
+def arrow_layer(pts, shadow, x, y):
+    """The validated T4 arrow: which tone layer a pixel takes. The colours come from ArrowShades at draw time."""
+    if (x, y) in shadow:
+        return 0
+    top, bottom = (x, y - 1) not in pts, (x, y + 1) not in pts
+    if bottom:
+        return 1
+    if top:
+        return 5
+    dd = abs((x - y) % 16 - SHEEN_CENTRE)
+    return 4 if dd <= 1 else (3 if dd <= 3 else 2)
+
+
+def arrow_points():
+    """The arrow's shape and its shadow, as thin_arrow draws them."""
+    pts, shadow = set(), set()
+    for y in range(16):
+        for x in range(24):
+            shaft = y in (6, 7, 8) and 1 <= x <= (22 if y == 7 else 21)
+            head = 15 <= x and x - 15 <= min(y, 15 - y)
+            if shaft or head:
+                pts.add((x, y))
+            if (y == 9 and 1 <= x <= 14) or (head and x - 15 == 15 - y and y >= 8):
+                shadow.add((x, y))
+    return pts, shadow
+
+
+def machine_progress(layer):
+    """One white mask of the arrow: its pixels in tone layer {layer}, drawn by the screen in that layer's colour."""
+    pts, shadow = arrow_points()
     img = Image.new("RGBA", (24, 16), (0, 0, 0, 0))
-    thin_arrow(img, 0, 0, filled=True)
+    for (x, y) in pts | shadow:
+        if arrow_layer(pts, shadow, x, y) == layer:
+            px(img, x, y, ARROW_FILL)
     return img
+
+
+def _progress(layer):
+    return lambda: machine_progress(layer)
 
 
 def machine_energy():
@@ -348,5 +386,6 @@ def machine_energy():
 BLOCKS = {"coil_winder_front": a2_front, "coil_winder_side": a2_side, "coil_winder_top": a2_top}
 ANIMATED = {"coil_winder_front_on": (coil_winder_front_on, 2)}
 ITEMS = {"copper_wire": w5_hank, "voice_coil": v7_ribbed}
-GUI = {"container/machine/progress": (machine_progress, None), "container/machine/energy": (machine_energy, None)}
+GUI = {f"container/machine/progress_{i}": (_progress(i), None) for i in range(ARROW_LAYERS)}
+GUI["container/machine/energy"] = (machine_energy, None)
 CONTAINERS = {"coil_winder": lambda: machine_container(1)}  # textures/gui/container/<name>.png

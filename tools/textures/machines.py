@@ -279,7 +279,7 @@ def machine_container(inputs):
         slot(img, INPUT_CENTER_FRAME[0] + (2 * i - (inputs - 1)) * SLOT_STEP // 2, INPUT_CENTER_FRAME[1])
     slot(img, *ENERGY_FRAME)
     bolt(img, *BOLT_POS, lit=False)
-    thin_arrow(img, *ARROW_POS, filled=False)
+    thin_arrow(img, *ARROW_POS, SLOT_IN)
     slot(img, OUTPUT_FRAME[0], OUTPUT_FRAME[1], OUTPUT_FRAME[2])
     sheet = Image.new("RGBA", (CONTAINER_SIZE, CONTAINER_SIZE), (0, 0, 0, 0))
     sheet.paste(img, (0, 0))
@@ -311,69 +311,25 @@ def bolt(img, x0, y0, lit):
             px(img, x0 + x + 1, y0 + y, SLOT_IN)
 
 
-ARROW_FILL, ARROW_SHADOW = (255, 255, 255), (104, 104, 104)
+ARROW_FILL = (255, 255, 255)
 
 
-def thin_arrow(img, x0, y0, filled):
-    """The furnace arrow's shape (24x16): a 3-row shaft and a 15-row head. Empty: slot grey. Filled: white with a grey
-    shadow on the lower edges, tinted at draw time with the input's colour."""
+def thin_arrow(img, x0, y0, colour):
+    """The furnace arrow's shape (24x16), a 3-row shaft and a 15-row head, in one flat colour."""
     for y in range(16):
         for x in range(24):
             shaft = y in (6, 7, 8) and 1 <= x <= (22 if y == 7 else 21)
             head = 15 <= x and x - 15 <= min(y, 15 - y)
-            shadow = (y == 9 and 1 <= x <= 14) or (head and x - 15 == 15 - y and y >= 8)
-            if not (shaft or head or shadow):
-                continue
-            if not filled:
-                c = SLOT_IN
-            else:
-                c = ARROW_SHADOW if shadow else ARROW_FILL
-            px(img, x0 + x, y0 + y, c)
+            lower_edge = y == 9 and 1 <= x <= 14
+            if shaft or head or lower_edge:
+                px(img, x0 + x, y0 + y, colour)
 
 
-ARROW_LAYERS = 6  # darkest first: shadow, lower rim, body, sheen 1/4, sheen 1/2, top rim (ArrowShades.LAYERS)
-SHEEN_CENTRE = 10.5  # the soft "\\" sheen band runs along x - y = 10.5 (mod 16)
-
-
-def arrow_layer(pts, shadow, x, y):
-    """The validated T4 arrow: which tone layer a pixel takes. The colours come from ArrowShades at draw time."""
-    if (x, y) in shadow:
-        return 0
-    top, bottom = (x, y - 1) not in pts, (x, y + 1) not in pts
-    if bottom:
-        return 1
-    if top:
-        return 5
-    dd = abs((x - y) % 16 - SHEEN_CENTRE)
-    return 4 if dd <= 1 else (3 if dd <= 3 else 2)
-
-
-def arrow_points():
-    """The arrow's shape and its shadow, as thin_arrow draws them."""
-    pts, shadow = set(), set()
-    for y in range(16):
-        for x in range(24):
-            shaft = y in (6, 7, 8) and 1 <= x <= (22 if y == 7 else 21)
-            head = 15 <= x and x - 15 <= min(y, 15 - y)
-            if shaft or head:
-                pts.add((x, y))
-            if (y == 9 and 1 <= x <= 14) or (head and x - 15 == 15 - y and y >= 8):
-                shadow.add((x, y))
-    return pts, shadow
-
-
-def machine_progress(layer):
-    """One white mask of the arrow: its pixels in tone layer {layer}, drawn by the screen in that layer's colour."""
-    pts, shadow = arrow_points()
+def machine_progress():
+    """The plain white arrow, drawn over the empty one as the craft advances, tinted by the screen."""
     img = Image.new("RGBA", (24, 16), (0, 0, 0, 0))
-    for (x, y) in pts | shadow:
-        if arrow_layer(pts, shadow, x, y) == layer:
-            px(img, x, y, ARROW_FILL)
+    thin_arrow(img, 0, 0, ARROW_FILL)
     return img
-
-
-def _progress(layer):
-    return lambda: machine_progress(layer)
 
 
 def machine_energy():
@@ -386,6 +342,6 @@ def machine_energy():
 BLOCKS = {"coil_winder_front": a2_front, "coil_winder_side": a2_side, "coil_winder_top": a2_top}
 ANIMATED = {"coil_winder_front_on": (coil_winder_front_on, 2)}
 ITEMS = {"copper_wire": w5_hank, "voice_coil": v7_ribbed}
-GUI = {f"container/machine/progress_{i}": (_progress(i), None) for i in range(ARROW_LAYERS)}
+GUI = {"container/machine/progress": (machine_progress, None)}
 GUI["container/machine/energy"] = (machine_energy, None)
 CONTAINERS = {"coil_winder": lambda: machine_container(1)}  # textures/gui/container/<name>.png

@@ -1,7 +1,6 @@
 package com.ravecraft.mod.client.screen.machine;
 
 import com.ravecraft.mod.RaveCraft;
-import com.ravecraft.mod.core.machine.ArrowShades;
 import com.ravecraft.mod.core.machine.ProgressColors;
 import com.ravecraft.mod.menu.MachineMenu;
 import net.minecraft.client.Minecraft;
@@ -20,13 +19,12 @@ import net.minecraft.world.item.ItemStack;
 /**
  * The screen of any machine, laid out like a furnace: the inputs in a row, the energy slot below with a redstone
  * bolt between them that empties like the furnace flame, the progress arrow and the output on the right. The arrow
- * is shaded from the colour of the first input's item, read from {@code assets/ravecraft/machine_colors.json}: one
- * white mask per tone, each drawn in the tone {@link ArrowShades} derives. Each machine has its own background showing only
- * the inputs it uses, {@code textures/gui/container/<machine>.png}. The positions are constants, shared with the slot
- * positions of {@link MachineMenu}.
+ * is plain, in the colour of the first input's item read from {@code assets/ravecraft/machine_colors.json}. Each
+ * machine has its own background showing only the inputs it uses, {@code textures/gui/container/<machine>.png}. The
+ * positions are constants, shared with the slot positions of {@link MachineMenu}.
  */
 public class MachineScreen extends AbstractRecipeBookScreen<MachineMenu> {
-	private static final Identifier[] PROGRESS_SPRITES = progressSprites();
+	private static final Identifier PROGRESS_SPRITE = RaveCraft.id("container/machine/progress");
 	private static final Identifier ENERGY_SPRITE = RaveCraft.id("container/machine/energy");
 	private static final int TEXTURE_SIZE = 256;
 	private static final int ARROW_X = 89;
@@ -73,24 +71,12 @@ public class MachineScreen extends AbstractRecipeBookScreen<MachineMenu> {
 		graphics.blit(RenderPipelines.GUI_TEXTURED, texture, leftPos, topPos, 0, 0, imageWidth, imageHeight,
 				TEXTURE_SIZE, TEXTURE_SIZE);
 		int arrow = Mth.ceil(menu.progress() * ARROW_WIDTH);
-		int[] shades = ArrowShades.layers(arrowColor());
-		for (int i = 0; i < PROGRESS_SPRITES.length; i++) {
-			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_SPRITES[i], ARROW_WIDTH, ARROW_HEIGHT, 0, 0,
-					leftPos + ARROW_X, topPos + ARROW_Y, arrow, ARROW_HEIGHT, shades[i]);
-		}
+		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_SPRITE, ARROW_WIDTH, ARROW_HEIGHT, 0, 0,
+				leftPos + ARROW_X, topPos + ARROW_Y, arrow, ARROW_HEIGHT, arrowColor());
 		int bolt = Mth.ceil(menu.energy() * BOLT_SIZE);
 		int top = BOLT_SIZE - bolt;
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, ENERGY_SPRITE, BOLT_SIZE, BOLT_SIZE, 0, top,
 				leftPos + BOLT_X, topPos + BOLT_Y + top, BOLT_SIZE, bolt);
-	}
-
-	/** The arrow's tone masks, darkest first, one per {@link ArrowShades} layer. */
-	private static Identifier[] progressSprites() {
-		Identifier[] sprites = new Identifier[ArrowShades.LAYERS];
-		for (int i = 0; i < sprites.length; i++) {
-			sprites[i] = RaveCraft.id("container/machine/progress_" + i);
-		}
-		return sprites;
 	}
 
 	/** The colour of the first non-empty input's item, white when none is listed. */

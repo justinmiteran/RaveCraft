@@ -14,7 +14,7 @@ import java.io.Writer;
 import java.util.Map;
 
 /**
- * Writes {@code ravecraft-server.json5} for {@link AcousticSettingsJson}: every setting with a comment
+ * Writes {@code config/ravecraft/server.json5} for {@link AcousticSettingsJson}: every setting with a comment
  * explaining it and its bounds.
  */
 final class AcousticSettingsWriter {

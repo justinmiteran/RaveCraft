@@ -2,6 +2,7 @@ package com.ravecraft.mod;
 
 import com.ravecraft.mod.compat.trinkets.TrinketsCompat;
 import com.ravecraft.mod.config.AcousticConfig;
+import com.ravecraft.mod.config.ConfigFiles;
 import com.ravecraft.mod.network.AudioRelay;
 import com.ravecraft.mod.network.SpeakerNetwork;
 import com.ravecraft.mod.network.ModPayloads;
@@ -38,6 +39,7 @@ public class RaveCraft implements ModInitializer {
 		ModWorldgen.init();
 		ModCreativeTabs.init();
 		ModPayloads.init();
+		ConfigFiles.init();
 		AcousticConfig.init();
 		AudioRelay.init();
 		SpeakerNetwork.init();

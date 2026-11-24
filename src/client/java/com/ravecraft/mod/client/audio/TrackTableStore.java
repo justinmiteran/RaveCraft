@@ -7,6 +7,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.ravecraft.mod.RaveCraft;
+import com.ravecraft.mod.config.ConfigFiles;
 import com.ravecraft.mod.core.queue.TrackTable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -17,10 +18,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import net.fabricmc.loader.api.FabricLoader;
 
 /**
- * This player's {@link TrackTable}, kept in {@code config/ravecraft-tracks.json} so queued tracks survive a restart.
+ * This player's {@link TrackTable}, kept in {@code config/ravecraft/tracks.json} so queued tracks survive a restart.
  * Loaded on first use; a missing or corrupt file starts an empty table. Client thread only.
  */
 public final class TrackTableStore {
@@ -60,7 +60,7 @@ public final class TrackTableStore {
 	}
 
 	private static Path file() {
-		return FabricLoader.getInstance().getConfigDir().resolve("ravecraft-tracks.json");
+		return ConfigFiles.file("tracks.json");
 	}
 
 	private static TrackTable table() {

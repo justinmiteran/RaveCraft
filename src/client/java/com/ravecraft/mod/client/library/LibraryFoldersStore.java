@@ -1,6 +1,7 @@
 package com.ravecraft.mod.client.library;
 
 import com.ravecraft.mod.RaveCraft;
+import com.ravecraft.mod.config.ConfigFiles;
 import com.ravecraft.mod.core.io.AtomicFiles;
 import com.ravecraft.mod.core.library.LibraryFolders;
 import java.io.IOException;
@@ -8,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.util.Util;
 
 /** Loads and saves the chosen library folders in the config directory. Errors are logged, never thrown. */
@@ -21,7 +21,7 @@ public final class LibraryFoldersStore {
 	}
 
 	private static Path file() {
-		return FabricLoader.getInstance().getConfigDir().resolve("ravecraft-library.json");
+		return ConfigFiles.file("library.json");
 	}
 
 	/**

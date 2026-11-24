@@ -1,6 +1,7 @@
 package com.ravecraft.mod.client.library;
 
 import com.ravecraft.mod.RaveCraft;
+import com.ravecraft.mod.config.ConfigFiles;
 import com.ravecraft.mod.core.io.AtomicFiles;
 import com.ravecraft.mod.core.library.FlatScan;
 import com.ravecraft.mod.core.library.LibraryIndex;
@@ -15,7 +16,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Util;
 
@@ -175,7 +175,7 @@ public final class LibraryIndexStore {
 	}
 
 	private static Path file(String sourceId) {
-		return FabricLoader.getInstance().getConfigDir().resolve("ravecraft-library-index-" + sourceId + ".txt");
+		return ConfigFiles.file("library-index-" + sourceId + ".txt");
 	}
 
 	/** Reads the saved index off thread, shows it narrowed to the current scope, then refreshes it. */

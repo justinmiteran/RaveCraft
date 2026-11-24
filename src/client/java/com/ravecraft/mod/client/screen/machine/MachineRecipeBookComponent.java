@@ -46,7 +46,7 @@ public class MachineRecipeBookComponent extends RecipeBookComponent<MachineMenu>
 
 	@Override
 	protected boolean isCraftingSlot(Slot slot) {
-		return slot.index <= MachineBlockEntity.ENERGY || slot.index == MachineBlockEntity.MOLD;
+		return slot.index < MachineBlockEntity.SIZE;
 	}
 
 	@Override

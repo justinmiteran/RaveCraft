@@ -78,8 +78,9 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 			materials();
 			storageBlocks();
 			machineEnergy();
-			machines();
 			machineRecipes();
+			machineCraft(ModBlocks.COIL_WINDER, "ICR", new Key[] {iron(),
+					key(ConventionalItemTags.COPPER_INGOTS, Items.COPPER_INGOT), redstone()}, "III", "CRC", "III");
 			machineCraft(ModBlocks.MAGNETIZER, "IR", new Key[] {iron(), redstone()}, "IRI", "RIR", "IRI");
 			machineCraft(ModBlocks.ETCHER, "IGRA", new Key[] {iron(),
 					key(ConventionalItemTags.GLASS_BLOCKS_COLORLESS, Items.GLASS), redstone(),
@@ -124,27 +125,12 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 			dyedItem(ModBlocks.PARTY_SPEAKER.asItem(), "party_speaker_dye");
 		}
 
-		/** The machines and what they make. */
-		private void machines() {
-			shaped(RecipeCategory.MISC, ModBlocks.COIL_WINDER)
-					.define('I', ConventionalItemTags.IRON_INGOTS)
-					.define('C', ConventionalItemTags.COPPER_INGOTS)
-					.define('R', ConventionalItemTags.REDSTONE_DUSTS)
-					.pattern("III")
-					.pattern("CRC")
-					.pattern("III")
-					.unlockedBy("has_iron_ingot", has(ConventionalItemTags.IRON_INGOTS))
-					.unlockedBy("has_copper_ingot", has(ConventionalItemTags.COPPER_INGOTS))
-					.unlockedBy("has_redstone", has(ConventionalItemTags.REDSTONE_DUSTS))
-					.save(output);
+		/** What the machines make (spec 5.2). */
+		private void machineRecipes() {
 			MachineRecipeBuilder.machine(ModRecipes.WINDING, ModItems.COPPER_WIRE, WIRES_PER_INGOT, this)
 					.input(ConventionalItemTags.COPPER_INGOTS, 1).save(output);
 			MachineRecipeBuilder.machine(ModRecipes.WINDING, ModItems.VOICE_COIL, 1, this)
 					.input(ModItems.COPPER_WIRE, WIRES_PER_COIL).save(output);
-		}
-
-		/** The magnetizer, etcher and extruder recipes (spec 5.2). */
-		private void machineRecipes() {
 			MachineRecipeBuilder.machine(ModRecipes.MAGNETIZING, ModItems.IRON_MAGNET, 1, this)
 					.input(ConventionalItemTags.IRON_INGOTS, 1).input(ConventionalItemTags.REDSTONE_DUSTS, 1)
 					.save(output);

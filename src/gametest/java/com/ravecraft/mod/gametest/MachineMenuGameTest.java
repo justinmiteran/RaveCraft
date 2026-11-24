@@ -30,7 +30,7 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
 
 public class MachineMenuGameTest {
-	private static final BlockPos POS = new BlockPos(1, 2, 1);
+	static final BlockPos POS = new BlockPos(1, 2, 1);
 	/** Menu index of the player's first main inventory slot (inventory slot 9). */
 	private static final int FIRST_INVENTORY = MachineBlockEntity.SIZE;
 
@@ -285,7 +285,7 @@ public class MachineMenuGameTest {
 		return menu(h, player, ModBlocks.COIL_WINDER);
 	}
 
-	private static MachineMenu menu(GameTestHelper h, Player player, Block machine) {
+	static MachineMenu menu(GameTestHelper h, Player player, Block machine) {
 		h.setBlock(POS, machine);
 		return new MachineMenu(0, player.getInventory(), h.getBlockEntity(POS, MachineBlockEntity.class));
 	}

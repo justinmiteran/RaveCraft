@@ -16,6 +16,7 @@ import net.fabricmc.fabric.api.tag.convention.v2.ConventionalItemTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -84,6 +85,13 @@ public class MaterialsGameTest {
 			h.assertTrue(block.defaultBlockState().requiresCorrectToolForDrops(), block + " needs a pickaxe");
 		}
 		h.assertValueEqual(ModBlocks.shaleFamily().size(), 13, "shale family size");
+		h.succeed();
+	}
+
+	@GameTest
+	public void creativeTabShowsLogo(GameTestHelper h) {
+		h.assertValueEqual(ModCreativeTabs.RAVECRAFT.getIconItem().get(DataComponents.ITEM_MODEL), ModCreativeTabs.LOGO_MODEL,
+				"model of the RaveCraft tab icon");
 		h.succeed();
 	}
 

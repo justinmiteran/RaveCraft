@@ -118,11 +118,13 @@ dependencies {
 	clientCompileOnly "maven.modrinth:u6dRKJwZ:W90vrxwW"
 	clientCompileOnly "maven.modrinth:uEfK2CXF:UVP2aDOK"
 
-	// Roughly Enough Items 26.3.824 and the maths classes of its API: optional recipe viewer plugins, compile only
-	// (never in the jar, never in depends); REI has a server plugin, so it is on the common classpath too
+	// Roughly Enough Items 26.3.824: optional recipe viewer plugins, compile only (never in the jar, never in depends);
+	// REI has a server plugin, so it is on the common classpath too. Its client API uses Cloth basic-math 0.6.1 and
+	// Architectury 22.0.6
 	compileOnly "maven.modrinth:nfn13YXA:rKsAE6bX"
 	clientCompileOnly "maven.modrinth:nfn13YXA:rKsAE6bX"
 	clientCompileOnly "me.shedaniel.cloth:basic-math:0.6.1"
+	clientCompileOnly "maven.modrinth:lhGA9TYQ:Njpa4lhR"
 
 	// Audio decoders, bundled jar-in-jar (licences: LICENSE-THIRD-PARTY.md)
 	include(implementation("javazoom:jlayer:1.0.1"))

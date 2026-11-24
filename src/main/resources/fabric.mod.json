@@ -34,6 +34,9 @@
 		"rei_common": [
 			"com.ravecraft.mod.compat.rei.RaveCraftReiCommonPlugin"
 		],
+		"rei_client": [
+			"com.ravecraft.mod.client.compat.rei.RaveCraftReiClientPlugin"
+		],
 		"fabric-datagen": [
 			"com.ravecraft.mod.datagen.RaveCraftDataGenerator"
 		]

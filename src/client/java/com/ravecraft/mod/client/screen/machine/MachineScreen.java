@@ -7,6 +7,7 @@ import com.ravecraft.mod.menu.MachineMenu;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenPosition;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.inventory.AbstractRecipeBookScreen;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -54,6 +55,16 @@ public class MachineScreen extends AbstractRecipeBookScreen<MachineMenu> {
 	@Override
 	protected ScreenPosition getRecipeBookButtonPosition() {
 		return new ScreenPosition(leftPos + BOOK_BUTTON_X, height / 2 + BOOK_BUTTON_Y);
+	}
+
+	/**
+	 * Returns where the progress arrow is, which opens the machine's recipes in a recipe viewer.
+	 *
+	 * @return the arrow, in screen coordinates
+	 */
+	public ScreenRectangle arrowArea() {
+		return new ScreenRectangle(leftPos + MachineLayout.ARROW_X, topPos + MachineLayout.ARROW_Y,
+				MachineLayout.ARROW_WIDTH, MachineLayout.ARROW_HEIGHT);
 	}
 
 	/** Draws the background, then the arrow filled by the progress and the bolt filled from below by the energy. */

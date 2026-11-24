@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagsProvider;
+import net.fabricmc.fabric.api.tag.convention.v2.ConventionalBlockTags;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.tags.TagAppender;
@@ -55,7 +56,7 @@ public class RaveCraftBlockTagProvider extends FabricTagsProvider.BlockTagsProvi
 		builder(ModTags.Blocks.STORAGE_BLOCKS_RAW_NEODYMIUM).add(key(ModBlocks.RAW_NEODYMIUM_BLOCK));
 		builder(ModTags.Blocks.STORAGE_BLOCKS_NEODYMIUM).add(key(ModBlocks.NEODYMIUM_BLOCK));
 		builder(ModTags.Blocks.STORAGE_BLOCKS_SILICON).add(key(ModBlocks.SILICON_BLOCK));
-		builder(ModTags.Blocks.STORAGE_BLOCKS).addTag(ModTags.Blocks.STORAGE_BLOCKS_RAW_NEODYMIUM)
+		builder(ConventionalBlockTags.STORAGE_BLOCKS).addTag(ModTags.Blocks.STORAGE_BLOCKS_RAW_NEODYMIUM)
 				.addTag(ModTags.Blocks.STORAGE_BLOCKS_NEODYMIUM).addTag(ModTags.Blocks.STORAGE_BLOCKS_SILICON);
 	}
 
@@ -63,9 +64,9 @@ public class RaveCraftBlockTagProvider extends FabricTagsProvider.BlockTagsProvi
 	private void ores() {
 		builder(ModTags.Blocks.ORES_OIL_SHALE).add(key(ModBlocks.OIL_SHALE));
 		builder(ModTags.Blocks.ORES_NEODYMIUM).add(key(ModBlocks.DEEPSLATE_NEODYMIUM_ORE));
-		builder(ModTags.Blocks.ORES).addTag(ModTags.Blocks.ORES_OIL_SHALE).addTag(ModTags.Blocks.ORES_NEODYMIUM);
-		builder(ModTags.Blocks.ORES_IN_GROUND_STONE).add(key(ModBlocks.OIL_SHALE));
-		builder(ModTags.Blocks.ORES_IN_GROUND_DEEPSLATE).add(key(ModBlocks.DEEPSLATE_NEODYMIUM_ORE));
+		builder(ConventionalBlockTags.ORES).addTag(ModTags.Blocks.ORES_OIL_SHALE).addTag(ModTags.Blocks.ORES_NEODYMIUM);
+		builder(ConventionalBlockTags.ORES_IN_GROUND_STONE).add(key(ModBlocks.OIL_SHALE));
+		builder(ConventionalBlockTags.ORES_IN_GROUND_DEEPSLATE).add(key(ModBlocks.DEEPSLATE_NEODYMIUM_ORE));
 	}
 
 	/** Acoustic materials: looked at before the footstep sound, so datapacks can override them. */

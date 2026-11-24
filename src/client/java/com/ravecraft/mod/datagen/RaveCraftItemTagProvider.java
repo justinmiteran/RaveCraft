@@ -38,9 +38,9 @@ public class RaveCraftItemTagProvider extends FabricTagsProvider.ItemTagsProvide
 	protected void addTags(HolderLookup.Provider registries) {
 		builder(ModTags.Items.ORES_OIL_SHALE).add(key(ModBlocks.OIL_SHALE));
 		builder(ModTags.Items.ORES_NEODYMIUM).add(key(ModBlocks.DEEPSLATE_NEODYMIUM_ORE));
-		builder(ModTags.Items.ORES).addTag(ModTags.Items.ORES_OIL_SHALE).addTag(ModTags.Items.ORES_NEODYMIUM);
-		builder(ModTags.Items.ORES_IN_GROUND_STONE).add(key(ModBlocks.OIL_SHALE));
-		builder(ModTags.Items.ORES_IN_GROUND_DEEPSLATE).add(key(ModBlocks.DEEPSLATE_NEODYMIUM_ORE));
+		builder(ConventionalItemTags.ORES).addTag(ModTags.Items.ORES_OIL_SHALE).addTag(ModTags.Items.ORES_NEODYMIUM);
+		builder(ConventionalItemTags.ORES_IN_GROUND_STONE).add(key(ModBlocks.OIL_SHALE));
+		builder(ConventionalItemTags.ORES_IN_GROUND_DEEPSLATE).add(key(ModBlocks.DEEPSLATE_NEODYMIUM_ORE));
 		builder(ModTags.Items.RAW_MATERIALS_NEODYMIUM).add(key(ModItems.RAW_NEODYMIUM));
 		builder(ModTags.Items.INGOTS_NEODYMIUM).add(key(ModItems.NEODYMIUM_INGOT));
 		builder(ConventionalItemTags.RAW_MATERIALS).addTag(ModTags.Items.RAW_MATERIALS_NEODYMIUM);
@@ -49,7 +49,7 @@ public class RaveCraftItemTagProvider extends FabricTagsProvider.ItemTagsProvide
 		builder(ModTags.Items.STORAGE_BLOCKS_RAW_NEODYMIUM).add(key(ModBlocks.RAW_NEODYMIUM_BLOCK));
 		builder(ModTags.Items.STORAGE_BLOCKS_NEODYMIUM).add(key(ModBlocks.NEODYMIUM_BLOCK));
 		builder(ModTags.Items.STORAGE_BLOCKS_SILICON).add(key(ModBlocks.SILICON_BLOCK));
-		builder(ModTags.Items.STORAGE_BLOCKS).addTag(ModTags.Items.STORAGE_BLOCKS_RAW_NEODYMIUM)
+		builder(ConventionalItemTags.STORAGE_BLOCKS).addTag(ModTags.Items.STORAGE_BLOCKS_RAW_NEODYMIUM)
 				.addTag(ModTags.Items.STORAGE_BLOCKS_NEODYMIUM).addTag(ModTags.Items.STORAGE_BLOCKS_SILICON);
 		addAll(builder(ModTags.Items.MOLDS), ModItems.molds());
 		addAll(builder(BlockItemTags.STAIRS.item()), RaveCraftBlockTagProvider.shapes(StairBlock.class));

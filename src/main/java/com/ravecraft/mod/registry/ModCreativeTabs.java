@@ -21,6 +21,7 @@ public final class ModCreativeTabs {
 						ModBlocks.storageBlocks().forEach(output::accept);
 						ModItems.materials().forEach(output::accept);
 						ModItems.components().forEach(output::accept);
+						output.accept(ModItems.BLANK_MOLD);
 						ModItems.molds().forEach(output::accept);
 						ModBlocks.machines().forEach(output::accept);
 						ModBlocks.speakers().forEach(output::accept);

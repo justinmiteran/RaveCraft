@@ -108,6 +108,17 @@ Source sets séparés (Loom `splitEnvironmentSourceSets`) :
 
 Règles de code : vérifiées par `./gradlew codeQuality` (Checkstyle `config/checkstyle/`, PMD `config/pmd/ruleset.xml`), détail dans [README.md](README.md). Écrire directement du code conforme : méthodes courtes (complexité cognitive ≤ 15, cyclomatique ≤ 10), au plus deux niveaux de `if` ou de boucles, des constantes nommées dans `core`, `RaveCraft.id(path)` pour les identifiants, `RaveCraft.LOGGER` plutôt que la console, une Javadoc sur chaque classe, chaque méthode publique ou protégée et chaque méthode de plus de 10 lignes (hors tests et mixins), avec `@param` et `@return` sur les méthodes publiques. Pas d'exception fichier par fichier : corriger le code ou, si une règle est fausse pour tout le projet, la changer dans la config.
 
+Tags communs (`c:`), partagés avec les autres mods :
+- **Utiliser le tag commun dès qu'il existe** : une recette demande le tag, jamais l'objet, et chaque objet ou bloc du mod va dans les tags communs qui lui correspondent.
+- **Ne jamais choisir un tag de mémoire** : vérifier son nom dans une source, dans cet ordre, et citer la source dans la spec :
+  1. Fabric API, la référence : `ConventionalItemTags`, `ConventionalBlockTags` et `ConventionalBlockItemTags` ([fabric-convention-tags-v2](https://github.com/FabricMC/fabric-api/tree/26.3/fabric-convention-tags-v2/src/main/java/net/fabricmc/fabric/api/tag/convention/v2), branche de la version de Minecraft, ou le jar de sources du cache Gradle) ;
+  2. la [doc des tags de NeoForge](https://docs.neoforged.net/docs/resources/server/tags/), qui partage le namespace `c` et donne les règles de nommage ;
+  3. le [wiki Fabric](https://wiki.fabricmc.net/community:common_tags) et le code de mods connus (Applied Energistics 2, Refined Storage…), pour les tags d'usage courant.
+- Un tag connu de Fabric s'écrit avec sa constante, jamais recréé dans `ModTags`. `ModTags` ne contient que les tags communs absents de Fabric et les tags propres au mod.
+- Nouveau matériau sans tag existant : suivre le modèle `c:<catégorie au pluriel>/<matériau>` (`c:ingots/neodymium`, sur le modèle de `c:ingots/iron`), le mettre dans son parent quand celui-ci existe et le traduire. Dire dans la spec que ce tag est déduit de la règle et non officiel.
+- Un tag qui change le comportement du mod reste dans le namespace du mod.
+- `ConventionTagsTest` vérifie les recettes, les parents et les traductions ; y déclarer chaque objet du mod qui a un tag.
+
 Règles de performance : aucun scan de blocs ou de chunks par tick. Les données dérivées vivent en mémoire et ne sont invalidées que sur événement (placement, casse, voisin). La persistance passe par `SavedData`. Les envois réseau sont plafonnés et à fréquence limitée.
 
 ## Ajouter un bloc ou un objet (checklist)
@@ -115,7 +126,7 @@ Règles de performance : aucun scan de blocs ou de chunks par tick. Les données
 1. Enregistrer dans `registry/ModBlocks` (bloc + `BlockItem`) ou `registry/ModItems`.
 2. Texture : une fonction dans `tools/textures/gen_textures.py`, puis régénérer et **regarder `art/textures/preview.png`**.
 3. Modèle et blockstate : une ligne dans `RaveCraftModelProvider` (`createTrivialCube`, `generateFlatItem`…). Pour une géométrie custom : Blockbench (`art/models`), export JSON dans `assets/<modid>/models/block/`.
-4. Loot (`RaveCraftBlockLootProvider`), tags d'outil (`RaveCraftBlockTagProvider`), recette (`RaveCraftRecipeProvider`).
+4. Loot (`RaveCraftBlockLootProvider`), tags d'outil et tags communs (`RaveCraftBlockTagProvider`, `RaveCraftItemTagProvider`), recette (`RaveCraftRecipeProvider`).
 5. Traductions dans `assets/<modid>/lang/en_us.json` **et** `fr_fr.json`.
 6. Un test : JUnit si la logique est dans `core`, GameTest si elle dépend du monde.
 7. `./gradlew build` (il régénère les JSON), puis vérifier en jeu.

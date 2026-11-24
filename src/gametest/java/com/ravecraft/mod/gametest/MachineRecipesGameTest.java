@@ -1,6 +1,5 @@
 package com.ravecraft.mod.gametest;
 
-import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.recipe.MachineKind;
 import com.ravecraft.mod.recipe.MachineRecipe;
 import com.ravecraft.mod.recipe.MachineRecipeInput;
@@ -10,14 +9,12 @@ import com.ravecraft.mod.registry.ModTags;
 import java.util.List;
 import java.util.Optional;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.ShapedRecipe;
+import net.minecraft.world.item.crafting.Ingredient;
 
 /** The magnetizing, etching and extruding recipes, their items and the molds (spec 5.2, 6.1). */
 public class MachineRecipesGameTest {
@@ -36,7 +33,7 @@ public class MachineRecipesGameTest {
 		check(h, "plastic_casing_from_extruding", ModRecipes.EXTRUDING, ModItems.CASING_MOLD,
 				out(ModItems.PLASTIC_CASING, 1), ModItems.BITUMEN, 3);
 		check(h, "reinforced_membrane_from_extruding", ModRecipes.EXTRUDING, ModItems.MEMBRANE_MOLD,
-				out(ModItems.REINFORCED_MEMBRANE, 1), ModItems.BITUMEN, 2);
+				out(ModItems.REINFORCED_MEMBRANE, 1), ModItems.PLASTIC_SHEET, 2);
 		check(h, "circuit_board_from_extruding", ModRecipes.EXTRUDING, ModItems.BOARD_MOLD,
 				out(ModItems.CIRCUIT_BOARD, 2), ModItems.BITUMEN, 1);
 		h.succeed();
@@ -79,11 +76,17 @@ public class MachineRecipesGameTest {
 
 	@GameTest
 	public void moldCraftsExist(GameTestHelper h) {
-		for (Item mold : ModItems.molds()) {
+		List<Item> shapes = List.of(Items.HEAVY_WEIGHTED_PRESSURE_PLATE, Items.IRON_BLOCK, ModItems.MEMBRANE,
+				ModItems.PLASTIC_SHEET);
+		for (int i = 0; i < shapes.size(); i++) {
+			Item mold = ModItems.molds().get(i);
 			String name = mold.builtInRegistryHolder().key().identifier().getPath();
-			Optional<RecipeHolder<?>> found = h.getLevel().getServer().getRecipeManager()
-					.byKey(ResourceKey.create(Registries.RECIPE, RaveCraft.id(name)));
-			h.assertTrue(found.isPresent() && found.get().value() instanceof ShapedRecipe, name + " craft");
+			List<Ingredient> ingredients = ComponentsGameTest.shapeless(h, name).placementInfo().ingredients();
+			h.assertValueEqual(ingredients.size(), 2, name + " ingredients");
+			h.assertTrue(ingredients.get(0).test(new ItemStack(ModItems.BLANK_MOLD)), name + " blank mold");
+			h.assertTrue(ingredients.get(1).test(new ItemStack(shapes.get(i))), name + " shape");
+			String shape = BuiltInRegistries.ITEM.getKey(shapes.get(i)).getPath();
+			ComponentsGameTest.criteria(h, "misc/" + name, "has_blank_mold", "has_" + shape);
 		}
 		h.succeed();
 	}

@@ -151,7 +151,8 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 
 	@Override
 	public void generateItemModels(ItemModelGenerators generators) {
-		for (Item item : Stream.of(ModItems.materials(), ModItems.components(), ModItems.molds()).flatMap(List::stream)
+		for (Item item : Stream.of(ModItems.materials(), ModItems.components(), List.of(ModItems.BLANK_MOLD),
+				ModItems.molds()).flatMap(List::stream)
 				.toList()) {
 			generators.generateFlatItem(item, ModelTemplates.FLAT_ITEM);
 		}

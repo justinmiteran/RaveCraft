@@ -79,7 +79,12 @@ Objectif : qu'un DJ ou un éclairagiste puisse utiliser **les mêmes outils et r
 
 ### 3.7 Matériaux et composants
 - ✅ Nouveaux matériaux ajoutés par le mod et utilisés dans les recettes.
-- 💡 Matières premières (nouveaux minerais ou matériaux transformés) et composants électroniques intermédiaires (circuits, haut-parleurs, membranes, LED…), pour donner de la profondeur à la progression.
+- ✅ Matières premières : schiste bitumineux (bitume), minerai de néodyme des abîmes, silicium tiré du quartz ; famille du schiste en blocs de construction.
+- ✅ Quatre machines alimentées à la redstone, chacune pour un seul geste : bobineuse, magnétiseur, graveuse, extrudeuse (avec ses moules, fabriqués à partir d'un moule vierge).
+- ✅ Composants de deux paliers, assemblés à la table de craft : palier 1 (fil de cuivre, bobine mobile, aimant en fer, membrane, feuille et boîtier en plastique, plaque de circuit, circuit simple, haut-parleur simple) et palier 2 (aimant en néodyme, membrane renforcée, puce, carte d'amplification, haut-parleur de grave).
+- ✅ Recettes définitives des enceintes : l'enceinte portable avec deux haut-parleurs simples, l'enceinte de soirée avec un haut-parleur de grave et une carte d'amplification autour d'une enceinte portable.
+- ✅ Infobulles « Fabriqué dans : *machine* » et « Pour l'extrudeuse : *pièce* ».
+- 💡 Plus tard : LED, câbles et autres composants des paliers suivants.
 
 ## 4. Progression en jeu
 
@@ -151,12 +156,12 @@ Chaque palier demande des matériaux et composants plus avancés que le précéd
 
 - ❓ **Multijoueur** : les autres joueurs doivent-ils entendre la musique du DJ ? Si oui, comment leur faire parvenir les fichiers ou le flux ?
 - ❓ **Streaming** : les conditions d'utilisation des API de Spotify, Deezer… autorisent-elles la lecture dans un jeu ? À vérifier avant de s'engager.
-- ❓ **Énergie** : le matériel doit-il être alimenté (électricité, groupe électrogène, redstone) ? Voir 7.2 et 7.4.
+- ❓ **Énergie** : le matériel doit-il être alimenté (électricité, groupe électrogène, redstone) ? Voir 7.2 et 7.4. (La redstone n'est pour l'instant qu'un carburant de machine.)
 - ❓ **Surcharge** : quel niveau de punition, et quelle option pour la désactiver ? Voir 7.2.
 - ❓ **Logiciels réels** : quels logiciels DJ et lumière peut-on relier au jeu, par quel moyen, et sous quelles licences ? Voir 3.6.
 - ❓ **Synchronisation son ↔ lumière** : les lumières réagissent-elles automatiquement à la musique (BPM, basses) ?
 - ❓ **Niveau de réalisme** : jusqu'où pousser la simulation (atténuation avec la distance, obstacles, saturation, phase entre enceintes…) ?
-- ❓ **Obtention des matériaux** : nouveaux minerais dans le monde, transformation de matériaux vanilla, ou les deux ?
+- ✅ **Obtention des matériaux** : les deux. Nouveaux minerais (schiste bitumineux, néodyme) et transformation de matériaux vanilla (silicium tiré du quartz, cuivre, fer, redstone, papier). Voir la spec des matériaux.
 - ❓ **Recettes** : définies élément par élément, au moment de leur développement.
 
 ## 10. Découpage en sous-projets
@@ -200,12 +205,12 @@ Chaque sous-projet aura sa propre spec, son plan et sa réalisation. L'ordre res
     - **Infobulle des enceintes** (prévue pour `v0.1.0`) : survoler une enceinte dans l'inventaire affiche ses valeurs de base pour le joueur, par exemple sa puissance et son profil (liste exacte des valeurs à définir dans la spec de l'étape). Maintenir **Maj** affiche plus d'informations : la fiche technique détaillée (par exemple sensibilité, portée, directivité). Sans Maj, une ligne grisée indique « Maj pour plus d'infos ». Livrée en 5a.
   - [x] Étape 6/6 (spec [2026-11-21-party-speaker-design.md](superpowers/specs/2026-11-21-party-speaker-design.md), deux PR) : 6a enceinte mobile (`feat/carried-speaker`, plan [2026-11-21-carried-speaker.md](superpowers/plans/2026-11-21-carried-speaker.md), livrée, vérifiée en jeu) : l'enceinte est repérée par son identifiant et non plus par la position de son bloc, elle continue de jouer cassée, au sol, en main ou dans l'inventaire (pause quand elle est rangée dans un conteneur), son interface s'ouvre d'un clic droit dans le vide ou avec la touche *Ouvrir l'enceinte* (M par défaut), rappelée dans l'infobulle ; 6b **enceinte de soirée** (`feat/party-speaker`, `ravecraft:party_speaker`, plan [2026-11-21-party-speaker.md](superpowers/plans/2026-11-21-party-speaker.md), livrée, vérifiée en jeu) : 120 W à 87 dB (environ 96 blocs), basses renforcées, son dirigé vers la grille (±60°, −10 dB derrière), grille teintable avec le logo en cuivre, portée sur le dos dans l'emplacement du plastron ou celui de Trinkets Updated s'il est installé. Maj + clic droit dans le vide la met sur le dos ; rendu dans le dos ; l'infobulle est propre à chaque enceinte (puissance, portée, cône de 60°, −10 dB derrière).
 - [x] Choisir le deuxième sous-projet : **Matériaux et composants**
-- [ ] Matériaux et composants (spec [2026-11-22-materials-design.md](superpowers/specs/2026-11-22-materials-design.md), quatre PR)
+- [x] Matériaux et composants (spec [2026-11-22-materials-design.md](superpowers/specs/2026-11-22-materials-design.md), quatre PR)
   - [x] 7a minerais, schiste et matières (PR `feat/materials-ores`, plan [2026-11-22-materials-ores.md](superpowers/plans/2026-11-22-materials-ores.md)) : schiste bitumineux (bitume) et minerai de néodyme des abîmes, avec variantes de texture aléatoires ; famille du schiste (13 blocs : schiste, poli, briques, sculpté, escaliers, dalles, murets) ; génération dans tous les biomes de l'Overworld (schiste Y 0–80, schiste bitumineux Y 20–80 avec un supplément dans les déserts et badlands, néodyme Y −64 à −16) ; néodyme brut, lingot de néodyme, silicium (quartz au haut fourneau), plaquette de silicium (silicium au four) ; blocs de néodyme brut, de néodyme et de silicium (9 ↔ 1) ; tags `c:`, Fortune et Toucher de soie, tailleur de pierre. (vérifié en jeu)
   - [x] 7b socle des machines (PR `feat/machine-core`, plan [2026-11-23-machine-core.md](superpowers/plans/2026-11-23-machine-core.md)) : type de recette machine (ingrédients comptés, sans forme), processus en Java pur, bloc et menu génériques avec livre de recettes propre aux machines, redstone comme carburant ; bobineuse (fil de cuivre, bobine mobile) avec son modèle, sa face animée et son écran (jauge éclair, flèche teintée par l'entrée). (pas encore vérifié en jeu)
   - [x] 7c machines (PR `feat/machines`, plan [2026-11-23-machines.md](superpowers/plans/2026-11-23-machines.md)) : magnétiseur (aimants en fer et en néodyme), graveuse (circuit simple, puce) et extrudeuse avec un emplacement de moule (feuille et boîtier en plastique, membrane renforcée, plaque de circuit) ; 4 moules ; le moule change la recette, le changer remet la progression à zéro, les entonnoirs n'y touchent jamais, le livre de recettes échange le moule ou l'affiche en fantôme ; faces animées et particules propres à chaque machine, boucle sonore enregistrée (CC0) tant qu'elle travaille, flèche teintée par le résultat en cours. (pas encore vérifié en jeu)
+  - [x] 7d composants et recettes finales (PR `feat/components-recipes`, plan [2026-11-23-components-recipes.md](superpowers/plans/2026-11-23-components-recipes.md)) : membrane, haut-parleur simple, carte d'amplification, haut-parleur de grave ; membrane renforcée extrudée à partir de 2 feuilles de plastique ; recettes définitives des deux enceintes (les recettes provisoires vanilla sont supprimées) ; magnétiseur au néodyme et au cuivre, extrudeuse au haut fourneau, moules fabriqués à partir d'un moule vierge ; chaque recette se débloque avec n'importe lequel de ses ingrédients ; infobulle « Pour l'extrudeuse » sur les moules. (pas encore vérifié en jeu)
 
 ### Prévu plus tard (décidé pendant le socle audio)
 - Contrôle des appareils par **propriétaire + invités + verrou** (pour l'instant, contrôle ouvert à tous).
-- Recette définitive de l'enceinte portable avec les matériaux du mod (pour l'instant, recette provisoire vanilla).
 - **Pochette** des fichiers dans la bibliothèque (les tags texte et les durées sont livrés en 5b, dans l'infobulle des morceaux).

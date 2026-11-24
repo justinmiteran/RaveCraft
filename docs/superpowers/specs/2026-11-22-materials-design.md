@@ -35,7 +35,7 @@ Une spec, quatre PR successives, chacune avec un build vert et testable seule :
 | 7a | `feat/materials-ores` | 2 minerais, famille du schiste (13 blocs), 3 blocs de stockage, génération, matières premières, recettes de fonte et de taille |
 | 7b | `feat/machine-core` | Base commune des machines (logique `core`, bloc, block entity, inventaire latéral, menu, écran, livre de recettes, type de recette), livrée avec la **bobineuse** |
 | 7c | `feat/machines` | Magnétiseur, graveur, extrudeuse, moules |
-| 7d | `feat/components-recipes` | Composants des paliers 1 et 2, assemblages à la table de craft, nouvelles recettes des enceintes, critères de déblocage, infobulles « Fabriqué dans », onglet créatif, mise à jour de `docs/SPEC.md` |
+| 7d | `feat/components-recipes` | Composants des paliers 1 et 2, assemblages à la table de craft, nouvelles recettes des enceintes, critères de déblocage, infobulle des moules, onglet créatif, mise à jour de `docs/SPEC.md` |
 
 Chaque PR commence par ses propositions visuelles (3 à 4 rendus par modèle ou texture), que l'utilisateur choisit avant l'implémentation.
 
@@ -100,12 +100,13 @@ Chaque PR commence par ses propositions visuelles (3 à 4 rendus par modèle ou 
 | | `chip` | Puce / Chip |
 | | `amplifier_board` | Carte d'amplification / Amplifier Board |
 | | `woofer` | Haut-parleur de grave / Woofer |
-| Moules | `sheet_mold` | Moule à plaque / Sheet Mold |
+| Moules | `blank_mold` | Moule vierge / Blank Mold |
+| | `sheet_mold` | Moule à plaque / Sheet Mold |
 | | `casing_mold` | Moule à boîtier / Casing Mold |
 | | `membrane_mold` | Moule à membrane / Membrane Mold |
 | | `board_mold` | Moule à support / Board Mold |
 
-La plaque de plastique sert aux membranes (section 6.1) et sera la matière de base des façades et boîtiers des paliers suivants.
+La membrane renforcée est extrudée à partir de 2 plaques de plastique (décidé en 7d : l'extrudeuse garde une seule entrée). La plaque de plastique sert aux membranes (section 6.1) et sera la matière de base des façades et boîtiers des paliers suivants.
 
 ## 4. Minerais et génération
 
@@ -121,7 +122,15 @@ La plaque de plastique sert aux membranes (section 6.1) et sera la matière de b
 - Le schiste et ses dérivés se comportent comme le tuf et ses dérivés : résistance 1,5 / 6, sons du tuf (`TUFF`, `POLISHED_TUFF`, `TUFF_BRICKS`), pioche requise, chaque bloc lâche lui-même (la dalle double lâche 2 dalles). Recettes de table de craft et de tailleur de pierre comme la famille du tuf : schiste → poli (2×2) → briques (2×2), 2 dalles de briques → schiste sculpté, escaliers, dalles et murets de chaque base ; au tailleur, chaque base donne ses dérivés et ceux qui suivent dans la chaîne.
 - Les minerais n'apparaissent que dans les chunks générés après l'installation ; les notes de version le diront.
 - Les features (`configured_feature`, `placed_feature`) sont écrites par le datagen ; elles sont ajoutées aux biomes par `BiomeModifications.addFeature` (étape `UNDERGROUND_ORES`).
-- Tags : `c:ores`, `c:ores/neodymium`, `c:ores/oil_shale`, `c:ores_in_ground/stone`, `c:ores_in_ground/deepslate`, `mineable/pickaxe` (tous les blocs), `needs_stone_tool` (schiste bitumineux), `needs_iron_tool` (néodyme), `stairs`, `slabs`, `walls` ; `c:raw_materials/neodymium`, `c:ingots/neodymium`, `c:silicon`.
+- Tags : `c:ores`, `c:ores/neodymium`, `c:ores/oil_shale`, `c:ores_in_ground/stone`, `c:ores_in_ground/deepslate`, `mineable/pickaxe` (tous les blocs), `needs_stone_tool` (schiste bitumineux), `needs_iron_tool` (néodyme), `stairs`, `slabs`, `walls` ; `c:raw_materials/neodymium`, `c:ingots/neodymium`, `c:silicon` ; `c:storage_blocks` et ses sous-tags `raw_neodymium`, `neodymium` et `silicon`.
+- Origine des tags `c:` :
+
+  | Tags | Statut | Source |
+  |---|---|---|
+  | `c:ores`, `c:ores_in_ground/stone`, `c:ores_in_ground/deepslate`, `c:storage_blocks`, `c:ingots`, `c:raw_materials` | officiels | Fabric API 26.3, [`ConventionalBlockItemTags`](https://github.com/FabricMC/fabric-api/blob/26.3/fabric-convention-tags-v2/src/main/java/net/fabricmc/fabric/api/tag/convention/v2/ConventionalBlockItemTags.java) et `ConventionalItemTags` |
+  | `c:is_desert` (biome) | officiel | Fabric API 26.3, `ConventionalBiomeTags` |
+  | `c:silicon` | usage courant, absent de Fabric API | [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2/blob/main/src/main/java/appeng/core/ConventionTags.java), [Refined Storage](https://github.com/refinedmods/refinedstorage2/blob/develop/refinedstorage-common/src/generated/resources/data/c/tags/item/silicon.json) |
+  | `c:ores/neodymium`, `c:ores/oil_shale`, `c:raw_materials/neodymium`, `c:ingots/neodymium`, `c:storage_blocks/raw_neodymium`, `c:storage_blocks/neodymium`, `c:storage_blocks/silicon` | déduits de la règle, non officiels | modèle `c:<catégorie>/<matériau>` de Fabric API (`c:ores/iron`…) et [doc NeoForge](https://docs.neoforged.net/docs/resources/server/tags/) |
 
 ### Fonte
 
@@ -159,7 +168,7 @@ La plaque de plastique sert aux membranes (section 6.1) et sera la matière de b
 | | 1 `silicon_wafer` + 2 pépites d'or + 1 poudre de redstone | — | 1 `chip` |
 | Extrudeuse | 1 `bitumen` | `sheet_mold` | 2 `plastic_sheet` |
 | | 3 `bitumen` | `casing_mold` | 1 `plastic_casing` |
-| | 2 `bitumen` | `membrane_mold` | 1 `reinforced_membrane` |
+| | 2 `plastic_sheet` | `membrane_mold` | 1 `reinforced_membrane` |
 | | 1 `bitumen` | `board_mold` | 2 `circuit_board` |
 
 La poudre de redstone d'une recette est un ingrédient, pas de l'énergie : elle va dans une entrée.
@@ -201,19 +210,20 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 | Résultat | Recette |
 |---|---|
 | `coil_winder` | `III / CRC / III` |
-| `magnetizer` | `IRI / RIR / IRI` |
+| `magnetizer` | `INI / CRC / INI` (`N` lingot de néodyme) |
 | `etcher` | `IGI / RAR / III` (`G` verre, `A` éclat d'améthyste) |
-| `extruder` | `IPI / IFI / III` (`P` piston, `F` four) |
-| `sheet_mold` | `III / IXI`, `X` plaque de pression lourde |
-| `casing_mold` | `III / IXI`, `X` seau |
-| `membrane_mold` | `III / IXI`, `X` bol |
-| `board_mold` | `III / IXI`, `X` poudre de redstone |
+| `extruder` | `IPI / IHI / III` (`P` piston, `H` haut fourneau) |
+| `blank_mold` | ` I  / IKI /  I ` (`K` boule d'argile) |
+| `sheet_mold` | sans forme : 1 moule vierge + 1 plaque de pression lourde |
+| `casing_mold` | sans forme : 1 moule vierge + 1 bloc de fer |
+| `membrane_mold` | sans forme : 1 moule vierge + 1 membrane |
+| `board_mold` | sans forme : 1 moule vierge + 1 feuille de plastique |
 | `membrane` ×2 | sans forme : 2 papiers + 1 plaque de plastique |
 | `speaker_driver` | ` M  / IVI /  G ` (`M` membrane, `V` bobine mobile, `G` aimant en fer) |
 | `woofer` | ` M  / IVI /  G ` (`M` membrane renforcée, `V` bobine mobile, `G` aimant en néodyme) |
 | `amplifier_board` | sans forme : 1 puce + 1 circuit simple + 2 fils de cuivre |
-| `portable_speaker` | ` D  /  B  /  S ` (`D` haut-parleur simple, `B` boîtier en plastique, `S` circuit simple) |
-| `party_speaker` | `IWI / CPC / IAI` (`W` haut-parleur de grave, `P` enceinte portable, `A` carte d'amplification) |
+| `portable_speaker` | `DBD /  S ` (`D` haut-parleur simple, un de chaque côté, `B` boîtier en plastique, `S` circuit simple) |
+| `party_speaker` | `IWI / BPB / IAI` (`W` haut-parleur de grave, `B` boîtier en plastique, `P` enceinte portable, `A` carte d'amplification) |
 
 - Les recettes provisoires des deux enceintes (`FFF / NRN / FFF` et `INI / CPC / IRI`) sont supprimées. Les recettes de teinture (`*_dyed`) restent inchangées.
 - L'enceinte de soirée sort neuve (recette à forme) : la couleur, le nom et la file de l'enceinte portable utilisée ne sont pas repris, comme aujourd'hui.
@@ -221,16 +231,16 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 ### 6.2 Déblocage
 
 - Chaque recette de table de craft, de fonte et de machine a un critère `has_<ingrédient>` **par ingrédient distinct**, combinés en « ou » : elle se débloque dès que le joueur possède l'un d'eux.
-- Les machines et les moules se débloquent donc avec le fer ou le cuivre, très tôt.
+- La bobineuse, le graveur, l'extrudeuse et le moule vierge se débloquent donc avec le fer ou le cuivre, très tôt ; le magnétiseur aussi, mais sa fabrication demande du néodyme, donc une descente en profondeur avant la première enceinte (choix de 7d).
+- Le moule vierge n'est pas un moule : il ne va pas dans l'emplacement du moule de l'extrudeuse et n'est pas dans le tag des moules. Il s'empile par 16.
 
 ### 6.3 Infobulles
 
-- Chaque objet produit par une machine affiche une ligne grisée « Fabriqué dans : *machine* » (`Made in: …`), sous les autres lignes, sans Maj.
-- Chaque moule affiche « Pour l'extrudeuse : *pièce* ».
+- Chaque moule affiche « Pour l'extrudeuse », sans nommer de pièce : un moule pourra servir à plusieurs.
 
 ### 6.4 Onglet créatif et traductions
 
-- Onglet RaveCraft, dans l'ordre de la chaîne : minerais, famille du schiste, matières, composants du palier 1, du palier 2, moules, machines, puis les enceintes (déjà présentes).
+- Onglet RaveCraft, dans l'ordre de la chaîne : minerais, famille du schiste, matières, composants du palier 1, du palier 2, moule vierge, moules, machines, puis les enceintes (déjà présentes).
 - Tous les noms et lignes en `en_us.json` et `fr_fr.json`.
 
 ## 7. Architecture du code
@@ -267,6 +277,7 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 - Le quartz du Nether donne du silicium au haut fourneau seulement.
 - Blocs de néodyme brut, de néodyme et de silicium : 9 objets donnent un bloc et un bloc rend 9 objets ; pioche en fer pour les deux blocs de néodyme, en pierre pour le silicium ; chacun lâche lui-même et porte ses tags `c:storage_blocks`.
 - Les nouvelles recettes des deux enceintes existent et les anciennes non.
+- Chaque moule affiche « Pour l'extrudeuse », et sert à au moins une recette chargée.
 
 **En jeu** : monde survie neuf, du minage du schiste à l'enceinte de soirée en suivant le livre ; entonnoirs ; écran et livre de chaque machine ; textures, modèles et animations.
 
@@ -293,6 +304,9 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
   - plastique noir brillant : feuille (première version du rework), boîtier ouvert, membrane renforcée en cône ;
   - moules : cadre gris clair avec l'empreinte du produit en creux (A r2) ;
   - textures des objets gardées en grilles de pixels dans `tools/textures/machine_parts.py` (identiques aux propositions validées).
+- Choix de 7d (rendus dans `art/proposals/items7d/`, non versionnés) :
+  - membrane : la grille de la membrane renforcée recolorée en papier (A) ; haut-parleur simple et haut-parleur de grave : saladier carré en acier à 4 vis, membrane en retrait, joint sombre (E) ; carte d'amplification : puce et condensateurs bleus sur la plaque de circuit (B) ; moule vierge : le cadre des moules autour d'une plaque d'acier lisse (A) ;
+  - recettes : membrane renforcée extrudée à partir de 2 feuilles de plastique (l'extrudeuse garde une seule entrée) ; enceinte portable avec un haut-parleur simple de chaque côté ; enceinte de soirée avec des boîtiers en plastique au lieu du cuivre ; magnétiseur M3 (néodyme et cuivre) ; extrudeuse au haut fourneau (X3) ; moules fabriqués à partir d'un moule vierge (C) et d'un objet qui a la forme de la pièce : plaque de pression lourde (plaque), bloc de fer (boîtier), membrane (membrane renforcée), feuille de plastique (plaque de circuit). Le moule à plaque vient donc en premier : ses feuilles servent aux moules à membrane et à support.
 - Modèles des machines dans `art/models`, exportés en JSON de bloc.
 
 ## 10. Mise à jour de la SPEC

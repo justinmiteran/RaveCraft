@@ -1,5 +1,7 @@
 package com.ravecraft.mod.datagen;
 
+import com.ravecraft.mod.core.world.OreVein;
+import com.ravecraft.mod.core.world.OreVeins;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.world.gen.ModWorldgen;
 import java.util.List;
@@ -25,19 +27,6 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.TagMatchTest;
 
 /** Ore and rock features and their placements, after vanilla {@code OreFeatures} and {@code OrePlacements}. */
 final class RaveCraftOreFeatures {
-	private static final int SHALE_SIZE = 64;
-	private static final int SHALE_COUNT = 2;
-	private static final int SHALE_MAX_Y = 80;
-	private static final int OIL_SHALE_SIZE = 17;
-	private static final int OIL_SHALE_COUNT = 12;
-	private static final int OIL_SHALE_EXTRA_COUNT = 8;
-	private static final int OIL_SHALE_MIN_Y = 20;
-	private static final int OIL_SHALE_MAX_Y = 80;
-	private static final int NEODYMIUM_SIZE = 6;
-	private static final float NEODYMIUM_AIR_DISCARD = 0.5F;
-	private static final int NEODYMIUM_COUNT = 3;
-	private static final int NEODYMIUM_MIN_Y = -64;
-	private static final int NEODYMIUM_MAX_Y = -16;
 	private static final int DEEPSLATE_TOP_Y = 8;
 
 	private RaveCraftOreFeatures() {
@@ -56,14 +45,14 @@ final class RaveCraftOreFeatures {
 				new TagMatchTest(BlockTags.HEIGHT_SPECIFIC_ORE_REPLACEABLES), HeightMatchTest.max(DEEPSLATE_TOP_Y),
 				new TagMatchTest(BlockTags.DEEPSLATE_ORE_REPLACEABLES));
 		context.register(ModWorldgen.ORE_SHALE,
-				new OreFeature(naturalStone, ModBlocks.SHALE.defaultBlockState(), SHALE_SIZE));
+				new OreFeature(naturalStone, ModBlocks.SHALE.defaultBlockState(), OreVeins.SHALE.size()));
 		context.register(ModWorldgen.ORE_OIL_SHALE, new OreFeature(List.of(
 				BlockReplacement.replace(stoneOreReplaceables, ModBlocks.OIL_SHALE.defaultBlockState()),
 				BlockReplacement.replace(new BlockMatchTest(ModBlocks.SHALE), ModBlocks.OIL_SHALE.defaultBlockState())),
-				OIL_SHALE_SIZE));
+				OreVeins.OIL_SHALE.size()));
 		context.register(ModWorldgen.ORE_NEODYMIUM, new OreFeature(List.of(BlockReplacement.replace(
 				deepslateOreReplaceables, ModBlocks.DEEPSLATE_NEODYMIUM_ORE.defaultBlockState())),
-				NEODYMIUM_SIZE, NEODYMIUM_AIR_DISCARD));
+				OreVeins.NEODYMIUM.size(), OreVeins.NEODYMIUM_AIR_DISCARD));
 	}
 
 	/**
@@ -73,18 +62,22 @@ final class RaveCraftOreFeatures {
 	 */
 	static void placements(BootstrapContext<PlacedFeature> context) {
 		HolderGetter<Feature> features = context.lookup(Registries.FEATURE);
-		PlacementModifier oilShaleHeight = HeightRangePlacement.uniform(VerticalAnchor.absolute(OIL_SHALE_MIN_Y),
-				VerticalAnchor.absolute(OIL_SHALE_MAX_Y));
+		PlacementModifier oilShaleHeight = height(OreVeins.OIL_SHALE);
 		PlacementUtils.register(context, ModWorldgen.PLACED_SHALE, features.getOrThrow(ModWorldgen.ORE_SHALE),
-				common(SHALE_COUNT, HeightRangePlacement.uniform(VerticalAnchor.absolute(0),
-						VerticalAnchor.absolute(SHALE_MAX_Y))));
+				common(OreVeins.SHALE.count(), height(OreVeins.SHALE)));
 		PlacementUtils.register(context, ModWorldgen.PLACED_OIL_SHALE, features.getOrThrow(ModWorldgen.ORE_OIL_SHALE),
-				common(OIL_SHALE_COUNT, oilShaleHeight));
+				common(OreVeins.OIL_SHALE.count(), oilShaleHeight));
 		PlacementUtils.register(context, ModWorldgen.PLACED_OIL_SHALE_EXTRA,
-				features.getOrThrow(ModWorldgen.ORE_OIL_SHALE), common(OIL_SHALE_EXTRA_COUNT, oilShaleHeight));
+				features.getOrThrow(ModWorldgen.ORE_OIL_SHALE), common(OreVeins.OIL_SHALE_DRY_COUNT, oilShaleHeight));
 		PlacementUtils.register(context, ModWorldgen.PLACED_NEODYMIUM, features.getOrThrow(ModWorldgen.ORE_NEODYMIUM),
-				common(NEODYMIUM_COUNT, HeightRangePlacement.triangle(VerticalAnchor.absolute(NEODYMIUM_MIN_Y),
-						VerticalAnchor.absolute(NEODYMIUM_MAX_Y))));
+				common(OreVeins.NEODYMIUM.count(), height(OreVeins.NEODYMIUM)));
+	}
+
+	/** The height range of a vein: a trapezoid (vanilla's triangle) or uniform. */
+	private static PlacementModifier height(OreVein vein) {
+		VerticalAnchor bottom = VerticalAnchor.absolute(vein.minY());
+		VerticalAnchor top = VerticalAnchor.absolute(vein.maxY());
+		return vein.triangle() ? HeightRangePlacement.triangle(bottom, top) : HeightRangePlacement.uniform(bottom, top);
 	}
 
 	/** Like vanilla {@code commonOrePlacement}: a fixed count of veins per chunk, spread, at a height, per biome. */

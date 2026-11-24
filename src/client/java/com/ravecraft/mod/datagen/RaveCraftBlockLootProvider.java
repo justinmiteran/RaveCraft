@@ -1,5 +1,6 @@
 package com.ravecraft.mod.datagen;
 
+import com.ravecraft.mod.core.world.OreDrops;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.registry.ModItems;
@@ -22,8 +23,6 @@ import net.minecraft.world.level.storage.loot.providers.number.ints.ContextIntPr
 
 /** Block loot tables: speakers keep their settings, ores drop their material, shale blocks drop themselves. */
 public class RaveCraftBlockLootProvider extends FabricBlockLootSubProvider {
-	private static final int BITUMEN_MIN = 1;
-	private static final int BITUMEN_MAX = 3;
 
 	/**
 	 * A provider writing to {@code output}.
@@ -54,7 +53,7 @@ public class RaveCraftBlockLootProvider extends FabricBlockLootSubProvider {
 	/** Like vanilla copper ore: several bitumen, raised by Fortune, decayed by explosions. */
 	private LootTable.Builder oilShale(Block block) {
 		return createSilkTouchDispatchTable(block, applyExplosionDecay(block, LootItem.lootTableItem(ModItems.BITUMEN)
-				.apply(SetItemCountFunction.setCount(ContextIntProviders.between(BITUMEN_MIN, BITUMEN_MAX)))
+				.apply(SetItemCountFunction.setCount(ContextIntProviders.between(OreDrops.BITUMEN_MIN, OreDrops.BITUMEN_MAX)))
 				.apply(ApplyBonusCount.addOreBonusCount(enchantments.getOrThrow(Enchantments.FORTUNE)))));
 	}
 

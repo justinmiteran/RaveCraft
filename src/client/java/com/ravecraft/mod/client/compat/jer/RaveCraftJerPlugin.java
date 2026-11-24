@@ -18,14 +18,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 
 /**
- * Shows in Just Enough Resources where shale, oil shale and neodymium generate, from the same {@link OreVeins} the
- * world generation uses. Loaded only through the {@code jer_mod_plugin} entrypoint, so nothing here runs without JER.
+ * Shows in Just Enough Resources where oil shale and neodymium generate, from the same {@link OreVeins} the world
+ * generation uses. Shale is left out: it is a rock and not an ore, and JER only shows ores. Loaded only through the
+ * {@code jer_mod_plugin} entrypoint, so nothing here runs without JER.
  */
 public final class RaveCraftJerPlugin implements IJERPlugin {
 	@Override
 	public void receive(IJERAPI api) {
 		IWorldGenRegistry worldGen = api.getWorldGenRegistry();
-		worldGen.register(stack(ModBlocks.SHALE), distribution(OreVeins.SHALE), Restriction.OVERWORLD, true);
 		worldGen.register(stack(ModBlocks.OIL_SHALE), distribution(OreVeins.OIL_SHALE), Restriction.OVERWORLD, true,
 				fortune(ModItems.BITUMEN, OreDrops.BITUMEN_MIN, OreDrops.BITUMEN_MAX));
 		worldGen.register(stack(ModBlocks.DEEPSLATE_NEODYMIUM_ORE), distribution(OreVeins.NEODYMIUM),

@@ -13,11 +13,14 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.context.ContextMap;
 import net.minecraft.world.entity.player.StackedItemContents;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.display.RecipeDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
 
 /**
  * The recipe book of a machine, with one tab for its kind: it shows the machine recipes, and a clicked recipe it
- * cannot place appears as ghost items in the inputs, the energy slot (when empty) and the output.
+ * cannot place appears as ghost items in the inputs, the energy slot (when empty), the mold slot (when it does not
+ * hold the mold) and the output.
  */
 public class MachineRecipeBookComponent extends RecipeBookComponent<MachineMenu> {
 	private static final WidgetSprites FILTER_SPRITES = new WidgetSprites(
@@ -43,7 +46,7 @@ public class MachineRecipeBookComponent extends RecipeBookComponent<MachineMenu>
 
 	@Override
 	protected boolean isCraftingSlot(Slot slot) {
-		return slot.index <= MachineBlockEntity.ENERGY;
+		return slot.index < MachineBlockEntity.SIZE;
 	}
 
 	@Override
@@ -57,6 +60,16 @@ public class MachineRecipeBookComponent extends RecipeBookComponent<MachineMenu>
 			if (energy.getItem().isEmpty()) {
 				ghostSlots.setInput(energy, context, display.energy());
 			}
+			ghostMold(ghostSlots, display.mold(), context);
+		}
+	}
+
+	/** Shows the recipe's mold as a ghost when the mold slot does not hold it. */
+	private void ghostMold(GhostSlots ghostSlots, SlotDisplay mold, ContextMap context) {
+		Slot slot = menu.getSlot(MachineBlockEntity.MOLD);
+		List<ItemStack> molds = mold.resolveForStacks(context);
+		if (!molds.isEmpty() && molds.stream().noneMatch(stack -> ItemStack.isSameItem(stack, slot.getItem()))) {
+			ghostSlots.setInput(slot, context, mold);
 		}
 	}
 

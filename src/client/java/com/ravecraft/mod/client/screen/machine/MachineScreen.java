@@ -13,13 +13,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.item.ItemStack;
 
 /**
  * The screen of any machine, laid out like a furnace: the inputs in a row, the energy slot below with a redstone
  * bolt between them that empties like the furnace flame, the progress arrow and the output on the right. The arrow
- * is plain, in the colour of the first input's item read from {@code assets/ravecraft/machine_colors.json}. Each
+ * is plain, in the colour of the item being made, read from {@code assets/ravecraft/machine_colors.json}. Each
  * machine has its own background showing only the inputs it uses, {@code textures/gui/container/<machine>.png}. The
  * positions are constants, shared with the slot positions of {@link MachineMenu}.
  */
@@ -79,14 +77,10 @@ public class MachineScreen extends AbstractRecipeBookScreen<MachineMenu> {
 				leftPos + BOLT_X, topPos + BOLT_Y + top, BOLT_SIZE, bolt);
 	}
 
-	/** The colour of the first non-empty input's item, white when none is listed. */
+	/** The colour of the item being made, white when none is listed or nothing is made. */
 	private int arrowColor() {
-		for (Slot slot : menu.inputSlots()) {
-			ItemStack stack = slot.getItem();
-			if (!stack.isEmpty()) {
-				return colors.colorOf(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
-			}
-		}
-		return ProgressColors.WHITE;
+		return menu.result()
+				.map(item -> colors.colorOf(BuiltInRegistries.ITEM.getKey(item).toString()))
+				.orElse(ProgressColors.WHITE);
 	}
 }

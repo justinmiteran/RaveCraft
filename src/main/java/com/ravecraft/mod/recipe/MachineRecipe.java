@@ -155,7 +155,7 @@ public final class MachineRecipe implements Recipe<MachineRecipeInput> {
 		return kind.type();
 	}
 
-	/** Each ingredient repeated by its count, so the recipe book counts the items a craft needs. */
+	/** Each ingredient repeated by its count, then the mold, so the recipe book counts the items a craft needs. */
 	@Override
 	public PlacementInfo placementInfo() {
 		if (placementInfo == null) {
@@ -163,6 +163,7 @@ public final class MachineRecipe implements Recipe<MachineRecipeInput> {
 			for (CountedIngredient ingredient : ingredients) {
 				needed.addAll(Collections.nCopies(ingredient.count(), ingredient.ingredient()));
 			}
+			mold.ifPresent(needed::add);
 			placementInfo = PlacementInfo.create(needed);
 		}
 		return placementInfo;

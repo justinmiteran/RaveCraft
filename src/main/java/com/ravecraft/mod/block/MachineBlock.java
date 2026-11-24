@@ -6,6 +6,7 @@ import com.ravecraft.mod.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -32,11 +33,15 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * A processing machine, like a furnace: it faces the player who placed it, is lit while it works, keeps its contents
- * in a {@link MachineBlockEntity} (dropped when broken) and ticks on the server only. Each machine gives its kind.
+ * in a {@link MachineBlockEntity} (dropped when broken), works on the server and plays its loop on the client.
+ * Each machine gives its kind.
  */
 public abstract class MachineBlock extends BaseEntityBlock {
 	public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
 	public static final BooleanProperty LIT = BlockStateProperties.LIT;
+	private static final double FRONT_OFFSET = 0.52;
+	private static final double SPREAD = 0.6;
+	private static final double PARTICLE_HEIGHT = 0.4;
 
 	/**
 	 * A machine facing north, unlit.
@@ -54,6 +59,31 @@ public abstract class MachineBlock extends BaseEntityBlock {
 	 * @return the machine kind
 	 */
 	public abstract MachineKind kind();
+
+	/**
+	 * What the machine plays and shows while it works.
+	 *
+	 * @return the machine's sound and particle
+	 */
+	public abstract MachineEffects effects();
+
+	/** While it works, its particle at the front; its loop is played by {@link MachineSounds}. */
+	@Override
+	public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
+		if (!state.getValue(LIT)) {
+			return;
+		}
+		MachineEffects effects = effects();
+		double x = pos.getX() + 0.5;
+		double y = pos.getY();
+		double z = pos.getZ() + 0.5;
+		Direction facing = state.getValue(FACING);
+		double across = random.nextDouble() * SPREAD - SPREAD / 2;
+		double dx = facing.getAxis() == Direction.Axis.X ? facing.getStepX() * FRONT_OFFSET : across;
+		double dz = facing.getAxis() == Direction.Axis.Z ? facing.getStepZ() * FRONT_OFFSET : across;
+		double dy = PARTICLE_HEIGHT + random.nextDouble() * PARTICLE_HEIGHT;
+		level.addParticle(effects.particle(), x + dx, y + dy, z + dz, 0, 0, 0);
+	}
 
 	@Override
 	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
@@ -116,6 +146,6 @@ public abstract class MachineBlock extends BaseEntityBlock {
 			BlockEntityType<T> type) {
 		return level instanceof ServerLevel
 				? createTickerHelper(type, ModBlockEntities.MACHINE, MachineBlockEntity::serverTick)
-				: null;
+				: createTickerHelper(type, ModBlockEntities.MACHINE, MachineSounds::clientTick);
 	}
 }

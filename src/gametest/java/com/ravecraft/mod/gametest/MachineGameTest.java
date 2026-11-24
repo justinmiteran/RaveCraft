@@ -101,7 +101,7 @@ public class MachineGameTest {
 		return new MachineRecipeInput(List.of(a, b, c), ItemStack.EMPTY);
 	}
 
-	private static MachineRecipe recipe(GameTestHelper h, String name) {
+	static MachineRecipe recipe(GameTestHelper h, String name) {
 		Recipe<?> recipe = h.getLevel().getServer().getRecipeManager()
 				.byKey(ResourceKey.create(Registries.RECIPE, RaveCraft.id(name))).map(RecipeHolder::value)
 				.orElseThrow(() -> h.assertionException(name + " missing"));

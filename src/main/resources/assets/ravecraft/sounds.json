@@ -7,5 +7,41 @@
         "attenuation_distance": 16
       }
     ]
+  },
+  "machine.coil_winder": {
+    "subtitle": "subtitles.ravecraft.machine.coil_winder",
+    "sounds": [
+      {
+        "name": "ravecraft:machine/coil_winder",
+        "attenuation_distance": 12
+      }
+    ]
+  },
+  "machine.magnetizer": {
+    "subtitle": "subtitles.ravecraft.machine.magnetizer",
+    "sounds": [
+      {
+        "name": "ravecraft:machine/magnetizer",
+        "attenuation_distance": 12
+      }
+    ]
+  },
+  "machine.extruder": {
+    "subtitle": "subtitles.ravecraft.machine.extruder",
+    "sounds": [
+      {
+        "name": "ravecraft:machine/extruder",
+        "attenuation_distance": 12
+      }
+    ]
+  },
+  "machine.etcher": {
+    "subtitle": "subtitles.ravecraft.machine.etcher",
+    "sounds": [
+      {
+        "name": "ravecraft:machine/etcher",
+        "attenuation_distance": 12
+      }
+    ]
   }
 }

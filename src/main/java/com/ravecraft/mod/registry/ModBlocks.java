@@ -2,6 +2,9 @@ package com.ravecraft.mod.registry;
 
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.block.CoilWinderBlock;
+import com.ravecraft.mod.block.EtcherBlock;
+import com.ravecraft.mod.block.ExtruderBlock;
+import com.ravecraft.mod.block.MagnetizerBlock;
 import com.ravecraft.mod.block.PartySpeakerBlock;
 import com.ravecraft.mod.block.PortableSpeakerBlock;
 import com.ravecraft.mod.item.SpeakerItem;
@@ -84,16 +87,22 @@ public final class ModBlocks {
 			metal(MapColor.TERRACOTTA_WHITE).strength(5.0F, 6.0F));
 	public static final Block SILICON_BLOCK = registerSimple("silicon_block", Block::new,
 			metal(MapColor.COLOR_LIGHT_BLUE).strength(3.0F, 6.0F));
-	/** Strength and light as the furnace, metal sound; needs a stone pickaxe. */
-	public static final Block COIL_WINDER = registerSimple("coil_winder", CoilWinderBlock::new,
-			BlockBehaviour.Properties.of()
-					.mapColor(MapColor.METAL)
-					.sound(SoundType.METAL)
-					.strength(3.5F)
-					.requiresCorrectToolForDrops()
-					.lightLevel(Blocks.litBlockEmission(13)));
+	public static final Block COIL_WINDER = registerSimple("coil_winder", CoilWinderBlock::new, machine());
+	public static final Block MAGNETIZER = registerSimple("magnetizer", MagnetizerBlock::new, machine());
+	public static final Block ETCHER = registerSimple("etcher", EtcherBlock::new, machine());
+	public static final Block EXTRUDER = registerSimple("extruder", ExtruderBlock::new, machine());
 
 	private ModBlocks() {
+	}
+
+	/** A machine: strength and light as the furnace, metal sound; needs a stone pickaxe. */
+	private static BlockBehaviour.Properties machine() {
+		return BlockBehaviour.Properties.of()
+				.mapColor(MapColor.METAL)
+				.sound(SoundType.METAL)
+				.strength(3.5F)
+				.requiresCorrectToolForDrops()
+				.lightLevel(Blocks.litBlockEmission(13));
 	}
 
 	/**
@@ -112,7 +121,7 @@ public final class ModBlocks {
 	 * @return the machine blocks
 	 */
 	public static List<Block> machines() {
-		return List.of(COIL_WINDER);
+		return List.of(COIL_WINDER, MAGNETIZER, ETCHER, EXTRUDER);
 	}
 
 	/**

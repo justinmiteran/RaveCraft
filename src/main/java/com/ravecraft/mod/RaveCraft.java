@@ -12,6 +12,7 @@ import com.ravecraft.mod.registry.ModDataComponents;
 import com.ravecraft.mod.registry.ModItems;
 import com.ravecraft.mod.registry.ModMenus;
 import com.ravecraft.mod.registry.ModRecipes;
+import com.ravecraft.mod.registry.ModSounds;
 import com.ravecraft.mod.world.gen.ModWorldgen;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
@@ -27,6 +28,7 @@ public class RaveCraft implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		// Order matters when registries reference each other (e.g. a creative tab references items).
+		ModSounds.init();
 		ModDataComponents.init();
 		ModBlocks.init();
 		ModBlockEntities.init();

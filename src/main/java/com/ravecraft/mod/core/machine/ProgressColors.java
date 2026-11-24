@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The colour of a machine's progress arrow for each input item, read from a resource pack file so packs can recolour
+ * The colour of a machine's progress arrow for each item it makes, read from a resource pack file so packs can recolour
  * it or add items from other mods. Items without a colour get a white arrow, like the furnace's.
  */
 public final class ProgressColors {
@@ -63,7 +63,7 @@ public final class ProgressColors {
 	}
 
 	/**
-	 * Returns the arrow colour for an input item.
+	 * Returns the arrow colour for an item being made.
 	 *
 	 * @param itemId the item id, like {@code minecraft:copper_ingot}
 	 * @return the opaque ARGB colour, white when the item has none

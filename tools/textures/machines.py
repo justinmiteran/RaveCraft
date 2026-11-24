@@ -2,13 +2,17 @@
 voice coil) and the machine screen (furnace-like layout: the inputs, a redstone bolt gauge above the energy slot, a
 progress arrow tinted by the input, large output). Imported by gen_textures.py. All original, drawn with Pillow; the
 shapes were picked by the user from proposals (block A v2, wire 5 "hank", coil 7 "ribbed", screen A with the thin
-arrow and bolt 2)."""
+arrow and bolt 2). Materials 7c adds the magnetizer (field coil), etcher (green board under a red laser) and extruder
+(heated nozzle over a tar tray) with their animated fronts, their screens (the extruder with a mold slot on the left)
+and the 7c items, kept as pixel grids in machine_parts.py."""
 from __future__ import annotations
 
 import math
 import random as _r
 
 from PIL import Image, ImageDraw
+
+import machine_parts  # sibling module: the 7c products and molds
 
 S = 16
 
@@ -133,16 +137,24 @@ def casing2(seed):
     return img
 
 
-def a2_front(k=None):
-    img = casing2(111)
-    # recessed window: dark gradient, lit bottom-right lip
-    brushed(img, [(16, 16, 19), (22, 22, 26), (29, 30, 34), (37, 38, 43)], 3, 3, 12, 10, 1.2, 2.6, 113, 0)
-    bevel2(img, STEEL2, 2, 2, 13, 11, 1, 7, 114)
-    spool(img, 4, 3, 8, 8, k)
-    # control strip: two knobs and the lamp
-    brushed(img, STEEL2, 3, 13, 12, 13, 2, 2, 115, 0)
+WINDOW = [(16, 16, 19), (22, 22, 26), (29, 30, 34), (37, 38, 43)]
+
+
+def front_frame(seed):
+    """The A2 front without its machine: casing, recessed window (dark gradient, lit bottom-right lip) and the control
+    strip's two knobs; the lamp is drawn by each front."""
+    img = casing2(seed)
+    brushed(img, WINDOW, 3, 3, 12, 10, 1.2, 2.6, seed + 2, 0)
+    bevel2(img, STEEL2, 2, 2, 13, 11, 1, 7, seed + 3)
+    brushed(img, STEEL2, 3, 13, 12, 13, 2, 2, seed + 4, 0)
     for x in (4, 6):
         px(img, x, 13, STEEL2[7]); px(img, x, 12, STEEL2[6])
+    return img
+
+
+def a2_front(k=None):
+    img = front_frame(111)
+    spool(img, 4, 3, 8, 8, k)
     lamp(img, 11, 13, k is not None)
     return img
 
@@ -254,6 +266,93 @@ def v7_ribbed():
     return edge_dark(img, CU)
 
 
+# ---------------------------------------------------------------- 7c fronts (picks M1, E1, X2), same casing
+IRON6 = [(70, 72, 76), (98, 100, 104), (128, 130, 134), (160, 162, 166), (196, 198, 201), (226, 228, 230)]
+FIELD = [(70, 120, 170), (110, 170, 220), (170, 220, 250), (225, 245, 255)]
+PCB = [(18, 52, 30), (28, 74, 42), (40, 98, 56), (56, 124, 72)]
+GOLD = [(150, 112, 30), (206, 162, 50), (246, 210, 96)]
+LASER = [(150, 20, 20), (230, 40, 40), (255, 140, 130), (255, 230, 220)]
+TAR = [(14, 12, 15), (24, 21, 25), (36, 32, 37), (52, 48, 54), (76, 72, 80)]
+HEAT = [(90, 30, 10), (160, 60, 16), (220, 110, 30), (255, 170, 60), (255, 225, 140)]
+
+
+def vspool(img, x0, y0, w, h, k):
+    """Upright copper coil: iron caps top and bottom, windings shaded like a cylinder lit from the left; on, the
+    winding stripes move with the frame."""
+    for x in range(x0, x0 + w):
+        px(img, x, y0, IRON6[3 if x == x0 else 2])
+        px(img, x, y0 + h - 1, IRON6[1])
+    for y in range(y0 + 1, y0 + h - 1):
+        for i, x in enumerate(range(x0, x0 + w)):
+            t = [4, 3, 2, 1, 0][min(4, round(i * 4 / max(1, w - 1)))]
+            if (y + (k or 0)) % 2:
+                t = max(0, t - 1)
+            px(img, x, y, COPPER[t])
+
+
+def magnetizer_front(k=None):
+    """Two copper coils with an iron bar between them; on: blue field lines pulse above and below the bar."""
+    img = front_frame(211)
+    vspool(img, 3, 4, 3, 6, k)
+    vspool(img, 10, 4, 3, 6, k)
+    for x in range(6, 10):
+        px(img, x, 6, IRON6[4]); px(img, x, 7, IRON6[2])
+    if k is not None:
+        for i, x in enumerate(range(6, 10)):
+            if (x + k) % 2 == 0:
+                px(img, x, 4, FIELD[2 + (i in (1, 2))])
+                px(img, x, 9, FIELD[1 + (i in (1, 2))])
+        px(img, 6 + k % 4, 5, FIELD[3])
+    lamp(img, 11, 13, k is not None)
+    return img
+
+
+def board(img, x0, y0, x1, y1):
+    """Green board with copper traces every fifth pixel along a diagonal."""
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            px(img, x, y, PCB[2] if y == y0 else (PCB[0] if y == y1 else PCB[1]))
+            if y0 < y < y1 and (x + y * 3) % 5 == 0:
+                px(img, x, y, GOLD[0])
+
+
+def etcher_front(k=None):
+    """A gantry laser over a green board; on: the head steps across and burns a red dot into the traces."""
+    img = front_frame(311)
+    for x in range(3, 13):
+        px(img, x, 3, IRON6[3] if x < 8 else IRON6[2])
+    board(img, 3, 8, 12, 10)
+    hx = 4 + (k if k is not None else 2) * 2
+    px(img, hx, 4, IRON6[4]); px(img, hx + 1, 4, IRON6[2])
+    px(img, hx, 5, IRON6[1]); px(img, hx + 1, 5, IRON6[1])
+    if k is not None:
+        for y in (6, 7):
+            px(img, hx, y, LASER[1])
+        px(img, hx, 8, LASER[3]); px(img, hx + 1, 8, LASER[2])
+    lamp(img, 11, 13, k is not None)
+    return img
+
+
+def extruder_front(k=None):
+    """A press: a steel ram over an open mould; on: the ram comes down and the mould glows."""
+    img = front_frame(421)
+    drop = (0, 1, 2, 1)[k] if k is not None else 0
+    for y in range(3, 5 + drop):
+        px(img, 7, y, IRON6[3]); px(img, 8, y, IRON6[2])
+    for x in range(4, 12):
+        px(img, x, 5 + drop, IRON6[4] if x < 8 else IRON6[3]); px(img, x, 6 + drop, IRON6[1])
+    for x in range(3, 13):
+        px(img, x, 9, IRON6[3]); px(img, x, 10, IRON6[1])
+    for x in range(5, 11):
+        px(img, x, 9, HEAT[2 + (x % 2)] if k is not None else TAR[1])
+    lamp(img, 11, 13, k is not None)
+    return img
+
+
+def _frames(front):
+    return lambda: [front(k) for k in range(ON_FRAMES)]
+
+
 # ---------------------------------------------------------------- registries read by gen_textures.py
 ON_FRAMES = 4
 
@@ -269,12 +368,16 @@ ENERGY_FRAME = (47, 52)
 BOLT_POS = (49, 36)  # 14x14 energy bolt between the input and the energy slot, like the furnace flame
 ARROW_POS = (89, 34)  # 24x16 progress arrow, the furnace's proportions
 OUTPUT_FRAME = (120, 30, 26)
+MOLD_FRAME = (25, 16)  # left of the input (MachineMenu.MOLD_X/MOLD_Y minus the frame)
 CONTAINER_SIZE = 256
 
 
-def machine_container(inputs):
-    """A machine window on a 256x256 sheet: its used inputs, empty arrow and gauge (filled at draw time)."""
+def machine_container(inputs, mold=False):
+    """A machine window on a 256x256 sheet: its used inputs (and the mold slot), empty arrow and gauge (filled at
+    draw time)."""
     img = gui_base()
+    if mold:
+        slot(img, *MOLD_FRAME)
     for i in range(inputs):
         slot(img, INPUT_CENTER_FRAME[0] + (2 * i - (inputs - 1)) * SLOT_STEP // 2, INPUT_CENTER_FRAME[1])
     slot(img, *ENERGY_FRAME)
@@ -339,9 +442,19 @@ def machine_energy():
     return img
 
 
+MACHINE_FRONTS = {"magnetizer": magnetizer_front, "etcher": etcher_front, "extruder": extruder_front}
 BLOCKS = {"coil_winder_front": a2_front, "coil_winder_side": a2_side, "coil_winder_top": a2_top}
 ANIMATED = {"coil_winder_front_on": (coil_winder_front_on, 2)}
-ITEMS = {"copper_wire": w5_hank, "voice_coil": v7_ribbed}
+for _name, _front in MACHINE_FRONTS.items():
+    BLOCKS.update({f"{_name}_front": _front, f"{_name}_side": a2_side, f"{_name}_top": a2_top})
+    ANIMATED[f"{_name}_front_on"] = (_frames(_front), 2)
+ITEMS = {"copper_wire": w5_hank, "voice_coil": v7_ribbed, **machine_parts.ITEMS}
 GUI = {"container/machine/progress": (machine_progress, None)}
 GUI["container/machine/energy"] = (machine_energy, None)
-CONTAINERS = {"coil_winder": lambda: machine_container(1)}  # textures/gui/container/<name>.png
+GUI["container/slot/mold"] = (machine_parts.mold_silhouette, None)
+CONTAINERS = {  # textures/gui/container/<name>.png
+    "coil_winder": lambda: machine_container(1),
+    "magnetizer": lambda: machine_container(2),
+    "etcher": lambda: machine_container(3),
+    "extruder": lambda: machine_container(1, mold=True),
+}

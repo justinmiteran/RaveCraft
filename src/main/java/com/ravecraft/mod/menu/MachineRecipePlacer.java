@@ -4,16 +4,20 @@ import com.ravecraft.mod.recipe.CountedIngredient;
 import com.ravecraft.mod.recipe.MachineRecipe;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.RecipeBookMenu.PostPlaceAction;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Places a machine recipe clicked in the recipe book: ingredient {@code i} goes to input slot {@code i}, with its
- * count, once or as many times as the stacks and the inventory allow. When an ingredient is missing nothing moves
- * and the book shows the ghost recipe; the inputs already there go back to the player first, and nothing happens if
- * they would not fit.
+ * count, once or as many times as the stacks and the inventory allow, and a matching mold (one, never more) goes to
+ * the mold slot when the recipe needs one that is not already there. When an ingredient or the mold is missing
+ * nothing moves and the book shows the ghost recipe; the inputs (and a wrong mold) already there go back to the
+ * player first, and nothing happens if they would not fit.
  */
 public final class MachineRecipePlacer {
 	private MachineRecipePlacer() {
@@ -26,7 +30,7 @@ public final class MachineRecipePlacer {
 	 * @param recipe the recipe clicked
 	 * @param useMaxItems whether to place as many crafts as possible (shift-click)
 	 * @param inventory the player's inventory
-	 * @return {@code PLACE_GHOST_RECIPE} when an ingredient is missing, {@code NOTHING} otherwise
+	 * @return {@code PLACE_GHOST_RECIPE} when an ingredient or the mold is missing, {@code NOTHING} otherwise
 	 */
 	public static PostPlaceAction place(MachineMenu menu, MachineRecipe recipe, boolean useMaxItems,
 			Inventory inventory) {
@@ -35,17 +39,38 @@ public final class MachineRecipePlacer {
 		inputs.forEach(slot -> sources.add(slot.getItem()));
 		List<ItemStack> chosen = recipe.ingredients().stream().map(ingredient -> pick(ingredient, sources)).toList();
 		int crafts = crafts(recipe, chosen, sources, useMaxItems);
-		if (crafts == 0) {
+		ItemStack mold = moldToTake(menu.moldSlot(), recipe, inventory);
+		if (crafts == 0 || mold == null) {
 			return PostPlaceAction.PLACE_GHOST_RECIPE;
 		}
-		if (!returnInputs(inputs, inventory)) {
+		List<Slot> cleared = new ArrayList<>(inputs);
+		if (!mold.isEmpty()) {
+			cleared.add(menu.moldSlot());
+		}
+		if (!returnInputs(cleared, inventory)) {
 			return PostPlaceAction.NOTHING;
 		}
 		for (int i = 0; i < chosen.size(); i++) {
 			int amount = recipe.ingredients().get(i).count() * crafts;
 			inputs.get(i).set(take(inventory, chosen.get(i), amount));
 		}
+		if (!mold.isEmpty()) {
+			menu.moldSlot().set(take(inventory, mold, 1));
+		}
 		return PostPlaceAction.NOTHING;
+	}
+
+	/**
+	 * The mold to take from the inventory: empty when the recipe needs none or the mold slot already holds the right
+	 * one, a one-item template of a matching mold the player has, or {@code null} when the player has none.
+	 */
+	private static @Nullable ItemStack moldToTake(Slot moldSlot, MachineRecipe recipe, Inventory inventory) {
+		Optional<Ingredient> mold = recipe.mold();
+		if (mold.isEmpty() || mold.get().test(moldSlot.getItem())) {
+			return ItemStack.EMPTY;
+		}
+		return inventory.getNonEquipmentItems().stream().filter(stack -> mold.get().test(stack)).findFirst()
+				.map(stack -> stack.copyWithCount(1)).orElse(null);
 	}
 
 	/** The matching item the player has the most of, as a one-item template, or empty when none matches. */

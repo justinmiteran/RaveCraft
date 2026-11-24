@@ -1,13 +1,17 @@
 package com.ravecraft.mod.menu;
 
+import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.block.MachineBlock;
 import com.ravecraft.mod.blockentity.MachineBlockEntity;
 import com.ravecraft.mod.recipe.MachineKind;
 import com.ravecraft.mod.recipe.MachineRecipe;
 import com.ravecraft.mod.registry.ModMenus;
 import com.ravecraft.mod.registry.ModRecipes;
+import com.ravecraft.mod.registry.ModTags;
 import java.util.List;
+import java.util.Optional;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
@@ -20,14 +24,16 @@ import net.minecraft.world.inventory.RecipeBookMenu;
 import net.minecraft.world.inventory.RecipeBookType;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The menu of any machine: three inputs, the redstone energy slot and the output, above the player's inventory. It
- * syncs the progress and the energy through a {@link ContainerData} and uses the furnace recipe book, whose
+ * The menu of any machine: three inputs, the redstone energy slot, the output and the mold slot, above the player's
+ * inventory. It
+ * syncs the progress, the energy and the item being made through a {@link ContainerData} and uses the furnace recipe book, whose
  * placement is done by {@link MachineRecipePlacer}. The slot positions follow the screen layout.
  */
 public class MachineMenu extends RecipeBookMenu {
@@ -36,7 +42,11 @@ public class MachineMenu extends RecipeBookMenu {
 	public static final int DATA_ENERGY = 2;
 	/** The units of the last energy item, which a full bolt stands for. */
 	public static final int DATA_CAPACITY = 3;
-	public static final int DATA_COUNT = 4;
+	/** The registry id of the item being made, or {@link #NO_RESULT}; it gives the arrow its colour. */
+	public static final int DATA_RESULT = 4;
+	public static final int DATA_COUNT = 5;
+	/** {@link #DATA_RESULT} while the machine has no recipe. */
+	public static final int NO_RESULT = -1;
 	/** X of the middle input slot; the used inputs are centred on it. */
 	public static final int INPUT_CENTER_X = 48;
 	public static final int INPUT_Y = 17;
@@ -45,6 +55,9 @@ public class MachineMenu extends RecipeBookMenu {
 	public static final int ENERGY_Y = 53;
 	public static final int OUTPUT_X = 125;
 	public static final int OUTPUT_Y = 35;
+	/** The mold slot, left of the input; shown on machines that use a mold only. */
+	public static final int MOLD_X = 26;
+	public static final int MOLD_Y = 17;
 	public static final int INVENTORY_X = 8;
 	public static final int INVENTORY_Y = 84;
 	private static final int INVENTORY_START = MachineBlockEntity.SIZE;
@@ -93,6 +106,7 @@ public class MachineMenu extends RecipeBookMenu {
 		}
 		addSlot(new MachineSlot(container, level, MachineBlockEntity.ENERGY, ENERGY_X, ENERGY_Y, true));
 		addSlot(new MachineSlot(container, level, MachineBlockEntity.OUTPUT, OUTPUT_X, OUTPUT_Y, true));
+		addSlot(new MachineSlot(container, level, MachineBlockEntity.MOLD, MOLD_X, MOLD_Y, kind.needsMold()));
 		addStandardInventorySlots(inventory, INVENTORY_X, INVENTORY_Y);
 		addDataSlots(data);
 	}
@@ -144,6 +158,16 @@ public class MachineMenu extends RecipeBookMenu {
 	}
 
 	/**
+	 * Returns the item the machine is making.
+	 *
+	 * @return the result of the current recipe, empty without one
+	 */
+	public Optional<Item> result() {
+		int id = data.get(DATA_RESULT);
+		return id == NO_RESULT ? Optional.empty() : Optional.of(BuiltInRegistries.ITEM.byId(id));
+	}
+
+	/**
 	 * Returns the input slots the machine uses, in order.
 	 *
 	 * @return the used input slots
@@ -152,14 +176,24 @@ public class MachineMenu extends RecipeBookMenu {
 		return slots.subList(MachineBlockEntity.INPUT_0, MachineBlockEntity.INPUT_0 + kind.inputs());
 	}
 
+	/**
+	 * Returns the mold slot, shown and used only when the machine needs a mold.
+	 *
+	 * @return the mold slot
+	 */
+	public Slot moldSlot() {
+		return slots.get(MachineBlockEntity.MOLD);
+	}
+
 	@Override
 	public boolean stillValid(Player player) {
 		return container.stillValid(player);
 	}
 
 	/**
-	 * Shift-click: the output and the machine slots go to the inventory; from the inventory, redstone goes to the
-	 * energy slot (or onto redstone already in an input), anything else to the inputs, and what does not fit moves between inventory and hotbar.
+	 * Shift-click: the output and the machine slots go to the inventory; from the inventory, a mold goes to the mold
+	 * slot, redstone to the energy slot (or onto redstone already in an input), anything else to the inputs, and what
+	 * does not fit moves between inventory and hotbar.
 	 */
 	@Override
 	public ItemStack quickMoveStack(Player player, int index) {
@@ -192,16 +226,27 @@ public class MachineMenu extends RecipeBookMenu {
 		if (index < INVENTORY_START) {
 			return moveItemStackTo(stack, INVENTORY_START, HOTBAR_END, index == MachineBlockEntity.OUTPUT);
 		}
-		boolean moved = MachineBlockEntity.isEnergy(level, stack)
-				? moveItemStackTo(stack, MachineBlockEntity.ENERGY, MachineBlockEntity.ENERGY + 1, false)
-						|| mergeIntoInputs(stack)
-				: moveItemStackTo(stack, MachineBlockEntity.INPUT_0, MachineBlockEntity.INPUT_2 + 1, false);
-		if (moved) {
+		if (moveIntoMachine(stack)) {
 			return true;
 		}
 		return index < HOTBAR_START
 				? moveItemStackTo(stack, HOTBAR_START, HOTBAR_END, false)
 				: moveItemStackTo(stack, INVENTORY_START, HOTBAR_START, false);
+	}
+
+	/**
+	 * From the inventory: a mold goes to the mold slot only, on a machine that uses one; redstone to the energy
+	 * slot (or onto redstone in an input); anything else to the inputs.
+	 */
+	private boolean moveIntoMachine(ItemStack stack) {
+		if (kind.needsMold() && stack.is(ModTags.Items.MOLDS)) {
+			return moveItemStackTo(stack, MachineBlockEntity.MOLD, MachineBlockEntity.MOLD + 1, false);
+		}
+		if (MachineBlockEntity.isEnergy(level, stack)) {
+			return moveItemStackTo(stack, MachineBlockEntity.ENERGY, MachineBlockEntity.ENERGY + 1, false)
+					|| mergeIntoInputs(stack);
+		}
+		return moveItemStackTo(stack, MachineBlockEntity.INPUT_0, MachineBlockEntity.INPUT_2 + 1, false);
 	}
 
 	/**
@@ -232,6 +277,9 @@ public class MachineMenu extends RecipeBookMenu {
 		for (Slot slot : inputSlots()) {
 			contents.accountStack(slot.getItem());
 		}
+		if (kind.needsMold()) {
+			contents.accountStack(moldSlot().getItem());
+		}
 	}
 
 	@Override
@@ -240,12 +288,14 @@ public class MachineMenu extends RecipeBookMenu {
 	}
 
 	/**
-	 * A machine slot: the energy slot takes the machine energy items only, the output nothing, the inputs what the machine takes;
-	 * the inputs the machine does not use are hidden and take nothing.
+	 * A machine slot: the energy slot takes the machine energy items only, the mold slot molds only, the output nothing, the inputs
+	 * what the machine takes; the inputs (and the mold slot) the machine does not use are hidden and take nothing.
 	 */
 	private static final class MachineSlot extends Slot {
 		/** The vanilla redstone silhouette shown in the empty energy slot. */
 		private static final Identifier EMPTY_ENERGY_ICON = Identifier.withDefaultNamespace("container/slot/redstone_dust");
+		/** The mold silhouette shown in the empty mold slot. */
+		private static final Identifier EMPTY_MOLD_ICON = RaveCraft.id("container/slot/mold");
 
 		private final Level level;
 		private final boolean active;
@@ -258,7 +308,11 @@ public class MachineMenu extends RecipeBookMenu {
 
 		@Override
 		public @Nullable Identifier getNoItemIcon() {
-			return getContainerSlot() == MachineBlockEntity.ENERGY ? EMPTY_ENERGY_ICON : null;
+			return switch (getContainerSlot()) {
+				case MachineBlockEntity.ENERGY -> EMPTY_ENERGY_ICON;
+				case MachineBlockEntity.MOLD -> EMPTY_MOLD_ICON;
+				default -> null;
+			};
 		}
 
 		@Override
@@ -271,11 +325,12 @@ public class MachineMenu extends RecipeBookMenu {
 			if (!active) {
 				return false;
 			}
-			int slot = getContainerSlot();
-			if (slot == MachineBlockEntity.ENERGY) {
-				return MachineBlockEntity.isEnergy(level, stack);
-			}
-			return slot != MachineBlockEntity.OUTPUT && container.canPlaceItem(slot, stack);
+			return switch (getContainerSlot()) {
+				case MachineBlockEntity.ENERGY -> MachineBlockEntity.isEnergy(level, stack);
+				case MachineBlockEntity.MOLD -> stack.is(ModTags.Items.MOLDS);
+				case MachineBlockEntity.OUTPUT -> false;
+				default -> container.canPlaceItem(getContainerSlot(), stack);
+			};
 		}
 	}
 }

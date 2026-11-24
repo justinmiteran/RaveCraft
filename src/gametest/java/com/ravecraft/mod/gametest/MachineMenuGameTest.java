@@ -18,6 +18,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.StackedItemContents;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.RecipeBookMenu.PostPlaceAction;
 import net.minecraft.world.item.Item;
@@ -25,6 +26,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Block;
 
 public class MachineMenuGameTest {
 	private static final BlockPos POS = new BlockPos(1, 2, 1);
@@ -149,17 +151,153 @@ public class MachineMenuGameTest {
 		h.succeed();
 	}
 
+	@GameTest
+	public void shiftClickMoldGoesToMoldSlot(GameTestHelper h) {
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		MachineMenu menu = menu(h, player, ModBlocks.EXTRUDER);
+		player.getInventory().setItem(9, new ItemStack(ModItems.SHEET_MOLD));
+		player.getInventory().setItem(10, new ItemStack(ModItems.BOARD_MOLD));
+		menu.quickMoveStack(player, FIRST_INVENTORY);
+		menu.quickMoveStack(player, FIRST_INVENTORY + 1);
+		h.assertTrue(menu.getSlot(MachineBlockEntity.MOLD).getItem().is(ModItems.SHEET_MOLD), "mold in the mold slot");
+		h.assertTrue(menu.getSlot(MachineBlockEntity.INPUT_0).getItem().isEmpty(), "never in the input");
+		h.assertValueEqual(count(player.getInventory(), ModItems.BOARD_MOLD), 1, "second mold stays with the player");
+		h.succeed();
+	}
+
+	@GameTest
+	public void emptyMoldSlotShowsMold(GameTestHelper h) {
+		MachineMenu menu = menu(h, h.makeMockPlayer(GameType.SURVIVAL), ModBlocks.EXTRUDER);
+		h.assertValueEqual(menu.moldSlot().getNoItemIcon(), RaveCraft.id("container/slot/mold"), "mold silhouette");
+		h.succeed();
+	}
+
+	@GameTest
+	public void moldSlotHiddenOffExtruder(GameTestHelper h) {
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		h.assertFalse(menu(h, player, ModBlocks.MAGNETIZER).getSlot(MachineBlockEntity.MOLD).isActive(), "magnetizer");
+		h.assertFalse(menu(h, player, ModBlocks.ETCHER).getSlot(MachineBlockEntity.MOLD).isActive(), "etcher");
+		h.assertFalse(menu(h, player, ModBlocks.COIL_WINDER).getSlot(MachineBlockEntity.MOLD).isActive(), "winder");
+		MachineMenu extruder = menu(h, player, ModBlocks.EXTRUDER);
+		h.assertTrue(extruder.getSlot(MachineBlockEntity.MOLD).isActive(), "extruder");
+		h.assertTrue(extruder.moldSlot() == extruder.getSlot(MachineBlockEntity.MOLD), "mold slot");
+		h.assertValueEqual(extruder.moldSlot().x, MachineMenu.MOLD_X, "left of the input");
+		h.succeed();
+	}
+
+	@GameTest
+	public void placementSwapsMold(GameTestHelper h) {
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		MachineMenu menu = menu(h, player, ModBlocks.EXTRUDER);
+		menu.getSlot(MachineBlockEntity.MOLD).set(new ItemStack(ModItems.CASING_MOLD));
+		player.getInventory().setItem(9, new ItemStack(ModItems.SHEET_MOLD));
+		player.getInventory().setItem(10, new ItemStack(ModItems.BITUMEN, 4));
+		PostPlaceAction action = place(h, menu, player, "plastic_sheet_from_extruding", false);
+		h.assertValueEqual(action, PostPlaceAction.NOTHING, "placed");
+		h.assertTrue(menu.getSlot(MachineBlockEntity.MOLD).getItem().is(ModItems.SHEET_MOLD), "right mold placed");
+		h.assertValueEqual(count(player.getInventory(), ModItems.CASING_MOLD), 1, "old mold back");
+		h.assertValueEqual(count(player.getInventory(), ModItems.SHEET_MOLD), 0, "new mold taken");
+		h.assertValueEqual(menu.getSlot(MachineBlockEntity.INPUT_0).getItem().getCount(), 1, "bitumen placed");
+		h.succeed();
+	}
+
+	@GameTest
+	public void placementGhostsMissingMold(GameTestHelper h) {
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		MachineMenu menu = menu(h, player, ModBlocks.EXTRUDER);
+		menu.getSlot(MachineBlockEntity.MOLD).set(new ItemStack(ModItems.CASING_MOLD));
+		player.getInventory().setItem(9, new ItemStack(ModItems.BITUMEN, 4));
+		PostPlaceAction action = place(h, menu, player, "plastic_sheet_from_extruding", true);
+		h.assertValueEqual(action, PostPlaceAction.PLACE_GHOST_RECIPE, "ghost");
+		h.assertValueEqual(count(player.getInventory(), ModItems.BITUMEN), 4, "bitumen kept");
+		h.assertTrue(menu.getSlot(MachineBlockEntity.INPUT_0).getItem().isEmpty(), "nothing placed");
+		h.assertTrue(menu.getSlot(MachineBlockEntity.MOLD).getItem().is(ModItems.CASING_MOLD), "mold left in place");
+		h.succeed();
+	}
+
+	@GameTest
+	public void placementKeepsMatchingMold(GameTestHelper h) {
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		MachineMenu menu = menu(h, player, ModBlocks.EXTRUDER);
+		menu.getSlot(MachineBlockEntity.MOLD).set(new ItemStack(ModItems.SHEET_MOLD));
+		player.getInventory().setItem(9, new ItemStack(ModItems.BITUMEN, 3));
+		player.getInventory().setItem(10, new ItemStack(ModItems.SHEET_MOLD));
+		place(h, menu, player, "plastic_sheet_from_extruding", true);
+		h.assertTrue(menu.getSlot(MachineBlockEntity.MOLD).getItem().is(ModItems.SHEET_MOLD), "mold kept");
+		h.assertValueEqual(menu.getSlot(MachineBlockEntity.MOLD).getItem().getCount(), 1, "one mold");
+		h.assertValueEqual(count(player.getInventory(), ModItems.SHEET_MOLD), 1, "spare mold stays");
+		h.assertValueEqual(menu.getSlot(MachineBlockEntity.INPUT_0).getItem().getCount(), 3, "all the bitumen");
+		h.succeed();
+	}
+
+	@GameTest
+	public void magnetizerAndEtcherInputs(GameTestHelper h) {
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		MachineMenu magnetizer = menu(h, player, ModBlocks.MAGNETIZER);
+		h.assertValueEqual(magnetizer.inputSlots().size(), 2, "magnetizer inputs");
+		h.assertFalse(magnetizer.getSlot(MachineBlockEntity.INPUT_2).isActive(), "third input hidden");
+		h.assertValueEqual(magnetizer.getSlot(MachineBlockEntity.INPUT_0).x, 39, "first magnetizer input x");
+		h.assertValueEqual(magnetizer.getSlot(MachineBlockEntity.INPUT_1).x, 57, "second magnetizer input x");
+		MachineMenu etcher = menu(h, player, ModBlocks.ETCHER);
+		h.assertValueEqual(etcher.inputSlots().size(), 3, "etcher inputs");
+		h.assertValueEqual(etcher.getSlot(MachineBlockEntity.INPUT_0).x, 30, "first etcher input x");
+		h.assertValueEqual(etcher.getSlot(MachineBlockEntity.INPUT_1).x, 48, "second etcher input x");
+		h.assertValueEqual(etcher.getSlot(MachineBlockEntity.INPUT_2).x, 66, "third etcher input x");
+		h.succeed();
+	}
+
+	@GameTest
+	public void bookNeedsTheMold(GameTestHelper h) {
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		MachineMenu menu = menu(h, player, ModBlocks.EXTRUDER);
+		player.getInventory().setItem(9, new ItemStack(ModItems.BITUMEN, 4));
+		h.assertFalse(craftable(h, menu, player, "plastic_sheet_from_extruding"), "no mold, not craftable");
+		player.getInventory().setItem(10, new ItemStack(ModItems.SHEET_MOLD));
+		h.assertTrue(craftable(h, menu, player, "plastic_sheet_from_extruding"), "mold in the inventory");
+		player.getInventory().setItem(10, ItemStack.EMPTY);
+		menu.getSlot(MachineBlockEntity.MOLD).set(new ItemStack(ModItems.SHEET_MOLD));
+		h.assertTrue(craftable(h, menu, player, "plastic_sheet_from_extruding"), "mold in its slot");
+		h.succeed();
+	}
+
+	private static boolean craftable(GameTestHelper h, MachineMenu menu, Player player, String name) {
+		StackedItemContents contents = new StackedItemContents();
+		player.getInventory().fillStackedContents(contents);
+		menu.fillCraftSlotsStackedContents(contents);
+		return contents.canCraft(recipe(h, name).value(), null);
+	}
+
+	@GameTest
+	public void menuShowsTheResultBeingMade(GameTestHelper h) {
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		MachineMenu menu = menu(h, player, ModBlocks.MAGNETIZER);
+		h.assertTrue(menu.result().isEmpty(), "nothing made while empty");
+		MachineBlockEntity machine = h.getBlockEntity(POS, MachineBlockEntity.class);
+		machine.setItem(MachineBlockEntity.INPUT_0, new ItemStack(ModItems.NEODYMIUM_INGOT));
+		machine.setItem(MachineBlockEntity.INPUT_1, new ItemStack(Items.IRON_INGOT));
+		MachineBlockEntity.serverTick(h.getLevel(), h.absolutePos(POS), h.getBlockState(POS), machine);
+		h.assertValueEqual(menu.result().orElse(null), ModItems.NEODYMIUM_MAGNET, "neodymium magnet in the making");
+		h.succeed();
+	}
+
 	private static MachineMenu menu(GameTestHelper h, Player player) {
-		h.setBlock(POS, ModBlocks.COIL_WINDER);
+		return menu(h, player, ModBlocks.COIL_WINDER);
+	}
+
+	private static MachineMenu menu(GameTestHelper h, Player player, Block machine) {
+		h.setBlock(POS, machine);
 		return new MachineMenu(0, player.getInventory(), h.getBlockEntity(POS, MachineBlockEntity.class));
 	}
 
 	private static PostPlaceAction place(GameTestHelper h, MachineMenu menu, Player player, String name,
 			boolean useMaxItems) {
-		RecipeHolder<?> recipe = h.getLevel().getServer().getRecipeManager()
+		return menu.handlePlacement(useMaxItems, false, recipe(h, name), h.getLevel(), player.getInventory());
+	}
+
+	private static RecipeHolder<?> recipe(GameTestHelper h, String name) {
+		return h.getLevel().getServer().getRecipeManager()
 				.byKey(ResourceKey.create(Registries.RECIPE, RaveCraft.id(name)))
 				.orElseThrow(() -> h.assertionException(name + " missing"));
-		return menu.handlePlacement(useMaxItems, false, recipe, h.getLevel(), player.getInventory());
 	}
 
 	private static int count(Inventory inventory, Item item) {

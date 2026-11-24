@@ -23,6 +23,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.BlockColorRegistry;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.level.block.Block;
 
 /** Client-only setup: renderers, screens, key mappings, HUD. Never referenced from {@code src/main}. */
 public class RaveCraftClient implements ClientModInitializer {
@@ -50,7 +51,7 @@ public class RaveCraftClient implements ClientModInitializer {
 				screen.onClose();
 			}
 		});
-		BlockColorRegistry.register(List.of(new SpeakerFabricTint()), ModBlocks.PORTABLE_SPEAKER, ModBlocks.PARTY_SPEAKER);
+		BlockColorRegistry.register(List.of(new SpeakerFabricTint()), ModBlocks.speakers().toArray(Block[]::new));
 		BackSpeakerRenderer.register();
 		if (FabricLoader.getInstance().isModLoaded("trinkets")) {
 			initTrinkets();

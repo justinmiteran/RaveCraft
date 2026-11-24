@@ -37,8 +37,7 @@ public class RaveCraftBlockLootProvider extends FabricBlockLootSubProvider {
 
 	@Override
 	public void generate() {
-		speaker(ModBlocks.PORTABLE_SPEAKER);
-		speaker(ModBlocks.PARTY_SPEAKER);
+		ModBlocks.speakers().forEach(this::speaker);
 		add(ModBlocks.DEEPSLATE_NEODYMIUM_ORE, createOreDrop(ModBlocks.DEEPSLATE_NEODYMIUM_ORE, ModItems.RAW_NEODYMIUM));
 		add(ModBlocks.OIL_SHALE, oilShale(ModBlocks.OIL_SHALE));
 		ModBlocks.storageBlocks().forEach(this::dropSelf);

@@ -5,7 +5,6 @@ import com.ravecraft.mod.block.PartySpeakerBlock;
 import com.ravecraft.mod.block.PortableSpeakerBlock;
 import com.ravecraft.mod.item.SpeakerItem;
 import java.util.List;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import net.minecraft.core.Registry;
@@ -88,12 +87,13 @@ public final class ModBlocks {
 	}
 
 	/**
-	 * Every speaker block, whatever its kind: the blocks the speaker block entity type covers.
+	 * Every speaker block, whatever its kind: the blocks the speaker block entity type covers, in creative tab
+	 * order.
 	 *
 	 * @return the speaker blocks
 	 */
-	public static Set<Block> speakers() {
-		return Set.of(PORTABLE_SPEAKER, PARTY_SPEAKER);
+	public static List<Block> speakers() {
+		return List.of(PORTABLE_SPEAKER, PARTY_SPEAKER);
 	}
 
 	/**

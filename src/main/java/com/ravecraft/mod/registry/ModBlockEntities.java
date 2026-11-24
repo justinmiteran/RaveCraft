@@ -2,6 +2,7 @@ package com.ravecraft.mod.registry;
 
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.blockentity.SpeakerBlockEntity;
+import java.util.Set;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -11,7 +12,7 @@ public final class ModBlockEntities {
 	/** Every speaker block, whatever its kind; keeps the portable's id so existing worlds load unchanged. */
 	public static final BlockEntityType<SpeakerBlockEntity> SPEAKER = Registry.register(
 			BuiltInRegistries.BLOCK_ENTITY_TYPE, RaveCraft.id("portable_speaker"),
-			new BlockEntityType<>(SpeakerBlockEntity::new, ModBlocks.speakers()));
+			new BlockEntityType<>(SpeakerBlockEntity::new, Set.copyOf(ModBlocks.speakers())));
 
 	private ModBlockEntities() {
 	}

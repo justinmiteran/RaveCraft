@@ -32,8 +32,8 @@ public class RaveCraftBlockTagProvider extends FabricTagsProvider.BlockTagsProvi
 
 	@Override
 	protected void addTags(HolderLookup.Provider registries) {
-		TagAppender<Block> pickaxe = builder(BlockTags.MINEABLE_WITH_PICKAXE)
-				.add(key(ModBlocks.PORTABLE_SPEAKER)).add(key(ModBlocks.PARTY_SPEAKER));
+		TagAppender<Block> pickaxe = builder(BlockTags.MINEABLE_WITH_PICKAXE);
+		addAll(pickaxe, ModBlocks.speakers());
 		addAll(pickaxe, ModBlocks.ores());
 		addAll(pickaxe, ModBlocks.shaleFamily());
 		addAll(pickaxe, ModBlocks.storageBlocks());

@@ -49,8 +49,7 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 
 	@Override
 	public void generateBlockStateModels(BlockModelGenerators generators) {
-		speaker(ModBlocks.PORTABLE_SPEAKER, generators);
-		speaker(ModBlocks.PARTY_SPEAKER, generators);
+		ModBlocks.speakers().forEach(block -> speaker(block, generators));
 		shale(generators);
 		randomVariants(ModBlocks.OIL_SHALE, OIL_SHALE_VARIANTS,
 				TextureMapping.getBlockTexture(ModBlocks.OIL_SHALE, "_top"), generators);

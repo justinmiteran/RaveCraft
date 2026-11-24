@@ -11,6 +11,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
+import net.fabricmc.fabric.api.tag.convention.v2.ConventionalBlockTags;
+import net.fabricmc.fabric.api.tag.convention.v2.ConventionalItemTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -181,11 +183,11 @@ public class MaterialsGameTest {
 	@GameTest
 	public void commonTags(GameTestHelper h) {
 		for (Block ore : ModBlocks.ores()) {
-			h.assertTrue(ore.defaultBlockState().is(ModTags.Blocks.ORES), ore + " in c:ores");
-			h.assertTrue(new ItemStack(ore).is(ModTags.Items.ORES), ore + " item in c:ores");
+			h.assertTrue(ore.defaultBlockState().is(ConventionalBlockTags.ORES), ore + " in c:ores");
+			h.assertTrue(new ItemStack(ore).is(ConventionalItemTags.ORES), ore + " item in c:ores");
 		}
-		h.assertTrue(ModBlocks.OIL_SHALE.defaultBlockState().is(ModTags.Blocks.ORES_IN_GROUND_STONE), "oil in stone");
-		h.assertTrue(ModBlocks.DEEPSLATE_NEODYMIUM_ORE.defaultBlockState().is(ModTags.Blocks.ORES_IN_GROUND_DEEPSLATE),
+		h.assertTrue(ModBlocks.OIL_SHALE.defaultBlockState().is(ConventionalBlockTags.ORES_IN_GROUND_STONE), "oil in stone");
+		h.assertTrue(ModBlocks.DEEPSLATE_NEODYMIUM_ORE.defaultBlockState().is(ConventionalBlockTags.ORES_IN_GROUND_DEEPSLATE),
 				"neodymium in deepslate");
 		h.assertTrue(new ItemStack(ModItems.RAW_NEODYMIUM).is(ModTags.Items.RAW_MATERIALS_NEODYMIUM), "raw tag");
 		h.assertTrue(new ItemStack(ModItems.NEODYMIUM_INGOT).is(ModTags.Items.INGOTS_NEODYMIUM), "ingot tag");
@@ -230,9 +232,9 @@ public class MaterialsGameTest {
 		for (int i = 0; i < blocks.size(); i++) {
 			Block block = blocks.get(i);
 			h.assertTrue(block.defaultBlockState().is(blockTags.get(i)), block + " in " + blockTags.get(i));
-			h.assertTrue(block.defaultBlockState().is(ModTags.Blocks.STORAGE_BLOCKS), block + " in c:storage_blocks");
+			h.assertTrue(block.defaultBlockState().is(ConventionalBlockTags.STORAGE_BLOCKS), block + " in c:storage_blocks");
 			h.assertTrue(new ItemStack(block).is(itemTags.get(i)), block + " item in " + itemTags.get(i));
-			h.assertTrue(new ItemStack(block).is(ModTags.Items.STORAGE_BLOCKS), block + " item in c:storage_blocks");
+			h.assertTrue(new ItemStack(block).is(ConventionalItemTags.STORAGE_BLOCKS), block + " item in c:storage_blocks");
 		}
 		h.succeed();
 	}

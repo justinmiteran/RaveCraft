@@ -5,7 +5,7 @@
       "conditions": {
         "items": [
           {
-            "items": "ravecraft:silicon"
+            "items": "#c:silicon"
           }
         ]
       },

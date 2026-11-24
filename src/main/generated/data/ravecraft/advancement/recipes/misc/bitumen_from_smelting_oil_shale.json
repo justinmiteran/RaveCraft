@@ -5,7 +5,7 @@
       "conditions": {
         "items": [
           {
-            "items": "ravecraft:oil_shale"
+            "items": "#c:ores/oil_shale"
           }
         ]
       },

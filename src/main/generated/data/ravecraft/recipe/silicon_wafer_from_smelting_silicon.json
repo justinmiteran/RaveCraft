@@ -3,7 +3,7 @@
   "cookingtime": 200,
   "experience": 0.5,
   "group": "silicon_wafer",
-  "ingredient": "ravecraft:silicon",
+  "ingredient": "#c:silicon",
   "result": {
     "id": "ravecraft:silicon_wafer"
   }

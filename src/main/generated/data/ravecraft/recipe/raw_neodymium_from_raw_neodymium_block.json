@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shapeless",
   "group": "raw_neodymium",
   "ingredients": [
-    "ravecraft:raw_neodymium_block"
+    "#c:storage_blocks/raw_neodymium"
   ],
   "result": {
     "count": 9,

@@ -5,7 +5,7 @@
       "conditions": {
         "items": [
           {
-            "items": "ravecraft:deepslate_neodymium_ore"
+            "items": "#c:ores/neodymium"
           }
         ]
       },

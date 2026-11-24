@@ -5,7 +5,7 @@
       "conditions": {
         "items": [
           {
-            "items": "ravecraft:neodymium_ingot"
+            "items": "#c:ingots/neodymium"
           }
         ]
       },

@@ -145,5 +145,13 @@
   "toast.ravecraft.now_playing.message": "%s — ajouté par %s",
   "key.ravecraft.open_speaker": "Ouvrir l'enceinte",
   "key.category.ravecraft.ravecraft": "RaveCraft",
-  "tooltip.ravecraft.speaker.open_key": "[%s] : ouvrir l'interface depuis l'inventaire"
+  "tooltip.ravecraft.speaker.open_key": "[%s] : ouvrir l'interface depuis l'inventaire",
+  "tag.item.c.ingots.neodymium": "Lingots de néodyme",
+  "tag.item.c.raw_materials.neodymium": "Néodyme brut",
+  "tag.item.c.ores.neodymium": "Minerais de néodyme",
+  "tag.item.c.ores.oil_shale": "Minerais de schiste bitumineux",
+  "tag.item.c.storage_blocks.raw_neodymium": "Blocs de néodyme brut",
+  "tag.item.c.storage_blocks.neodymium": "Blocs de néodyme",
+  "tag.item.c.storage_blocks.silicon": "Blocs de silicium",
+  "tag.item.c.silicon": "Silicium"
 }

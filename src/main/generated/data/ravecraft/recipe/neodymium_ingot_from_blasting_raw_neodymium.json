@@ -3,7 +3,7 @@
   "cookingtime": 100,
   "experience": 1.0,
   "group": "neodymium_ingot",
-  "ingredient": "ravecraft:raw_neodymium",
+  "ingredient": "#c:raw_materials/neodymium",
   "result": {
     "id": "ravecraft:neodymium_ingot"
   }

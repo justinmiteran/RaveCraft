@@ -2,9 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "redstone",
   "key": {
-    "F": "minecraft:iron_ingot",
+    "F": "#c:ingots/iron",
     "N": "minecraft:note_block",
-    "R": "minecraft:redstone"
+    "R": "#c:dusts/redstone"
   },
   "pattern": [
     "FFF",

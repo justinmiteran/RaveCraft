@@ -5,7 +5,7 @@
       "conditions": {
         "items": [
           {
-            "items": "ravecraft:neodymium_block"
+            "items": "#c:storage_blocks/neodymium"
           }
         ]
       },

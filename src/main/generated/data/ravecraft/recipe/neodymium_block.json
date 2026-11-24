@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shaped",
   "category": "building",
   "key": {
-    "#": "ravecraft:neodymium_ingot"
+    "#": "#c:ingots/neodymium"
   },
   "pattern": [
     "###",

@@ -3,7 +3,7 @@
   "cookingtime": 100,
   "experience": 0.1,
   "group": "bitumen",
-  "ingredient": "ravecraft:oil_shale",
+  "ingredient": "#c:ores/oil_shale",
   "result": {
     "id": "ravecraft:bitumen"
   }

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagsProvider;
+import net.fabricmc.fabric.api.tag.convention.v2.ConventionalItemTags;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.tags.TagAppender;
@@ -42,6 +43,8 @@ public class RaveCraftItemTagProvider extends FabricTagsProvider.ItemTagsProvide
 		builder(ModTags.Items.ORES_IN_GROUND_DEEPSLATE).add(key(ModBlocks.DEEPSLATE_NEODYMIUM_ORE));
 		builder(ModTags.Items.RAW_MATERIALS_NEODYMIUM).add(key(ModItems.RAW_NEODYMIUM));
 		builder(ModTags.Items.INGOTS_NEODYMIUM).add(key(ModItems.NEODYMIUM_INGOT));
+		builder(ConventionalItemTags.RAW_MATERIALS).addTag(ModTags.Items.RAW_MATERIALS_NEODYMIUM);
+		builder(ConventionalItemTags.INGOTS).addTag(ModTags.Items.INGOTS_NEODYMIUM);
 		builder(ModTags.Items.SILICON).add(key(ModItems.SILICON));
 		builder(ModTags.Items.STORAGE_BLOCKS_RAW_NEODYMIUM).add(key(ModBlocks.RAW_NEODYMIUM_BLOCK));
 		builder(ModTags.Items.STORAGE_BLOCKS_NEODYMIUM).add(key(ModBlocks.NEODYMIUM_BLOCK));

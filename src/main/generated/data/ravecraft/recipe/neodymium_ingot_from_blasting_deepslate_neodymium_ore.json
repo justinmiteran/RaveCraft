@@ -3,7 +3,7 @@
   "cookingtime": 100,
   "experience": 1.0,
   "group": "neodymium_ingot",
-  "ingredient": "ravecraft:deepslate_neodymium_ore",
+  "ingredient": "#c:ores/neodymium",
   "result": {
     "id": "ravecraft:neodymium_ingot"
   }

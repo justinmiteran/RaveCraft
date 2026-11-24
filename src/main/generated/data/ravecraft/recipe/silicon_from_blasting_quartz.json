@@ -3,7 +3,7 @@
   "cookingtime": 100,
   "experience": 0.5,
   "group": "silicon",
-  "ingredient": "minecraft:quartz",
+  "ingredient": "#c:gems/quartz",
   "result": {
     "id": "ravecraft:silicon"
   }

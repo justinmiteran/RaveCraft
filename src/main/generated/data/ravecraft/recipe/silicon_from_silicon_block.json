@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shapeless",
   "group": "silicon",
   "ingredients": [
-    "ravecraft:silicon_block"
+    "#c:storage_blocks/silicon"
   ],
   "result": {
     "count": 9,

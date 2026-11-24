@@ -37,7 +37,9 @@ public class RaveCraftBlockTagProvider extends FabricTagsProvider.BlockTagsProvi
 		addAll(pickaxe, ModBlocks.ores());
 		addAll(pickaxe, ModBlocks.shaleFamily());
 		addAll(pickaxe, ModBlocks.storageBlocks());
-		builder(BlockTags.NEEDS_STONE_TOOL).add(key(ModBlocks.OIL_SHALE)).add(key(ModBlocks.SILICON_BLOCK));
+		addAll(pickaxe, ModBlocks.machines());
+		addAll(builder(BlockTags.NEEDS_STONE_TOOL).add(key(ModBlocks.OIL_SHALE)).add(key(ModBlocks.SILICON_BLOCK)),
+				ModBlocks.machines());
 		builder(BlockTags.NEEDS_IRON_TOOL).add(key(ModBlocks.DEEPSLATE_NEODYMIUM_ORE))
 				.add(key(ModBlocks.RAW_NEODYMIUM_BLOCK)).add(key(ModBlocks.NEODYMIUM_BLOCK));
 		addAll(builder(BlockTags.STAIRS), shapes(StairBlock.class));

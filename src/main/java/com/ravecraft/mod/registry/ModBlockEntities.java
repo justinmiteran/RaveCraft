@@ -1,6 +1,7 @@
 package com.ravecraft.mod.registry;
 
 import com.ravecraft.mod.RaveCraft;
+import com.ravecraft.mod.blockentity.MachineBlockEntity;
 import com.ravecraft.mod.blockentity.SpeakerBlockEntity;
 import java.util.Set;
 import net.minecraft.core.Registry;
@@ -13,6 +14,11 @@ public final class ModBlockEntities {
 	public static final BlockEntityType<SpeakerBlockEntity> SPEAKER = Registry.register(
 			BuiltInRegistries.BLOCK_ENTITY_TYPE, RaveCraft.id("portable_speaker"),
 			new BlockEntityType<>(SpeakerBlockEntity::new, Set.copyOf(ModBlocks.speakers())));
+
+	/** Every machine block, whatever its kind. */
+	public static final BlockEntityType<MachineBlockEntity> MACHINE = Registry.register(
+			BuiltInRegistries.BLOCK_ENTITY_TYPE, RaveCraft.id("machine"),
+			new BlockEntityType<>(MachineBlockEntity::new, Set.copyOf(ModBlocks.machines())));
 
 	private ModBlockEntities() {
 	}

@@ -16,6 +16,8 @@ public final class ModItems {
 	public static final Item NEODYMIUM_INGOT = register("neodymium_ingot", Item::new);
 	public static final Item SILICON = register("silicon", Item::new);
 	public static final Item SILICON_WAFER = register("silicon_wafer", Item::new);
+	public static final Item COPPER_WIRE = register("copper_wire", Item::new);
+	public static final Item VOICE_COIL = register("voice_coil", Item::new);
 
 	private ModItems() {
 	}
@@ -27,6 +29,15 @@ public final class ModItems {
 	 */
 	public static List<Item> materials() {
 		return List.of(BITUMEN, RAW_NEODYMIUM, NEODYMIUM_INGOT, SILICON, SILICON_WAFER);
+	}
+
+	/**
+	 * The crafted components, in creative tab order.
+	 *
+	 * @return the component items
+	 */
+	public static List<Item> components() {
+		return List.of(COPPER_WIRE, VOICE_COIL);
 	}
 
 	/** Registers an item, giving its properties the id first. */

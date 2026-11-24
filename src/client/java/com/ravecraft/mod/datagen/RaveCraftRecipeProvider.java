@@ -1,8 +1,12 @@
 package com.ravecraft.mod.datagen;
 
+import com.ravecraft.mod.RaveCraft;
+import com.ravecraft.mod.core.machine.MachineConstants;
+import com.ravecraft.mod.recipe.MachineEnergy;
 import com.ravecraft.mod.registry.ModBlockFamilies;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModItems;
+import com.ravecraft.mod.registry.ModRecipes;
 import com.ravecraft.mod.registry.ModTags;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -11,11 +15,13 @@ import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
 import net.fabricmc.fabric.api.tag.convention.v2.ConventionalItemTags;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.data.recipes.RecipeCategory;
 import net.minecraft.data.recipes.RecipeProvider;
 import net.minecraft.data.recipes.SimpleCookingRecipeBuilder;
 import net.minecraft.data.BlockFamily;
 import net.minecraft.data.worldgen.BootstrapContext;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.item.Item;
@@ -27,7 +33,7 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.SmeltingRecipe;
 import net.minecraft.world.level.ItemLike;
 
-/** Crafting, cooking and stonecutter recipes. */
+/** Crafting, cooking, stonecutter and machine recipes. */
 public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 	private static final int SMELT_TIME = 200;
 	private static final int BLAST_TIME = 100;
@@ -35,6 +41,8 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 	private static final float SILICON_XP = 0.5F;
 	private static final float BITUMEN_XP = 0.1F;
 	private static final int STORAGE_COUNT = 9;
+	private static final int WIRES_PER_INGOT = 4;
+	private static final int WIRES_PER_COIL = 4;
 
 	/**
 	 * A provider writing to {@code output}.
@@ -66,6 +74,8 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 			speakers();
 			materials();
 			storageBlocks();
+			machineEnergy();
+			machines();
 			for (BlockFamily family : List.of(ModBlockFamilies.SHALE, ModBlockFamilies.POLISHED_SHALE,
 					ModBlockFamilies.SHALE_BRICKS)) {
 				generateRecipes(family, FeatureFlags.VANILLA_SET);
@@ -98,6 +108,38 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 					.unlockedBy("has_portable_speaker", has(ModBlocks.PORTABLE_SPEAKER))
 					.save(output);
 			dyedItem(ModBlocks.PARTY_SPEAKER.asItem(), "party_speaker_dye");
+		}
+
+		/** The machines and what they make. */
+		private void machines() {
+			shaped(RecipeCategory.MISC, ModBlocks.COIL_WINDER)
+					.define('I', ConventionalItemTags.IRON_INGOTS)
+					.define('C', ConventionalItemTags.COPPER_INGOTS)
+					.define('R', ConventionalItemTags.REDSTONE_DUSTS)
+					.pattern("III")
+					.pattern("CRC")
+					.pattern("III")
+					.unlockedBy("has_iron_ingot", has(ConventionalItemTags.IRON_INGOTS))
+					.unlockedBy("has_copper_ingot", has(ConventionalItemTags.COPPER_INGOTS))
+					.unlockedBy("has_redstone", has(ConventionalItemTags.REDSTONE_DUSTS))
+					.save(output);
+			MachineRecipeBuilder.machine(ModRecipes.WINDING, ModItems.COPPER_WIRE, WIRES_PER_INGOT, this)
+					.input(ConventionalItemTags.COPPER_INGOTS, 1).save(output);
+			MachineRecipeBuilder.machine(ModRecipes.WINDING, ModItems.VOICE_COIL, 1, this)
+					.input(ModItems.COPPER_WIRE, WIRES_PER_COIL).save(output);
+		}
+
+		/** The default machine energy: redstone dust and blocks, saved as {@code machine_energy/<item>}. */
+		private void machineEnergy() {
+			energy(ConventionalItemTags.REDSTONE_DUSTS, Items.REDSTONE, MachineConstants.OPERATIONS_PER_DUST);
+			energy(ConventionalItemTags.STORAGE_BLOCKS_REDSTONE, Items.REDSTONE_BLOCK,
+					MachineConstants.OPERATIONS_PER_BLOCK);
+		}
+
+		private void energy(TagKey<Item> fuel, ItemLike named, int operations) {
+			String name = "machine_energy/" + getItemName(named);
+			output.accept(ResourceKey.create(Registries.RECIPE, RaveCraft.id(name)),
+					new MachineEnergy(tag(fuel), operations), null);
 		}
 
 		/**

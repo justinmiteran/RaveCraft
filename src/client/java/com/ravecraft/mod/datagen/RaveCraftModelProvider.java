@@ -6,6 +6,7 @@ import com.ravecraft.mod.registry.ModBlockFamilies;
 import com.ravecraft.mod.registry.ModBlocks;
 import com.ravecraft.mod.registry.ModItems;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import net.fabricmc.fabric.api.client.datagen.v1.provider.FabricModelProvider;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.minecraft.client.data.models.BlockModelGenerators;
@@ -19,6 +20,7 @@ import net.minecraft.client.data.models.model.ModelLocationUtils;
 import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.client.data.models.model.TextureMapping;
 import net.minecraft.client.data.models.model.TextureSlot;
+import net.minecraft.client.data.models.model.TexturedModel;
 import net.minecraft.client.renderer.block.dispatch.Variant;
 import net.minecraft.client.renderer.item.properties.select.DisplayContext;
 import net.minecraft.client.resources.model.sprite.Material;
@@ -51,6 +53,9 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 	public void generateBlockStateModels(BlockModelGenerators generators) {
 		ModBlocks.speakers().forEach(block -> speaker(block, generators));
 		shale(generators);
+		for (Block machine : ModBlocks.machines()) {
+			generators.createFurnace(machine, TexturedModel.ORIENTABLE_ONLY_TOP);
+		}
 		randomVariants(ModBlocks.OIL_SHALE, OIL_SHALE_VARIANTS,
 				TextureMapping.getBlockTexture(ModBlocks.OIL_SHALE, "_top"), generators);
 		randomVariants(ModBlocks.DEEPSLATE_NEODYMIUM_ORE, NEODYMIUM_VARIANTS, null, generators);
@@ -145,7 +150,7 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 
 	@Override
 	public void generateItemModels(ItemModelGenerators generators) {
-		for (Item item : ModItems.materials()) {
+		for (Item item : Stream.concat(ModItems.materials().stream(), ModItems.components().stream()).toList()) {
 			generators.generateFlatItem(item, ModelTemplates.FLAT_ITEM);
 		}
 	}

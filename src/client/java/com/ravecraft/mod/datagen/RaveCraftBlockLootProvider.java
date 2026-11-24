@@ -41,6 +41,7 @@ public class RaveCraftBlockLootProvider extends FabricBlockLootSubProvider {
 		add(ModBlocks.DEEPSLATE_NEODYMIUM_ORE, createOreDrop(ModBlocks.DEEPSLATE_NEODYMIUM_ORE, ModItems.RAW_NEODYMIUM));
 		add(ModBlocks.OIL_SHALE, oilShale(ModBlocks.OIL_SHALE));
 		ModBlocks.storageBlocks().forEach(this::dropSelf);
+		ModBlocks.machines().forEach(this::dropSelf);
 		for (Block block : ModBlocks.shaleFamily()) {
 			if (block instanceof SlabBlock) {
 				add(block, createSlabItemTable(block));

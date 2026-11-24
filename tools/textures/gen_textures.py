@@ -19,6 +19,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
+import machines  # sibling module: coil winder, its products and the machine screen
 import materials  # sibling module: shale family, ores, raw materials
 
 MOD_ID = "ravecraft"
@@ -27,6 +28,7 @@ ASSETS = ROOT / f"src/main/resources/assets/{MOD_ID}"
 BLOCK_DIR = ASSETS / "textures/block"
 ITEM_DIR = ASSETS / "textures/item"
 GUI_DIR = ASSETS / "textures/gui/sprites"
+CONTAINER_DIR = ASSETS / "textures/gui/container"
 ICON = ASSETS / "icon.png"
 PREVIEW = ROOT / "art/textures/preview.png"
 S = 16
@@ -357,6 +359,9 @@ ITEMS = {  # name -> fn (flat item textures)
 }
 BLOCKS.update(materials.BLOCKS)
 ITEMS.update(materials.ITEMS)
+BLOCKS.update(machines.BLOCKS)
+ANIMATED.update(machines.ANIMATED)
+ITEMS.update(machines.ITEMS)
 
 
 # ---------------------------------------------------------------- GUI sprites (speaker screen)
@@ -657,6 +662,7 @@ GUI = {  # sprite path under textures/gui/sprites -> (fn, gui scaling or None)
     **{f"speaker/{n}": ((lambda n=n: gui_icon(n)), None) for n in ICON_GLYPHS},
     "speaker/led_on": (lambda: gui_led(True), None),
     "speaker/led_off": (lambda: gui_led(False), None),
+    **machines.GUI,
 }
 
 
@@ -720,6 +726,12 @@ def main():
         if args.only and args.only != name:
             continue
         img = fn(); save_gui(name, img, scaling); tiles.append((name, img))
+    for name, fn in machines.CONTAINERS.items():
+        if args.only and args.only != name:
+            continue
+        CONTAINER_DIR.mkdir(parents=True, exist_ok=True)
+        fn().save(CONTAINER_DIR / f"{name}.png")
+        print("wrote container", name)
 
     if not args.only:
         # Mod icon (mod menu): the first block texture, scaled up without smoothing.

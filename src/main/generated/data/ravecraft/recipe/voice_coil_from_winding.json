@@ -1,0 +1,12 @@
+{
+  "type": "ravecraft:winding",
+  "ingredients": [
+    {
+      "count": 4,
+      "ingredient": "ravecraft:copper_wire"
+    }
+  ],
+  "result": {
+    "id": "ravecraft:voice_coil"
+  }
+}

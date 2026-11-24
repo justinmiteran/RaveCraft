@@ -1,6 +1,7 @@
 package com.ravecraft.mod.registry;
 
 import com.ravecraft.mod.RaveCraft;
+import com.ravecraft.mod.block.CoilWinderBlock;
 import com.ravecraft.mod.block.PartySpeakerBlock;
 import com.ravecraft.mod.block.PortableSpeakerBlock;
 import com.ravecraft.mod.item.SpeakerItem;
@@ -19,6 +20,7 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DropExperienceBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SoundType;
@@ -82,6 +84,14 @@ public final class ModBlocks {
 			metal(MapColor.TERRACOTTA_WHITE).strength(5.0F, 6.0F));
 	public static final Block SILICON_BLOCK = registerSimple("silicon_block", Block::new,
 			metal(MapColor.COLOR_LIGHT_BLUE).strength(3.0F, 6.0F));
+	/** Strength and light as the furnace, metal sound; needs a stone pickaxe. */
+	public static final Block COIL_WINDER = registerSimple("coil_winder", CoilWinderBlock::new,
+			BlockBehaviour.Properties.of()
+					.mapColor(MapColor.METAL)
+					.sound(SoundType.METAL)
+					.strength(3.5F)
+					.requiresCorrectToolForDrops()
+					.lightLevel(Blocks.litBlockEmission(13)));
 
 	private ModBlocks() {
 	}
@@ -94,6 +104,15 @@ public final class ModBlocks {
 	 */
 	public static List<Block> speakers() {
 		return List.of(PORTABLE_SPEAKER, PARTY_SPEAKER);
+	}
+
+	/**
+	 * Every machine block: the blocks the machine block entity type covers, in creative tab order.
+	 *
+	 * @return the machine blocks
+	 */
+	public static List<Block> machines() {
+		return List.of(COIL_WINDER);
 	}
 
 	/**

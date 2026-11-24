@@ -1,0 +1,14 @@
+{
+	"required": true,
+	"package": "com.ravecraft.mod.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"mixins": [
+		"RecipeBookSettingsAccessor",
+		"RecipeBookSettingsMixin",
+		"RecipeBookTypeAccessor",
+		"RecipeBookTypeMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

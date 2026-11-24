@@ -19,7 +19,6 @@ import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
@@ -38,7 +37,6 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraft.world.level.ItemLike;
-import net.minecraft.world.level.block.Block;
 
 /** The table-crafted components, their unlock criteria and the reinforced membrane extrusion (spec 3, 6). */
 public class ComponentsGameTest {
@@ -161,25 +159,6 @@ public class ComponentsGameTest {
 	}
 
 	@GameTest
-	public void madeInMatchesRecipes(GameTestHelper h) {
-		Set<Item> results = new HashSet<>();
-		for (MachineKind kind : List.of(ModRecipes.WINDING, ModRecipes.MAGNETIZING, ModRecipes.ETCHING,
-				ModRecipes.EXTRUDING)) {
-			for (MachineRecipe recipe : machineRecipes(h, kind)) {
-				Item result = recipe.result().create().getItem();
-				results.add(result);
-				Optional<Block> machine = ItemOrigins.madeIn(result);
-				h.assertTrue(machine.isPresent() && BuiltInRegistries.BLOCK.getKey(machine.get()).getPath()
-						.equals(kind.machine()), result + " made in " + kind.machine());
-			}
-		}
-		for (Item item : BuiltInRegistries.ITEM) {
-			h.assertValueEqual(ItemOrigins.madeIn(item).isPresent(), results.contains(item), item + " has an origin");
-		}
-		h.succeed();
-	}
-
-	@GameTest
 	public void moldForMatchesRecipes(GameTestHelper h) {
 		for (MachineRecipe recipe : machineRecipes(h, ModRecipes.EXTRUDING)) {
 			Item result = recipe.result().create().getItem();
@@ -196,12 +175,11 @@ public class ComponentsGameTest {
 	}
 
 	@GameTest
-	public void noOriginWithoutMachine(GameTestHelper h) {
+	public void onlyMoldsMakeAPart(GameTestHelper h) {
 		for (Item item : List.of(ModItems.BITUMEN, ModItems.NEODYMIUM_INGOT, ModItems.MEMBRANE, ModItems.SPEAKER_DRIVER,
 				Items.IRON_INGOT, ModBlocks.PORTABLE_SPEAKER.asItem())) {
-			h.assertTrue(ItemOrigins.madeIn(item).isEmpty(), item + " has no machine");
+			h.assertTrue(ItemOrigins.moldFor(item).isEmpty(), item + " is no mold");
 		}
-		h.assertTrue(ItemOrigins.moldFor(ModItems.BITUMEN).isEmpty(), "bitumen is no mold");
 		h.succeed();
 	}
 

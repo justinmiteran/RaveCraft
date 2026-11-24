@@ -35,7 +35,7 @@ Une spec, quatre PR successives, chacune avec un build vert et testable seule :
 | 7a | `feat/materials-ores` | 2 minerais, famille du schiste (13 blocs), 3 blocs de stockage, génération, matières premières, recettes de fonte et de taille |
 | 7b | `feat/machine-core` | Base commune des machines (logique `core`, bloc, block entity, inventaire latéral, menu, écran, livre de recettes, type de recette), livrée avec la **bobineuse** |
 | 7c | `feat/machines` | Magnétiseur, graveur, extrudeuse, moules |
-| 7d | `feat/components-recipes` | Composants des paliers 1 et 2, assemblages à la table de craft, nouvelles recettes des enceintes, critères de déblocage, infobulles « Fabriqué dans », onglet créatif, mise à jour de `docs/SPEC.md` |
+| 7d | `feat/components-recipes` | Composants des paliers 1 et 2, assemblages à la table de craft, nouvelles recettes des enceintes, critères de déblocage, infobulle des moules, onglet créatif, mise à jour de `docs/SPEC.md` |
 
 Chaque PR commence par ses propositions visuelles (3 à 4 rendus par modèle ou texture), que l'utilisateur choisit avant l'implémentation.
 
@@ -228,7 +228,6 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 
 ### 6.3 Infobulles
 
-- Chaque objet produit par une machine affiche une ligne grisée « Fabriqué dans : *machine* » (`Made in: …`), sous les autres lignes, sans Maj.
 - Chaque moule affiche « Pour l'extrudeuse : *pièce* ».
 
 ### 6.4 Onglet créatif et traductions
@@ -270,7 +269,7 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 - Le quartz du Nether donne du silicium au haut fourneau seulement.
 - Blocs de néodyme brut, de néodyme et de silicium : 9 objets donnent un bloc et un bloc rend 9 objets ; pioche en fer pour les deux blocs de néodyme, en pierre pour le silicium ; chacun lâche lui-même et porte ses tags `c:storage_blocks`.
 - Les nouvelles recettes des deux enceintes existent et les anciennes non.
-- Chaque objet produit par une machine affiche « Fabriqué dans », chaque moule « Pour l'extrudeuse », et ces tables correspondent aux recettes chargées.
+- Chaque moule affiche « Pour l'extrudeuse », et cette table correspond aux recettes chargées.
 
 **En jeu** : monde survie neuf, du minage du schiste à l'enceinte de soirée en suivant le livre ; entonnoirs ; écran et livre de chaque machine ; textures, modèles et animations.
 

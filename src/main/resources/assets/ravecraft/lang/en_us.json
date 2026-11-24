@@ -110,7 +110,6 @@
   "options.ravecraft.occlusionQuality.high": "High",
   "options.ravecraft.occlusionQuality.tooltip": "How much work is spent finding how sound gets around walls. Lower it if your frame rate drops near many speakers.",
   "debug.options.category.ravecraft": "RaveCraft",
-  "tooltip.ravecraft.made_in": "Made in: %s",
   "tooltip.ravecraft.mold_for": "For the extruder: %s",
   "tooltip.ravecraft.speaker.base": "%s W · range %s blocks · %s",
   "tooltip.ravecraft.speaker.base_short": "%s W · %s",

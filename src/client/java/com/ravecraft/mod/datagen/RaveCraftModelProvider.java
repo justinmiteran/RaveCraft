@@ -4,11 +4,9 @@ import com.ravecraft.mod.block.SpeakerBlock;
 import com.ravecraft.mod.client.item.SpeakerPowered;
 import com.ravecraft.mod.registry.ModBlockFamilies;
 import com.ravecraft.mod.registry.ModBlocks;
-import com.ravecraft.mod.registry.ModCreativeTabs;
 import com.ravecraft.mod.registry.ModItems;
 import java.util.stream.IntStream;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import net.fabricmc.fabric.api.client.datagen.v1.provider.FabricModelProvider;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
@@ -18,7 +16,6 @@ import net.minecraft.client.data.models.MultiVariant;
 import net.minecraft.client.color.item.Dye;
 import net.minecraft.client.data.models.blockstates.MultiVariantGenerator;
 import net.minecraft.client.data.models.model.ItemModelUtils;
-import net.minecraft.client.renderer.item.ClientItem;
 import net.minecraft.client.renderer.item.ItemModel;
 import net.minecraft.client.data.models.model.ModelLocationUtils;
 import net.minecraft.client.data.models.model.ModelTemplates;
@@ -28,9 +25,6 @@ import net.minecraft.client.data.models.model.TexturedModel;
 import net.minecraft.client.renderer.block.dispatch.Variant;
 import net.minecraft.client.renderer.item.properties.select.DisplayContext;
 import net.minecraft.client.resources.model.sprite.Material;
-import net.minecraft.data.CachedOutput;
-import net.minecraft.data.DataProvider;
-import net.minecraft.data.PackOutput;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.item.Item;
@@ -46,8 +40,6 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 	private static final int SHALE_VARIANTS = 6;
 	private static final int OIL_SHALE_VARIANTS = 8;
 	private static final int NEODYMIUM_VARIANTS = 6;
-	private static final Identifier LOGO_GEOMETRY = ModCreativeTabs.LOGO_MODEL.withPrefix("item/");
-	private final PackOutput.PathProvider itemDefinitions;
 
 	/**
 	 * A provider writing to {@code output}.
@@ -56,15 +48,6 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 	 */
 	public RaveCraftModelProvider(FabricPackOutput output) {
 		super(output);
-		itemDefinitions = output.createPathProvider(PackOutput.Target.RESOURCE_PACK, "items");
-	}
-
-	/** Also writes the item definition of the logo: the vanilla collector only takes those of registered items. */
-	@Override
-	public CompletableFuture<?> run(CachedOutput cache) {
-		ClientItem logo = new ClientItem(ItemModelUtils.plainModel(LOGO_GEOMETRY), ClientItem.Properties.DEFAULT);
-		return CompletableFuture.allOf(super.run(cache),
-				DataProvider.saveStable(cache, ClientItem.CODEC, logo, itemDefinitions.json(ModCreativeTabs.LOGO_MODEL)));
 	}
 
 	@Override
@@ -168,7 +151,6 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 
 	@Override
 	public void generateItemModels(ItemModelGenerators generators) {
-		ModelTemplates.FLAT_ITEM.create(LOGO_GEOMETRY, TextureMapping.layer0(new Material(LOGO_GEOMETRY)), generators.modelOutput);
 		for (Item item : Stream.of(ModItems.materials(), ModItems.components(), List.of(ModItems.BLANK_MOLD),
 				ModItems.molds()).flatMap(List::stream)
 				.toList()) {

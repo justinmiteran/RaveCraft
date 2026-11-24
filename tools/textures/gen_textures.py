@@ -337,7 +337,7 @@ def party_speaker_overlay_on():
     return party_icon_layer(False, on=True)
 
 
-# Mod logo (mod menu icon and creative tab icon): the equaliser logo of the speakers at twice its size, its bars one
+# Mod logo (mod menu icon): the equaliser logo of the speakers at twice its size, its bars one
 # pixel apart, on the portable speaker's black fabric framed in rubber.
 LOGO_FABRIC = (40, 41, 46)
 LOGO_FABRIC_FULL = 200  # fabric value drawn as LOGO_FABRIC
@@ -399,7 +399,6 @@ ITEMS = {  # name -> fn (flat item textures)
     "party_speaker": party_speaker,
     "party_speaker_overlay": party_speaker_overlay,
     "party_speaker_overlay_on": party_speaker_overlay_on,
-    "logo": logo,
 }
 BLOCKS.update(materials.BLOCKS)
 ITEMS.update(materials.ITEMS)

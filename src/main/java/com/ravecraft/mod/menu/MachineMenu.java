@@ -3,6 +3,7 @@ package com.ravecraft.mod.menu;
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.block.MachineBlock;
 import com.ravecraft.mod.blockentity.MachineBlockEntity;
+import com.ravecraft.mod.core.machine.MachineLayout;
 import com.ravecraft.mod.recipe.MachineKind;
 import com.ravecraft.mod.recipe.MachineRecipe;
 import com.ravecraft.mod.registry.ModMenus;
@@ -34,7 +35,8 @@ import org.jspecify.annotations.Nullable;
  * The menu of any machine: three inputs, the redstone energy slot, the output and the mold slot, above the player's
  * inventory. It
  * syncs the progress, the energy and the item being made through a {@link ContainerData} and uses the furnace recipe book, whose
- * placement is done by {@link MachineRecipePlacer}. The slot positions follow the screen layout.
+ * placement is done by {@link MachineRecipePlacer}. The slot positions are those of
+ * {@link MachineLayout}.
  */
 public class MachineMenu extends RecipeBookMenu {
 	public static final int DATA_PROGRESS = 0;
@@ -47,17 +49,6 @@ public class MachineMenu extends RecipeBookMenu {
 	public static final int DATA_COUNT = 5;
 	/** {@link #DATA_RESULT} while the machine has no recipe. */
 	public static final int NO_RESULT = -1;
-	/** X of the middle input slot; the used inputs are centred on it. */
-	public static final int INPUT_CENTER_X = 48;
-	public static final int INPUT_Y = 17;
-	public static final int SLOT_SPACING = 18;
-	public static final int ENERGY_X = 48;
-	public static final int ENERGY_Y = 53;
-	public static final int OUTPUT_X = 125;
-	public static final int OUTPUT_Y = 35;
-	/** The mold slot, left of the input; shown on machines that use a mold only. */
-	public static final int MOLD_X = 26;
-	public static final int MOLD_Y = 17;
 	public static final int INVENTORY_X = 8;
 	public static final int INVENTORY_Y = 84;
 	private static final int INVENTORY_START = MachineBlockEntity.SIZE;
@@ -102,24 +93,17 @@ public class MachineMenu extends RecipeBookMenu {
 		this.kind = kind;
 		this.level = inventory.player.level();
 		for (int i = MachineBlockEntity.INPUT_0; i <= MachineBlockEntity.INPUT_2; i++) {
-			addSlot(new MachineSlot(container, level, i, inputX(i, kind.inputs()), INPUT_Y, i < kind.inputs()));
+			addSlot(new MachineSlot(container, level, i, MachineLayout.inputX(i, kind.inputs()),
+					MachineLayout.INPUT_Y, i < kind.inputs()));
 		}
-		addSlot(new MachineSlot(container, level, MachineBlockEntity.ENERGY, ENERGY_X, ENERGY_Y, true));
-		addSlot(new MachineSlot(container, level, MachineBlockEntity.OUTPUT, OUTPUT_X, OUTPUT_Y, true));
-		addSlot(new MachineSlot(container, level, MachineBlockEntity.MOLD, MOLD_X, MOLD_Y, kind.needsMold()));
+		addSlot(new MachineSlot(container, level, MachineBlockEntity.ENERGY, MachineLayout.ENERGY_X, MachineLayout.ENERGY_Y,
+				true));
+		addSlot(new MachineSlot(container, level, MachineBlockEntity.OUTPUT, MachineLayout.OUTPUT_X, MachineLayout.OUTPUT_Y,
+				true));
+		addSlot(new MachineSlot(container, level, MachineBlockEntity.MOLD, MachineLayout.MOLD_X, MachineLayout.MOLD_Y,
+				kind.needsMold()));
 		addStandardInventorySlots(inventory, INVENTORY_X, INVENTORY_Y);
 		addDataSlots(data);
-	}
-
-	/**
-	 * The x of an input slot, the used inputs centred above the energy slot.
-	 *
-	 * @param index the input index
-	 * @param inputs how many inputs the machine uses
-	 * @return the slot x in the screen
-	 */
-	public static int inputX(int index, int inputs) {
-		return INPUT_CENTER_X + (2 * index - (inputs - 1)) * SLOT_SPACING / 2;
 	}
 
 	private static MachineKind kindAt(Inventory inventory, BlockPos pos) {

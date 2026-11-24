@@ -2,6 +2,7 @@ package com.ravecraft.mod.gametest;
 
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.blockentity.MachineBlockEntity;
+import com.ravecraft.mod.core.machine.MachineLayout;
 import com.ravecraft.mod.menu.MachineMenu;
 import com.ravecraft.mod.recipe.CountedIngredient;
 import com.google.gson.JsonParser;
@@ -181,7 +182,7 @@ public class MachineMenuGameTest {
 		MachineMenu extruder = menu(h, player, ModBlocks.EXTRUDER);
 		h.assertTrue(extruder.getSlot(MachineBlockEntity.MOLD).isActive(), "extruder");
 		h.assertTrue(extruder.moldSlot() == extruder.getSlot(MachineBlockEntity.MOLD), "mold slot");
-		h.assertValueEqual(extruder.moldSlot().x, MachineMenu.MOLD_X, "left of the input");
+		h.assertValueEqual(extruder.moldSlot().x, MachineLayout.MOLD_X, "left of the input");
 		h.succeed();
 	}
 

@@ -3,6 +3,7 @@ package com.ravecraft.mod.client.compat.jei;
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.blockentity.MachineBlockEntity;
 import com.ravecraft.mod.client.screen.machine.MachineScreen;
+import com.ravecraft.mod.core.machine.MachineLayout;
 import com.ravecraft.mod.menu.MachineMenu;
 import com.ravecraft.mod.recipe.MachineKind;
 import com.ravecraft.mod.recipe.MachineRecipe;
@@ -40,10 +41,6 @@ import net.minecraft.world.item.crafting.RecipeHolder;
  */
 public final class RaveCraftJeiPlugin implements IModPlugin {
 	private static final Identifier UID = RaveCraft.id("jei_plugin");
-	private static final int ARROW_X = 89;
-	private static final int ARROW_Y = 34;
-	private static final int ARROW_WIDTH = 24;
-	private static final int ARROW_HEIGHT = 16;
 	private static final int INVENTORY_SLOTS = 36;
 
 	private final Map<MachineKind, IRecipeHolderType<MachineRecipe>> types = ModRecipes.kinds().stream()
@@ -99,7 +96,8 @@ public final class RaveCraftJeiPlugin implements IModPlugin {
 		public Collection<IGuiClickableArea> getGuiClickableAreas(MachineScreen screen, double mouseX,
 				double mouseY) {
 			IRecipeType<?> type = types.get(screen.getMenu().kind());
-			return List.of(IGuiClickableArea.createBasic(ARROW_X, ARROW_Y, ARROW_WIDTH, ARROW_HEIGHT, type));
+			return List.of(IGuiClickableArea.createBasic(MachineLayout.ARROW_X, MachineLayout.ARROW_Y,
+					MachineLayout.ARROW_WIDTH, MachineLayout.ARROW_HEIGHT, type));
 		}
 	}
 

@@ -13,7 +13,7 @@ python tools/init_mod.py --modid monmod --package com.moi.monmod --name "Mon Mod
 python tools/textures/gen_textures.py
 (cd tools/blockbench-mcp && npm ci)        # serveur MCP blockbench
 export JAVA_HOME="/c/Program Files/Eclipse Adoptium/jdk-25.0.5.8-hotspot"
-./gradlew runDatagen && ./gradlew build
+./gradlew build
 git init -b main && git add -A && git commit -m "Initial commit from Fabric mod template"
 ```
 
@@ -49,17 +49,17 @@ Pour monter de version : vérifier les combinaisons sur `https://meta.fabricmc.n
 ## Commandes
 
 ```bash
-./gradlew build          # compile + tests JUnit + GameTests + jar (build/libs/<modid>-<ver>.jar)
+./gradlew build          # compile + datagen + tests JUnit + GameTests + jar (build/libs/<modid>-<ver>.jar)
 ./gradlew test           # tests JUnit purs (package core)
 ./gradlew runGameTest    # GameTests seuls (serveur headless)
 ./gradlew codeQuality    # règles de code Checkstyle + PMD (hors build, job CI séparé)
-./gradlew runDatagen     # génère les JSON d'assets/données dans src/main/generated
+./gradlew runDatagen     # datagen seul : JSON d'assets/données dans src/main/generated (ignoré par git)
 ./gradlew runClient      # lance le jeu (préférer la run config IntelliJ)
 ./gradlew genSources     # (re)décompile Minecraft pour la navigation
 python tools/textures/gen_textures.py   # régénère les textures + art/textures/preview.png
 ```
 
-Règle : **ne jamais déclarer une tâche terminée sans `./gradlew build` et `./gradlew codeQuality` verts.** Lancer aussi `runDatagen` si des blocs, objets, recettes, tags ou loot ont changé.
+Règle : **ne jamais déclarer une tâche terminée sans `./gradlew build` et `./gradlew codeQuality` verts.** Le build lance `runDatagen` tout seul quand le code ou les ressources ont changé.
 
 ## ⚠️ Noms Mojang, pas Yarn
 
@@ -118,7 +118,7 @@ Règles de performance : aucun scan de blocs ou de chunks par tick. Les données
 4. Loot (`RaveCraftBlockLootProvider`), tags d'outil (`RaveCraftBlockTagProvider`), recette (`RaveCraftRecipeProvider`).
 5. Traductions dans `assets/<modid>/lang/en_us.json` **et** `fr_fr.json`.
 6. Un test : JUnit si la logique est dans `core`, GameTest si elle dépend du monde.
-7. `./gradlew runDatagen && ./gradlew build`, puis vérifier en jeu.
+7. `./gradlew build` (il régénère les JSON), puis vérifier en jeu.
 
 ## Assets : textures et modèles
 
@@ -131,7 +131,7 @@ src/main/resources/assets/<modid>/
   textures/block/*.png, textures/item/*.png
   lang/en_us.json, lang/fr_fr.json
   icon.png                            # écrit par gen_textures.py
-src/main/generated/                   # SORTIE de runDatagen : ne jamais éditer à la main
+src/main/generated/                   # SORTIE de runDatagen, ignorée par git : ne jamais éditer à la main
 ```
 
 **Toutes les textures du mod sont des créations originales**, produites par code dans `tools/textures/gen_textures.py` (Pillow, déterministe) :
@@ -183,14 +183,14 @@ Conventions :
 
 - Titre : en anglais, à l'impératif, comme un message de commit (`Add portable speaker`).
 - Description : en français, suivant le modèle [.github/pull_request_template.md](.github/pull_request_template.md) : résumé, changements, tests, vérification en jeu, liens vers la spec et le plan, checklist.
-- Avant de demander la fusion : `./gradlew build` vert en local, CI verte, `runDatagen` relancé si du contenu a changé, `docs/SPEC.md` à jour.
+- Avant de demander la fusion : `./gradlew build` vert en local, CI verte, `docs/SPEC.md` à jour.
 - Fusion : **squash merge** (un commit par PR sur `main`, titre de la PR comme message), puis suppression de la branche. La fusion est faite par l'utilisateur, ou par Claude seulement sur sa demande explicite.
 
 ### Commits et dépôt
 
 - Messages de commit en anglais, à l'impératif.
 - **Aucune attribution à Claude** : pas de ligne `Co-Authored-By: Claude …` dans les commits, pas de « Generated with Claude Code » dans les pull requests ni les releases.
-- Ignorés : `build/`, `.gradle/`, `.idea/`, `run/`, `logs/`, `node_modules/`. Ne pas committer `src/main/generated` modifié à la main ; le régénérer.
+- Ignorés : `build/`, `.gradle/`, `.idea/`, `run/`, `logs/`, `node_modules/`, `src/main/generated/` (refait par le build : jar, `runClient`, `runServer` et `runGameTest` en dépendent).
 - Dépôt **public** `justinmiteran/RaveCraft`. Code sous LGPL-3.0-only (`LICENSE`, `COPYING`), assets sous CC BY-NC-SA 4.0 (`LICENSE-ASSETS.md`).
 - `main` est protégée sur GitHub : CI `build` verte obligatoire, pull request requise (l'admin peut pousser directement les petits changements), force-push et suppression interdits, conversations résolues avant fusion. Seul le squash merge est autorisé ; les branches fusionnées sont supprimées automatiquement.
 - Le workflow `code-quality` (`.github/workflows/quality.yml`) lance `./gradlew codeQuality` dans un job séparé, sur chaque pull request et chaque push sur `main` ou `develop`.

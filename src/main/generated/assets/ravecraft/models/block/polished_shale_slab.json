@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/slab",
-  "textures": {
-    "bottom": "ravecraft:block/polished_shale",
-    "side": "ravecraft:block/polished_shale",
-    "top": "ravecraft:block/polished_shale"
-  }
-}

@@ -31,9 +31,24 @@ repositories {
 	}
 }
 
+def datagenOutput = file("src/main/generated")
+
 fabricApi {
 	configureDataGeneration {
 		client = true
+		addToResources = false // the generated source set below takes the output instead
+	}
+}
+
+// The datagen output, src/main/generated (never committed). A source set of its own, outside main's resources: runDatagen
+// needs main's resources, so it could not write into them without depending on itself.
+sourceSets {
+	generated {
+		java.srcDirs = []
+		resources {
+			srcDirs = [datagenOutput]
+			exclude ".cache/"
+		}
 	}
 }
 
@@ -45,6 +60,7 @@ loom {
 		"ravecraft" {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
+			sourceSet sourceSets.generated
 		}
 	}
 }
@@ -131,6 +147,36 @@ tasks.register("codeQuality") {
 	dependsOn tasks.withType(Checkstyle), tasks.withType(Pmd)
 }
 
+// Datagen runs before whatever needs its output (jar, runClient, runServer, runGameTest), and only when the code or
+// the resources it reads have changed.
+def datagenClasspath = files(
+		sourceSets.main.output.classesDirs, processResources, sourceSets.client.output.classesDirs, processClientResources,
+		configurations.clientRuntimeClasspath, configurations.runtimeClasspath)
+
+tasks.named("runDatagen") {
+	classpath = datagenClasspath
+	inputs.files(datagenClasspath).withPropertyName("datagenClasspath").withNormalizer(ClasspathNormalizer)
+	outputs.dir(datagenOutput).withPropertyName("datagenOutput")
+	// Loom counts the run directory as an input: the logs left there would make the task run every time.
+	def runDirectory = file("run/datagen")
+	doLast {
+		runDirectory.deleteDir()
+	}
+}
+
+processGeneratedResources {
+	dependsOn "runDatagen"
+}
+
+[sourceSets.main, sourceSets.client, sourceSets.gametest].each {
+	it.runtimeClasspath += files(processGeneratedResources)
+}
+
+// IntelliJ builds only the classes task of the module it runs.
+tasks.named("clientClasses") {
+	dependsOn processGeneratedResources
+}
+
 processResources {
 	def version = project.version
 	inputs.property "version", version
@@ -158,9 +204,14 @@ jar {
 	def projectName = project.name
 	inputs.property "projectName", projectName
 
+	from(processGeneratedResources)
 	from(["LICENSE", "COPYING", "LICENSE-ASSETS.md"]) {
 		rename { "${it}_$projectName"}
 	}
+}
+
+tasks.named("sourcesJar") {
+	from(processGeneratedResources)
 }
 
 // configure the maven publication

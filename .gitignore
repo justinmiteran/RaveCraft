@@ -48,8 +48,8 @@ node_modules/
 # Game logs written by runDatagen/runClient at the project root
 logs/
 
-# Datagen hash cache, rewritten on every runDatagen
-src/main/generated/.cache/
+# Datagen output, rebuilt by the build (runDatagen)
+src/main/generated/
 
 # Throwaway visual proposals (see art/ workflow), regenerable
 art/proposals/

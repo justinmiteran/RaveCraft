@@ -30,7 +30,7 @@ jobs:
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
       - name: build (compile, JUnit, GameTests, jar)
-        run: ./gradlew build
+        run: ./gradlew build -x downloadAssets # datagen does not need the game's assets (700 MB)
       - name: publish test report
         if: ${{ !cancelled() }}
         uses: mikepenz/action-junit-report@v6

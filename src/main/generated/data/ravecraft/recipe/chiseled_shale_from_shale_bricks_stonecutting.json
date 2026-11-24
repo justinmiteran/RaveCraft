@@ -1,7 +1,0 @@
-{
-  "type": "minecraft:stonecutting",
-  "ingredient": "ravecraft:shale_bricks",
-  "result": {
-    "id": "ravecraft:chiseled_shale"
-  }
-}

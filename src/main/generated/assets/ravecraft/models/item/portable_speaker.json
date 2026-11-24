@@ -1,7 +1,0 @@
-{
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "ravecraft:item/portable_speaker",
-    "layer1": "ravecraft:item/portable_speaker_overlay"
-  }
-}

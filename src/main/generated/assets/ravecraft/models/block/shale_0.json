@@ -1,7 +1,0 @@
-{
-  "parent": "minecraft:block/cube_column",
-  "textures": {
-    "end": "ravecraft:block/shale_top",
-    "side": "ravecraft:block/shale_0"
-  }
-}

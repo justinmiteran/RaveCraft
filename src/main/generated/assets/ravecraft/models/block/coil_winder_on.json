@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/orientable",
-  "textures": {
-    "front": "ravecraft:block/coil_winder_front_on",
-    "side": "ravecraft:block/coil_winder_side",
-    "top": "ravecraft:block/coil_winder_top"
-  }
-}

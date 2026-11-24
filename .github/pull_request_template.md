@@ -26,7 +26,6 @@
 
 - [ ] `./gradlew build` vert en local
 - [ ] CI verte
-- [ ] `./gradlew runDatagen` relancé si des blocs, objets, recettes, tags ou loot ont changé
 - [ ] Traductions `en_us.json` et `fr_fr.json` à jour
 - [ ] Textures et modèles vérifiés visuellement
 - [ ] `docs/SPEC.md` à jour

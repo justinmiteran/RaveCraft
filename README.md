@@ -33,11 +33,11 @@ Mod Fabric pour **Minecraft 26.3** : du matériel de sonorisation, de DJ et d'é
 
 | Commande | Rôle |
 |---|---|
-| `./gradlew build` | compile, tests JUnit, GameTests, jar dans `build/libs/` |
+| `./gradlew build` | compile, datagen, tests JUnit, GameTests, jar dans `build/libs/` |
 | `./gradlew test` | tests JUnit seuls |
 | `./gradlew runGameTest` | GameTests seuls (serveur headless) |
 | `./gradlew codeQuality` | règles de code (Checkstyle, PMD), hors du build ; rapports dans `build/reports/{checkstyle,pmd}/` |
-| `./gradlew runDatagen` | régénère blockstates, modèles, loot, tags, recettes (`src/main/generated`) |
+| `./gradlew runDatagen` | régénère blockstates, modèles, loot, tags, recettes (`src/main/generated`, ignoré par git) ; le build le lance si besoin |
 | `./gradlew runClient` | lance le jeu |
 | `python tools/textures/gen_textures.py` | régénère les textures et `art/textures/preview.png` |
 

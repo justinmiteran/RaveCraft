@@ -1,9 +1,0 @@
-{
-  "type": "minecraft:crafting_dye",
-  "dye": "#minecraft:dyes",
-  "group": "portable_speaker_dye",
-  "result": {
-    "id": "ravecraft:portable_speaker"
-  },
-  "target": "ravecraft:portable_speaker"
-}

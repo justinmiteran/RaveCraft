@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "ravecraft:block/deepslate_neodymium_ore_4"
-  }
-}

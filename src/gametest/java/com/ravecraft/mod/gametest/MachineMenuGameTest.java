@@ -267,6 +267,19 @@ public class MachineMenuGameTest {
 		return contents.canCraft(recipe(h, name).value(), null);
 	}
 
+	@GameTest
+	public void menuShowsTheResultBeingMade(GameTestHelper h) {
+		Player player = h.makeMockPlayer(GameType.SURVIVAL);
+		MachineMenu menu = menu(h, player, ModBlocks.MAGNETIZER);
+		h.assertTrue(menu.result().isEmpty(), "nothing made while empty");
+		MachineBlockEntity machine = h.getBlockEntity(POS, MachineBlockEntity.class);
+		machine.setItem(MachineBlockEntity.INPUT_0, new ItemStack(ModItems.NEODYMIUM_INGOT));
+		machine.setItem(MachineBlockEntity.INPUT_1, new ItemStack(Items.IRON_INGOT));
+		MachineBlockEntity.serverTick(h.getLevel(), h.absolutePos(POS), h.getBlockState(POS), machine);
+		h.assertValueEqual(menu.result().orElse(null), ModItems.NEODYMIUM_MAGNET, "neodymium magnet in the making");
+		h.succeed();
+	}
+
 	private static MachineMenu menu(GameTestHelper h, Player player) {
 		return menu(h, player, ModBlocks.COIL_WINDER);
 	}

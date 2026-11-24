@@ -31,6 +31,12 @@
 		"jer_mod_plugin": [
 			"com.ravecraft.mod.client.compat.jer.RaveCraftJerPlugin"
 		],
+		"rei_common": [
+			"com.ravecraft.mod.compat.rei.RaveCraftReiCommonPlugin"
+		],
+		"rei_client": [
+			"com.ravecraft.mod.client.compat.rei.RaveCraftReiClientPlugin"
+		],
 		"fabric-datagen": [
 			"com.ravecraft.mod.datagen.RaveCraftDataGenerator"
 		]
@@ -50,6 +56,7 @@
 		"fabric-api": ">=0.166.2"
 	},
 	"suggests": {
-		"jei": "*"
+		"jei": "*",
+		"roughlyenoughitems": "*"
 	}
 }

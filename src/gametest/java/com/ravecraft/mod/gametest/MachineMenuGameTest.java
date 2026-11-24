@@ -2,6 +2,7 @@ package com.ravecraft.mod.gametest;
 
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.blockentity.MachineBlockEntity;
+import com.ravecraft.mod.core.machine.MachineLayout;
 import com.ravecraft.mod.menu.MachineMenu;
 import com.ravecraft.mod.recipe.CountedIngredient;
 import com.google.gson.JsonParser;
@@ -29,7 +30,7 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
 
 public class MachineMenuGameTest {
-	private static final BlockPos POS = new BlockPos(1, 2, 1);
+	static final BlockPos POS = new BlockPos(1, 2, 1);
 	/** Menu index of the player's first main inventory slot (inventory slot 9). */
 	private static final int FIRST_INVENTORY = MachineBlockEntity.SIZE;
 
@@ -181,7 +182,7 @@ public class MachineMenuGameTest {
 		MachineMenu extruder = menu(h, player, ModBlocks.EXTRUDER);
 		h.assertTrue(extruder.getSlot(MachineBlockEntity.MOLD).isActive(), "extruder");
 		h.assertTrue(extruder.moldSlot() == extruder.getSlot(MachineBlockEntity.MOLD), "mold slot");
-		h.assertValueEqual(extruder.moldSlot().x, MachineMenu.MOLD_X, "left of the input");
+		h.assertValueEqual(extruder.moldSlot().x, MachineLayout.MOLD_X, "left of the input");
 		h.succeed();
 	}
 
@@ -284,7 +285,7 @@ public class MachineMenuGameTest {
 		return menu(h, player, ModBlocks.COIL_WINDER);
 	}
 
-	private static MachineMenu menu(GameTestHelper h, Player player, Block machine) {
+	static MachineMenu menu(GameTestHelper h, Player player, Block machine) {
 		h.setBlock(POS, machine);
 		return new MachineMenu(0, player.getInventory(), h.getBlockEntity(POS, MachineBlockEntity.class));
 	}

@@ -1,11 +1,13 @@
 package com.ravecraft.mod.client.screen.machine;
 
 import com.ravecraft.mod.RaveCraft;
+import com.ravecraft.mod.core.machine.MachineLayout;
 import com.ravecraft.mod.core.machine.ProgressColors;
 import com.ravecraft.mod.menu.MachineMenu;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenPosition;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.inventory.AbstractRecipeBookScreen;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -19,19 +21,12 @@ import net.minecraft.world.entity.player.Inventory;
  * bolt between them that empties like the furnace flame, the progress arrow and the output on the right. The arrow
  * is plain, in the colour of the item being made, read from {@code assets/ravecraft/machine_colors.json}. Each
  * machine has its own background showing only the inputs it uses, {@code textures/gui/container/<machine>.png}. The
- * positions are constants, shared with the slot positions of {@link MachineMenu}.
+ * positions are those of {@link MachineLayout}, shared with {@link MachineMenu}.
  */
 public class MachineScreen extends AbstractRecipeBookScreen<MachineMenu> {
 	private static final Identifier PROGRESS_SPRITE = RaveCraft.id("container/machine/progress");
 	private static final Identifier ENERGY_SPRITE = RaveCraft.id("container/machine/energy");
 	private static final int TEXTURE_SIZE = 256;
-	private static final int ARROW_X = 89;
-	private static final int ARROW_Y = 34;
-	private static final int ARROW_WIDTH = 24;
-	private static final int ARROW_HEIGHT = 16;
-	private static final int BOLT_X = 49;
-	private static final int BOLT_Y = 36;
-	private static final int BOLT_SIZE = 14;
 	private static final int BOOK_BUTTON_X = 20;
 	private static final int BOOK_BUTTON_Y = -49;
 
@@ -62,19 +57,31 @@ public class MachineScreen extends AbstractRecipeBookScreen<MachineMenu> {
 		return new ScreenPosition(leftPos + BOOK_BUTTON_X, height / 2 + BOOK_BUTTON_Y);
 	}
 
+	/**
+	 * Returns where the progress arrow is, which opens the machine's recipes in a recipe viewer.
+	 *
+	 * @return the arrow, in screen coordinates
+	 */
+	public ScreenRectangle arrowArea() {
+		return new ScreenRectangle(leftPos + MachineLayout.ARROW_X, topPos + MachineLayout.ARROW_Y,
+				MachineLayout.ARROW_WIDTH, MachineLayout.ARROW_HEIGHT);
+	}
+
 	/** Draws the background, then the arrow filled by the progress and the bolt filled from below by the energy. */
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 		super.extractBackground(graphics, mouseX, mouseY, a);
 		graphics.blit(RenderPipelines.GUI_TEXTURED, texture, leftPos, topPos, 0, 0, imageWidth, imageHeight,
 				TEXTURE_SIZE, TEXTURE_SIZE);
-		int arrow = Mth.ceil(menu.progress() * ARROW_WIDTH);
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_SPRITE, ARROW_WIDTH, ARROW_HEIGHT, 0, 0,
-				leftPos + ARROW_X, topPos + ARROW_Y, arrow, ARROW_HEIGHT, arrowColor());
-		int bolt = Mth.ceil(menu.energy() * BOLT_SIZE);
-		int top = BOLT_SIZE - bolt;
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, ENERGY_SPRITE, BOLT_SIZE, BOLT_SIZE, 0, top,
-				leftPos + BOLT_X, topPos + BOLT_Y + top, BOLT_SIZE, bolt);
+		int arrow = Mth.ceil(menu.progress() * MachineLayout.ARROW_WIDTH);
+		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_SPRITE, MachineLayout.ARROW_WIDTH,
+				MachineLayout.ARROW_HEIGHT, 0, 0, leftPos + MachineLayout.ARROW_X, topPos + MachineLayout.ARROW_Y, arrow,
+				MachineLayout.ARROW_HEIGHT, arrowColor());
+		int bolt = Mth.ceil(menu.energy() * MachineLayout.BOLT_SIZE);
+		int top = MachineLayout.BOLT_SIZE - bolt;
+		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, ENERGY_SPRITE, MachineLayout.BOLT_SIZE,
+				MachineLayout.BOLT_SIZE, 0, top, leftPos + MachineLayout.BOLT_X, topPos + MachineLayout.BOLT_Y + top,
+				MachineLayout.BOLT_SIZE, bolt);
 	}
 
 	/** The colour of the item being made, white when none is listed or nothing is made. */

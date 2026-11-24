@@ -2,7 +2,6 @@ package com.ravecraft.mod.gametest;
 
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.blockentity.MachineBlockEntity;
-import com.ravecraft.mod.item.ItemOrigins;
 import com.ravecraft.mod.recipe.MachineKind;
 import com.ravecraft.mod.recipe.MachineRecipe;
 import com.ravecraft.mod.registry.ModBlocks;
@@ -159,26 +158,11 @@ public class ComponentsGameTest {
 	}
 
 	@GameTest
-	public void moldForMatchesRecipes(GameTestHelper h) {
-		for (MachineRecipe recipe : machineRecipes(h, ModRecipes.EXTRUDING)) {
-			Item result = recipe.result().create().getItem();
-			for (Item mold : ModItems.molds()) {
-				if (recipe.mold().orElseThrow().test(new ItemStack(mold))) {
-					h.assertValueEqual(ItemOrigins.moldFor(mold), Optional.of(result), mold + " makes " + result);
-				}
-			}
-		}
+	public void everyMoldIsUsed(GameTestHelper h) {
+		List<MachineRecipe> recipes = machineRecipes(h, ModRecipes.EXTRUDING);
 		for (Item mold : ModItems.molds()) {
-			h.assertTrue(ItemOrigins.moldFor(mold).isPresent(), mold + " has a product");
-		}
-		h.succeed();
-	}
-
-	@GameTest
-	public void onlyMoldsMakeAPart(GameTestHelper h) {
-		for (Item item : List.of(ModItems.BITUMEN, ModItems.NEODYMIUM_INGOT, ModItems.MEMBRANE, ModItems.SPEAKER_DRIVER,
-				Items.IRON_INGOT, ModBlocks.PORTABLE_SPEAKER.asItem())) {
-			h.assertTrue(ItemOrigins.moldFor(item).isEmpty(), item + " is no mold");
+			ItemStack stack = new ItemStack(mold);
+			h.assertTrue(recipes.stream().anyMatch(recipe -> recipe.mold().orElseThrow().test(stack)), mold + " has a recipe");
 		}
 		h.succeed();
 	}

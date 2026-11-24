@@ -39,7 +39,7 @@
 - **Unlock:** one `has_<item>` criterion per distinct ingredient, any of them unlocks the recipe (spec 6.2).
 - **Tooltips:** a grey line at the bottom of the tooltip, shown without Shift.
   - Machine products: `tooltip.ravecraft.made_in` = "Made in: %s" / "Fabriqué dans : %s", where `%s` is the machine's block name.
-  - Molds: `tooltip.ravecraft.mold_for` = "For the extruder: %s" / "Pour l'extrudeuse : %s", where `%s` is the product's item name.
+  - Molds: `tooltip.ravecraft.mold` = "For the extruder" / "Pour l'extrudeuse". It names no part, as a mold may later make several (user decision after the 7d review, replacing the lookup tables of Task 4).
 - **Tab order (spec 6.4):**
   - ores, shale family, storage blocks, materials;
   - tier 1: `copper_wire, voice_coil, iron_magnet, membrane, plastic_sheet, plastic_casing, circuit_board, simple_circuit, speaker_driver`;

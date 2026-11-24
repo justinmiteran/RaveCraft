@@ -110,7 +110,7 @@
   "options.ravecraft.occlusionQuality.high": "Haute",
   "options.ravecraft.occlusionQuality.tooltip": "Effort consacré à trouver comment le son contourne les murs. Baissez-la si les FPS chutent près de nombreuses enceintes.",
   "debug.options.category.ravecraft": "RaveCraft",
-  "tooltip.ravecraft.mold_for": "Pour l'extrudeuse : %s",
+  "tooltip.ravecraft.mold": "Pour l'extrudeuse",
   "tooltip.ravecraft.speaker.base": "%s W · portée %s blocs · %s",
   "tooltip.ravecraft.speaker.base_short": "%s W · %s",
   "tooltip.ravecraft.speaker.sensitivity": "Sensibilité : %s dB",

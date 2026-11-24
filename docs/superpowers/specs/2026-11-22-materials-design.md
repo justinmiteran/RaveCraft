@@ -228,7 +228,7 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 
 ### 6.3 Infobulles
 
-- Chaque moule affiche « Pour l'extrudeuse : *pièce* ».
+- Chaque moule affiche « Pour l'extrudeuse », sans nommer de pièce : un moule pourra servir à plusieurs.
 
 ### 6.4 Onglet créatif et traductions
 
@@ -269,7 +269,7 @@ Légende : `I` lingot de fer, `C` lingot de cuivre, `R` poudre de redstone.
 - Le quartz du Nether donne du silicium au haut fourneau seulement.
 - Blocs de néodyme brut, de néodyme et de silicium : 9 objets donnent un bloc et un bloc rend 9 objets ; pioche en fer pour les deux blocs de néodyme, en pierre pour le silicium ; chacun lâche lui-même et porte ses tags `c:storage_blocks`.
 - Les nouvelles recettes des deux enceintes existent et les anciennes non.
-- Chaque moule affiche « Pour l'extrudeuse », et cette table correspond aux recettes chargées.
+- Chaque moule affiche « Pour l'extrudeuse », et sert à au moins une recette chargée.
 
 **En jeu** : monde survie neuf, du minage du schiste à l'enceinte de soirée en suivant le livre ; entonnoirs ; écran et livre de chaque machine ; textures, modèles et animations.
 

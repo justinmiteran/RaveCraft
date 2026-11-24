@@ -153,16 +153,15 @@ public class RaveCraftRecipeProvider extends FabricRecipeProvider {
 			MachineRecipeBuilder.machine(ModRecipes.ETCHING, ModItems.CHIP, 1, this)
 					.input(ModItems.SILICON_WAFER, 1).input(ConventionalItemTags.GOLD_NUGGETS, 2)
 					.input(ConventionalItemTags.REDSTONE_DUSTS, 1).save(output);
-			extrusion(ModItems.PLASTIC_SHEET, 2, 1, ModItems.SHEET_MOLD);
-			extrusion(ModItems.PLASTIC_CASING, 1, 3, ModItems.CASING_MOLD);
-			MachineRecipeBuilder.machine(ModRecipes.EXTRUDING, ModItems.REINFORCED_MEMBRANE, 1, this)
-					.input(ModItems.PLASTIC_SHEET, 2).mold(ModItems.MEMBRANE_MOLD).save(output);
-			extrusion(ModItems.CIRCUIT_BOARD, 2, 1, ModItems.BOARD_MOLD);
+			extrusion(ModItems.BITUMEN, 1, ModItems.PLASTIC_SHEET, 2, ModItems.SHEET_MOLD);
+			extrusion(ModItems.BITUMEN, 3, ModItems.PLASTIC_CASING, 1, ModItems.CASING_MOLD);
+			extrusion(ModItems.PLASTIC_SHEET, 2, ModItems.REINFORCED_MEMBRANE, 1, ModItems.MEMBRANE_MOLD);
+			extrusion(ModItems.BITUMEN, 1, ModItems.CIRCUIT_BOARD, 2, ModItems.BOARD_MOLD);
 		}
 
-		private void extrusion(ItemLike result, int count, int bitumen, ItemLike mold) {
+		private void extrusion(ItemLike input, int inputCount, ItemLike result, int count, ItemLike mold) {
 			MachineRecipeBuilder.machine(ModRecipes.EXTRUDING, result, count, this)
-					.input(ModItems.BITUMEN, bitumen).mold(mold).save(output);
+					.input(input, inputCount).mold(mold).save(output);
 		}
 
 		/**

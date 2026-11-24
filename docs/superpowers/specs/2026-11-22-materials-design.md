@@ -122,7 +122,15 @@ La membrane renforcée est extrudée à partir de 2 plaques de plastique (décid
 - Le schiste et ses dérivés se comportent comme le tuf et ses dérivés : résistance 1,5 / 6, sons du tuf (`TUFF`, `POLISHED_TUFF`, `TUFF_BRICKS`), pioche requise, chaque bloc lâche lui-même (la dalle double lâche 2 dalles). Recettes de table de craft et de tailleur de pierre comme la famille du tuf : schiste → poli (2×2) → briques (2×2), 2 dalles de briques → schiste sculpté, escaliers, dalles et murets de chaque base ; au tailleur, chaque base donne ses dérivés et ceux qui suivent dans la chaîne.
 - Les minerais n'apparaissent que dans les chunks générés après l'installation ; les notes de version le diront.
 - Les features (`configured_feature`, `placed_feature`) sont écrites par le datagen ; elles sont ajoutées aux biomes par `BiomeModifications.addFeature` (étape `UNDERGROUND_ORES`).
-- Tags : `c:ores`, `c:ores/neodymium`, `c:ores/oil_shale`, `c:ores_in_ground/stone`, `c:ores_in_ground/deepslate`, `mineable/pickaxe` (tous les blocs), `needs_stone_tool` (schiste bitumineux), `needs_iron_tool` (néodyme), `stairs`, `slabs`, `walls` ; `c:raw_materials/neodymium`, `c:ingots/neodymium`, `c:silicon`.
+- Tags : `c:ores`, `c:ores/neodymium`, `c:ores/oil_shale`, `c:ores_in_ground/stone`, `c:ores_in_ground/deepslate`, `mineable/pickaxe` (tous les blocs), `needs_stone_tool` (schiste bitumineux), `needs_iron_tool` (néodyme), `stairs`, `slabs`, `walls` ; `c:raw_materials/neodymium`, `c:ingots/neodymium`, `c:silicon` ; `c:storage_blocks` et ses sous-tags `raw_neodymium`, `neodymium` et `silicon`.
+- Origine des tags `c:` :
+
+  | Tags | Statut | Source |
+  |---|---|---|
+  | `c:ores`, `c:ores_in_ground/stone`, `c:ores_in_ground/deepslate`, `c:storage_blocks`, `c:ingots`, `c:raw_materials` | officiels | Fabric API 26.3, [`ConventionalBlockItemTags`](https://github.com/FabricMC/fabric-api/blob/26.3/fabric-convention-tags-v2/src/main/java/net/fabricmc/fabric/api/tag/convention/v2/ConventionalBlockItemTags.java) et `ConventionalItemTags` |
+  | `c:is_desert` (biome) | officiel | Fabric API 26.3, `ConventionalBiomeTags` |
+  | `c:silicon` | usage courant, absent de Fabric API | [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2/blob/main/src/main/java/appeng/core/ConventionTags.java), [Refined Storage](https://github.com/refinedmods/refinedstorage2/blob/develop/refinedstorage-common/src/generated/resources/data/c/tags/item/silicon.json) |
+  | `c:ores/neodymium`, `c:ores/oil_shale`, `c:raw_materials/neodymium`, `c:ingots/neodymium`, `c:storage_blocks/raw_neodymium`, `c:storage_blocks/neodymium`, `c:storage_blocks/silicon` | déduits de la règle, non officiels | modèle `c:<catégorie>/<matériau>` de Fabric API (`c:ores/iron`…) et [doc NeoForge](https://docs.neoforged.net/docs/resources/server/tags/) |
 
 ### Fonte
 

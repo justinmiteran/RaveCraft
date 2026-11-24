@@ -40,6 +40,7 @@ class ConventionTagsTest {
 			Map.entry("ravecraft:neodymium_ingot", "c:ingots/neodymium"),
 			Map.entry("ravecraft:silicon", "c:silicon"),
 			Map.entry("ravecraft:deepslate_neodymium_ore", "c:ores/neodymium"),
+			Map.entry("ravecraft:oil_shale", "c:ores/oil_shale"),
 			Map.entry("ravecraft:raw_neodymium_block", "c:storage_blocks/raw_neodymium"),
 			Map.entry("ravecraft:neodymium_block", "c:storage_blocks/neodymium"),
 			Map.entry("ravecraft:silicon_block", "c:storage_blocks/silicon"));

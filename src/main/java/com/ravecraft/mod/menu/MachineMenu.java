@@ -316,5 +316,11 @@ public class MachineMenu extends RecipeBookMenu {
 				default -> container.canPlaceItem(getContainerSlot(), stack);
 			};
 		}
+
+		/** An empty slot can be modified too: vanilla asks whether nothing may be placed, which the rules above refuse. */
+		@Override
+		public boolean allowModification(Player player) {
+			return active && !hasItem() ? mayPickup(player) : super.allowModification(player);
+		}
 	}
 }

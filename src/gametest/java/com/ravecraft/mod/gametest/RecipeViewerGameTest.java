@@ -6,7 +6,6 @@ import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
 import com.ravecraft.mod.blockentity.MachineBlockEntity;
 import com.ravecraft.mod.compat.rei.MachineDisplayData;
-import com.ravecraft.mod.menu.MachineMenu;
 import com.ravecraft.mod.recipe.CountedIngredient;
 import com.ravecraft.mod.recipe.MachineKind;
 import com.ravecraft.mod.recipe.MachineRecipe;
@@ -19,15 +18,10 @@ import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.fabricmc.fabric.impl.recipe.sync.RecipeSyncImpl;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.level.GameType;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 
 public class RecipeViewerGameTest {
 	private static final int MIN_RECIPES = 10;
@@ -97,37 +91,7 @@ public class RecipeViewerGameTest {
 		h.succeed();
 	}
 
-	@GameTest
-	public void machineSlotsAcceptEveryRecipeUnit(GameTestHelper h) {
-		Player player = h.makeMockPlayer(GameType.SURVIVAL);
-		for (RecipeHolder<MachineRecipe> holder : recipes(h)) {
-			MachineDisplayData data = MachineDisplayData.of(holder);
-			h.setBlock(MachineMenuGameTest.POS, Blocks.AIR);
-			MachineMenu menu = MachineMenuGameTest.menu(h, player,
-					Block.byItem(holder.value().kind().machineItem()));
-			List<Item> units = data.units().stream().map(RecipeViewerGameTest::firstItem).toList();
-			for (int i = 0; i < units.size(); i++) {
-				fill(h, menu.getSlot(data.unitSlots().get(i)), new ItemStack(units.get(i)), data.id() + " unit " + i);
-			}
-			List<Integer> counts = holder.value().ingredients().stream().map(CountedIngredient::count).toList();
-			List<Integer> placed = new ArrayList<>();
-			counts.forEach(count -> placed.add(menu.getSlot(placed.size()).getItem().getCount()));
-			h.assertValueEqual(placed, counts, data.id() + " filled");
-		}
-		h.succeed();
-	}
-
-	/** Puts one item in a slot the way REI does, which loses the item when the slot refuses it. */
-	private static void fill(GameTestHelper h, Slot slot, ItemStack one, String message) {
-		h.assertTrue(slot.mayPlace(one), message + " accepted");
-		if (slot.hasItem()) {
-			slot.getItem().grow(1);
-		} else {
-			slot.set(one);
-		}
-	}
-
-	private static List<RecipeHolder<MachineRecipe>> recipes(GameTestHelper h) {
+	static List<RecipeHolder<MachineRecipe>> recipes(GameTestHelper h) {
 		List<RecipeHolder<MachineRecipe>> found = new ArrayList<>();
 		for (MachineKind kind : ModRecipes.kinds()) {
 			found.addAll(h.getLevel().getServer().getRecipeManager().getAllOfType(kind.type()));
@@ -150,10 +114,6 @@ public class RecipeViewerGameTest {
 
 	private static List<Item> items(Ingredient ingredient) {
 		return ingredient.items().map(item -> item.value()).toList();
-	}
-
-	private static Item firstItem(Ingredient ingredient) {
-		return items(ingredient).getFirst();
 	}
 
 	private static RegistryFriendlyByteBuf buffer(GameTestHelper h) {

@@ -13,14 +13,13 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.fabricmc.loader.api.FabricLoader;
 
 /**
- * The server's acoustic model, loaded from {@code config/ravecraft-server.json5} when the server starts (written
+ * The server's acoustic model, loaded from {@code config/ravecraft/server.json5} when the server starts (written
  * with the defaults and a comment per setting if missing) and sent to every player who joins.
  */
 public final class AcousticConfig {
-	public static final String FILE_NAME = "ravecraft-server.json5";
+	public static final String FILE_NAME = "server.json5";
 	private static volatile AcousticSettings settings = AcousticSettings.DEFAULT;
 
 	private AcousticConfig() {
@@ -28,7 +27,7 @@ public final class AcousticConfig {
 
 	/** Loads the file when the server starts and sends the settings to each player who joins. */
 	public static void init() {
-		ServerLifecycleEvents.SERVER_STARTING.register(server -> load(FabricLoader.getInstance().getConfigDir().resolve(FILE_NAME)));
+		ServerLifecycleEvents.SERVER_STARTING.register(server -> load(ConfigFiles.file(FILE_NAME)));
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
 				Net.send(handler.player, new AcousticSettingsPayload(settings)));
 	}

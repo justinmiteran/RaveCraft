@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * Reads and writes {@code ravecraft-server.json5}: JSON that may hold line and block comments. A missing
+ * Reads and writes {@code config/ravecraft/server.json5}: JSON that may hold line and block comments. A missing
  * field takes its default; values are clamped. The file is written with a comment explaining each setting.
  */
 public final class AcousticSettingsJson {

@@ -1,0 +1,538 @@
+"""Materials textures (PR 7a): shale family, oil shale, neodymium ore and the raw materials.
+
+Procedural textures are built here from their seeds; the ones whose validated shape was drawn by hand or picked during
+the proposals (shale tiles, shale bricks, chiseled shale, the item silhouettes, the oil shale tar seams) are stored as
+indexed maps: a palette, dark to light, and 16 rows of palette indices ("." = transparent, or "keep the base" for
+an overlay).
+
+Two textures start from a Mojang texture read from the local Minecraft jar at generation time (see
+LICENSE-ASSETS.md): the neodymium ore draws its grains on vanilla deepslate, and the neodymium ingot is a recolour
+of the vanilla iron ingot.
+"""
+from __future__ import annotations
+
+import io
+import random
+import zipfile
+from pathlib import Path
+
+from PIL import Image
+
+S = 16
+MC_JAR = Path.home() / ".gradle/caches/fabric-loom/26.3/minecraft-client.jar"
+
+
+def vanilla(path):
+    """A texture from the local Minecraft client jar, e.g. "block/deepslate"."""
+    if not MC_JAR.exists():
+        raise SystemExit(f"Minecraft jar not found: {MC_JAR}. Run ./gradlew build once so Loom downloads it.")
+    with zipfile.ZipFile(MC_JAR) as jar:
+        data = jar.read(f"assets/minecraft/textures/{path}.png")
+    return Image.open(io.BytesIO(data)).convert("RGBA")
+
+
+def indexed(spec, base=None):
+    """Draws an indexed map (palette, rows...) on a transparent tile, or over a copy of base."""
+    pal, *rows = spec
+    img = base.copy() if base is not None else Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    for y, row in enumerate(rows):
+        for x, ch in enumerate(row):
+            if ch != ".":
+                img.putpixel((x, y), (*pal[int(ch, 36)], 255))
+    return img
+
+
+# ---------------------------------------------------------------- shale: laminae in the colours of a real shale
+# The 6 random blockstate variants were picked during the proposals from 400 seeded tiles of long streaks (the
+# closest to the median colour, so none reads as a patch on a wall) and quantised to one 10-colour palette. They are
+# stored as indexed maps so the result no longer depends on the Pillow version.
+SHALE_VARIANTS = 6
+SHALE_PALETTE = [(66, 62, 58), (96, 88, 80), (112, 95, 70), (114, 100, 89), (116, 112, 106), (110, 116, 128), (133, 117, 98), (127, 133, 143), (147, 137, 120), (153, 158, 165)]
+# The 6 random blockstate variants, frozen from the seeded laminae generator of the proposals.
+SHALE_TILES = (
+    (
+        "7799950050055597",
+        "1100001110000001",
+        "0010011414414410",
+        "4444499775444444",
+        "8822222666668848",
+        "3848488888883368",
+        "1017977944444410",
+        "3384848888336363",
+        "8888884666666666",
+        "6344946663666663",
+        "3666017775768388",
+        "5577777779950500",
+        "7779999997959977",
+        "7775799995050557",
+        "6699977662626686",
+        "6999788868866666",
+    ),
+    (
+        "2667977777778668",
+        "8888889777778888",
+        "6662020266666866",
+        "8886866414444148",
+        "6266648444484666",
+        "8666667759999782",
+        "0199444490000510",
+        "0000177500505111",
+        "3333333797777761",
+        "9366679999999997",
+        "6665555057579776",
+        "7888884887777777",
+        "9999978888888899",
+        "5055541441149994",
+        "7999110111010001",
+        "2000202024414444",
+    ),
+    (
+        "5005111000100010",
+        "7788888202227797",
+        "3336133344433633",
+        "6363866666633313",
+        "3311016333333333",
+        "8888865777777775",
+        "0000017777757797",
+        "7586888888887777",
+        "5578888888777975",
+        "7788888888887777",
+        "7726666685777977",
+        "9999411941499977",
+        "0000510011500055",
+        "5779748998887777",
+        "4110111001141488",
+        "4994444999999999",
+    ),
+    (
+        "4994420002444999",
+        "1001505544141000",
+        "4444441444844441",
+        "4441499779757744",
+        "7811100177777777",
+        "9444117777777755",
+        "9777499999979757",
+        "5111166666550555",
+        "6664143313666666",
+        "6666648888888888",
+        "4448444847777744",
+        "9779795999979997",
+        "9550500005888888",
+        "2002022999988688",
+        "8882686989484888",
+        "2222202020288888",
+    ),
+    (
+        "3363313333336633",
+        "3366366666633333",
+        "1363333333333333",
+        "3133333313333366",
+        "3333336666633333",
+        "6363666886886666",
+        "6666779777775756",
+        "3633331999979999",
+        "6318397799977797",
+        "7200202200025977",
+        "7944498577775977",
+        "4177101194999444",
+        "7797777701000177",
+        "7777666688686367",
+        "9999999700101999",
+        "1444484666999994",
+    ),
+    (
+        "8999979999996888",
+        "4811455055005184",
+        "7666684444844979",
+        "6888888879999988",
+        "6666677777776666",
+        "1333333364444444",
+        "7777531333633797",
+        "7999944883399599",
+        "5500051001150500",
+        "8411101110101988",
+        "4414141100100014",
+        "6888886686886666",
+        "8444436666666444",
+        "7748499477799977",
+        "6266500555500056",
+        "5777765555557977",
+    ),
+)
+
+
+def shale_variants():
+    """The 6 shale tiles, also the base of the oil shale variants."""
+    return tuple(indexed((SHALE_PALETTE, *rows)) for rows in SHALE_TILES)
+
+
+# The top and bottom of shale and oil shale: one bedding plane, calm blobs in 4 of the laminae tones (proposal A,
+# frozen from 4x4 tileable bilinear noise, seed 7), so the laminae only show on the sides.
+SHALE_TOP = (
+    "1131133433331111",
+    "3331134444111111",
+    "3333133344311133",
+    "4311113333311131",
+    "3331113344111113",
+    "1111133343133331",
+    "1111111333333133",
+    "1111133333344431",
+    "1111113333446441",
+    "1133333344344443",
+    "1333333344664441",
+    "1334336466446431",
+    "1343466664464343",
+    "3333344464643333",
+    "3333133464443333",
+    "3131134464331133",
+)
+
+
+# The top and bottom of oil shale: the shale bedding plane crossed by the outcrop of the tar seam (proposal A), a
+# broken wavy band shaded like a vanilla coal ore spot. Indices 0-9 are the shale palette, a-f the tar ramp.
+TAR_RAMP = [(30, 26, 28), (38, 33, 35), (47, 41, 42), (58, 51, 50), (72, 63, 58), (88, 78, 68)]
+OIL_SHALE_TOP = (
+    "1131133433331111",
+    "3331134444111111",
+    "3333133344311133",
+    "4311113333311131",
+    "3331113344111113",
+    "1111133343133331",
+    "111111133fee1133",
+    "eee1133febba1fee",
+    "bbbe11fba1111ebb",
+    "111e13e111344111",
+    "1331131144664441",
+    "1334336466446431",
+    "1343466664464343",
+    "3333344464643333",
+    "3333133464443333",
+    "3131134464331133",
+)
+
+
+# ---------------------------------------------------------------- oil shale: shale + a straight tar seam
+TAR = [(24, 21, 24), (32, 28, 31), (42, 37, 40), (58, 53, 57)]
+# Per variant: the seam's first row and its two rows of TAR indices (the lower row is the thick part).
+OIL_SEAMS = [
+    (9, "1322111112231322", "00..00000...0..."),
+    (9, "3121111111111122", "00.00000000000.."),
+    (8, "111111121221..22", "0000000.0..0...."),
+    (10, "221131131313....", "..0000000000...."),
+    (9, "1322321111332122", "00....000000.0.."),
+    (9, "2222232333122222", "..........0....."),
+    (8, "1111111312..2111", "000000000....000"),
+    (8, "1111211312..1311", "0000.00.0...0000"),
+]
+
+
+def oil_shale(i):
+    y0, top, bottom = OIL_SEAMS[i]
+    rows = ["." * S] * y0 + [top, bottom] + ["." * S] * (S - y0 - 2)
+    return indexed((TAR, *rows), shale_variants()[i % SHALE_VARIANTS])
+
+
+# ---------------------------------------------------------------- polished shale: soft gradients, bevelled frame
+def _ramp(lo, hi, n=6):
+    return [tuple(round(lo[c] + (hi[c] - lo[c]) * k / (n - 1)) for c in range(3)) for k in range(n)]
+
+
+P_BLUE = _ramp((96, 101, 112), (150, 156, 165))
+P_WARM = _ramp((98, 89, 80), (150, 139, 121))
+
+
+def polished_shale(seed=52, warm_share=0.2, band=(2, 3)):
+    """Like vanilla polished tuff: each row a random walk of +-1 tone around a level that alternates light and
+    dark, mostly blue bands blending at their edges, lit top-left frame and shadowed bottom-right."""
+    rnd = random.Random(seed)
+    hue, y = [], 0
+    while y < S:
+        h = rnd.randint(*band)
+        hue += [rnd.random() < warm_share] * h
+        y += h
+    img = Image.new("RGBA", (S, S))
+    for y in range(1, S - 1):
+        level = 3 if y % 2 else 2
+        t, x = level + rnd.choice((-1, 0, 1)), 1
+        while x < S - 1:
+            for _ in range(rnd.randint(1, 3)):
+                if x >= S - 1:
+                    break
+                w = hue[y % S]
+                if hue[(y - 1) % S] != w and rnd.random() < 0.35:
+                    w = not w
+                img.putpixel((x, y), (*(P_WARM if w else P_BLUE)[max(1, min(4, t))], 255))
+                x += 1
+            t += rnd.choice((-1, 1)) if t == level else (level - t)
+    for i in range(S):
+        img.putpixel((i, 0), (*P_BLUE[4], 255))
+        img.putpixel((0, i), (*P_BLUE[4], 255))
+        img.putpixel((i, S - 1), (*P_WARM[1], 255))
+        img.putpixel((S - 1, i), (*P_WARM[1], 255))
+    img.putpixel((0, S - 1), (*P_BLUE[3], 255))
+    img.putpixel((S - 1, 0), (*P_BLUE[3], 255))
+    return img
+
+
+# ---------------------------------------------------------------- neodymium ore: lilac grains on deepslate
+ND_LILAC = ((58, 40, 62), (122, 86, 130), (160, 120, 170), (214, 184, 222))  # rim, shade, body, highlight
+GRAINS = [["h#", "##s", ".sd"], [".h#", "h#s", "#sd"], ["h##", "#ss", ".d"], ["hh#", "##sd"], [".h", "h#s", "#sd", ".d"],
+          ["h#.", "##s", ".sd"]]
+GRAIN_GAP = 7
+NEODYMIUM_SEEDS = range(110, 116)
+
+
+def neodymium_ore(seed):
+    """Vanilla-iron-like: 2-4 grains, no ring, the darkest ore tone inside the grain at its bottom right, plus a
+    short crack or two in the deepslate."""
+    rnd = random.Random(seed)
+    img = vanilla("block/deepslate")
+    for _ in range(rnd.randint(1, 2)):
+        x, y = rnd.randint(1, 13), rnd.randint(1, 13)
+        for i in range(rnd.randint(2, 3)):
+            r, g, b, a = img.getpixel((x + i, y + i // 2))
+            img.putpixel((x + i, y + i // 2), (int(r * .65), int(g * .65), int(b * .65), a))
+    rim, shade, body, light = ND_LILAC
+    tone = {"#": body, "h": light, "s": shade, "d": rim}
+    placed, tries = [], 0
+    target = rnd.choice((2, 3, 3, 4))
+    while len(placed) < target and tries < 300:
+        tries += 1
+        g = rnd.choice(GRAINS)
+        w = max(len(r) for r in g)
+        x, y = rnd.randint(0, S - w), rnd.randint(0, S - len(g))
+        if not all(abs(x - px) + abs(y - py) >= GRAIN_GAP for px, py in placed):
+            continue
+        placed.append((x, y))
+        for cy, row in enumerate(g):
+            for cx, c in enumerate(row):
+                if c != ".":
+                    img.putpixel(((x + cx) % S, (y + cy) % S), (*tone[c], 255))
+    return img
+
+
+# ---------------------------------------------------------------- neodymium ingot: the vanilla ingot, recoloured
+def _ingot_ramp(lo, hi, bias):
+    return [tuple(max(0, min(255, round(lo[c] + (hi[c] - lo[c]) * k / 7 + bias[c] * (1 - abs(2 * k / 7 - 1)))))
+                  for c in range(3)) for k in range(8)]
+
+
+INGOT = _ingot_ramp((54, 44, 62), (252, 246, 255), bias=(10, -6, 18))  # silver with a light lilac cast
+
+
+def neodymium_ingot():
+    """Iron ingot pixel layout, each tone mapped by luminance rank onto the neodymium ramp."""
+    iron = vanilla("item/iron_ingot")
+    ranks = sorted({iron.getpixel((x, y))[:3] for x in range(S) for y in range(S) if iron.getpixel((x, y))[3]},
+                   key=sum)
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    for y in range(S):
+        for x in range(S):
+            p = iron.getpixel((x, y))
+            if p[3]:
+                img.putpixel((x, y), (*INGOT[ranks.index(p[:3])], 255))
+    return img
+
+
+# ---------------------------------------------------------------- validated hand-made shapes (indexed maps)
+SHALE_BRICKS = ([(66, 62, 58), (96, 88, 80), (116, 112, 106), (110, 116, 128), (127, 133, 143)],
+    "4444244044443440",
+    "4223331042332210",
+    "4111111041111110",
+    "4000000040000000",
+    "3440444434404444",
+    "2310422223104223",
+    "1110411111104111",
+    "0000400000004000",
+    "4444244044443440",
+    "4223331043332210",
+    "4111111041111110",
+    "4000000040000000",
+    "3440444434404444",
+    "2210422322104323",
+    "1110411111104111",
+    "0000400000004000")
+
+CHISELED_SHALE = ([(66, 62, 58), (96, 88, 80), (114, 100, 89), (116, 112, 106), (110, 116, 128), (127, 133, 143)],
+    "5555555555555550",
+    "5512332433223340",
+    "5400000000000520",
+    "5202112131111530",
+    "5301115252221530",
+    "5201125135152530",
+    "5401155555251540",
+    "5301555355331540",
+    "5301053555052530",
+    "5202105055151520",
+    "5301115250201510",
+    "5201110151111510",
+    "5401121101111510",
+    "5305555555555520",
+    "5433433313323430",
+    "5000000000000000")
+
+BITUMEN = ([(13, 11, 14), (22, 19, 23), (31, 27, 32), (42, 37, 43), (55, 50, 57), (74, 68, 78), (102, 97, 110), (140, 136, 150)],
+    "................",
+    "................",
+    ".....1110.......",
+    "....143630......",
+    "...13357531110..",
+    "..1245777555310.",
+    ".135576545764410",
+    ".134655344555410",
+    ".012454344444410",
+    "..0125444421110.",
+    "...01111111000..",
+    "....0000000.....",
+    "................",
+    "................",
+    "................",
+    "................")
+
+RAW_NEODYMIUM = ([(54, 37, 60), (76, 52, 84), (98, 69, 106), (122, 86, 130), (141, 103, 150), (160, 120, 170), (187, 152, 197), (214, 184, 222)],
+    "................",
+    "................",
+    "......110.......",
+    ".....16760......",
+    "....1677530.10..",
+    "...167765311660.",
+    "..1557754466750.",
+    ".15577544657520.",
+    ".1455444457740..",
+    ".03444457775530.",
+    "..044445555430..",
+    "...0334444310...",
+    "....00111100....",
+    "......0000......",
+    "................",
+    "................")
+
+SILICON = ([(30, 34, 46), (46, 52, 68), (80, 88, 110), (100, 109, 133), (124, 133, 158), (156, 168, 196), (196, 210, 236)],
+    "................",
+    "................",
+    ".......10.......",
+    ".....11650......",
+    "....1664420.....",
+    "...166443320....",
+    "..16643434320...",
+    ".16644443343210.",
+    ".054443434644320",
+    "..0343334644420.",
+    "...02333444220..",
+    "....024333210...",
+    ".....0111100....",
+    "......0000......",
+    "................",
+    "................")
+
+SILICON_WAFER = ([(30, 34, 46), (62, 69, 88), (84, 88, 100), (133, 144, 176), (154, 138, 168), (163, 144, 144), (126, 159, 164), (158, 159, 141), (200, 206, 218)],
+    "................",
+    "................",
+    "................",
+    "....11111110....",
+    "..113666777510..",
+    ".14888366677750.",
+    "1554488836667770",
+    "1755544888366670",
+    "1777555448883660",
+    "0267775554488820",
+    ".02267775554220.",
+    "..002222222200..",
+    "....00000000....",
+    "................",
+    "................",
+    "................")
+
+
+# ---------------------------------------------------------------- storage blocks (picked during the proposals)
+# Raw neodymium: packed nuggets lit from the top-left. Neodymium: wavy diagonal light bands inside a mid-tone frame
+# with a bright inner top ring, the structure of the vanilla metal blocks. Silicon: layered crystal shards, each
+# facet a stepped gradient, inside a bevelled frame.
+
+RAW_NEODYMIUM_BLOCK = ([(54, 37, 60), (76, 52, 84), (98, 69, 106), (122, 86, 130), (141, 103, 150), (160, 120, 170)],
+    "2444202444432000",
+    "2444322444332020",
+    "0443322443320242",
+    "2233220333220444",
+    "3022210222202444",
+    "3202102000104443",
+    "2200024442203333",
+    "2100254443302322",
+    "0000244443220000",
+    "2002044433210224",
+    "4004204332210554",
+    "4224402322102444",
+    "4224330221104444",
+    "3223322000202444",
+    "3003220244430233",
+    "0000000544432022")
+
+NEODYMIUM_BLOCK = ([(85, 71, 95), (108, 91, 119), (131, 111, 143), (154, 132, 167), (176, 154, 188), (194, 177, 204), (214, 200, 221), (233, 222, 238), (252, 246, 255)],
+    "4434334343443433",
+    "4877788878877661",
+    "4744567787654322",
+    "3534577766544321",
+    "3534678644433222",
+    "3546787643322222",
+    "4667776532222332",
+    "4777775432223451",
+    "3687655432234562",
+    "4676543322245662",
+    "3665432222346662",
+    "3653222223456662",
+    "3532223223456652",
+    "3732333334565541",
+    "4723444455654332",
+    "3111110110111010")
+
+SILICON_BLOCK = ([(73, 78, 96), (85, 90, 108), (96, 102, 121), (108, 114, 133), (120, 126, 145), (131, 138, 158), (143, 150, 170), (155, 162, 182), (166, 174, 195), (178, 186, 207), (190, 198, 220)],
+    "8888888888888884",
+    "8aaa855544399991",
+    "8aa8655543888991",
+    "8a86655538888881",
+    "8866655477788871",
+    "8776664777777621",
+    "8776656667776221",
+    "8776566666652221",
+    "8776555666532221",
+    "8765555554332221",
+    "8644455543332211",
+    "8444444343332101",
+    "8334443443331001",
+    "8333324443320001",
+    "8333254443200001",
+    "4111111111111111")
+
+
+def _shale(i):
+    return lambda: shale_variants()[i]
+
+
+def _oil(i):
+    return lambda: oil_shale(i)
+
+
+def _ore(seed):
+    return lambda: neodymium_ore(seed)
+
+
+BLOCKS = {f"shale_{i}": _shale(i) for i in range(SHALE_VARIANTS)}
+BLOCKS.update({f"oil_shale_{i}": _oil(i) for i in range(len(OIL_SEAMS))})
+BLOCKS.update({f"deepslate_neodymium_ore_{i}": _ore(s) for i, s in enumerate(NEODYMIUM_SEEDS)})
+BLOCKS.update({
+    "shale_top": lambda: indexed((SHALE_PALETTE, *SHALE_TOP)),
+    "oil_shale_top": lambda: indexed((SHALE_PALETTE + TAR_RAMP, *OIL_SHALE_TOP)),
+    "polished_shale": polished_shale,
+    "shale_bricks": lambda: indexed(SHALE_BRICKS),
+    "chiseled_shale": lambda: indexed(CHISELED_SHALE),
+    "raw_neodymium_block": lambda: indexed(RAW_NEODYMIUM_BLOCK),
+    "neodymium_block": lambda: indexed(NEODYMIUM_BLOCK),
+    "silicon_block": lambda: indexed(SILICON_BLOCK),
+})
+ITEMS = {
+    "bitumen": lambda: indexed(BITUMEN),
+    "raw_neodymium": lambda: indexed(RAW_NEODYMIUM),
+    "neodymium_ingot": neodymium_ingot,
+    "silicon": lambda: indexed(SILICON),
+    "silicon_wafer": lambda: indexed(SILICON_WAFER),
+}

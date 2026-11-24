@@ -11,6 +11,17 @@ The following **assets** are licensed under the
 - hand-made models: `src/main/resources/assets/ravecraft/models/**` that are not under `src/main/generated`
 - art sources: `art/**` (Blockbench models, drafts, previews)
 
+## Exceptions: Mojang textures
+
+These files contain textures by Mojang (© Mojang Studios, used under the
+[Minecraft Usage Guidelines](https://www.minecraft.net/usage-guidelines)) and are **not** covered by CC BY-NC-SA:
+
+- `textures/block/deepslate_neodymium_ore_*.png`: the neodymium grains are drawn on Mojang's `deepslate.png`;
+- `textures/item/neodymium_ingot.png`: a recolour of Mojang's `iron_ingot.png`.
+
+`tools/textures/materials.py` reads both vanilla textures from the local Minecraft jar at generation time; the
+repository holds no other Mojang texture.
+
 Full legal text: https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
 
 In short, you may share and adapt these assets if you:

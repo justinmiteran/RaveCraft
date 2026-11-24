@@ -2,11 +2,15 @@ package com.ravecraft.mod.datagen;
 
 import com.ravecraft.mod.block.SpeakerBlock;
 import com.ravecraft.mod.client.item.SpeakerPowered;
+import com.ravecraft.mod.registry.ModBlockFamilies;
 import com.ravecraft.mod.registry.ModBlocks;
+import com.ravecraft.mod.registry.ModItems;
+import java.util.stream.IntStream;
 import net.fabricmc.fabric.api.client.datagen.v1.provider.FabricModelProvider;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
+import net.minecraft.client.data.models.MultiVariant;
 import net.minecraft.client.color.item.Dye;
 import net.minecraft.client.data.models.blockstates.MultiVariantGenerator;
 import net.minecraft.client.data.models.model.ItemModelUtils;
@@ -14,18 +18,26 @@ import net.minecraft.client.renderer.item.ItemModel;
 import net.minecraft.client.data.models.model.ModelLocationUtils;
 import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.client.data.models.model.TextureMapping;
+import net.minecraft.client.data.models.model.TextureSlot;
+import net.minecraft.client.renderer.block.dispatch.Variant;
 import net.minecraft.client.renderer.item.properties.select.DisplayContext;
+import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.level.block.Block;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Blockstates, block models, item models and {@code assets/<modid>/items/*.json}. Custom geometry: design it in
  * Blockbench ({@code art/models}), export the JSON to {@code assets/<modid>/models/block/} and reference it here.
  */
 public class RaveCraftModelProvider extends FabricModelProvider {
+	private static final int SHALE_VARIANTS = 6;
+	private static final int OIL_SHALE_VARIANTS = 8;
+	private static final int NEODYMIUM_VARIANTS = 6;
+
 	/**
 	 * A provider writing to {@code output}.
 	 *
@@ -37,8 +49,63 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 
 	@Override
 	public void generateBlockStateModels(BlockModelGenerators generators) {
-		speaker(ModBlocks.PORTABLE_SPEAKER, generators);
-		speaker(ModBlocks.PARTY_SPEAKER, generators);
+		ModBlocks.speakers().forEach(block -> speaker(block, generators));
+		shale(generators);
+		randomVariants(ModBlocks.OIL_SHALE, OIL_SHALE_VARIANTS,
+				TextureMapping.getBlockTexture(ModBlocks.OIL_SHALE, "_top"), generators);
+		randomVariants(ModBlocks.DEEPSLATE_NEODYMIUM_ORE, NEODYMIUM_VARIANTS, null, generators);
+		ModBlocks.storageBlocks().forEach(generators::createTrivialCube);
+		generators.family(ModBlocks.POLISHED_SHALE).generateFor(ModBlockFamilies.POLISHED_SHALE);
+		generators.family(ModBlocks.SHALE_BRICKS).generateFor(ModBlockFamilies.SHALE_BRICKS);
+	}
+
+	/**
+	 * Shale: a random choice of its laminae variants on the sides per block, like oil shale, under one bedding plane
+	 * texture on top and bottom; the stairs, slab and wall use {@code shale_0} on their sides, and a double slab is a
+	 * random shale block.
+	 */
+	private static void shale(BlockModelGenerators generators) {
+		MultiVariant shale = randomVariants(ModBlocks.SHALE, SHALE_VARIANTS, shaleTop(), generators);
+		Material side = TextureMapping.getBlockTexture(ModBlocks.SHALE, "_0");
+		TextureMapping first = new TextureMapping().put(TextureSlot.ALL, side).put(TextureSlot.SIDE, side)
+				.put(TextureSlot.WALL, side).put(TextureSlot.TOP, shaleTop()).put(TextureSlot.BOTTOM, shaleTop());
+		generators.new BlockFamilyProvider(first).stairs(ModBlocks.SHALE_STAIRS).wall(ModBlocks.SHALE_WALL);
+		Identifier bottom = ModelTemplates.SLAB_BOTTOM.create(ModBlocks.SHALE_SLAB, first, generators.modelOutput);
+		Identifier top = ModelTemplates.SLAB_TOP.create(ModBlocks.SHALE_SLAB, first, generators.modelOutput);
+		generators.blockStateOutput.accept(BlockModelGenerators.createSlab(ModBlocks.SHALE_SLAB,
+				BlockModelGenerators.plainVariant(bottom), BlockModelGenerators.plainVariant(top), shale));
+		generators.registerSimpleItemModel(ModBlocks.SHALE_SLAB, bottom);
+	}
+
+	/** The bedding plane on top and bottom of shale, whose laminae only show on the sides. */
+	private static Material shaleTop() {
+		return TextureMapping.getBlockTexture(ModBlocks.SHALE, "_top");
+	}
+
+	/**
+	 * A model per texture variant ({@code <id>_0} ... {@code <id>_<count-1>}), one picked at random per block with
+	 * equal weights and no rotation; the item shows {@code _0}. With an end texture, the variants are columns: the
+	 * variant on the sides, the end on top and bottom.
+	 *
+	 * @return the random variants, for reuse (double slabs)
+	 */
+	private static MultiVariant randomVariants(Block block, int count, @Nullable Material end,
+			BlockModelGenerators generators) {
+		Variant[] variants = IntStream.range(0, count).mapToObj(i -> BlockModelGenerators.plainModel(
+				variantModel(block, "_" + i, end, generators))).toArray(Variant[]::new);
+		MultiVariant random = BlockModelGenerators.variants(variants);
+		generators.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(block, random));
+		generators.registerSimpleItemModel(block, ModelLocationUtils.getModelLocation(block, "_0"));
+		return random;
+	}
+
+	private static Identifier variantModel(Block block, String suffix, @Nullable Material end,
+			BlockModelGenerators generators) {
+		Material side = TextureMapping.getBlockTexture(block, suffix);
+		return end == null
+				? ModelTemplates.CUBE_ALL.createWithSuffix(block, suffix, TextureMapping.cube(side), generators.modelOutput)
+				: ModelTemplates.CUBE_COLUMN.createWithSuffix(block, suffix, TextureMapping.column(side, end),
+						generators.modelOutput);
 	}
 
 	/**
@@ -78,5 +145,8 @@ public class RaveCraftModelProvider extends FabricModelProvider {
 
 	@Override
 	public void generateItemModels(ItemModelGenerators generators) {
+		for (Item item : ModItems.materials()) {
+			generators.generateFlatItem(item, ModelTemplates.FLAT_ITEM);
+		}
 	}
 }

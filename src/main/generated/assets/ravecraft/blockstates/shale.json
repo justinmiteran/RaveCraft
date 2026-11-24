@@ -1,0 +1,24 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "ravecraft:block/shale_0"
+      },
+      {
+        "model": "ravecraft:block/shale_1"
+      },
+      {
+        "model": "ravecraft:block/shale_2"
+      },
+      {
+        "model": "ravecraft:block/shale_3"
+      },
+      {
+        "model": "ravecraft:block/shale_4"
+      },
+      {
+        "model": "ravecraft:block/shale_5"
+      }
+    ]
+  }
+}

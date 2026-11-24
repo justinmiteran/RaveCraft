@@ -136,7 +136,7 @@ src/main/generated/                   # SORTIE de runDatagen : ne jamais éditer
 
 **Toutes les textures du mod sont des créations originales**, produites par code dans `tools/textures/gen_textures.py` (Pillow, déterministe) :
 
-- Ajouter une texture : écrire une fonction qui retourne une `Image` 16×16, puis l'enregistrer dans `BLOCKS`, `ANIMATED` (frames + `frametime`, génère le `.png.mcmeta`) ou `ITEMS`.
+- Les matériaux (schiste, minerais, matières premières) sont dans `tools/textures/materials.py`, importé par le générateur. Ajouter une texture : écrire une fonction qui retourne une `Image` 16×16, puis l'enregistrer dans `BLOCKS`, `ANIMATED` (frames + `frametime`, génère le `.png.mcmeta`) ou `ITEMS`.
 - Réutiliser la palette `C` et les helpers (`casing`, `inset`, `grain`) pour garder une identité visuelle commune. Définir tôt dans la SPEC un code couleur par rôle.
 - Après toute modification, régénérer puis **ouvrir `art/textures/preview.png`** (x8) pour contrôler visuellement.
 - Une texture retouchée à la main (Blockbench, Aseprite…) doit être retirée du générateur, sinon elle sera écrasée.
@@ -145,7 +145,8 @@ Conventions :
 - Textures **16×16 PNG RGBA**, style vanilla : palette limitée, pas de dégradés lisses, ombrage venant du haut-gauche. Animations : bande verticale de frames 16×16 + fichier `.png.mcmeta`.
 - Noms en `snake_case`, égaux à l'id du bloc ou de l'objet (suffixes `_front`, `_side`, `_top`, `_on`).
 - Blockstates, modèles et `assets/<modid>/items/*.json` sont **générés** par le datagen.
-- Référence de style : textures vanilla dans `~/.gradle/caches/fabric-loom/26.3/minecraft-client.jar` (`assets/minecraft/textures/block/`). Lecture locale uniquement : **ne jamais copier de texture Mojang dans le mod**.
+- Référence de style : textures vanilla dans `~/.gradle/caches/fabric-loom/26.3/minecraft-client.jar` (`assets/minecraft/textures/block/` et `item/`). Lecture locale uniquement : **ne jamais copier de texture Mojang dans le mod** (sauf exceptions listées dans `LICENSE-ASSETS.md`). Seules exceptions à ce jour : le fond deepslate des `deepslate_neodymium_ore_*` et le lingot de néodyme, recoloration du lingot de fer, tous deux lus dans le jar par `tools/textures/materials.py`.
+- **Toujours partir d'exemples vanilla** : avant de dessiner une texture, extraire les textures vanilla les plus proches, les mesurer (nombre de tons, couleurs du bord, grain), les afficher à côté des propositions et suivre leur direction artistique. Objets : **pas de contour noir**, le bord prend les tons les plus sombres de la matière (plus sombre en bas à droite, plus clair en haut à gauche), 6 à 8 tons proches, lumière en haut à gauche, du grain plutôt que des aplats. Une forme validée se retexture, elle ne se redessine pas.
 - Vérifier visuellement chaque modèle et chaque texture (rendu `blockbench` ou `runClient`) avant de le considérer fini.
 
 ## Façon de travailler

@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "ravecraft:block/oil_shale_top",
+    "side": "ravecraft:block/oil_shale_3"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "group": "neodymium_ingot",
+  "ingredients": [
+    "#c:storage_blocks/neodymium"
+  ],
+  "result": {
+    "count": 9,
+    "id": "ravecraft:neodymium_ingot"
+  }
+}

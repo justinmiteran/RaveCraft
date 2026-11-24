@@ -2,11 +2,11 @@
   "type": "minecraft:crafting_shaped",
   "category": "redstone",
   "key": {
-    "C": "minecraft:copper_ingot",
-    "I": "minecraft:iron_ingot",
+    "C": "#c:ingots/copper",
+    "I": "#c:ingots/iron",
     "N": "minecraft:note_block",
     "P": "ravecraft:portable_speaker",
-    "R": "minecraft:redstone_block"
+    "R": "#c:storage_blocks/redstone"
   },
   "pattern": [
     "INI",

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "ravecraft:polished_shale",
+  "result": {
+    "id": "ravecraft:polished_shale_stairs"
+  }
+}

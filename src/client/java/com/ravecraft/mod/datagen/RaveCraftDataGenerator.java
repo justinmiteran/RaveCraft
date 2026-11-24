@@ -3,6 +3,8 @@ package com.ravecraft.mod.datagen;
 import com.ravecraft.mod.client.item.SpeakerPowered;
 import net.fabricmc.fabric.api.datagen.v1.DataGeneratorEntrypoint;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
+import net.minecraft.core.RegistrySetBuilder;
+import net.minecraft.core.registries.Registries;
 
 /**
  * Run with {@code ./gradlew runDatagen}. Output goes to {@code src/main/generated} (never edit it by hand).
@@ -16,7 +18,15 @@ public class RaveCraftDataGenerator implements DataGeneratorEntrypoint {
 		pack.addProvider(RaveCraftModelProvider::new);
 		pack.addProvider(RaveCraftBlockLootProvider::new);
 		pack.addProvider(RaveCraftBlockTagProvider::new);
+		pack.addProvider(RaveCraftItemTagProvider::new);
 		pack.addProvider(RaveCraftFluidTagProvider::new);
 		pack.addProvider(RaveCraftRecipeProvider::new);
+		pack.addProvider(RaveCraftWorldgenProvider::new);
+	}
+
+	@Override
+	public void buildRegistry(RegistrySetBuilder registryBuilder) {
+		registryBuilder.add(Registries.FEATURE, RaveCraftOreFeatures::features);
+		registryBuilder.add(Registries.PLACED_FEATURE, RaveCraftOreFeatures::placements);
 	}
 }

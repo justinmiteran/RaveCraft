@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "ravecraft:block/silicon_block"
+    }
+  }
+}

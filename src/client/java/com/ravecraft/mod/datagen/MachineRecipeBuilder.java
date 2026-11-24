@@ -88,7 +88,7 @@ public final class MachineRecipeBuilder {
 	 */
 	public MachineRecipeBuilder mold(ItemLike item) {
 		mold = Optional.of(Ingredient.of(item));
-		advancement.unlockedBy("has_" + name(item), has.apply(item));
+		advancement.unlockedBy("has_" + name(item), recipes.has(item));
 		return this;
 	}
 

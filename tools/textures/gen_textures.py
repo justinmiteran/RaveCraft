@@ -337,6 +337,49 @@ def party_speaker_overlay_on():
     return party_icon_layer(False, on=True)
 
 
+# Mod logo (mod menu icon): the equaliser logo of the speakers at twice its size, its bars one
+# pixel apart, on the portable speaker's black fabric framed in rubber.
+LOGO_FABRIC = (40, 41, 46)
+LOGO_FABRIC_FULL = 200  # fabric value drawn as LOGO_FABRIC
+LOGO_X, LOGO_Y = 2, 4
+LOGO_SHADOW = (14, 14, 18)
+LOGO_COPPER = [(138, 74, 38), (176, 100, 52), COPPER, COPPER_L, (252, 206, 158)]  # darkest to lightest
+
+
+def logo_background():
+    img = portable_speaker_fabric()
+    for y in range(S):
+        for x in range(S):
+            v = img.getpixel((x, y))[0]
+            px(img, x, y, tuple(int(c * v / LOGO_FABRIC_FULL) for c in LOGO_FABRIC))
+    for i in range(S):
+        px(img, i, 0, RUBBER[3]); px(img, 0, i, RUBBER[3])
+        px(img, i, S - 1, RUBBER[0]); px(img, S - 1, i, RUBBER[0])
+    for i in range(1, S - 1):
+        for x, y in ((i, 1), (1, i), (i, S - 2), (S - 2, i)):
+            px(img, x, y, RUBBER[1])
+    for x in (0, S - 1):
+        for y in (0, S - 1):
+            img.putpixel((x, y), (0, 0, 0, 0))
+    return img
+
+
+def logo():
+    img = logo_background()
+    # EQ_LOGO has its bars on even columns: each becomes 2 px wide, 3 px from the next.
+    cells = [(LOGO_X + x // 2 * 3, y) for y, row in enumerate(EQ_LOGO) for x, ch in enumerate(row) if ch == "#"]
+    for x, y in cells:
+        top = LOGO_Y + 2 * y
+        rect(img, x + 1, top + 1, x + 2, top + 2, LOGO_SHADOW)
+    dark, mid, copper, light, shine = LOGO_COPPER
+    for x, y in cells:
+        top = LOGO_Y + 2 * y
+        first, last = (x, y - 1) not in cells, (x, y + 1) not in cells
+        px(img, x, top, shine if first else light); px(img, x + 1, top, light if first else copper)
+        px(img, x, top + 1, copper if last or y % 2 == 0 else light); px(img, x + 1, top + 1, dark if last else mid)
+    return img
+
+
 BLOCKS = {
     "portable_speaker_radiator": portable_speaker_radiator,
     "portable_speaker_fabric": portable_speaker_fabric,
@@ -734,9 +777,8 @@ def main():
         print("wrote container", name)
 
     if not args.only:
-        # Mod icon (mod menu): the first block texture, scaled up without smoothing.
-        first = next(iter(BLOCKS.values()))()
-        first.resize((128, 128), Image.NEAREST).save(ICON)
+        # Mod icon (mod menu): the logo, scaled up without smoothing.
+        logo().resize((128, 128), Image.NEAREST).save(ICON)
     if tiles:
         preview_sheet(tiles).save(PREVIEW)
     for name, _ in tiles:

@@ -47,6 +47,7 @@ Le joueur commence avec une simple enceinte portable qui lit sa musique, puis il
   - **soundsystem de rave** (murs d'enceintes empilées).
 - 💡 Distinguer les rôles comme en vrai : enceintes large bande, subwoofers (basses), têtes (aigus), retours de scène.
 - 💡 Amplificateurs séparés pour le matériel professionnel, avec une puissance qui limite ce qu'on peut alimenter.
+- ⏳ **Home cinéma**.
 
 ### 3.4 Lumière
 - ✅ **Projecteurs** (plusieurs modèles, chacun avec sa puissance).
@@ -183,7 +184,7 @@ Chaque sous-projet aura sa propre spec, son plan et sa réalisation. L'ordre res
 | Effets et structures de scène | Fumée, confettis, CO2, pyrotechnie, truss, praticables, scènes modulaires |
 | Micro et casque DJ | Voix dans la sono, pré-écoute (cue) |
 | Progrès et livre-guide | Advancements et guide qui suivent les paliers |
-| Plus tard | Murs LED, radio FM, production musicale |
+| Plus tard | Home cinéma, murs LED, radio FM, production musicale |
 
 ## 11. Étapes
 
@@ -212,7 +213,15 @@ Chaque sous-projet aura sa propre spec, son plan et sa réalisation. L'ordre res
   - [x] 7d composants et recettes finales (PR `feat/components-recipes`, plan [2026-11-23-components-recipes.md](superpowers/plans/2026-11-23-components-recipes.md)) : membrane, haut-parleur simple, carte d'amplification, haut-parleur de grave ; membrane renforcée extrudée à partir de 2 feuilles de plastique ; recettes définitives des deux enceintes (les recettes provisoires vanilla sont supprimées) ; magnétiseur au néodyme et au cuivre, extrudeuse au haut fourneau, moules fabriqués à partir d'un moule vierge ; chaque recette se débloque avec n'importe lequel de ses ingrédients ; infobulle « Pour l'extrudeuse » sur les moules. (vérifié en jeu)
   - [x] Recettes des machines dans Roughly Enough Items (PR `feat/rei-compat`, spec [2026-11-24-rei-compat-design.md](superpowers/specs/2026-11-24-rei-compat-design.md), plan [2026-11-24-rei-compat.md](superpowers/plans/2026-11-24-rei-compat.md)) : mêmes pages que dans JEI, disposition partagée ; machine comme poste de fabrication, flèche de l'écran cliquable, bouton `+` qui remplit une opération. (vérifié en jeu)
 - [x] Logo du mod (PR `feat/mod-logo`) : le logo égaliseur en cuivre des enceintes, sur le tissu noir de l'enceinte portable, est l'icône du mod. (vérifié en jeu)
-- [ ] Choisir le troisième sous-projet
+- [x] Choisir le troisième sous-projet : **Gamme d'enceintes et amplification**
+- [ ] Gamme d'enceintes et amplification, en trois tranches, dans cet ordre, chacune avec sa spec et son plan :
+  - [ ] 1. Enceintes reliées : plusieurs enceintes jouent le même morceau en même temps ; un caisson de basses et une tête
+    - [ ] Direction du son calculée (PR `feat/speaker-radiation`, spec [2026-11-25-speaker-radiation-design.md](superpowers/specs/2026-11-25-speaker-radiation-design.md), plan [2026-11-25-speaker-radiation.md](superpowers/plans/2026-11-25-speaker-radiation.md)) : une enceinte se décrit par sa caisse et ses haut-parleurs, le moteur calcule la direction des basses, des médiums et des aigus
+    - [ ] Lecteur, tête, caisson, pied, câble simple, enceintes collées rendues en groupe (PR `feat/linked-speakers`)
+    - [ ] Pose réaliste du câble (PR `feat/cable-laying`)
+    - [ ] Stéréo (PR `feat/stereo`)
+  - [ ] 2. Amplis et puissance : amplis séparés, câbles, limite de puissance
+  - [ ] 3. Grands systèmes : murs d'enceintes, blocs de festival
 
 ### Prévu plus tard (décidé pendant le socle audio)
 - Contrôle des appareils par **propriétaire + invités + verrou** (pour l'instant, contrôle ouvert à tous).

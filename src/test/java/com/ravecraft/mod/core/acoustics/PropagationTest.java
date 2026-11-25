@@ -44,7 +44,7 @@ class PropagationTest {
 	@Test
 	void levelAtOneMetreFromPowerAndSensitivity() {
 		assertEquals(85 + 10 * Math.log10(20), Propagation.levelAt1m(PORTABLE), EPS);
-		assertEquals(94, Propagation.levelAt1m(new DeviceProfile(1, 94, -6, 150, Directivity.OMNI)), EPS);
+		assertEquals(94, Propagation.levelAt1m(new DeviceProfile(1, 94, -6, 150)), EPS);
 	}
 
 	@Test
@@ -60,7 +60,7 @@ class PropagationTest {
 
 	@Test
 	void fourTimesThePowerDoublesTheRange() {
-		DeviceProfile loud = new DeviceProfile(80, 85, -6, 150, Directivity.OMNI);
+		DeviceProfile loud = new DeviceProfile(80, 85, -6, 150);
 		assertEquals(2 * PORTABLE_RANGE, Propagation.range(S, loud, 1), 1e-6);
 	}
 
@@ -72,7 +72,7 @@ class PropagationTest {
 
 	@Test
 	void rangeIsCapped() {
-		DeviceProfile festival = new DeviceProfile(8000, 100, 0, 40, Directivity.OMNI);
+		DeviceProfile festival = new DeviceProfile(8000, 100, 0, 40);
 		assertEquals(256, Propagation.range(S, festival, 1), EPS);
 		assertEquals(100, Propagation.range(with(1, 68, 100), festival, 1), EPS);
 	}
@@ -116,11 +116,8 @@ class PropagationTest {
 	}
 
 	@Test
-	void gainUsesTheGivenDirectivity() {
-		double behind = -1;
-		double omni = Propagation.gain(S, DeviceProfile.PARTY, Directivity.OMNI, 1, 4, behind);
-		double directed = Propagation.gain(S, DeviceProfile.PARTY, DeviceProfile.PARTY.directivity(), 1, 4, behind);
-		assertEquals(Propagation.gain(S, DeviceProfile.PARTY, 1, 4, 1), omni, EPS);
-		assertEquals(omni * Decibels.toAmplitude(-10), directed, EPS);
+	void gainUsesTheDirectionGain() {
+		double front = Propagation.gain(S, DeviceProfile.PARTY, 1, 4, 1);
+		assertEquals(front * 0.25, Propagation.gain(S, DeviceProfile.PARTY, 1, 4, 0.25), EPS);
 	}
 }

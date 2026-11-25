@@ -2,8 +2,8 @@ package com.ravecraft.mod.core.acoustics;
 
 /**
  * Realistic sound propagation: inverse distance law (−6 dB per doubling with rolloff 1), a range derived from the
- * device's power and sensitivity, a smooth fade over the end of that range, directivity, and high-frequency
- * absorption by the air.
+ * device's power and sensitivity, a smooth fade over the end of that range, the gain of the listener's direction, and
+ * high-frequency absorption by the air.
  */
 public final class Propagation {
 	/** Extra blocks the server relays beyond the audible range, for movement between two chunks. */
@@ -79,34 +79,17 @@ public final class Propagation {
 	 * @param profile the device
 	 * @param volume the volume, 0 to 1
 	 * @param distance the distance, in blocks
-	 * @param cosAngle the cosine of the angle off the device's axis
+	 * @param directionGain the gain of the listener's direction, 1 on the device's axis
 	 * @return the linear gain
 	 */
 	public static double gain(AcousticSettings settings, DeviceProfile profile, double volume, double distance,
-			double cosAngle) {
-		return gain(settings, profile, profile.directivity(), volume, distance, cosAngle);
-	}
-
-	/**
-	 * Linear gain at the listener with {@code directivity} in place of the profile's own (a speaker on the ground
-	 * radiates in every direction, whatever its kind).
-	 *
-	 * @param settings the acoustic settings
-	 * @param profile the device
-	 * @param directivity how the sound spreads around the device
-	 * @param volume the volume, 0 to 1
-	 * @param distance the distance, in blocks
-	 * @param cosAngle the cosine of the angle off the device's axis
-	 * @return the linear gain
-	 */
-	public static double gain(AcousticSettings settings, DeviceProfile profile, Directivity directivity, double volume,
-			double distance, double cosAngle) {
+			double directionGain) {
 		if (volume <= 0) {
 			return 0;
 		}
 		return volume * distanceGain(settings.rolloff(), distance)
 				* fade(distance, range(settings, profile, volume), settings.fadeFraction())
-				* directivity.gain(cosAngle);
+				* directionGain;
 	}
 
 	/**

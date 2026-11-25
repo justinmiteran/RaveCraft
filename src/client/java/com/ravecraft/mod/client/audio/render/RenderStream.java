@@ -3,17 +3,19 @@ package com.ravecraft.mod.client.audio.render;
 import com.ravecraft.mod.block.SpeakerBlock;
 import com.ravecraft.mod.client.audio.ClientSpeakerHosts;
 import com.ravecraft.mod.core.acoustics.DeviceProfile;
-import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.acoustics.SpeakerAxis;
 import com.ravecraft.mod.core.acoustics.Equalizer;
 import com.ravecraft.mod.core.acoustics.VirtualPacer;
 import com.ravecraft.mod.core.acoustics.occlusion.LossSmoother;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionFilter;
+import com.ravecraft.mod.core.acoustics.radiation.BandGains;
+import com.ravecraft.mod.core.acoustics.radiation.RadiationFilter;
 import com.ravecraft.mod.core.acoustics.reverb.Chorus;
 import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
 import com.ravecraft.mod.core.acoustics.reverb.SendRoute;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import com.ravecraft.mod.core.audio.stream.StreamPlayout;
+import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
 import com.ravecraft.mod.network.payload.SpeakerHostPayload;
 import java.nio.ByteBuffer;
@@ -49,11 +51,10 @@ final class RenderStream {
 	volatile double z;
 	volatile double volume;
 	volatile boolean powered;
-	volatile double facingX;
-	volatile double facingZ = 1;
-	/** The profile of the speaker's kind, and how it radiates where it is now (omnidirectional on the ground). */
+	/** Where the speaker points now (nowhere on the ground), its kind and the profile of that kind. */
+	volatile SpeakerAxis axis = SpeakerAxis.GROUND;
+	volatile SpeakerKind kind = SpeakerKind.PORTABLE;
 	volatile DeviceProfile profile = DeviceProfile.PORTABLE;
-	volatile Directivity directivity = Directivity.OMNI;
 
 	// Written on the client thread by the occlusion scheduler, read on the audio thread: both losses are published
 	// before occlusionKnown is set.
@@ -75,6 +76,9 @@ final class RenderStream {
 	@Nullable Equalizer eq;
 	/** The profile {@code eq} was built for. */
 	@Nullable DeviceProfile eqProfile;
+	/** What the listener's direction does to this step's sound, its loudest band untouched. */
+	BandGains radiation = BandGains.FLAT;
+	final RadiationFilter radiationFilter = new RadiationFilter(StreamFormat.SAMPLE_RATE);
 	final OcclusionFilter occlusionFilter = new OcclusionFilter(StreamFormat.SAMPLE_RATE);
 	final Chorus chorus = new Chorus(StreamFormat.SAMPLE_RATE);
 	final VirtualPacer pacer;
@@ -105,8 +109,8 @@ final class RenderStream {
 	void refresh(@Nullable ClientLevel level) {
 		Vec3 at = ClientSpeakerHosts.position(speakerId, level);
 		Optional<SpeakerHostPayload> found = ClientSpeakerHosts.get(speakerId);
-		SpeakerAxis axis = at == null || found.isEmpty() ? null : axisOf(found.get(), level);
-		if (axis == null) {
+		SpeakerAxis pointing = at == null || found.isEmpty() ? null : axisOf(found.get(), level);
+		if (pointing == null) {
 			volume = 0;
 			return;
 		}
@@ -115,11 +119,9 @@ final class RenderStream {
 		y = at.y;
 		z = at.z;
 		powered = host.powered();
-		facingX = axis.x();
-		facingZ = axis.z();
-		DeviceProfile kindProfile = AcousticSettingsClient.get().profile(host.kind());
-		profile = kindProfile;
-		directivity = axis.directivity(kindProfile);
+		axis = pointing;
+		kind = host.kind();
+		profile = AcousticSettingsClient.get().profile(host.kind());
 		volume = host.volume() / (double) SpeakerSettings.MAX_VOLUME;
 	}
 
@@ -151,9 +153,10 @@ final class RenderStream {
 	}
 
 	/**
-	 * Audio thread: takes the next 100 ms from the playout, through the equalizer and the occlusion low-pass at
-	 * {@code highLossDb}, then the underwater {@code chorus} when given. Written as 16-bit PCM into {@code out} (cleared and flipped) when given; only consumed
-	 * otherwise (still filtered, so the filter's state follows the stream).
+	 * Audio thread: takes the next 100 ms from the playout, through the equalizer, the filter of the listener's
+	 * direction and the occlusion low-pass at {@code highLossDb}, then the underwater {@code chorus} when given.
+	 * Written as 16-bit PCM into {@code out} (cleared and flipped) when given; only consumed otherwise (still
+	 * filtered, so the filters' state follows the stream).
 	 */
 	void nextBlock(float[] scratch, @Nullable ByteBuffer out, double highLossDb, @Nullable FluidReverb fluid) {
 		byte[] block = playout.nextBlock();
@@ -165,6 +168,7 @@ final class RenderStream {
 		if (eq != null) {
 			eq.process(scratch, samples);
 		}
+		radiationFilter.process(scratch, samples, radiation);
 		occlusionFilter.process(scratch, samples, highLossDb);
 		chorus.process(scratch, samples, fluid);
 		if (out != null) {

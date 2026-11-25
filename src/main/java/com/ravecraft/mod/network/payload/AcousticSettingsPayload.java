@@ -4,7 +4,6 @@ import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.DeviceProfile;
 import com.ravecraft.mod.core.acoustics.DeviceProfiles;
-import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
@@ -20,9 +19,9 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 /**
- * S→C on join: the server's acoustic model. The portable profile is always omnidirectional, so it is not sent. The occlusion lists are capped at their
- * maximum sizes, so only settings clamped by the server may be encoded. Decoded
- * values are brought into their bounds, so a broken server cannot feed NaN gains to the renderer.
+ * S→C on join: the server's acoustic model. The occlusion lists are capped at their maximum sizes, so only settings
+ * clamped by the server may be encoded. Decoded values are brought into their bounds, so a broken server cannot feed
+ * NaN gains to the renderer.
  */
 public record AcousticSettingsPayload(AcousticSettings settings) implements CustomPacketPayload {
 	public static final Type<AcousticSettingsPayload> TYPE = new Type<>(RaveCraft.id("acoustic_settings"));
@@ -31,10 +30,7 @@ public record AcousticSettingsPayload(AcousticSettings settings) implements Cust
 			ByteBufCodecs.DOUBLE, DeviceProfile::sensitivityDb,
 			ByteBufCodecs.DOUBLE, DeviceProfile::bassCutDb,
 			ByteBufCodecs.DOUBLE, DeviceProfile::bassCutHz,
-			ByteBufCodecs.DOUBLE, p -> p.directivity().halfAngleDeg(),
-			ByteBufCodecs.DOUBLE, p -> p.directivity().rearGainDb(),
-			(power, sensitivity, bassDb, bassHz, halfAngle, rearGain) -> new DeviceProfile(power, sensitivity, bassDb,
-					bassHz, new Directivity(halfAngle, rearGain)));
+			DeviceProfile::new);
 	private static final StreamCodec<ByteBuf, DeviceProfiles> PROFILES = StreamCodec.composite(
 			PROFILE, DeviceProfiles::portable,
 			PROFILE, DeviceProfiles::party,

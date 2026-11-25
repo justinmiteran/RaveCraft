@@ -56,7 +56,6 @@ public record AcousticSettings(double rolloff, double fadeFraction, double audib
 				POWER_WATTS.apply(prefix + "powerWatts", p.powerWatts(), warn),
 				SENSITIVITY_DB.apply(prefix + "sensitivityDb", p.sensitivityDb(), warn),
 				BASS_CUT_DB.apply(prefix + "bassCutDb", p.bassCutDb(), warn),
-				BASS_CUT_HZ.apply(prefix + "bassCutHz", p.bassCutHz(), warn),
-				p.directivity());
+				BASS_CUT_HZ.apply(prefix + "bassCutHz", p.bassCutHz(), warn));
 	}
 }

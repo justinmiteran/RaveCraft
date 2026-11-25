@@ -116,11 +116,8 @@ class PropagationTest {
 	}
 
 	@Test
-	void gainUsesTheGivenDirectivity() {
-		double behind = -1;
-		double omni = Propagation.gain(S, DeviceProfile.PARTY, Directivity.OMNI, 1, 4, behind);
-		double directed = Propagation.gain(S, DeviceProfile.PARTY, DeviceProfile.PARTY.directivity(), 1, 4, behind);
-		assertEquals(Propagation.gain(S, DeviceProfile.PARTY, 1, 4, 1), omni, EPS);
-		assertEquals(omni * Decibels.toAmplitude(-10), directed, EPS);
+	void gainUsesTheDirectionGain() {
+		double front = Propagation.gain(S, DeviceProfile.PARTY, 1, 4, 1);
+		assertEquals(front * 0.25, Propagation.gain(S, DeviceProfile.PARTY, 1, 4, 0.25), EPS);
 	}
 }

@@ -9,6 +9,7 @@ import com.ravecraft.mod.core.acoustics.debug.StepTimer;
 import com.ravecraft.mod.core.acoustics.occlusion.ListenerPerception;
 import com.ravecraft.mod.core.acoustics.occlusion.LossSmoother;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionGate;
+import com.ravecraft.mod.core.acoustics.radiation.BandGains;
 import com.ravecraft.mod.core.acoustics.reverb.FluidReverb;
 import com.ravecraft.mod.core.audio.stream.StreamFormat;
 import java.nio.ByteBuffer;
@@ -217,16 +218,21 @@ final class AudioWorker extends Thread {
 		}
 	}
 
-	/** The gain of {@code stream} at {@code ear}: its propagation, then its occlusion and the head's. */
+	/**
+	 * The gain of {@code stream} at {@code ear}: its direction and propagation, then its occlusion and the head's. The
+	 * gain is the one of the band its direction keeps loudest; the stream's filter brings the others down.
+	 */
 	private void weigh(RenderStream stream, AcousticSettings settings, Vec3 ear, double dt) {
 		double dx = ear.x - stream.x;
 		double dy = ear.y - stream.y;
 		double dz = ear.z - stream.z;
 		double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-		double cos = distance < 1e-6 ? 1 : (stream.facingX * dx + stream.facingZ * dz) / distance;
+		BandGains heard = stream.axis.heard(SpeakerRadiation.pattern(stream.kind), dx, dy, dz);
+		boolean filter = AcousticRenderer.efxWanted();
+		stream.radiation = filter ? heard.relative() : BandGains.FLAT;
 		stream.distance = distance;
-		stream.gain = stream.powered ? Propagation.gain(settings, stream.profile, stream.directivity,
-				stream.volume, distance, cos) : 0;
+		stream.gain = stream.powered ? Propagation.gain(settings, stream.profile, stream.volume, distance,
+				filter ? heard.loudest() : heard.mid()) : 0;
 		boolean known = occlude(stream, dt);
 		// Before the selection: the sources go to the speakers that are loudest once muffled. A stream not
 		// traced yet ranks 0, gets no source and is consumed silently, in step with its playout.

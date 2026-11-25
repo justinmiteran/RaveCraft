@@ -6,7 +6,6 @@ import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.DeviceProfile;
 import com.ravecraft.mod.core.acoustics.Propagation;
-import com.ravecraft.mod.core.acoustics.radiation.RadiationSummary;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
@@ -61,14 +60,10 @@ public final class SpeakerTooltip {
 		}
 	}
 
-	/** The directivity of a speaker: omnidirectional, or the angle it covers and how much quieter it is behind. */
+	/** The directivity of a speaker: omnidirectional, or toward its front. */
 	private static Component directivityText(SpeakerKind kind) {
-		RadiationSummary summary = SpeakerRadiation.summary(kind);
-		if (summary.omni()) {
-			return Component.translatable("tooltip.ravecraft.speaker.directivity.omni");
-		}
-		return Component.translatable("tooltip.ravecraft.speaker.directivity.covers",
-				summary.coverageDeg(), summary.rearLossDb());
+		return Component.translatable(SpeakerRadiation.pattern(kind).omni()
+				? "tooltip.ravecraft.speaker.directivity.omni" : "tooltip.ravecraft.speaker.directivity.front");
 	}
 
 	/** Adds the key that opens the speaker from the inventory, unless it is unbound. */

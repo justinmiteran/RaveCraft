@@ -3,7 +3,6 @@ package com.ravecraft.mod.client.audio.render;
 import com.ravecraft.mod.RaveCraft;
 import com.ravecraft.mod.core.acoustics.radiation.Cabinets;
 import com.ravecraft.mod.core.acoustics.radiation.RadiationPattern;
-import com.ravecraft.mod.core.acoustics.radiation.RadiationSummary;
 import com.ravecraft.mod.core.speaker.SpeakerKind;
 import java.util.EnumMap;
 import java.util.Map;
@@ -13,16 +12,7 @@ import java.util.Map;
  * that fails, the speakers radiate the same in every direction.
  */
 public final class SpeakerRadiation {
-	private static final Radiation FLAT = Radiation.of(RadiationPattern.FLAT);
-
-	private static volatile Map<SpeakerKind, Radiation> computed = Map.of();
-
-	/** A pattern and what the tooltip says of it. */
-	private record Radiation(RadiationPattern pattern, RadiationSummary summary) {
-		private static Radiation of(RadiationPattern pattern) {
-			return new Radiation(pattern, RadiationSummary.of(pattern));
-		}
-	}
+	private static volatile Map<SpeakerKind, RadiationPattern> computed = Map.of();
 
 	private SpeakerRadiation() {
 	}
@@ -36,9 +26,9 @@ public final class SpeakerRadiation {
 
 	private static void compute() {
 		try {
-			Map<SpeakerKind, Radiation> all = new EnumMap<>(SpeakerKind.class);
+			Map<SpeakerKind, RadiationPattern> all = new EnumMap<>(SpeakerKind.class);
 			for (SpeakerKind kind : SpeakerKind.values()) {
-				all.put(kind, Radiation.of(RadiationPattern.of(Cabinets.of(kind))));
+				all.put(kind, RadiationPattern.of(Cabinets.of(kind)));
 			}
 			computed = Map.copyOf(all);
 		} catch (RuntimeException e) {
@@ -53,16 +43,6 @@ public final class SpeakerRadiation {
 	 * @return its pattern, flat until it is computed
 	 */
 	public static RadiationPattern pattern(SpeakerKind kind) {
-		return computed.getOrDefault(kind, FLAT).pattern();
-	}
-
-	/**
-	 * How a kind of speaker radiates, for its tooltip.
-	 *
-	 * @param kind the kind of speaker
-	 * @return its summary, omnidirectional until it is computed
-	 */
-	public static RadiationSummary summary(SpeakerKind kind) {
-		return computed.getOrDefault(kind, FLAT).summary();
+		return computed.getOrDefault(kind, RadiationPattern.FLAT);
 	}
 }

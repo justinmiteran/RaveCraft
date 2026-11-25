@@ -9,6 +9,7 @@ import java.util.Arrays;
  */
 public final class RadiationPattern {
 	private static final int BANDS = 3;
+	private static final int MIDS = 1;
 	private static final int STEP_DEG = 10;
 	private static final int FULL_TURN_DEG = 360;
 	private static final int POLE_DEG = 90;
@@ -16,6 +17,7 @@ public final class RadiationPattern {
 	private static final int ELEVATIONS = 2 * POLE_DEG / STEP_DEG + 1;
 	/** No direction loses more than this. */
 	private static final double FLOOR_DB = -48;
+	private static final double OMNI_LOSS_DB = 3;
 
 	/** The same in every direction. */
 	public static final RadiationPattern FLAT = new RadiationPattern(flatPowers());
@@ -70,7 +72,7 @@ public final class RadiationPattern {
 	public BandGains at(double azimuthDeg, double elevationDeg) {
 		double azimuth = (azimuthDeg % FULL_TURN_DEG + FULL_TURN_DEG) % FULL_TURN_DEG / STEP_DEG;
 		double elevation = (Math.clamp(elevationDeg, -POLE_DEG, POLE_DEG) + POLE_DEG) / STEP_DEG;
-		return new BandGains(gain(0, azimuth, elevation), gain(1, azimuth, elevation), gain(2, azimuth, elevation));
+		return new BandGains(gain(0, azimuth, elevation), gain(MIDS, azimuth, elevation), gain(2, azimuth, elevation));
 	}
 
 	/**
@@ -79,7 +81,16 @@ public final class RadiationPattern {
 	 * @return the gain of each band
 	 */
 	public BandGains around() {
-		return new BandGains(meanGain(0), meanGain(1), meanGain(2));
+		return new BandGains(meanGain(0), meanGain(MIDS), meanGain(2));
+	}
+
+	/**
+	 * Whether the speaker is heard alike all around, at its height.
+	 *
+	 * @return {@code true} when its mids lose less than 3 dB in every direction
+	 */
+	public boolean omni() {
+		return Arrays.stream(powers[MIDS][ELEVATIONS / 2]).allMatch(power -> power > Decibels.toPower(-OMNI_LOSS_DB));
 	}
 
 	private double meanGain(int band) {

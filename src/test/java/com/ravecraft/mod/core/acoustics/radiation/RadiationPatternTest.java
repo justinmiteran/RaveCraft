@@ -1,6 +1,7 @@
 package com.ravecraft.mod.core.acoustics.radiation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -67,6 +68,13 @@ class RadiationPatternTest {
 		Driver front = new Driver(0, 0, 0, 0, 0, 1, 0, 0);
 		RadiationPattern huge = RadiationPattern.of(new Cabinet(4, 4, 4, List.of(front)));
 		assertEquals(-48, Decibels.fromAmplitude(huge.at(150, 0).high()), 1e-6);
+	}
+
+	@Test
+	void onlyThePartySpeakerHasADirection() {
+		assertFalse(PARTY.omni());
+		assertTrue(PORTABLE.omni());
+		assertTrue(RadiationPattern.FLAT.omni());
 	}
 
 	@Test

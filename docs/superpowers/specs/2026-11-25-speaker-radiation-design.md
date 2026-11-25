@@ -116,7 +116,7 @@ Limites connues : la caisse est une sphère et non une boîte ; la formule vaut 
 ### 5.4 Réseau, infobulle
 
 - `AcousticSettingsPayload` perd les deux valeurs de directivité. Le fichier `server.json5` ne les contenait pas : il ne change pas. Le client et le serveur doivent avoir la même version du mod, comme aujourd'hui.
-- **Infobulle** : « omnidirectionnelle » si les médiums perdent moins de 3 dB sur tout le tour ; sinon « couvre X°, −Y dB à l'arrière », avec X l'angle total où les aigus perdent moins de 6 dB (arrondi à 10°) et Y la perte des médiums à 180° (arrondie au dB). Pour l'enceinte de soirée : « couvre 100°, −12 dB à l'arrière ».
+- **Infobulle** : « omnidirectionnelle » si les médiums perdent moins de 3 dB sur tout le tour ; sinon « direction avant » (enceinte de soirée).
 
 ## 6. Tests
 

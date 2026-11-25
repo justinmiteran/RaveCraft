@@ -42,6 +42,17 @@ class PistonOnSphereTest {
 	}
 
 	@Test
+	void highsDoNotDipBetweenTheDegrees() {
+		PistonOnSphere party = new PistonOnSphere(0.025, 0.48, 12_000);
+		double at80 = Decibels.fromAmplitude(party.magnitude(Math.cos(Math.toRadians(80))));
+		double at81 = Decibels.fromAmplitude(party.magnitude(Math.cos(Math.toRadians(81))));
+		for (double degree = 80; degree <= 81; degree += 0.1) {
+			double db = Decibels.fromAmplitude(party.magnitude(Math.cos(Math.toRadians(degree))));
+			assertEquals((at80 + at81) / 2, db, 0.3, degree + " degrees");
+		}
+	}
+
+	@Test
 	void aPistonAsLargeAsTheSphereIsAccepted() {
 		assertTrue(Double.isFinite(new PistonOnSphere(0.5, 0.4, 500).magnitude(-1)));
 	}

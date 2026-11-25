@@ -32,6 +32,7 @@ public final class RadiationPattern {
 	 *
 	 * @param cabinet the cabinet
 	 * @return its pattern
+	 * @throws IllegalArgumentException if the cabinet makes no sound on its axis, or its field cannot be computed
 	 */
 	public static RadiationPattern of(Cabinet cabinet) {
 		RadiationCalculator calculator = new RadiationCalculator(cabinet);
@@ -51,6 +52,9 @@ public final class RadiationPattern {
 		double[] ring = new double[AZIMUTHS];
 		for (int i = 0; i < AZIMUTHS; i++) {
 			double power = pole && i > 0 ? ring[0] : calculator.power(band, i * STEP_DEG, elevationDeg) / onAxis;
+			if (!Double.isFinite(power)) {
+				throw new IllegalArgumentException("No sound on the axis of the cabinet");
+			}
 			ring[i] = Math.max(Decibels.toPower(FLOOR_DB), power);
 		}
 		return ring;

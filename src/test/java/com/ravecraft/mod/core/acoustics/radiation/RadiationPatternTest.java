@@ -1,6 +1,7 @@
 package com.ravecraft.mod.core.acoustics.radiation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.ravecraft.mod.core.acoustics.Decibels;
@@ -65,7 +66,13 @@ class RadiationPatternTest {
 	void neverFallsUnderTheFloor() {
 		Driver front = new Driver(0, 0, 0, 0, 0, 1, 0, 0);
 		RadiationPattern huge = RadiationPattern.of(new Cabinet(4, 4, 4, List.of(front)));
-		assertEquals(-48, Decibels.fromAmplitude(huge.at(130, 0).high()), 1e-6);
+		assertEquals(-48, Decibels.fromAmplitude(huge.at(150, 0).high()), 1e-6);
+	}
+
+	@Test
+	void refusesACabinetThatMakesNoSound() {
+		Cabinet mute = new Cabinet(1, 1, 1, List.of());
+		assertThrows(IllegalArgumentException.class, () -> RadiationPattern.of(mute));
 	}
 
 	@Test

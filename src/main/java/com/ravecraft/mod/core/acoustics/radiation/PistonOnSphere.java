@@ -2,22 +2,25 @@ package com.ravecraft.mod.core.acoustics.radiation;
 
 /**
  * The far field of one driver: a vibrating piston set in a rigid sphere as big as the cabinet, at one frequency. The
- * exact solution is a series of spherical waves; it is summed once per degree off the driver's axis and normalized
- * to a magnitude of 1 on that axis. Waves advance as {@code e^(ikr)}.
+ * exact solution is a series of spherical waves; it is summed at regular angles off the driver's axis, closer as the
+ * sphere grows since the phase turns faster, and normalized to a magnitude of 1 on that axis. Waves advance as {@code e^(ikr)}.
  */
 public final class PistonOnSphere {
 	/** The speed of sound in air, in metres per second. */
 	public static final double SPEED_OF_SOUND = 343;
 
 	private static final int DEGREES = 180;
+	/** How far the phase, which turns by at most {@code z} per radian, may go between two angles, in radians. */
+	private static final double PHASE_STEP = 0.1;
 	/** The series is summed up to {@code z + WIDTH × z^(1/3) + MARGIN}, where it has converged. */
 	private static final double TERMS_WIDTH = 4;
 	private static final double TERMS_MARGIN = 10;
 	/** The powers of −i repeat every four terms. */
 	private static final int PHASES = 4;
 
-	private final double[] real = new double[DEGREES + 1];
-	private final double[] imaginary = new double[DEGREES + 1];
+	private final int steps;
+	private final double[] real;
+	private final double[] imaginary;
 
 	/**
 	 * Computes the field of a driver.
@@ -30,15 +33,18 @@ public final class PistonOnSphere {
 		double z = 2 * Math.PI * frequency / SPEED_OF_SOUND * sphereRadius;
 		int terms = (int) (z + TERMS_WIDTH * Math.cbrt(z) + TERMS_MARGIN) + 1;
 		Series series = new Series(z, terms, velocities(Math.min(1, pistonRadius / sphereRadius), terms));
-		for (int degree = 0; degree <= DEGREES; degree++) {
-			series.sum(Math.cos(Math.toRadians(degree)));
-			real[degree] = series.sumReal;
-			imaginary[degree] = series.sumImaginary;
+		steps = Math.max(DEGREES, (int) Math.ceil(Math.PI * z / PHASE_STEP));
+		real = new double[steps + 1];
+		imaginary = new double[steps + 1];
+		for (int step = 0; step <= steps; step++) {
+			series.sum(Math.cos(Math.PI * step / steps));
+			real[step] = series.sumReal;
+			imaginary[step] = series.sumImaginary;
 		}
 		double onAxis = Math.hypot(real[0], imaginary[0]);
-		for (int degree = 0; degree <= DEGREES; degree++) {
-			real[degree] /= onAxis;
-			imaginary[degree] /= onAxis;
+		for (int step = 0; step <= steps; step++) {
+			real[step] /= onAxis;
+			imaginary[step] /= onAxis;
 		}
 	}
 
@@ -72,10 +78,10 @@ public final class PistonOnSphere {
 		return Math.hypot(real(cosAngle), imaginary(cosAngle));
 	}
 
-	private static double interpolate(double[] table, double cosAngle) {
-		double degree = Math.toDegrees(Math.acos(Math.clamp(cosAngle, -1.0, 1.0)));
-		int below = Math.min((int) degree, DEGREES - 1);
-		double t = degree - below;
+	private double interpolate(double[] table, double cosAngle) {
+		double step = Math.acos(Math.clamp(cosAngle, -1.0, 1.0)) / Math.PI * steps;
+		int below = Math.min((int) step, steps - 1);
+		double t = step - below;
 		return table[below] * (1 - t) + table[below + 1] * t;
 	}
 

@@ -5,7 +5,6 @@ import com.ravecraft.mod.config.AcousticConfig;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.DeviceProfile;
 import com.ravecraft.mod.core.acoustics.DeviceProfiles;
-import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.audio.stream.SessionTable.Session;
 import com.ravecraft.mod.network.AudioRelay;
 import com.ravecraft.mod.network.payload.SpeakerCommandPayload.Command;
@@ -197,7 +196,7 @@ public class AudioRelayGameTest {
 			// Four times the power doubles the range: about 32 blocks at half volume.
 			AcousticConfig.set(new AcousticSettings(defaults.rolloff(), defaults.fadeFraction(),
 					defaults.audibilityThresholdDb(), defaults.maxRange(),
-					new DeviceProfiles(new DeviceProfile(80, 85, -6, 150, Directivity.OMNI), DeviceProfile.PARTY),
+					new DeviceProfiles(new DeviceProfile(80, 85, -6, 150), DeviceProfile.PARTY),
 					defaults.occlusion(),
 					defaults.reverb()));
 			h.assertTrue(hears(h, pos, playerAt(h, 1), playerAt(h, 30)), "heard with 80 W at half volume");

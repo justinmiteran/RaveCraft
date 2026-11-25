@@ -44,7 +44,7 @@ class PropagationTest {
 	@Test
 	void levelAtOneMetreFromPowerAndSensitivity() {
 		assertEquals(85 + 10 * Math.log10(20), Propagation.levelAt1m(PORTABLE), EPS);
-		assertEquals(94, Propagation.levelAt1m(new DeviceProfile(1, 94, -6, 150, Directivity.OMNI)), EPS);
+		assertEquals(94, Propagation.levelAt1m(new DeviceProfile(1, 94, -6, 150)), EPS);
 	}
 
 	@Test
@@ -60,7 +60,7 @@ class PropagationTest {
 
 	@Test
 	void fourTimesThePowerDoublesTheRange() {
-		DeviceProfile loud = new DeviceProfile(80, 85, -6, 150, Directivity.OMNI);
+		DeviceProfile loud = new DeviceProfile(80, 85, -6, 150);
 		assertEquals(2 * PORTABLE_RANGE, Propagation.range(S, loud, 1), 1e-6);
 	}
 
@@ -72,7 +72,7 @@ class PropagationTest {
 
 	@Test
 	void rangeIsCapped() {
-		DeviceProfile festival = new DeviceProfile(8000, 100, 0, 40, Directivity.OMNI);
+		DeviceProfile festival = new DeviceProfile(8000, 100, 0, 40);
 		assertEquals(256, Propagation.range(S, festival, 1), EPS);
 		assertEquals(100, Propagation.range(with(1, 68, 100), festival, 1), EPS);
 	}

@@ -53,14 +53,8 @@ class SpeakerAxisTest {
 	}
 
 	@Test
-	void groundIsOmni() {
-		assertEquals(Directivity.OMNI, SpeakerAxis.GROUND.directivity(DeviceProfile.PARTY));
+	void groundHasNoAxis() {
 		assertFalse(SpeakerAxis.GROUND.directed());
-	}
-
-	@Test
-	void directedKeepsProfile() {
-		assertEquals(DeviceProfile.PARTY.directivity(), SpeakerAxis.block(0, 1).directivity(DeviceProfile.PARTY));
 	}
 
 	@Test

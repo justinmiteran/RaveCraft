@@ -5,8 +5,8 @@ import com.ravecraft.mod.core.acoustics.radiation.RadiationPattern;
 import com.ravecraft.mod.core.speaker.CarryPlace;
 
 /**
- * The horizontal direction a speaker points, used to pick its {@link Directivity} gain. A placed speaker points along
- * its facing; a carried one points along the carrier's look (hand or inventory) or behind the carrier (back); a speaker
+ * The horizontal direction a speaker points, used to find which side of it the listener is on. A placed speaker points
+ * along its facing; a carried one points along the carrier's look (hand or inventory) or behind the carrier (back); a speaker
  * on the ground radiates in every direction.
  *
  * @param x horizontal x component of the axis (Minecraft convention)
@@ -66,15 +66,5 @@ public record SpeakerAxis(double x, double z, boolean directed) {
 		double azimuth = Math.toDegrees(Math.atan2(right, front));
 		double elevation = Math.toDegrees(Math.atan2(dy, flat));
 		return pattern.at(azimuth, elevation).near(distance);
-	}
-
-	/**
-	 * The radiation pattern to use for this axis.
-	 *
-	 * @param profile the device profile of the speaker
-	 * @return the profile's directivity when directed, otherwise {@link Directivity#OMNI}
-	 */
-	public Directivity directivity(DeviceProfile profile) {
-		return directed ? profile.directivity() : Directivity.OMNI;
 	}
 }

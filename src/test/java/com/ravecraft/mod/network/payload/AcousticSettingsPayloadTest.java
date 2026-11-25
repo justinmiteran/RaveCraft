@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.DeviceProfile;
 import com.ravecraft.mod.core.acoustics.DeviceProfiles;
-import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMaterial;
 import com.ravecraft.mod.core.acoustics.occlusion.AcousticMedium;
 import com.ravecraft.mod.core.acoustics.occlusion.OcclusionSettings;
@@ -31,7 +30,7 @@ class AcousticSettingsPayloadTest {
 	void codecRoundTrip() {
 		AcousticSettingsPayload payload = new AcousticSettingsPayload(
 				new AcousticSettings(0.5, 0.3, 60, 128,
-						new DeviceProfiles(new DeviceProfile(40, 90, -9, 120, Directivity.OMNI), DeviceProfile.PARTY),
+						new DeviceProfiles(new DeviceProfile(40, 90, -9, 120), DeviceProfile.PARTY),
 						OcclusionSettings.DEFAULT, ReverbSettings.DEFAULT));
 		ByteBuf buf = Unpooled.buffer();
 		AcousticSettingsPayload.CODEC.encode(buf, payload);
@@ -41,7 +40,7 @@ class AcousticSettingsPayloadTest {
 
 	@Test
 	void partyProfileRoundTrips() {
-		DeviceProfile party = new DeviceProfile(200, 90, -3, 100, new Directivity(45, -8));
+		DeviceProfile party = new DeviceProfile(200, 90, -3, 100);
 		AcousticSettings d = AcousticSettings.DEFAULT;
 		AcousticSettingsPayload payload = new AcousticSettingsPayload(new AcousticSettings(d.rolloff(),
 				d.fadeFraction(), d.audibilityThresholdDb(), d.maxRange(),
@@ -54,10 +53,19 @@ class AcousticSettingsPayloadTest {
 	}
 
 	@Test
+	void aProfileTakesFourValues() {
+		ByteBuf buf = Unpooled.buffer();
+		AcousticSettingsPayload.CODEC.encode(buf, new AcousticSettingsPayload(AcousticSettings.DEFAULT));
+		int header = 4 * Double.BYTES;
+		int partyPower = header + 4 * Double.BYTES;
+		assertEquals(DeviceProfile.PARTY.powerWatts(), buf.getDouble(partyPower));
+	}
+
+	@Test
 	void decodeBoundsValuesFromServer() {
 		AcousticSettingsPayload payload = new AcousticSettingsPayload(
 				new AcousticSettings(Double.NaN, 0.3, 68, 9999,
-						new DeviceProfiles(new DeviceProfile(20, 85, -9, 30_000, Directivity.OMNI), DeviceProfile.PARTY),
+						new DeviceProfiles(new DeviceProfile(20, 85, -9, 30_000), DeviceProfile.PARTY),
 						OcclusionSettings.DEFAULT, ReverbSettings.DEFAULT));
 		ByteBuf buf = Unpooled.buffer();
 		AcousticSettingsPayload.CODEC.encode(buf, payload);

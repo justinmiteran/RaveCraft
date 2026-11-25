@@ -108,6 +108,7 @@ public final class PistonOnSphere {
 		private double sumReal;
 		private double sumImaginary;
 
+		/** Builds the series for the size {@code z} of the sphere, in wavelengths over 2π. */
 		Series(double z, int terms, double[] velocities) {
 			coefReal = new double[terms];
 			coefImaginary = new double[terms];

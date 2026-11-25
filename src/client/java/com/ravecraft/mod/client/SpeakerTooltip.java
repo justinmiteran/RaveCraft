@@ -1,11 +1,12 @@
 package com.ravecraft.mod.client;
 
 import com.ravecraft.mod.client.audio.render.AcousticSettingsClient;
+import com.ravecraft.mod.client.audio.render.SpeakerRadiation;
 import com.ravecraft.mod.component.SpeakerData;
 import com.ravecraft.mod.core.acoustics.AcousticSettings;
 import com.ravecraft.mod.core.acoustics.DeviceProfile;
-import com.ravecraft.mod.core.acoustics.Directivity;
 import com.ravecraft.mod.core.acoustics.Propagation;
+import com.ravecraft.mod.core.acoustics.radiation.RadiationSummary;
 import com.ravecraft.mod.core.queue.SpeakerQueue;
 import com.ravecraft.mod.core.speaker.SpeakerKind;
 import com.ravecraft.mod.core.speaker.SpeakerSettings;
@@ -40,7 +41,7 @@ public final class SpeakerTooltip {
 		int volume = data != null ? data.settings().volume() : SpeakerSettings.DEFAULT_VOLUME;
 		long range = Math.round(Propagation.range(settings, profile, volume / (double) SpeakerSettings.MAX_VOLUME));
 		SpeakerQueue queue = data != null ? data.queue() : SpeakerQueue.EMPTY;
-		Component directivity = directivityText(profile.directivity());
+		Component directivity = directivityText(kind);
 		boolean shift = Minecraft.getInstance().hasShiftDown();
 		if (shift) {
 			lines.add(gray("tooltip.ravecraft.speaker.base_short", number(profile.powerWatts()), directivity));
@@ -60,13 +61,14 @@ public final class SpeakerTooltip {
 		}
 	}
 
-	/** The directivity of a speaker: omnidirectional, or the cone it covers and how much quieter it is behind. */
-	private static Component directivityText(Directivity directivity) {
-		if (directivity.equals(Directivity.OMNI)) {
+	/** The directivity of a speaker: omnidirectional, or the angle it covers and how much quieter it is behind. */
+	private static Component directivityText(SpeakerKind kind) {
+		RadiationSummary summary = SpeakerRadiation.summary(kind);
+		if (summary.omni()) {
 			return Component.translatable("tooltip.ravecraft.speaker.directivity.omni");
 		}
-		return Component.translatable("tooltip.ravecraft.speaker.directivity.cone",
-				number(directivity.halfAngleDeg()), number(directivity.rearGainDb()));
+		return Component.translatable("tooltip.ravecraft.speaker.directivity.covers",
+				summary.coverageDeg(), summary.rearLossDb());
 	}
 
 	/** Adds the key that opens the speaker from the inventory, unless it is unbound. */

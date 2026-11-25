@@ -74,6 +74,7 @@ final class RadiationCalculator {
 		return sum / FREQUENCIES;
 	}
 
+	/** The power of one tone toward {@code direction}: its drivers add up with their path differences. */
 	private double power(Tone tone, double[] direction) {
 		double real = 0;
 		double imaginary = 0;

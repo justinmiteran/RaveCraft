@@ -67,7 +67,7 @@ public final class Shelf {
 		b0 = a * ((a + 1) - (a - 1) * cos + k) / a0;
 		b1 = side * 2 * a * ((a - 1) - (a + 1) * cos) / a0;
 		b2 = a * ((a + 1) - (a - 1) * cos - k) / a0;
-		a1 = side * -2 * ((a - 1) + (a + 1) * cos) / a0;
+		a1 = -side * 2 * ((a - 1) + (a + 1) * cos) / a0;
 		a2 = ((a + 1) + (a - 1) * cos - k) / a0;
 	}
 

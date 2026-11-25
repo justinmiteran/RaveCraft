@@ -113,7 +113,7 @@ public final class AcousticSettingsJson {
 	/** Reads one speaker profile, each missing key taking its value in {@code d}. */
 	private static DeviceProfile readProfile(Reading r, JsonObject p, DeviceProfile d) {
 		return new DeviceProfile(r.number(p, "powerWatts", d.powerWatts()), r.number(p, "sensitivityDb", d.sensitivityDb()),
-				r.number(p, "bassCutDb", d.bassCutDb()), r.number(p, "bassCutHz", d.bassCutHz()), d.directivity());
+				r.number(p, "bassCutDb", d.bassCutDb()), r.number(p, "bassCutHz", d.bassCutHz()));
 	}
 
 	/** Reads the {@code occlusion} section, each missing key taking its value in {@code d}. */

@@ -216,6 +216,10 @@ Chaque sous-projet aura sa propre spec, son plan et sa réalisation. L'ordre res
 - [x] Choisir le troisième sous-projet : **Gamme d'enceintes et amplification**
 - [ ] Gamme d'enceintes et amplification, en trois tranches, dans cet ordre, chacune avec sa spec et son plan :
   - [ ] 1. Enceintes reliées : plusieurs enceintes jouent le même morceau en même temps ; un caisson de basses et une tête
+    - [ ] Direction du son calculée (PR `feat/speaker-radiation`, spec [2026-11-25-speaker-radiation-design.md](superpowers/specs/2026-11-25-speaker-radiation-design.md)) : une enceinte se décrit par sa caisse et ses haut-parleurs, le moteur calcule la direction des basses, des médiums et des aigus
+    - [ ] Lecteur, tête, caisson, pied, câble simple, enceintes collées rendues en groupe (PR `feat/linked-speakers`)
+    - [ ] Pose réaliste du câble (PR `feat/cable-laying`)
+    - [ ] Stéréo (PR `feat/stereo`)
   - [ ] 2. Amplis et puissance : amplis séparés, câbles, limite de puissance
   - [ ] 3. Grands systèmes : murs d'enceintes, blocs de festival
 
